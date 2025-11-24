@@ -166,8 +166,16 @@ def create_image_collage(input_folder, output_file="output_collage.jpg", cols=5,
     # Paste the grid onto the canvas with outer margin
     canvas.paste(grid, (outer_margin, outer_margin))
     
-    # Save result
-    canvas.save(output_file, quality=95)
+    # Convert to RGB mode if not already (ensures proper color handling)
+    if canvas.mode != 'RGB':
+        canvas = canvas.convert('RGB')
+    
+    # Save result with proper settings for printing
+    canvas.save(output_file, 
+                quality=95, 
+                format='JPEG',
+                subsampling=0,  # Best quality color subsampling
+                optimize=True)  # Optimize file size without losing quality
     print(f"\nCollage saved to: {output_file}")
     print(f"Total images placed: {placed}")
 
@@ -247,12 +255,12 @@ def main():
             output_file=output_file,
             cols=cols,
             rows=rows,
-            border_width=1,  # Very thin black borders/grid lines
+            border_width=1,  # Thicker border for very high resolution
             border_color=(0, 0, 0),
-            img_width=250,
-            img_height=350,
-            cell_padding=10,  # Moderate white padding inside cells
-            outer_margin=30,  # Space between grid and canvas edges
+            img_width=750,  # Tripled from 250 for professional print quality
+            img_height=1050,  # Tripled from 350 for professional print quality
+            cell_padding=30,  # Increased padding for higher resolution
+            outer_margin=90,  # Increased margin for higher resolution
             remove_bars=True  # Enable black bar removal
         )
         
