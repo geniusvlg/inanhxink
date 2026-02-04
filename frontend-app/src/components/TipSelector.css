@@ -1,0 +1,78 @@
+.tip-selector {
+  margin-bottom: 1.5rem;
+}
+
+.tip-selector label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  color: #ec4899;
+}
+
+.tip-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .tip-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.tip-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: white;
+  color: #db2777;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tip-button:hover {
+  border-color: #ec4899;
+  background: #fdf2f8;
+}
+
+.tip-button.selected {
+  border-color: #db2777;
+  background: #ec4899;
+  color: white;
+}
+
+.custom-tip-input {
+  margin-top: 0.75rem;
+}
+
+.custom-tip-input input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.15s;
+}
+
+.custom-tip-input input:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.1);
+}
+
+.custom-tip-input span {
+  display: block;
+  margin-top: 0.25rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.tip-note {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+

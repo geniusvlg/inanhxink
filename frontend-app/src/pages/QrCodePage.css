@@ -1,0 +1,51 @@
+.qr-code-page {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.qr-code-page.loading,
+.qr-code-page.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #ffeef5;
+}
+
+.loading-text,
+.error-text {
+  font-size: 1.5rem;
+  color: #666;
+  text-align: center;
+}
+
+.error-text {
+  color: #ff4444;
+}
+
+.default-template {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #ffeef5;
+}
+
+.default-template h1 {
+  font-size: 2.5rem;
+  color: #ff6b9d;
+  margin-bottom: 2rem;
+}
+
+.default-template .content {
+  text-align: center;
+}
+
+.default-template .content p {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0.5rem 0;
+}
+

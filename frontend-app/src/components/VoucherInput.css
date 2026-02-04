@@ -1,0 +1,89 @@
+.voucher-input {
+  margin-bottom: 1.5rem;
+}
+
+.voucher-input label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.voucher-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.voucher-input-group input {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+
+.voucher-input-group input:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.1);
+}
+
+.voucher-input-group input.error {
+  border-color: #ef4444;
+}
+
+.voucher-input-group input.success {
+  border-color: #16a34a;
+}
+
+.check-button,
+.remove-button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+
+.check-button {
+  background: #ec4899;
+  color: white;
+}
+
+.check-button:hover:not(:disabled) {
+  background: #db2777;
+}
+
+.check-button:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.remove-button {
+  background: #ef4444;
+  color: white;
+}
+
+.remove-button:hover {
+  background: #dc2626;
+}
+
+.voucher-error {
+  margin-top: 0.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.voucher-success {
+  margin-top: 0.25rem;
+  color: #16a34a;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+

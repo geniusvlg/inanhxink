@@ -1,0 +1,39 @@
+.content-editor {
+  margin-bottom: 1.5rem;
+}
+
+.content-editor label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.content-textarea {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.15s;
+  min-height: 100px;
+}
+
+.content-textarea:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.1);
+}
+
+.content-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.content-editor-note {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+

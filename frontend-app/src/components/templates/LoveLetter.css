@@ -1,0 +1,167 @@
+.love-letter-template {
+  min-height: 100vh;
+  background: #ffeef5;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(255, 182, 193, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 90% 80%, rgba(255, 182, 193, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255, 182, 193, 0.05) 0%, transparent 50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Heart motifs in background - hand-drawn style */
+.love-letter-template::before {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: 5%;
+  width: 60px;
+  height: 60px;
+  background: transparent;
+  border: 2px solid rgba(255, 182, 193, 0.3);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.love-letter-template::after {
+  content: '';
+  position: absolute;
+  bottom: 12%;
+  right: 8%;
+  width: 80px;
+  height: 80px;
+  background: transparent;
+  border: 2px solid rgba(255, 182, 193, 0.3);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(135deg);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.love-letter-container {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.love-letter-text {
+  font-size: 3rem;
+  color: #ff6b9d;
+  font-weight: 700;
+  margin-bottom: 4rem;
+  text-shadow: 2px 2px 4px rgba(255, 107, 157, 0.2);
+  letter-spacing: 3px;
+  line-height: 1.2;
+}
+
+.envelope-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+}
+
+.envelope {
+  position: relative;
+  width: 300px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.envelope-front {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ffeef5 0%, #ffd6e8 100%);
+  border: 2px solid #ffb6c1;
+  border-radius: 8px;
+  box-shadow: 
+    0 10px 30px rgba(255, 107, 157, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.envelope-heart {
+  font-size: 2.5rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(2px 2px 4px rgba(255, 107, 157, 0.3));
+  color: #ff4444;
+}
+
+.envelope-stamp {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  background: #ff4444;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+}
+
+.envelope-stamp::after {
+  content: '❤️';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+}
+
+.envelope-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(135deg, #ffeef5 0%, #ffd6e8 100%);
+  border: 2px solid #ffb6c1;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  transform-origin: top;
+  transform: rotateX(-5deg);
+  z-index: 4;
+  box-shadow: 0 -5px 15px rgba(255, 107, 157, 0.2);
+}
+
+.envelope-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #ffd6e8 0%, #ffc0cb 100%);
+  border: 2px solid #ffb6c1;
+  border-radius: 8px;
+  z-index: 1;
+  box-shadow: 0 5px 20px rgba(255, 107, 157, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .love-letter-text {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .envelope {
+    width: 250px;
+    height: 167px;
+  }
+  
+  .envelope-heart {
+    font-size: 2.5rem;
+  }
+}
+
