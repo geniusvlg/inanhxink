@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../App.css';
 import TemplateSelector from '../components/TemplateSelector';
 import QrNameInput from '../components/QrNameInput';
@@ -6,6 +6,7 @@ import ContentEditor from '../components/ContentEditor';
 import MusicOption from '../components/MusicOption';
 import TipSelector from '../components/TipSelector';
 import VoucherInput from '../components/VoucherInput';
+import ImageUploader from '../components/ImageUploader';
 import { type Template } from '../data/mockTemplates';
 
 interface Voucher {
@@ -29,6 +30,26 @@ function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderResult, setOrderResult] = useState<unknown>(null);
   const [error, setError] = useState('');
+  const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
+
+  // Auto-scroll based on selected template
+  useEffect(() => {
+    if (selectedTemplate?.id === 'echoheart') {
+      setTimeout(() => {
+        const contentEditor = document.querySelector('.content-editor textarea, .content-editor');
+        if (contentEditor) {
+          contentEditor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+    } else if (selectedTemplate?.id === 'heartmosaic') {
+      setTimeout(() => {
+        const imageUploaderHeader = document.querySelector('.image-uploader-header');
+        if (imageUploaderHeader) {
+          imageUploaderHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 300);
+    }
+  }, [selectedTemplate]);
 
   const calculateTotal = () => {
     let subtotal = selectedTemplate ? selectedTemplate.price : 0;
@@ -90,6 +111,7 @@ function OrderPage() {
       setVoucher(null);
       setOrderResult(null);
       setError('');
+      setUploadedImages([]);
     }
   };
 
@@ -149,6 +171,23 @@ function OrderPage() {
           value={content}
           onChange={setContent}
         />
+        
+        {selectedTemplate?.id === 'heartmosaic' && (
+          <ImageUploader
+            images={uploadedImages}
+            onImagesChange={setUploadedImages}
+            maxImages={9}
+            onImageSelected={() => {
+              // Scroll to the next input section (Music Option)
+              setTimeout(() => {
+                const musicSection = document.querySelector('.music-option');
+                if (musicSection) {
+                  musicSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 200);
+            }}
+          />
+        )}
         
         <MusicOption
           musicAdded={musicAdded}
