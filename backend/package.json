@@ -8,6 +8,8 @@
     "dev": "nodemon --exec ts-node server.ts",
     "db:init": "ts-node database/init.ts",
     "db:migrate": "ts-node database/migrate_add_music.ts",
+    "db:migrate-subdomain": "ts-node database/migrate_subdomain.ts",
+    "db:docker": "docker run -d --name inanhxink-pg -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_DB=mydb -e POSTGRES_USER=postgres -p 5432:5432 -v \"$(pwd)/../postgres-data:/var/lib/postgresql/data\" postgres:15",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,9 +17,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/multer": "^2.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "multer": "^2.0.2",
     "pg": "^8.18.0"
   },
   "devDependencies": {

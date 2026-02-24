@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Merry Christmas - Chúc mừng Giáng Sinh</title>
+    <meta name="description" content="Bạn thật may mắn khi nhận được món quà này. Chúc bạn và gia đình luôn luôn hạnh phúc 🎄✨">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ff69b4">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stylebutton.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Great+Vibes&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        .snowflake-emoji {
+            position: absolute;
+            font-size: 1.5em;
+            user-select: none;
+            pointer-events: none;
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            animation: fall-emoji linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes fall-emoji {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(calc(100vh + 100px)) translateX(var(--sway)) rotate(360deg);
+                opacity: 0.3;
+            }
+        }
+
+        #snowCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            display: none;
+        }
+
+        #snowflakesContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            display: none;
+        }
+
+        .threejs-hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Đang tải dữ liệu...</div>
+            <div class="loading-subtitle">Vui lòng chờ trong giây lát</div>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div class="error-screen" id="errorScreen" style="display: none;">
+        <div class="error-container">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">Không tìm thấy ID</div>
+            <div class="error-message">Vui lòng kiểm tra lại đường link hoặc liên hệ người gửi</div>
+            <button class="error-button" onclick="location.reload()">Thử lại</button>
+        </div>
+    </div>
+
+    <!-- Start Button -->
+    <div id="startButtonContainer" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
+        <button id="startButton">
+            <div class="overflow">
+                <div class="text-container">Start</div>
+                <svg id="christmas-tree" viewBox="0 0 512 512" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" class="christmas-tree christmas-tree-1">
+                    <path d="M285 406.03v88.47a10.004 10.004 0 0 1-10 10h-38a10.004 10.004 0 0 1-10-10v-88.47Z" fill="#d88a55"></path>
+                    <path d="M285 406.03v69.46l-58-59.1v-10.36h58z" fill="#c57a44"></path>
+                    <circle fill="#fed402" r="22.5" cy="468" cx="370"></circle>
+                    <path d="M383.398 449.925a22.5 22.5 0 0 1-34.796 25.032 22.5 22.5 0 1 0 34.796-25.032Z" fill="#fac600"></path>
+                    <circle fill="#fed402" r="22.5" cy="468" cx="142"></circle>
+                    <path d="M436.67 396.93a819.475 819.475 0 0 1-178.17 20.09 820.131 820.131 0 0 1-164.76-16.15c-6.41-1.29-12.56-2.62-18.45-3.95a8.538 8.538 0 0 1-4.1-2.15 5.655 5.655 0 0 1-.42-.43c0-.01 0-.01-.01-.01a7.541 7.541 0 0 1-.69-.94 9.171 9.171 0 0 1-.52-1.04c-.08-.22-.15-.43-.21-.65a.076.076 0 0 0-.01-.04c-.04-.18-.08-.37-.11-.56a.22.22 0 0 1-.01-.08c-.02-.14-.04-.28-.05-.42a6.602 6.602 0 0 1 0-.89 6.22 6.22 0 0 1 1.75-3.86l.84-.9L240.5 204.21l8.92-9.55a7.823 7.823 0 0 1 .66-.63 9.555 9.555 0 0 1 11.84 0 7.832 7.832 0 0 1 .66.63l106.03 113.56 10.32 11.05 62.16 66.58c3.69 3.96 1.36 9.77-4.42 11.08Z" fill="#46cc8d"></path>
+                    <path d="M436.67 396.93a819.475 819.475 0 0 1-178.17 20.09 820.131 820.131 0 0 1-164.76-16.15c-6.41-1.29-12.56-2.62-18.45-3.95a8.538 8.538 0 0 1-4.1-2.15 5.655 5.655 0 0 1-.42-.43c0-.01 0-.01-.01-.01a7.541 7.541 0 0 1-.69-.94 9.171 9.171 0 0 1-.52-1.04c-.08-.22-.15-.43-.21-.65a.076.076 0 0 0-.01-.04c-.04-.18-.08-.37-.11-.56a.22.22 0 0 1-.01-.08c-.02-.14-.04-.28-.05-.42a6.602 6.602 0 0 1 0-.89 617.144 617.144 0 0 0 67.78 10.19 576.568 576.568 0 0 0 76.56 2.12c60.36-2.37 124.42-16.24 158.32-24.61a14.913 14.913 0 0 0 7.31-24.66l-19.78-21.2-10.5-11.24-108.35-116.1 8.92-9.55a7.823 7.823 0 0 1 .66-.63 8.98 8.98 0 0 1 11.84 0 7.832 7.832 0 0 1 .66.63l106.03 113.56 10.32 11.05 62.16 66.58c3.69 3.96 1.36 9.77-4.42 11.08Z" fill="#00c27a"></path>
+                    <path d="M409.45 301.52a695.395 695.395 0 0 1-151.32 17.06 695.321 695.321 0 0 1-155.63-17.07c-4.89-1.11-6.84-6.05-3.72-9.4l62.83-67.29 88.8-95.11a7.993 7.993 0 0 1 11.18 0l88.79 95.11 62.83 67.29c3.14 3.36 1.16 8.3-3.76 9.41Z" fill="#46cc8d"></path>
+                    <path d="M259.605 9.741 269.49 29.771a4.02 4.02 0 0 0 3.027 2.199l22.104 3.212a4.02 4.02 0 0 1 2.228 6.857l-15.994 15.59a4.02 4.02 0 0 0-1.157 3.559l3.776 22.014a4.02 4.02 0 0 1-5.833 4.238l-19.77-10.393a4.02 4.02 0 0 0-3.742 0L234.36 87.44a4.02 4.02 0 0 1-5.833-4.238l3.776-22.014a4.02 4.02 0 0 0-1.157-3.558l-15.994-15.591a4.02 4.02 0 0 1 2.228-6.857l22.104-3.212a4.02 4.02 0 0 0 3.027-2.2l9.885-20.029a4.02 4.02 0 0 1 7.21 0Z" fill="#fac600"></path>
+                </svg>
+                <svg id="christmas-tree" viewBox="0 0 512 512" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" class="christmas-tree christmas-tree-2">
+                    <path d="M285 406.03v88.47a10.004 10.004 0 0 1-10 10h-38a10.004 10.004 0 0 1-10-10v-88.47Z" fill="#d88a55"></path>
+                    <path d="M285 406.03v69.46l-58-59.1v-10.36h58z" fill="#c57a44"></path>
+                    <circle fill="#fed402" r="22.5" cy="468" cx="370"></circle>
+                    <path d="M383.398 449.925a22.5 22.5 0 0 1-34.796 25.032 22.5 22.5 0 1 0 34.796-25.032Z" fill="#fac600"></path>
+                    <circle fill="#fed402" r="22.5" cy="468" cx="142"></circle>
+                    <path d="M436.67 396.93a819.475 819.475 0 0 1-178.17 20.09 820.131 820.131 0 0 1-164.76-16.15c-6.41-1.29-12.56-2.62-18.45-3.95a8.538 8.538 0 0 1-4.1-2.15 5.655 5.655 0 0 1-.42-.43c0-.01 0-.01-.01-.01a7.541 7.541 0 0 1-.69-.94 9.171 9.171 0 0 1-.52-1.04c-.08-.22-.15-.43-.21-.65a.076.076 0 0 0-.01-.04c-.04-.18-.08-.37-.11-.56a.22.22 0 0 1-.01-.08c-.02-.14-.04-.28-.05-.42a6.602 6.602 0 0 1 0-.89 6.22 6.22 0 0 1 1.75-3.86l.84-.9L240.5 204.21l8.92-9.55a7.823 7.823 0 0 1 .66-.63 9.555 9.555 0 0 1 11.84 0 7.832 7.832 0 0 1 .66.63l106.03 113.56 10.32 11.05 62.16 66.58c3.69 3.96 1.36 9.77-4.42 11.08Z" fill="#46cc8d"></path>
+                    <path d="M259.605 9.741 269.49 29.771a4.02 4.02 0 0 0 3.027 2.199l22.104 3.212a4.02 4.02 0 0 1 2.228 6.857l-15.994 15.59a4.02 4.02 0 0 0-1.157 3.559l3.776 22.014a4.02 4.02 0 0 1-5.833 4.238l-19.77-10.393a4.02 4.02 0 0 0-3.742 0L234.36 87.44a4.02 4.02 0 0 1-5.833-4.238l3.776-22.014a4.02 4.02 0 0 0-1.157-3.558l-15.994-15.591a4.02 4.02 0 0 1 2.228-6.857l22.104-3.212a4.02 4.02 0 0 0 3.027-2.2l9.885-20.029a4.02 4.02 0 0 1 7.21 0Z" fill="#fac600"></path>
+                </svg>
+                <div class="cloud-container">
+                    <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 50.000000 50.000000" height="20px" width="20px" xmlns="http://www.w3.org/2000/svg" version="1.0" class="cloud">
+                        <g stroke="none" fill="#fff" transform="translate(0.000000,50.000000) scale(0.100000,-0.100000)">
+                            <path d="M204 378 c-28 -25 -44 -32 -69 -29 -26 2 -37 -4 -54 -26 -12 -15 -35 -43 -51 -60 -32 -35 -37 -66 -18 -108 22 -49 51 -55 248 -55 l182 0 29 29 c46 46 33 119 -26 141 -15 6 -25 20 -29 44 -4 22 -19 46 -42 65 -29 26 -43 31 -84 31 -41 0 -55 -5 -86 -32z"></path>
+                        </g>
+                    </svg>
+                    <svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 50.000000 50.000000" height="20px" width="20px" xmlns="http://www.w3.org/2000/svg" version="1.0" class="cloud">
+                        <g stroke="none" fill="#fff" transform="translate(0.000000,50.000000) scale(0.100000,-0.100000)">
+                            <path d="M204 378 c-28 -25 -44 -32 -69 -29 -26 2 -37 -4 -54 -26 -12 -15 -35 -43 -51 -60 -32 -35 -37 -66 -18 -108 22 -49 51 -55 248 -55 l182 0 29 29 c46 46 33 119 -26 141 -15 6 -25 20 -29 44 -4 22 -19 46 -42 65 -29 26 -43 31 -84 31 -41 0 -55 -5 -86 -32z"></path>
+                        </g>
+                    </svg>
+                </div>
+                <svg height="48px" width="48px" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="sun">
+                    <path d="M11 11H37V37H11z" fill="#FF9800"></path>
+                    <path transform="rotate(-45.001 24 24)" d="M11.272 11.272H36.728V36.728H11.272z" fill="#FF9800"></path>
+                    <path d="M13,24c0,6.077,4.923,11,11,11c6.076,0,11-4.923,11-11s-4.924-11-11-11C17.923,13,13,17.923,13,24" fill="#FFEB3B"></path>
+                </svg>
+            </div>
+            <div class="snowflake-container">
+                <svg xml:space="preserve" viewBox="0 0 298 298" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" id="Capa_1" version="1.1" width="20px" height="20px" fill="#87ceeb" class="snowflake">
+                    <g><path d="M289.5,140.5h-24.606l11.031-11.03c2.93-2.929,2.93-7.678,0.001-10.606c-2.929-2.929-7.678-2.93-10.606-0.001 L243.681,140.5h-36.369l16.182-17.392c2.821-3.032,2.65-7.777-0.383-10.6c-1.243-1.156-2.775-1.802-4.345-1.961 c-0.952-0.047-21.495-0.003-21.495-0.003L221.315,86.5H251.5c4.143,0,7.5-3.357,7.5-7.5s-3.357-7.5-7.5-7.5h-15.186l17.69-17.69 c2.929-2.93,2.929-7.678,0-10.608c-2.93-2.928-7.844-2.928-10.774,0L225.167,61.1V45.5c0-4.143-3.357-7.5-7.5-7.5 c-4.143,0-7.5,3.357-7.5,7.5v30.601l-24.837,25.004l-0.415-22.645c-0.001-0.036,0.035-0.07,0.034-0.106 c-0.035-1.824-0.704-3.641-2.07-5.059c-2.873-2.982-7.778-3.07-10.761-0.194l-15.951,15.226V53.107l21.47-21.304 c2.929-2.93,3.012-7.678,0.083-10.607c-2.93-2.928-7.803-2.928-10.732,0l-10.821,10.696V7.5c0-4.143-3.357-7.5-7.5-7.5 c-4.143,0-7.5,3.357-7.5,7.5v24.393l-10.53-10.696c-2.93-2.928-7.594-2.928-10.524,0c-2.929,2.93-3.054,7.678-0.125,10.607 l21.179,21.304v35.421l-16.176-15.475c-3.009-2.847-7.67-2.718-10.52,0.289c-1.075,1.136-1.683,2.52-1.914,3.955 c-0.142,0.583-0.203,1.188-0.201,1.811l-0.088,21.229l-25.1-24.944V45.5c0-4.143-3.357-7.5-7.5-7.5s-7.5,3.357-7.5,7.5v14.894 L55.142,43.202c-2.93-2.928-7.594-2.928-10.524,0c-2.929,2.93-2.887,7.678,0.042,10.608L62.392,71.5H46.5 c-4.143,0-7.5,3.357-7.5,7.5s3.357,7.5,7.5,7.5h30.892l24.744,24.744l-23.057,0.831c-4.021,0.146-7.524,3.435-7.563,7.418 c-0.004,0.112-0.349,0.225-0.349,0.337c0,0.003,0,0.007,0,0.011c0,0.008,0.345,0.017,0.345,0.024 c0.045,1.875,0.955,3.736,2.395,5.158L89.748,140.5H55.025l-21.638-21.638c-2.93-2.928-7.678-2.928-10.607,0 c-2.929,2.93-2.929,7.678,0,10.607l11.03,11.03H8.5c-4.143,0-7.5,3.357-7.5,7.5s3.357,7.5,7.5,7.5h25.02L22.78,166.239 c-2.929,2.93-2.929,7.678,0,10.607c1.465,1.464,3.385,2.196,5.304,2.196c1.919,0,3.839-0.732,5.304-2.196L54.734,155.5h35.027 l-15.253,16.394c-2.821,3.032-2.65,7.777,0.383,10.6c1.444,1.344,3.277,2.009,5.106,2.009c0.034,0,0.068-0.005,0.103-0.005 c0.022,0,0.044,0.003,0.065,0.003c0.018,0,0.037,0,0.055,0l22.005-0.125L77.101,209.5H46.5c-4.143,0-7.5,3.357-7.5,7.5 s3.357,7.5,7.5,7.5h15.601l-17.399,17.399c-2.929,2.93-2.929,7.678,0,10.607c1.465,1.464,3.385,2.196,5.304,2.196 c1.919,0,3.672-0.732,5.137-2.196l17.025-17.191V250.5c0,4.143,3.357,7.5,7.5,7.5s7.5-3.357,7.5-7.5v-30.185l25.445-25.278 l0.977,24.39c0.148,4.046,3.517,7.306,7.532,7.225c1.364-0.027,2.844-0.465,4.312-1.543c1.063-0.781,15.734-15.812,15.734-15.812 v35.385l-20.971,21.137c-2.93,2.929-2.846,7.678,0.082,10.607c1.465,1.465,3.425,2.197,5.345,2.197 c1.919,0,3.693-0.732,5.157-2.196l10.387-10.532V290.5c0,4.143,3.357,7.5,7.5,7.5c4.143,0,7.5-3.357,7.5-7.5v-25.31l11.404,11.237 c1.465,1.464,3.468,2.196,5.387,2.196c1.919,0,3.881-0.732,5.345-2.196c2.929-2.93,2.783-7.678-0.146-10.607l-21.99-21.845v-35.7 c0,0,13.729,12.896,15.896,14.976c2.167,2.08,3.942,3.25,6.525,3.25c0.015,0,0.03,0,0.046,0c4.142,0,7.48-3.604,7.455-7.746 l-0.306-23.696l24.384,24.551V250.5c0,4.143,3.357,7.5,7.5,7.5c4.143,0,7.5-3.357,7.5-7.5v-15.891l18.064,17.897 c1.465,1.464,3.467,2.196,5.387,2.196c1.919,0,3.88-0.732,5.345-2.196c2.929-2.93,2.95-7.678,0.021-10.607L236.605,224.5H251.5 c4.143,0,7.5-3.357,7.5-7.5s-3.357-7.5-7.5-7.5h-29.894l-25.742-25.742l23.059-0.831c0.082-0.003,0.162-0.016,0.243-0.021 c0.03-0.002,0.06-0.005,0.09-0.008c3.977-0.319,7.037-3.709,6.892-7.736c-0.087-2.424-1.32-4.531-3.155-5.837L209.138,155.5h34.835 l21.345,21.346c1.465,1.465,3.384,2.197,5.304,2.197c1.919,0,3.839-0.732,5.303-2.196c2.93-2.929,2.93-7.678,0.001-10.606 l-10.74-10.74H289.5c4.143,0,7.5-3.357,7.5-7.5S293.643,140.5,289.5,140.5z"></path></g>
+                </svg>
+            </div>
+            <svg id="santa" viewBox="0 0 512 512" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" class="santa">
+                <path d="M430.47 234.67A36.27 36.27 0 01441.1 218c1.16-1 2.36-2 3.5-3 .12-.15.33-.39.64-.71a5.92 5.92 0 00.57-1c2.07-4.68 7.37-7.73 12-9.24l.36-.09C447 174.16 446.59 154 446.59 143.49c0-11.2 7.15-39.42 2.44-52.11s-28.69-35.34-34.5-39S414.42 17.8 365.6 10c-71.19-11.32-130.47 26.3-130.47 26.3 33.12-2.92 108.38 35.85 134.24 58.76s29 90.76 33.1 119 26.95 25 26.95 25a7.64 7.64 0 01.34-.71A16.26 16.26 0 01430.47 234.67z" fill="#e21921"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- SVG cây thông (style.js) - ẩn ban đầu -->
+    <svg class="mainSVG" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 600" style="display: none;">
+      <defs>
+        <circle id="circ" class="particle" cx="0" cy="0" r="1" />
+        <polygon id="star" class="particle" points="4.55,0 5.95,2.85 9.1,3.3 6.82,5.52 7.36,8.65 4.55,7.17 1.74,8.65 2.27,5.52 0,3.3 3.14,2.85 " />
+        <polygon id="cross" class="particle" points="4,3.5 2.5,2 4,0.5 3.5,0 2,1.5 0.5,0 0,0.5 1.5,2 0,3.5 0.5,4 2,2.5 3.5,4 " />
+        <path id="heart" class="particle" d="M2.9,0C2.53,0,2.2,0.18,2,0.47C1.8,0.18,1.47,0,1.1,0C0.49,0,0,0.49,0,1.1C0,2.6,1.56,4,2,4s2-1.4,2-2.9C4,0.49,3.51,0,2.9,0z" />
+        <radialGradient id="grad" cx="3" cy="3" r="6" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style="stop-color:red" />
+          <stop offset="0.4" style="stop-color:#334673" />
+          <stop offset="0.6" style="stop-color:#EDDDC4" />
+          <stop offset="0.9" style="stop-color:#FEE8C7" />
+          <stop offset="1" style="stop-color:red" />
+        </radialGradient>
+        <radialGradient id="dotGrad" cx="0" cy="0" r="50" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style="stop-color:#FFFFFF;stop-opacity:1" />
+          <stop offset="0.1" style="stop-color:#0867C7;stop-opacity:0.6" />
+          <stop offset="1" style="stop-color:#081029;stop-opacity:0" />
+        </radialGradient>
+        <mask id="treePathMask">
+          <path class="treePathMask" fill="none" stroke-width="18" stroke="#FFF" d="M252.9,447.9c0,0-30.8-21.6,33.9-44.7c64.7-23.1,46.2-37,33.9-41.6c-12.3-4.6-59.3-11.6-42.4-28.5s114-52.4,81.7-66.2c-32.4-13.9-58.5-10.8-35.4-29.3s66.2-101.7,70.9-115.6c4.4-13.2,16.9-18.5,24.7,0c7.7,18.5,44.7,100.1,67.8,115.6c23.1,15.4-10.8,21.6-26.2,24.7c-15.4,3.1-20,33.9,33.9,49.3c53.9,15.4,47.8,40.1,27.7,44.7c-20,4.6-63.2,4.6-27.7,32.4s98.6,21.6,61.6,60.1" />
+        </mask>
+        <mask id="treeBottomMask">
+          <path class="treeBottomMask" stroke="#FFF" stroke-width="8" d="M207.5,484.1c0,0,58.5-43.1,211.1-3.1s191-16.9,191-16.9" />
+        </mask>
+        <mask id="treePotMask">
+          <path class="treePotMask" stroke="#FFF" stroke-width="8" d="M374.3,502.5c0,0-4.6,20,7.7,29.3c12.3,9.2,40.1,7.7,50.8,0s10.8-23.1,10.8-29.3" />
+        </mask>
+        <filter id="glow" x="-150%" y="-150%" width="280%" height="280%">
+          <feOffset result="offOut" in="SourceGraphic" dx="0" dy="0" />
+          <feGaussianBlur in="offOut" stdDeviation="16" result="blur" />
+          <feComponentTransfer>
+            <feFuncR type="discrete" tableValues="0.8" />
+            <feFuncG type="discrete" tableValues="0.3" />
+            <feFuncB type="discrete" tableValues="0.2" />
+          </feComponentTransfer>
+          <feComposite in="SourceGraphic" operator="over" />
+        </filter>
+      </defs>
+      <g class="whole">
+        <g class="pContainer"></g>
+        <g class="tree" mask="url(#treePathMask)">
+          <path d="M252.95,447.85a20.43,20.43,0,0,1-5.64-6.24,14,14,0,0,1-1.91-8.22,16.93,16.93,0,0,1,3.06-8,33.16,33.16,0,0,1,5.79-6.28A74.78,74.78,0,0,1,268.54,410a163.48,163.48,0,0,1,15.52-6.84c10.54-3.93,21-8.07,30.72-13.46a80.83,80.83,0,0,0,7-4.37,37.51,37.51,0,0,0,6.13-5.24c1.75-1.92,3.14-4.18,3.25-6.35s-1.12-4.18-3-5.81a25,25,0,0,0-6.72-3.91,61.25,61.25,0,0,0-7.8-2.42c-5.41-1.4-10.91-2.72-16.38-4.32a84.17,84.17,0,0,1-16.2-6.19,28.26,28.26,0,0,1-3.86-2.5,15.06,15.06,0,0,1-3.44-3.63,9,9,0,0,1-1.51-5.47,10.22,10.22,0,0,1,.61-2.78,12.88,12.88,0,0,1,1.2-2.34,26.73,26.73,0,0,1,6.58-6.56c2.35-1.76,4.76-3.33,7.19-4.84,4.87-3,9.82-5.75,14.77-8.46,9.91-5.4,19.88-10.59,29.63-16.08,4.87-2.75,9.68-5.56,14.33-8.56A81.88,81.88,0,0,0,359.45,280a23,23,0,0,0,2.41-2.79,8.36,8.36,0,0,0,1.35-2.65,2.13,2.13,0,0,0-.17-1.7,5.53,5.53,0,0,0-1.88-1.77,13.15,13.15,0,0,0-1.49-.83c-.52-.26-1.1-.49-1.76-.77-1.27-.53-2.55-1-3.83-1.53q-3.86-1.48-7.8-2.77c-5.26-1.74-10.6-3.23-16-4.79-2.72-.79-5.47-1.58-8.29-2.61a31.74,31.74,0,0,1-4.33-1.92,14.39,14.39,0,0,1-2.29-1.53,8.74,8.74,0,0,1-2.22-2.66,7.2,7.2,0,0,1-.78-4,9.09,9.09,0,0,1,1-3.24,18.93,18.93,0,0,1,3-4.21,44.88,44.88,0,0,1,3.29-3.19c.56-.5,1.12-1,1.68-1.45l1.61-1.33a84,84,0,0,0,10.88-11.88,326.2,326.2,0,0,0,18.79-27.53c5.88-9.5,11.48-19.19,16.89-29S380.1,146.16,385,136.13c1.22-2.51,2.42-5,3.57-7.54s2.29-5.09,3.14-7.45l.36-1c.14-.38.26-.75.42-1.12.29-.75.64-1.48,1-2.21a25.51,25.51,0,0,1,2.65-4.21,19.15,19.15,0,0,1,3.76-3.69,13.74,13.74,0,0,1,5.24-2.42,12.11,12.11,0,0,1,6.12.25,14.59,14.59,0,0,1,5,2.79,20.59,20.59,0,0,1,3.47,3.79,30.33,30.33,0,0,1,2.5,4.1c.35.7.7,1.39,1,2.1l.46,1.05.4,1,1.64,3.84,3.39,7.67q6.88,15.32,14.36,30.37c5,10,10.18,19.94,15.69,29.65a274.94,274.94,0,0,0,17.9,28A73.36,73.36,0,0,0,487.74,233c.49.4,1,.8,1.48,1.15l1.7,1.19a35,35,0,0,1,3.66,3,17.84,17.84,0,0,1,3.32,4.08,10.83,10.83,0,0,1,1.14,2.94,8.54,8.54,0,0,1,0,3.54,10.27,10.27,0,0,1-3.22,5.39,20.71,20.71,0,0,1-4.15,2.91,49,49,0,0,1-8.4,3.46,154,154,0,0,1-16.77,4.09l-4.15.81a9.18,9.18,0,0,0-2.87,1.08,9.51,9.51,0,0,0-4,4.7,12.55,12.55,0,0,0-.67,6.58,19.5,19.5,0,0,0,2.46,6.74A37.19,37.19,0,0,0,468,295.75a75,75,0,0,0,14.14,7.86,129.67,129.67,0,0,0,15.58,5.49A141.4,141.4,0,0,1,513.88,315a75,75,0,0,1,15.19,8.65,37.29,37.29,0,0,1,6.55,6.24,21.05,21.05,0,0,1,4.31,8.49,14.43,14.43,0,0,1-1.24,9.88,18.08,18.08,0,0,1-6.66,6.94,26.74,26.74,0,0,1-8.56,3.33c-2.84.61-5.65,1.06-8.44,1.49-5.58.86-11.13,1.61-16.52,2.77a53.48,53.48,0,0,0-7.81,2.22c-2.43.94-4.81,2.22-6,3.93a4.34,4.34,0,0,0-.77,2.82,8.45,8.45,0,0,0,1,3.29,28,28,0,0,0,4.82,6.25,80.74,80.74,0,0,0,12.81,10.4c9.29,6,19.72,10.29,30.24,14.17,5.27,1.95,10.59,3.79,15.85,5.86,2.63,1,5.24,2.14,7.79,3.39a37.94,37.94,0,0,1,7.28,4.51,11.9,11.9,0,0,1,3.63,15.57,34.68,34.68,0,0,1-4.53,7.16,77.45,77.45,0,0,1-5.64,6.29,77.31,77.31,0,0,0,5.41-6.46,34.27,34.27,0,0,0,4.22-7.21,12.64,12.64,0,0,0,.88-8,12.44,12.44,0,0,0-4.71-6.43,37.71,37.71,0,0,0-7.15-4.16c-2.53-1.16-5.13-2.18-7.76-3.14-5.26-1.91-10.62-3.62-16-5.44-10.65-3.63-21.34-7.64-31.11-13.64a83.84,83.84,0,0,1-13.61-10.49,31.27,31.27,0,0,1-5.6-6.94,12,12,0,0,1-1.55-4.68,8.17,8.17,0,0,1,.19-2.7,8.56,8.56,0,0,1,1.09-2.5,12.1,12.1,0,0,1,3.6-3.44,24.27,24.27,0,0,1,4.08-2.08,57.3,57.3,0,0,1,8.36-2.56c5.59-1.31,11.19-2.17,16.71-3.12,2.76-.48,5.5-1,8.15-1.59a22.1,22.1,0,0,0,7-2.87,13.3,13.3,0,0,0,4.82-5.15,9.42,9.42,0,0,0,.69-6.53,16,16,0,0,0-3.42-6.33,33.25,33.25,0,0,0-5.73-5.27,69.74,69.74,0,0,0-14.19-7.8,135.81,135.81,0,0,0-15.61-5.42,135.53,135.53,0,0,1-16.3-5.51,81,81,0,0,1-15.41-8.31,43.39,43.39,0,0,1-12.6-13,25.53,25.53,0,0,1-3.34-9,19.13,19.13,0,0,1,1-10,16.17,16.17,0,0,1,6.69-8,15.88,15.88,0,0,1,5-1.93l4.13-.84a147.75,147.75,0,0,0,16-4,42.41,42.41,0,0,0,7.17-3,14,14,0,0,0,2.74-1.92,3.42,3.42,0,0,0,1.12-1.68,2.41,2.41,0,0,0-.43-1.61,11.07,11.07,0,0,0-2-2.4,28,28,0,0,0-2.92-2.31l-1.76-1.22c-.65-.46-1.26-.94-1.86-1.43a59,59,0,0,1-6.43-6.27c-2-2.19-3.79-4.44-5.54-6.74a267,267,0,0,1-18.55-28.74c-5.63-9.85-10.89-19.86-16-30s-9.91-20.31-14.57-30.61l-3.45-7.76L417,124.48l-.42-1-.39-.88c-.25-.59-.54-1.15-.82-1.71a22.74,22.74,0,0,0-1.89-3.09,13,13,0,0,0-2.2-2.42,7,7,0,0,0-2.31-1.33,4.49,4.49,0,0,0-2.22-.09,8.55,8.55,0,0,0-4.59,3.32,17.85,17.85,0,0,0-1.84,2.92c-.26.54-.51,1.07-.73,1.64-.12.27-.22.56-.32.85l-.35,1c-1.06,2.93-2.23,5.47-3.42,8.1s-2.42,5.16-3.67,7.7c-5,10.18-10.29,20.16-15.77,30.05s-11.17,19.66-17.16,29.28a310.2,310.2,0,0,1-19.39,28.11,90.46,90.46,0,0,1-12,12.85l-1.65,1.35c-.52.43-1,.85-1.53,1.29a38,38,0,0,0-2.79,2.65,12.42,12.42,0,0,0-1.94,2.57,2.33,2.33,0,0,0-.28.76c0,.11,0,0,0,.09a4.57,4.57,0,0,0,1.7,1.35,25.15,25.15,0,0,0,3.36,1.51c2.46.92,5.11,1.72,7.79,2.52,5.36,1.58,10.84,3.16,16.25,5q4.06,1.37,8.08,2.94c1.34.53,2.67,1.07,4,1.63.64.27,1.36.57,2.1.94a19.66,19.66,0,0,1,2.18,1.24,11.85,11.85,0,0,1,4,4.13,8.64,8.64,0,0,1,1,3.24,9.11,9.11,0,0,1-.27,3.23,14.48,14.48,0,0,1-2.42,4.85,29.32,29.32,0,0,1-3.14,3.56,87.46,87.46,0,0,1-14,10.47c-4.85,3-9.79,5.84-14.76,8.55-9.94,5.42-20,10.49-29.91,15.72-5,2.62-9.88,5.28-14.63,8.12-2.37,1.42-4.7,2.89-6.88,4.46a22.06,22.06,0,0,0-5.45,5.14,8,8,0,0,0-.76,1.39,5.36,5.36,0,0,0-.33,1.32,4.1,4.1,0,0,0,.69,2.53,15.62,15.62,0,0,0,5.49,4.62A80.14,80.14,0,0,0,298.56,353c5.31,1.66,10.73,3.06,16.18,4.58a64.81,64.81,0,0,1,8.26,2.74,27.74,27.74,0,0,1,7.69,4.74,13.65,13.65,0,0,1,3,3.81,9.27,9.27,0,0,1,1,5,11.14,11.14,0,0,1-1.54,4.7,19.09,19.09,0,0,1-2.8,3.67,40.6,40.6,0,0,1-6.81,5.54,83.78,83.78,0,0,1-7.41,4.35c-10.11,5.26-20.76,9.16-31.39,12.82a161.69,161.69,0,0,0-15.52,6.37A74.57,74.57,0,0,0,255,420a32.17,32.17,0,0,0-5.82,5.89,16.21,16.21,0,0,0-3.19,7.52,13.61,13.61,0,0,0,1.59,8A20.29,20.29,0,0,0,252.95,447.85Z" fill="#cb9866" />
+          <path d="M207.5,484.06c7.05-5.11,15.14-8.66,23.34-11.63a177.13,177.13,0,0,1,25.29-6.88,263.65,263.65,0,0,1,52.22-4.49h3.28l3.28.09,6.56.19,6.55.39c2.18.13,4.37.26,6.54.48,4.35.39,8.71.74,13,1.28l6.51.75,6.49.91c17.3,2.5,34.41,6,51.36,10.19l12.62,3.2c4.18,1,8.34,2.18,12.55,3.06,8.38,2,16.82,3.63,25.29,5.13a353.5,353.5,0,0,0,51.17,5.47c17.11.32,34.36-.66,51-4.7a118.55,118.55,0,0,0,24.21-8.47,84.82,84.82,0,0,0,11.11-6.49,47.55,47.55,0,0,0,9.69-8.53,48.1,48.1,0,0,1-9,9.45,85.1,85.1,0,0,1-10.81,7.45,116.56,116.56,0,0,1-24.23,10.24,165.66,165.66,0,0,1-25.79,5.35,232.1,232.1,0,0,1-26.27,1.71c-8.77,0-17.55-.24-26.26-1.09-2.18-.2-4.37-.35-6.54-.6l-6.52-.78c-4.36-.46-8.67-1.19-13-1.82-8.64-1.37-17.22-3.09-25.74-5-4.28-.87-8.5-2-12.75-3l-12.62-3.11q-25.06-6.37-50.58-10.47a426.37,426.37,0,0,0-51.3-5.3c-8.59-.42-17.19-.29-25.78,0a240.1,240.1,0,0,0-25.68,2.24,186.57,186.57,0,0,0-25.27,5.19c-4.15,1.16-8.26,2.49-12.28,4.05-2,.79-4,1.6-6,2.52A50.82,50.82,0,0,0,207.5,484.06Z" fill="#cb9866" />
+          <path d="M374.32,502.55a48.15,48.15,0,0,0,1.24,14.35c1.15,4.52,3.29,8.64,6.49,11.35a18.5,18.5,0,0,0,5.51,3.14,39.06,39.06,0,0,0,6.41,1.82,65.78,65.78,0,0,0,13.68,1.12,72.9,72.9,0,0,0,13.72-1.44,44.51,44.51,0,0,0,6.46-1.85,17.75,17.75,0,0,0,5.51-3.15,25.45,25.45,0,0,0,7.24-11.17,52,52,0,0,0,1.9-6.91c.48-2.37.83-4.8,1.18-7.25a55.16,55.16,0,0,1,.64,7.42,40.11,40.11,0,0,1-.52,7.56,31.23,31.23,0,0,1-2.19,7.5,24.37,24.37,0,0,1-4.46,6.79,25.16,25.16,0,0,1-6.61,5,39.72,39.72,0,0,1-7.4,3A58.55,58.55,0,0,1,407.75,542a55,55,0,0,1-15.47-1.9,36.65,36.65,0,0,1-7.46-3,25.3,25.3,0,0,1-6.6-5,19.63,19.63,0,0,1-2.5-3.34,21.72,21.72,0,0,1-1.79-3.67,27.66,27.66,0,0,1-1.65-7.7,38.16,38.16,0,0,1,2-14.87Z" fill="#cb9866" />
+        </g>
+        <path class="treeBottomPath" stroke="none" fill="none" stroke-width="8" d="M207.5,484.1c0,0,58.5-43.1,211.1-3.1s191-16.9,191-16.9" />
+        <path class="treePath" fill="none" stroke="none" stroke-miterlimit="10" d="M252.95,447.85s-30.81-21.57,33.89-44.68,46.22-37,33.89-41.6-59.32-11.56-42.37-28.5,114-52.38,81.66-66.25S301.48,256,324.59,237.55,390.84,135.87,395.46,122c4.41-13.24,16.95-18.49,24.65,0s44.68,100.14,67.79,115.55-10.78,21.57-26.19,24.65-20,33.89,33.89,49.3,47.76,40.06,27.73,44.68-63.17,4.62-27.73,32.35,98.6,21.57,61.63,60.09" />
+        <path class="treeBottom" mask="url(#treeBottomMask)" d="M207.5,484.06c7.05-5.11,15.14-8.66,23.34-11.63a177.13,177.13,0,0,1,25.29-6.88,263.65,263.65,0,0,1,52.22-4.49h3.28l3.28.09,6.56.19,6.55.39c2.18.13,4.37.26,6.54.48,4.35.39,8.71.74,13,1.28l6.51.75,6.49.91c17.3,2.5,34.41,6,51.36,10.19l12.62,3.2c4.18,1,8.34,2.18,12.55,3.06,8.38,2,16.82,3.63,25.29,5.13a353.5,353.5,0,0,0,51.17,5.47c17.11.32,34.36-.66,51-4.7a118.55,118.55,0,0,0,24.21-8.47,84.82,84.82,0,0,0,11.11-6.49,47.55,47.55,0,0,0,9.69-8.53,48.1,48.1,0,0,1-9,9.45,85.1,85.1,0,0,1-10.81,7.45,116.56,116.56,0,0,1-24.23,10.24,165.66,165.66,0,0,1-25.79,5.35,232.1,232.1,0,0,1-26.27,1.71c-8.77,0-17.55-.24-26.26-1.09-2.18-.2-4.37-.35-6.54-.6l-6.52-.78c-4.36-.46-8.67-1.19-13-1.82-8.64-1.37-17.22-3.09-25.74-5-4.28-.87-8.5-2-12.75-3l-12.62-3.11q-25.06-6.37-50.58-10.47a426.37,426.37,0,0,0-51.3-5.3c-8.59-.42-17.19-.29-25.78,0a240.1,240.1,0,0,0-25.68,2.24,186.57,186.57,0,0,0-25.27,5.19c-4.15,1.16-8.26,2.49-12.28,4.05-2,.79-4,1.6-6,2.52A50.82,50.82,0,0,0,207.5,484.06Z" fill="#cb9866" />
+        <path class="treePot" mask="url(#treePotMask)" d="M374.32,502.55a48.15,48.15,0,0,0,1.24,14.35c1.15,4.52,3.29,8.64,6.49,11.35a18.5,18.5,0,0,0,5.51,3.14,39.06,39.06,0,0,0,6.41,1.82,65.78,65.78,0,0,0,13.68,1.12,72.9,72.9,0,0,0,13.72-1.44,44.51,44.51,0,0,0,6.46-1.85,17.75,17.75,0,0,0,5.51-3.15,25.45,25.45,0,0,0,7.24-11.17,52,52,0,0,0,1.9-6.91c.48-2.37.83-4.8,1.18-7.25a55.16,55.16,0,0,1,.64,7.42,40.11,40.11,0,0,1-.52,7.56,31.23,31.23,0,0,1-2.19,7.5,24.37,24.37,0,0,1-4.46,6.79,25.16,25.16,0,0,1-6.61,5,39.72,39.72,0,0,1-7.4,3A58.55,58.55,0,0,1,407.75,542a55,55,0,0,1-15.47-1.9,36.65,36.65,0,0,1-7.46-3,25.3,25.3,0,0,1-6.6-5,19.63,19.63,0,0,1-2.5-3.34,21.72,21.72,0,0,1-1.79-3.67,27.66,27.66,0,0,1-1.65-7.7,38.16,38.16,0,0,1,2-14.87Z" fill="#cb9866" />
+        <g class="treeStar">
+          <path class="treeStarOutline" opacity="0" d="M421,53.27c5,.83,10.08,1.52,15.15,2.13l3.8.45,1.9.21c.33,0,.6.06,1,.12a2.41,2.41,0,0,1,1.27.66,2.52,2.52,0,0,1,.56,2.76,3.42,3.42,0,0,1-.78,1.07l-.66.69-2.65,2.77c-1.78,1.83-3.54,3.68-5.35,5.48l-2.7,2.71L429.81,75l-.69.67-.34.33,0,0h0a.14.14,0,0,0,0-.08s0-.07,0,0l0,.24.07.47.57,3.78c.4,2.52.71,5,1.06,7.57l.94,7.59.22,1.9c0,.06,0,.19,0,.34a2.21,2.21,0,0,1,0,.43,2.72,2.72,0,0,1-.21.84,2.85,2.85,0,0,1-2.65,1.75,2.57,2.57,0,0,1-.82-.14,3.12,3.12,0,0,1-.65-.3l-1.64-1-6.58-3.91-6.63-3.81-3.34-1.86-.42-.23-.21-.12-.14-.07a1,1,0,0,0-.59,0,1.15,1.15,0,0,0-.31.12l-.43.22-.85.44c-2.27,1.17-4.54,2.31-6.79,3.52s-4.51,2.38-6.74,3.61l-3.36,1.83-.84.46a3.07,3.07,0,0,1-1.28.44,2.68,2.68,0,0,1-2.84-3l.15-1,.29-1.89.57-3.78,1.18-7.56,1.24-7.52a.13.13,0,0,0,0,.08l0,0-.1-.09-.17-.17-1.37-1.34-2.73-2.68-10.93-10.7-.34-.33a4,4,0,0,1-.64-.84,3.63,3.63,0,0,1-.43-2.12,3.68,3.68,0,0,1,2.64-3.17l.52-.11.25,0,.47-.06.95-.12,1.9-.25,7.58-1,7.6-.9,1.9-.23.95-.11c.24,0,.11,0,.09,0l-.09.05-.07.08,0,0,.09-.16.46-.84.91-1.68c2.41-4.5,4.95-8.92,7.51-13.34l1-1.66.48-.83.24-.41.13-.23a3.49,3.49,0,0,1,.22-.33,2.66,2.66,0,0,1,2.83-.9,2.52,2.52,0,0,1,1.26.84,2.85,2.85,0,0,1,.37.62l.18.44q1.45,3.54,3,7.06c1,2.36,2,4.68,3.06,7,.51,1.17,1.06,2.32,1.59,3.48l.8,1.74a2.12,2.12,0,0,0,.45.75A1.42,1.42,0,0,0,421,53.27Z" fill="#FFFCF9" />
+          <path d="M408.12,83.45l-17.78,8.94,3.72-19.55-14-14.15,19.74-2.5,9.13-17.68,8.48,18L437,59.73l-14.5,13.63,3,19.67Z" fill="#C89568" />
+        </g>
+        <circle class="sparkle" fill="url(#dotGrad)" cx="0" cy="0" r="50" />
+      </g>
+    </svg>
+
+    <canvas class="canvas"></canvas>
+
+    <!-- Book overlay -->
+    <div id="guideInfo" class="hidden">
+      <div class="card">
+        <div class="imgBox">
+          <div class="bark"></div>
+          <div class="card-cover">
+            <div class="cover-background"></div>
+            <div class="moon-container">
+                  <div class="cover-moon"></div>
+                  <img src="./assets/img/pinetree.png" alt="Pine Tree" class="cover-pinetree" />
+                  <img src="./assets/img/star.png" alt="Stars" class="cover-star" />
+                </div>
+                <img src="./assets/img/reindeer.png" alt="Reindeer" class="cover-reindeer" />
+                <img src="./assets/img/merrytext.png" alt="Merry" class="cover-merrytext" />
+                <img src="./assets/img/christmastext.png" alt="Christmas" class="cover-christmastext" />
+          </div>
+        </div>
+        <div class="details">
+          <div id="messageContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Background snowflakes -->
+    <canvas id="snowCanvas"></canvas>
+    <div id="snowflakesContainer"></div>
+
+    <!-- Background decorations -->
+    <div class="decor-light-left">
+        <img src="image/lightright.png" alt="Đèn Noel trái" />
+    </div>
+    <div class="decor-light-right">
+        <img src="image/lightleft.png" alt="Đèn Noel phải" />
+    </div>
+    <div class="decor-top-left">
+        <img src="image/backgroudtopleft.png" alt="Trang trí Noel trái trên" />
+    </div>
+    <div class="decor-top-right">
+        <img src="image/backgroudtopright.png" alt="Trang trí Noel phải trên" />
+    </div>
+    <div class="flying-rabbit-section">
+        <img src="image/onggianoel.png" alt="Thỏ bay" class="flying-rabbit">
+    </div>
+    <div class="woman-section">
+        <img src="image/nguoituyet.png" alt="Người phụ nữ truyền thống" class="woman">
+    </div>
+    <div class="mountain-section">
+        <img src="image/nuimoi.png" alt="Mountain" class="mountain">
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // ── Fetch personalised data from backend, then boot the page ─────────────
+        (function() {
+            function boot(apiData) {
+                window.apiData = apiData;
+                // Dispatch event so any deferred scripts know data is ready
+                document.dispatchEvent(new Event('apiDataReady'));
+            }
+
+            var _sub = window.__SUBDOMAIN__ || '';
+            fetch('/api/site-data' + (_sub ? '?sub=' + _sub : ''))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var td = (data && data.template_data) ? data.template_data : {};
+                    boot({
+                        messages: td.messages || ['Merry Christmas'],
+                        images:   td.imageUrls || [],
+                        song:     td.musicUrl  || '',
+                        letterContent: td.content || ''
+                    });
+                })
+                .catch(function() {
+                    // Fallback: empty data so page still loads
+                    boot({ messages: [], images: [], song: '', letterContent: '' });
+                });
+        })();
+        // ─────────────────────────────────────────────────────────────────────────
+
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isTablet = /ipad|android(?!.*mobile)|tablet/i.test(userAgent);
+        const isMobileDevice = /android|webos|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        window.isMobile = isMobileDevice || isTablet || window.innerWidth <= 1024;
+
+        // Scene setup (runs immediately so OrbitControls can bind)
+        const isMobile = window.isMobile;
+        const scene = new THREE.Scene();
+        scene.background = null;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.display = 'none';
+        renderer.domElement.style.position = 'fixed';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+        renderer.domElement.style.zIndex = '5';
+        renderer.domElement.style.pointerEvents = 'auto';
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.07;
+        controls.enableRotate = true;
+        controls.enablePan = true;
+        if (isMobile) {
+            controls.touches = {
+                ONE: THREE.TOUCH.ROTATE,
+                TWO: THREE.TOUCH.DOLLY_PAN
+            };
+        }
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambient);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+        dir.position.set(10, 20, 10);
+        scene.add(dir);
+
+        const textGroup = new THREE.Group();
+        scene.add(textGroup);
+
+        function getTexts() {
+            const apiData = window.apiData;
+            if (apiData && apiData.hasOwnProperty('messages')) {
+                if (typeof apiData.messages === 'string') {
+                    const trimmed = apiData.messages.trim();
+                    if (trimmed === '') return [];
+                    return trimmed.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+                }
+                if (Array.isArray(apiData.messages)) {
+                    return apiData.messages.length === 0 ? [] : apiData.messages;
+                }
+                return [];
+            }
+            return ["Merry Christmas", "Giáng Sinh an lành", "Hạnh phúc", "Luôn vui vẻ"];
+        }
+
+        let objects = [];
+        let imageObjects = [];
+        const textureCache = {};
+
+        function getImagePaths() {
+            const defaults = [
+                "iamgedefault/—Pngtree—christmas gift box_23315191.png",
+                "iamgedefault/—Pngtree—reindeer mascot with red glasses_23353415.png",
+                "iamgedefault/—Pngtree—snowman puts on santa hat_20309031.png",
+            ];
+            const apiImages = (window.apiData && Array.isArray(window.apiData.images)) ? window.apiData.images : [];
+            return defaults.concat(apiImages);
+        }
+
+        function updateImageGeometry(texture, mesh) {
+            if (!texture || !texture.image) return;
+            const aspectRatio = texture.image.width / texture.image.height;
+            const isMobileDevice = window.isMobile || window.innerWidth <= 768;
+            const baseSize = isMobileDevice ? 10 : 15;
+            let width, height;
+            if (aspectRatio > 1) { width = baseSize; height = baseSize / aspectRatio; }
+            else { width = baseSize * aspectRatio; height = baseSize; }
+            const geometry = new THREE.PlaneGeometry(width, height);
+            mesh.geometry.dispose();
+            mesh.geometry = geometry;
+        }
+
+        function makeImageMesh(imagePath) {
+            const isMobileDevice = window.isMobile || window.innerWidth <= 768;
+            const loader = new THREE.TextureLoader();
+            const cached = textureCache[imagePath];
+            const geometry = new THREE.PlaneGeometry(isMobileDevice ? 9 : 12, isMobileDevice ? 9 : 12);
+            const material = new THREE.MeshBasicMaterial({ map: cached || null, transparent: true, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geometry, material);
+            if (cached && cached.image) {
+                updateImageGeometry(cached, mesh);
+            } else {
+                const texture = loader.load(imagePath, function(tex) { updateImageGeometry(tex, mesh); });
+                textureCache[imagePath] = texture;
+                material.map = texture;
+            }
+            mesh.userData = {
+                originalY: mesh.position.y,
+                originalX: mesh.position.x,
+                originalZ: mesh.position.z,
+                pattern: Math.floor(Math.random() * 3)
+            };
+            return mesh;
+        }
+
+        function createTextAndImages() {
+            const fontLoader = new THREE.FontLoader();
+            fontLoader.load('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+                function makeTextMesh(message) {
+                    const isMob = window.innerWidth <= 768;
+                    const canvas = document.createElement("canvas");
+                    const context = canvas.getContext("2d");
+                    const baseFontSize = isMob ? 64 : 96;
+                    const baseTextHeight = isMob ? 90 : 120;
+                    const paddingW = isMob ? 40 : 60;
+                    const paddingH = isMob ? 24 : 40;
+                    context.font = `700 ${baseFontSize}px 'Dancing Script', cursive, 'Arial', sans-serif`;
+                    const textMetrics = context.measureText(message);
+                    canvas.width = Math.max(textMetrics.width + paddingW, isMob ? 220 : 260);
+                    canvas.height = baseTextHeight + paddingH;
+                    context.font = `700 ${baseFontSize}px 'Dancing Script', cursive, 'Arial', sans-serif`;
+                    context.fillStyle = "#ffffff";
+                    context.textAlign = "center";
+                    context.textBaseline = "middle";
+                    context.fillText(message, canvas.width / 2, canvas.height / 2);
+                    const texture = new THREE.CanvasTexture(canvas);
+                    texture.minFilter = THREE.LinearFilter;
+                    texture.magFilter = THREE.LinearFilter;
+                    texture.generateMipmaps = false;
+                    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+                    const widthScale = isMob ? 12 : 18;
+                    const heightScale = isMob ? 6 : 9;
+                    const geometryWidth = (canvas.width / 512) * widthScale;
+                    const geometryHeight = (canvas.height / 256) * heightScale;
+                    return new THREE.Mesh(new THREE.PlaneGeometry(geometryWidth, geometryHeight), material);
+                }
+
+                const texts = getTexts();
+                if (texts && texts.length > 0) {
+                    const textCount = window.isMobile ? 75 : 50;
+                    for (let i = 0; i < textCount; i++) {
+                        let mesh = makeTextMesh(texts[Math.floor(Math.random() * texts.length)]);
+                        const spacing = window.isMobile ? 1.2 : 1.5;
+                        mesh.position.set(
+                            (Math.random() - 0.5) * (window.isMobile ? 35 : 80),
+                            30 + (i * spacing),
+                            (Math.random() - 0.5) * (window.isMobile ? 35 : 80)
+                        );
+                        scene.add(mesh);
+                        objects.push(mesh);
+                    }
+                }
+
+                const imagePaths = getImagePaths();
+                if (imagePaths.length > 0) {
+                    const imageCount = window.isMobile ? 6 : 8;
+                    const shuffledImagePaths = imagePaths.slice().sort(() => Math.random() - 0.5);
+                    for (let i = 0; i < imageCount; i++) {
+                        const imagePath = shuffledImagePaths[i % shuffledImagePaths.length];
+                        let imageMesh = makeImageMesh(imagePath);
+                        const range = window.isMobile ? 35 : 80;
+                        imageMesh.position.set(
+                            (Math.random() - 0.5) * range,
+                            40 + (i * 5),
+                            (Math.random() - 0.5) * range
+                        );
+                        scene.add(imageMesh);
+                        imageObjects.push(imageMesh);
+                    }
+                }
+
+                camera.position.set(0, 12, 60);
+                controls.target.set(0, 10, 0);
+                controls.update();
+            });
+        }
+
+        // Snow effects
+        let snowEffectsStarted = false;
+        function createEmojiSnowflakes() {
+            const container = document.getElementById('snowflakesContainer');
+            for (let i = 0; i < 20; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake-emoji';
+                snowflake.textContent = '❄️';
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.top = '0';
+                snowflake.style.animationDuration = (Math.random() * 7 + 8) + 's';
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowflake.style.setProperty('--sway', ((Math.random() - 0.5) * 200) + 'px');
+                snowflake.style.fontSize = (Math.random() * 0.8 + 0.7) + 'em';
+                snowflake.style.opacity = Math.random() * 0.4 + 0.6;
+                container.appendChild(snowflake);
+            }
+        }
+
+        function createCanvasSnowflakes() {
+            const canvas = document.getElementById('snowCanvas');
+            const ctx = canvas.getContext('2d');
+            function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            const snowflakes = [];
+            class SimpleSnowflake {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 3 + 1;
+                    this.speed = Math.random() * 2 + 0.5;
+                    this.opacity = Math.random() * 0.5 + 0.5;
+                    this.wind = Math.random() * 0.5 - 0.25;
+                }
+                update() {
+                    this.y += this.speed;
+                    this.x += this.wind + Math.sin(this.y * 0.01) * 0.5;
+                    if (this.y > canvas.height) { this.y = 0; this.x = Math.random() * canvas.width; }
+                    if (this.x > canvas.width) this.x = 0;
+                    else if (this.x < 0) this.x = canvas.width;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                    ctx.fill();
+                }
+            }
+            for (let i = 0; i < 80; i++) snowflakes.push(new SimpleSnowflake());
+            function animateSnow() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                snowflakes.forEach(s => { s.update(); s.draw(); });
+                requestAnimationFrame(animateSnow);
+            }
+            animateSnow();
+        }
+
+        function startSnowEffects() {
+            if (snowEffectsStarted) return;
+            snowEffectsStarted = true;
+            document.getElementById('snowCanvas').style.display = 'block';
+            document.getElementById('snowflakesContainer').style.display = 'block';
+            createEmojiSnowflakes();
+            createCanvasSnowflakes();
+        }
+        window.startSnowEffects = startSnowEffects;
+
+        // Animation loop
+        let animationRunning = false;
+        function startAnimate() {
+            if (!snowEffectsStarted || animationRunning) return;
+            animationRunning = true;
+            if (objects.length === 0 && imageObjects.length === 0) {
+                setTimeout(function() {
+                    if (objects.length > 0 || imageObjects.length > 0) startAnimate();
+                    else animationRunning = false;
+                }, 500);
+                animationRunning = false;
+                return;
+            }
+            renderer.domElement.style.display = 'block';
+            renderer.domElement.style.pointerEvents = 'auto';
+
+            const frustum = new THREE.Frustum();
+            const cameraMatrix = new THREE.Matrix4();
+
+            function animate() {
+                if (!snowEffectsStarted) return;
+                requestAnimationFrame(animate);
+                cameraMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+                frustum.setFromProjectionMatrix(cameraMatrix);
+
+                if (objects.length > 0) {
+                    for (let i = 0; i < objects.length; i++) {
+                        const obj = objects[i];
+                        obj.position.y -= 0.12;
+                        if (obj.position.y < -50) {
+                            obj.position.y = 30 + Math.random() * 30;
+                            obj.position.x = (Math.random() - 0.5) * 80;
+                            obj.position.z = (Math.random() - 0.5) * 80;
+                        }
+                    }
+                }
+
+                if (imageObjects.length > 0) {
+                    for (let i = 0; i < imageObjects.length; i++) {
+                        const imgObj = imageObjects[i];
+                        const pattern = imgObj.userData.pattern;
+                        imgObj.position.y -= 0.1;
+                        if (pattern === 1) imgObj.position.x -= 0.03;
+                        else if (pattern === 2) imgObj.position.x += 0.03;
+                        if (imgObj.position.y < -70) {
+                            imgObj.position.y = 40 + Math.random() * 30;
+                            imgObj.position.x = (Math.random() - 0.5) * (window.isMobile ? 35 : 80);
+                            imgObj.position.z = (Math.random() - 0.5) * (window.isMobile ? 35 : 80);
+                            imgObj.userData.pattern = Math.floor(Math.random() * 3);
+                        }
+                    }
+                }
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+        window.startAnimate = startAnimate;
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Music
+        function playMusic() {
+            const musicUrl = (window.apiData && window.apiData.music) || (window.apiData && window.apiData.song);
+            if (!musicUrl) return;
+            let audio = document.getElementById('backgroundMusic');
+            if (!audio) {
+                audio = document.createElement('audio');
+                audio.id = 'backgroundMusic';
+                audio.loop = true;
+                audio.volume = 0.7;
+                document.body.appendChild(audio);
+            }
+            audio.src = musicUrl;
+            audio.play().catch(err => console.error('Lỗi khi phát nhạc:', err));
+        }
+
+        // Initialize: skip API fetch, show Start button directly
+        window.addEventListener('load', function() {
+            // Hide loading, show Start button immediately
+            const loadingScreen = document.getElementById('loadingScreen');
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+            document.getElementById('startButtonContainer').style.display = 'block';
+
+            // Pre-create 3D text and images
+            createTextAndImages();
+        });
+
+        // Start button handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const startButton = document.getElementById('startButton');
+            if (startButton) {
+                startButton.addEventListener('click', function() {
+                    playMusic();
+                    const delay = window.isMobile ? 1000 : 0;
+                    setTimeout(function() {
+                        document.getElementById('startButtonContainer').style.display = 'none';
+                        const mainSVG = document.querySelector('.mainSVG');
+                        if (mainSVG) mainSVG.style.display = 'block';
+                        if (typeof window.startTreeAnimation === 'function') window.startTreeAnimation();
+                    }, delay);
+                });
+            }
+        });
+    </script>
+
+    <!-- GSAP Libraries -->
+    <script src='https://unpkg.co/gsap@3/dist/gsap.min.js'></script>
+    <script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/MorphSVGPlugin3.min.js'></script>
+    <script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/DrawSVGPlugin3.min.js'></script>
+    <script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/MotionPathPlugin.min.js'></script>
+    <script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/16327/EasePack3.min.js'></script>
+
+    <!-- Template scripts load after apiData is ready (fetch is async) -->
+    <script>
+        (function() {
+            function loadTemplateScripts() {
+                ['./style.js', './text-effect.js', './book.js'].forEach(function(src) {
+                    var s = document.createElement('script');
+                    s.src = src;
+                    document.body.appendChild(s);
+                });
+            }
+            // If data already arrived (very fast network), run now; else wait for event
+            if (window.apiData) {
+                loadTemplateScripts();
+            } else {
+                document.addEventListener('apiDataReady', loadTemplateScripts, { once: true });
+            }
+        })();
+    </script>
+
+    <script>
+        // Monitor typing completion, then transition to snow/3D rain
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (typeof startTypingEffect === 'function') {
+                    const originalStartTypingEffect = startTypingEffect;
+                    window.startTypingEffect = function() {
+                        originalStartTypingEffect();
+                        const checkInterval = setInterval(function() {
+                            if (typeof typingState !== 'undefined' && typingState.timelines && typingState.timelines.length > 0) {
+                                const allComplete = typingState.timelines.every(function(tl) {
+                                    return tl && tl.progress() === 1;
+                                });
+                                if (allComplete && typingState.currentLine >= typingState.pElements.length) {
+                                    clearInterval(checkInterval);
+                                    setTimeout(function() {
+                                        const guideInfo = document.getElementById('guideInfo');
+                                        if (guideInfo && guideInfo.classList.contains('show')) {
+                                            const apiData = window.apiData;
+                                            let shouldStart = false;
+                                            if (apiData && apiData.hasOwnProperty('messages')) {
+                                                if (Array.isArray(apiData.messages) && apiData.messages.length > 0) shouldStart = true;
+                                                else if (typeof apiData.messages === 'string' && apiData.messages.trim() !== '') shouldStart = true;
+                                            }
+                                            if (shouldStart) {
+                                                guideInfo.classList.remove('show');
+                                                setTimeout(function() {
+                                                    guideInfo.classList.add('hidden');
+                                                    startSnowEffects();
+                                                    setTimeout(function() {
+                                                        renderer.domElement.style.display = 'block';
+                                                        renderer.domElement.style.pointerEvents = 'auto';
+                                                        startAnimate();
+                                                    }, 100);
+                                                }, 500);
+                                            }
+                                        }
+                                    }, 2000);
+                                }
+                            }
+                        }, 500);
+                    };
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

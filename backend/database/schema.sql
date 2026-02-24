@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS qr_codes (
   full_url VARCHAR(500) NOT NULL,
   content TEXT NOT NULL,
   template_id INTEGER REFERENCES templates(id),
+  template_type VARCHAR(50),
+  template_data JSONB,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

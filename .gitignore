@@ -38,6 +38,9 @@ postgres-data/
 # Serena
 .serena/
 
+# Playwright
+.playwright-mcp/
+
 # Python (if any)
 venv/
 __pycache__/
@@ -54,3 +57,13 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Production secrets (create from .env.production.example on each server)
+.env
+
+# Frontend build output (generated on the server during deploy)
+frontend-app/dist/
+
+
+#github
+.github/

@@ -1,0 +1,1004 @@
+@font-face {
+  font-family: 'TH Christmas Wishes';
+  src: url('./font/TH Christmas Wishes.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ce1e2a 0%, #790116 50%, #420014 100%);
+  height: 100vh;
+  position: fixed;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Trang trí background trên cùng - định vị theo viewport */
+.decor-top-left,
+.decor-top-right,
+.decor-light-left,
+.decor-light-right {
+    position: fixed;
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.decor-top-left {
+    top: -120px;
+    left: 0;
+    right: auto;
+    animation: float-down-left 0.9s ease-out 0.1s forwards;
+}
+
+.decor-top-right {
+    top: -120px;
+    right: 0;
+    left: auto;
+    text-align: right; /* Căn ảnh về bên phải */
+    animation: float-down-right 0.9s ease-out 0.18s forwards;
+}
+
+.decor-light-left {
+    top: 10%;
+    left: 0;
+    right: auto;
+    animation: float-down-left 0.9s ease-out 0.26s forwards;
+}
+
+.decor-light-right {
+    top: 10%;
+    right: 0;
+    left: auto;
+    text-align: right; /* Căn ảnh về bên phải */
+    animation: float-down-right 0.9s ease-out 0.34s forwards;
+}
+
+.decor-top-left img,
+.decor-top-right img{
+    max-width: 50%;
+    height: auto;
+    display: block;
+}
+.decor-light-left img,
+.decor-light-right img {
+    max-width: 34%;
+    height: auto;
+    display: block;
+}
+
+/* Đảm bảo ảnh bên phải bám sát góc phải */
+.decor-top-right img,
+.decor-light-right img {
+    margin-left: auto; /* Đẩy ảnh về bên phải */
+    margin-right: 0; /* Bám sát góc phải */
+}
+
+/* Intro animations cho trang trí trên cùng */
+@keyframes float-down-left {
+    from {
+        opacity: 0;
+        transform: translate(-40px, -30px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes float-down-right {
+    from {
+        opacity: 0;
+        transform: translate(40px, -30px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+/* Loading Screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* background: linear-gradient(135deg, #000000 0%, #0d0e10 100%); */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    transition: opacity 0.5s ease-out;
+}
+
+.loading-container {
+    text-align: center;
+    color: white;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.loading-text {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-family: 'Dancing Script', cursive;
+    animation: fadeInOut 2s ease-in-out infinite;
+}
+
+.loading-subtitle {
+    font-size: 16px;
+    opacity: 0.8;
+    font-family: Arial, sans-serif;
+    animation: fadeInOut 2s ease-in-out infinite 0.5s;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error Screen */
+.error-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #f9d1d1 0%, #3e3636 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.error-container {
+    text-align: center;
+    color: white;
+    max-width: 400px;
+    padding: 20px;
+}
+
+.error-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.error-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    font-family: 'Dancing Script', cursive;
+}
+
+.error-message {
+    font-size: 16px;
+    margin-bottom: 30px;
+    line-height: 1.5;
+    opacity: 0.9;
+    font-family: Arial, sans-serif;
+}
+
+.error-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid white;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: Arial, sans-serif;
+}
+
+.error-button:hover {
+    background: white;
+    color: #ff6b6b;
+    transform: translateY(-2px);
+}
+
+html {
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+canvas {
+    display: block;
+}
+
+/* Background stars */
+.stars {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+svg{
+  width: 90%;
+  height: 90%;
+  visibility: hidden;
+} 
+
+.canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+/* Book Overlay */
+.hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+#guideInfo {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+  z-index: 3000;
+  pointer-events: auto;
+}
+
+#guideInfo.hidden {
+  pointer-events: none !important;
+}
+
+#guideInfo.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.card {
+  color: #013243;
+  position: relative;
+  width: 30vw;
+  height: 45vh;
+  letter-spacing: 1px;
+  background: #dc2626;
+  transform-style: preserve-3d;
+  font-family: "Times New Roman", Times, serif;
+  transform: perspective(2000px);
+  box-shadow: inset 30vw 0 50px rgba(0, 0, 0, 0.5),
+    20px 0 60px rgba(0, 0, 0, 0.5);
+  transition: 1s;
+}
+
+.card:hover {
+  transform: perspective(2000px) rotate(15deg) scale(1.08) translateX(200px);
+  box-shadow: inset 20px 0 50px rgba(0, 0, 0, 0.5),
+    0 10px 100px rgba(0, 0, 0, 0.5);
+}
+
+.card.book-opened {
+  transform: perspective(2000px) rotate(15deg) scale(1.08) translateX(200px);
+  box-shadow: inset 20px 0 50px rgba(0, 0, 0, 0.5),
+    0 10px 100px rgba(0, 0, 0, 0.5);
+}
+
+.card:before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: #b91c1c; /* đỉnh sách đỏ đậm để đồng bộ với nền */
+  transform-origin: bottom;
+  transform: skewX(-45deg);
+}
+
+.card:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -5px;
+  width: 5px;
+  height: 100%;
+  background: #7f1d1d; /* gáy sách đỏ sẫm hơn để tạo chiều sâu */
+  transform-origin: left;
+  transform: skewY(-45deg);
+}
+
+.card .imgBox {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-origin: left;
+  transition: 0.7s;
+  overflow: hidden;
+}
+
+.card .bark {
+  position: absolute;
+  background: #e0e1dc;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: 0.7s;
+}
+
+.card .imgBox img {
+  min-width: 250px;
+  max-height: 400px;
+}
+
+.card-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #B91E24 0%, #8B1519 100%);
+  z-index: 1;
+}
+
+.moon-container {
+  position: relative;
+  top: -50px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.cover-moon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.7);
+  opacity: 0;
+}
+
+.cover-star {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  object-position: center top;
+  z-index: 3;
+  opacity: 0;
+}
+
+.cover-pinetree {
+  position: absolute;
+  bottom: -40px;
+  left: 45%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 75%;
+  object-fit: contain;
+  object-position: center bottom;
+  z-index: 4;
+  opacity: 0;
+}
+
+.cover-reindeer {
+  position: absolute;
+  top: 5%;
+  left: 60%;
+  transform: translateX(-50%);
+  width: 35%;
+  max-width: 350px;
+  height: auto;
+  z-index: 5;
+  opacity: 0;
+}
+
+.cover-merrytext {
+  position: absolute;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20%;
+  height: auto;
+  z-index: 6;
+  filter: brightness(1.2);
+  opacity: 0;
+}
+
+.cover-christmastext {
+  position: absolute;
+  bottom: -39%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: auto;
+  z-index: 6;
+  filter: brightness(1.2);
+  opacity: 0;
+}
+
+.card:hover .imgBox,
+.card.book-opened .imgBox {
+  transform: rotateY(-135deg);
+}
+
+.card:hover .bark,
+.card.book-opened .bark {
+  opacity: 1;
+  transition: 0.6s;
+  box-shadow: 500px 200px 100px rgba(0, 0, 0, 0.4) inset;
+}
+
+.card .details {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  padding: 10px;
+  z-index: -1;
+  margin-top: 30px;
+  width: 100%;
+  height: 75%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.card .details::-webkit-scrollbar {
+  display: none;
+}
+
+.card .details p {
+  font-size: 16px;
+  line-height: 26px;
+  padding: 5px 50px 5px 50px;
+  color: #ffffff;
+  margin: 0;
+  word-wrap: break-word;
+  white-space: normal;
+  font-family: 'Dancing Script', 'Brush Script MT', 'Lucida Handwriting', cursive;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.card .details p .word-wrapper {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.card .details p .char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.card .details p .char-space {
+  display: inline-block;
+  white-space: pre;
+}
+
+.card .details p .word {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.card .details p .word-space {
+  display: inline-block;
+}
+
+.card .details p .typing-cursor {
+  display: inline-block;
+  color: #ffffff;
+  font-weight: bold;
+  margin-left: 1px;
+  animation: blink 0.8s infinite;
+  vertical-align: baseline;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Hiệu ứng xuất hiện cho mặt trăng, sao, cây thông, tuần lộc */
+@keyframes moonFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes starDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes treeUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 60px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes reindeerRun {
+  from {
+    opacity: 0;
+    transform: translateX(-200%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes merryFadeUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes christmasFadeUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 40px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Kích hoạt hiệu ứng khi overlay sách được mở */
+#guideInfo.show .cover-moon {
+  animation: moonFadeIn 1s ease-out forwards;
+}
+
+#guideInfo.show .cover-star {
+  animation: starDrop 1s ease-out forwards;
+  animation-delay: 1s;
+}
+
+#guideInfo.show .cover-pinetree {
+  animation: treeUp 1s ease-out forwards;
+  animation-delay: 1.5s;
+}
+
+#guideInfo.show .cover-reindeer {
+  animation: reindeerRun 3s ease-in-out forwards;
+  animation-delay: 2s;
+}
+
+#guideInfo.show .cover-merrytext {
+  animation: merryFadeUp 1s ease-out forwards;
+  animation-delay: 2.5s;
+}
+
+#guideInfo.show .cover-christmastext {
+  animation: christmasFadeUp 1.2s ease-out forwards;
+  animation-delay: 3s;
+}
+
+.card .details #messageContent p {
+  color: #ffffff;
+}
+
+.text-right {
+  text-align: right;
+}
+
+
+.star {
+    position: absolute;
+    background: #ffd700;
+    border-radius: 50%;
+    animation: twinkle 3s infinite;
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+
+
+/* Flying rabbit with ribbons - Middle left */
+.flying-rabbit-section {
+    position: fixed;
+    bottom: 0;
+    left: -50px;
+    z-index: 8;
+    opacity: 0;
+    animation: rise-in-left 1s ease-out 0.2s forwards;
+}
+
+.flying-rabbit {
+    width: 400px;
+    height: 420px;
+    animation: fly-around 6s ease-in-out infinite;
+}
+/* 
+@keyframes fly-around {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    25% {
+        transform: translate(20px, -20px) rotate(5deg);
+    }
+
+    50% {
+        transform: translate(-10px, -30px) rotate(-5deg);
+    }
+
+    75% {
+        transform: translate(-20px, -10px) rotate(3deg);
+    }
+} */
+
+/* Traditional woman - Bottom right */
+.woman-section {
+    position: fixed;
+    bottom:1%;
+    right: -1%;
+    z-index: 7;
+    opacity: 0;
+    animation: rise-in-right 1s ease-out 0.35s forwards;
+}
+
+.woman {
+    width: 350px;
+    height: auto;
+    animation: gentle-sway 4s ease-in-out infinite;
+}
+/* 
+@keyframes gentle-sway {
+
+    0%,
+    100% {
+        transform: rotate(-1deg);
+    }
+
+    50% {
+        transform: rotate(1deg);
+    }
+} */
+
+.mountain-section {
+    position: fixed;
+    bottom: -10%;
+    z-index: 8;
+    left: -70px;
+    
+}
+
+.mountain {
+    width: 110vw;
+    height: 110%;
+    /* height: 100%; */
+}
+
+
+.flying-rabbit-section,
+.woman-section,
+.mountain-section {
+    pointer-events: none;
+}
+
+/* Intro animations cho nhân vật và background dưới */
+@keyframes rise-in-left {
+    from {
+        opacity: 0;
+        transform: translate(-60px, 40px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes rise-in-right {
+    from {
+        opacity: 0;
+        transform: translate(60px, 40px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+}
+@keyframes fade-in-up {
+  from {
+      opacity: 0;
+      transform: translateY(30px);
+  }
+  to {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+/* Mobile Responsive */
+@media (max-width: 768px) {
+
+    /* Book / card trên mobile */
+    .card {
+        width: 80vw;
+        height: 70vh;
+        transform: perspective(1600px);
+        box-shadow: inset 60vw 0 50px rgba(0, 0, 0, 0.5),
+        10px 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Trên mobile, khi mở sách không dịch sang phải như laptop */
+    .card.book-opened {
+        transform: perspective(1600px) rotate(8deg) scale(1.03) translateX(0);
+    }
+
+    /* Hover trên mobile (ít khi dùng) vẫn giữ hiệu ứng nhẹ */
+    .card:hover {
+        transform: perspective(1600px) rotate(10deg) scale(1.03) translateX(10px);
+    }
+
+    .card .details {
+        margin-top: 40px;
+        padding: 0 16px 16px 20px;
+        height: 72%;
+    }
+
+    .card .details p {
+        font-size: 18px;
+        line-height: 26px;
+        padding: 4px 8px 4px 8px;
+    }
+
+    .moon-container {
+        top: -20%;
+        width: 260px;
+        height: 260px;
+    }
+
+    .cover-pinetree {
+        width: 65%;
+    }
+
+    .cover-star {
+        width: 90%;
+    }
+
+    .cover-reindeer {
+        width: 30%;
+        top: 8%;
+        left: 70%;
+    }
+
+    .cover-merrytext {
+        width: 80%;
+        bottom: 13%;
+    }
+
+    .cover-christmastext {
+        width: 100%;
+        bottom: -20%;
+    }
+
+    /* Flying rabbit - thu nhỏ và điều chỉnh */
+    .flying-rabbit-section {
+        position: fixed;
+       left: -8%;
+    }
+
+    .flying-rabbit {
+        width: 200px;
+        height: 230px;
+    }
+
+    /* Woman section - thu nhỏ và điều chỉnh vị trí */
+    .woman-section {
+        position: fixed;
+        bottom: 1%;
+        right: -10%;
+    }
+
+    .woman {
+        width: 180px;
+        height: auto;
+    }
+
+    /* Mountain - thu nhỏ và điều chỉnh */
+    .mountain-section {
+        position: fixed;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 8;
+    }
+
+    .mountain {
+        width: 125vw;
+        height: auto;
+        max-height: 50vh; /* Giới hạn chiều cao để không bị quá lớn trên màn hình ngắn */
+        object-fit: cover;
+        object-position: bottom;
+    }
+    .decor-top-left,
+    .decor-top-right{
+        top: -20px;
+    }
+    
+    .decor-top-left img,
+    .decor-top-right img{
+        max-width: 65%;
+    }
+    .decor-light-left img,
+.decor-light-right img {
+    max-width: 56%;
+}
+
+
+.decor-light-left,
+.decor-light-right {
+    top: 6%;
+}
+
+    /* SVG Tree - đẩy lên cao hơn trên mobile */
+    .mainSVG {
+        transform: translateY(-7%);
+        margin-top: -10vh;
+    }
+
+}
+
+
+/* Tablet Responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+    /* Book / card trên tablet */
+      /* Mountain - thu nhỏ và điều chỉnh */
+      .mountain-section {
+        position: fixed;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 8;
+    }
+
+    .mountain {
+        width: 125vw;
+        height: auto;
+        max-height: 50vh; /* Giới hạn chiều cao để không bị quá lớn trên màn hình ngắn */
+        object-fit: cover;
+        object-position: bottom;
+    }
+    .decor-top-left,
+    .decor-top-right{
+        top: -35px;
+    }
+   /* Trên mobile, khi mở sách không dịch sang phải như laptop */
+   .card.book-opened {
+    transform: perspective(1600px) rotate(8deg) scale(1.03) translateX(50px);
+}
+
+ .card {
+        width: 60vw;
+        height: 65vh;
+        transform: perspective(1600px);
+        box-shadow: inset 60vw 0 50px rgba(0, 0, 0, 0.5),
+        10px 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+
+
+    .card .details {
+        margin-top: 40px;
+        padding: 0 16px 16px 20px;
+        height: 72%;
+    }
+
+    .card .details p {
+        font-size: 18px;
+        line-height: 26px;
+        padding: 4px 8px 4px 8px;
+    }
+     .moon-container {
+        top: -20%;
+        width: 260px;
+        height: 260px;
+    }
+
+    .cover-pinetree {
+        width: 65%;
+    }
+
+    .cover-star {
+        width: 90%;
+    }
+
+    .cover-reindeer {
+        width: 30%;
+        top: 8%;
+        left: 70%;
+    }
+
+    .cover-merrytext {
+        width: 80%;
+        bottom: 18%;
+    }
+
+    .cover-christmastext {
+        width: 100%;
+        bottom: -20%;
+    }
+}

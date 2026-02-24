@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: inanhxink
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: inanhxink
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inanhxink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DOMAIN: ${DOMAIN}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: inanhxink
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: inanhxink
+    volumes:
+      - uploads:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./frontend-app/dist:/var/www/order:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
+  uploads:

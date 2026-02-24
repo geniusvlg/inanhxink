@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter in Space</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100&family=Playpen+Sans&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+</head>
+<body>
+
+  <div class="loading-screen" id="loading-screen">
+    <button class="heart-button" id="start-button">
+      <svg viewBox="0 0 512 512">
+        <path d="M256 448l-30.164-27.211C118.718 322.442 48 258.61 48 179.095 48 114.221 97.918 64 162.4 64c36.399 0 70.717 16.742 93.6 43.947C278.882 80.742 313.199 64 349.6 64 414.082 64 464 114.221 464 179.095c0 79.516-70.719 143.348-177.836 241.694L256 448z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div id="threejs-canvas" style="display: none"></div>
+
+  <audio id="bg-audio" preload="auto" loop></audio>
+
+  <!-- window.dataFromSubdomain is injected by the Express server before this script -->
+  <script src="app.js"></script>
+</body>
+</html>
