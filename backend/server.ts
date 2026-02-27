@@ -12,13 +12,9 @@ const app: Express = express();
 const PORT = process.env.PORT || 3001;
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
 
-// Detect if running in local development (not a real domain)
 const isLocalDev = (host: string) =>
   host.startsWith('localhost') || host.startsWith('127.0.0.1');
 
-// Extract subdomain from request — supports ?preview=NAME for local dev,
-// and falls back to the Referer header so asset requests (bundle.js, CSS, etc.)
-// work even though they don't carry the query param.
 function getSubdomain(req: Request): string | null {
   const host = req.headers.host || '';
   if (isLocalDev(host)) {
@@ -113,8 +109,6 @@ app.get('/api/test-db', async (_req: Request, res: Response) => {
 });
 
 // ── API: site data (subdomain routing) ───────────────────────────────────────
-// Called by template pages to get their personalised config.
-// Supports ?sub=NAME (or ?preview=NAME) for local development.
 app.get('/api/site-data', async (req: Request, res: Response) => {
   try {
     const subdomain = getSubdomain(req);
