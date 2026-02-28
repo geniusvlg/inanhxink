@@ -11,7 +11,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: url('Pink Simple Romantic Cute Valentine Love Letter.png') center center/cover no-repeat fixed;
+    background: url('background.png') center center/cover no-repeat fixed;
     padding: 20px;
     position: relative;
 }
@@ -20,7 +20,7 @@ body {
     position: fixed;
     inset: 0;
     z-index: 0;
-    background: url('Pink Simple Romantic Cute Valentine Love Letter.png') center center/cover no-repeat;
+    background: url('background.png') center center/cover no-repeat;
     opacity: 0;
     transition: opacity 4s ease-in-out;
     pointer-events: none;
