@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Deploy via SSH
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > /tmp/deploy_key
+          printf '%s' "${{ secrets.EC2_SSH_KEY }}" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
           ssh -i /tmp/deploy_key \
             -o StrictHostKeyChecking=no \
