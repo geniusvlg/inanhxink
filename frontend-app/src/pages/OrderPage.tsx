@@ -10,24 +10,6 @@ import ImageUploader from '../components/ImageUploader';
 import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles } from '../services/api';
 
-// Map frontend template IDs → backend template_type folder names
-const TEMPLATE_TYPE_MAP: Record<string, string> = {
-  letterinspace: 'galaxy',
-  christmastree: 'christmas',
-  loveletter: 'loveletter',
-};
-
-// Template types that require image uploads
-const TEMPLATES_WITH_IMAGES = new Set(['letterinspace', 'christmastree', 'loveletter', 'heartmosaic']);
-
-// Template types that require letter content
-const TEMPLATES_WITH_CONTENT = new Set([
-  'loveletter', 'echoheart', 'letterinspace', 'christmastree',
-  'stellarbloom', 'chillroom', 'lovehex', 'dearsky', 'message',
-  'lanternia', 'lovecount', 'crystalrose', 'snowheart', 'birthdaycake',
-  'captured', 'puzzlelove', 'gacha',
-]);
-
 interface Voucher {
   code: string;
   discountType: 'percentage' | 'fixed';
@@ -57,17 +39,12 @@ function OrderPage() {
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
 
-  const templateId = selectedTemplate?.id || '';
-  const templateType = TEMPLATE_TYPE_MAP[templateId] || templateId;
-  const needsImages = TEMPLATES_WITH_IMAGES.has(templateId);
-  const needsContent = TEMPLATES_WITH_CONTENT.has(templateId);
+  const templateType = selectedTemplate?.template_type || '';
 
   // Auto-scroll when template changes
   useEffect(() => {
     if (!selectedTemplate) return;
-    const target = needsContent
-      ? document.querySelector<HTMLElement>('.content-editor textarea, .content-editor')
-      : document.querySelector<HTMLElement>('.image-uploader-header');
+    const target = document.querySelector<HTMLElement>('.content-editor textarea, .content-editor');
     if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
   }, [selectedTemplate]);
 
@@ -125,7 +102,7 @@ function OrderPage() {
 
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
-    if (needsContent && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (!content.trim()) { setError('Vui lòng nhập nội dung'); return; }
 
     setSubmitting(true);
     try {
@@ -246,12 +223,9 @@ function OrderPage() {
           </div>
         )}
 
-        {needsContent && (
-          <ContentEditor value={content} onChange={setContent} />
-        )}
+        <ContentEditor value={content} onChange={setContent} />
 
-        {needsImages && (
-          <ImageUploader
+        <ImageUploader
             images={uploadedImages}
             onImagesChange={setUploadedImages}
             maxImages={9}
@@ -262,7 +236,6 @@ function OrderPage() {
               }, 200);
             }}
           />
-        )}
 
         <MusicOption
           musicAdded={musicAdded}

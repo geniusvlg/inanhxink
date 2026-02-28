@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { mockTemplates, type Template } from '../data/mockTemplates';
+import { type Template } from '../data/mockTemplates';
+import { getTemplates } from '../services/api';
 import './TemplateSelector.css';
 
 interface TemplateSelectorProps {
@@ -9,19 +10,13 @@ interface TemplateSelectorProps {
 }
 
 function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: TemplateSelectorProps) {
-  const [templates] = useState<Template[]>(mockTemplates);
+  const [templates, setTemplates] = useState<Template[]>([]);
 
   useEffect(() => {
-    // Auto-select first template if none selected (only once on mount)
-    if (!selectedTemplate && templates.length > 0) {
-      onSelectTemplate(templates[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    getTemplates().then((data) => {
+      if (data.success) setTemplates(data.templates);
+    });
   }, []);
-
-  const handleTemplateClick = (template: Template) => {
-    onSelectTemplate(template);
-  };
 
   return (
     <div className="template-selector">
@@ -34,14 +29,13 @@ function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: Te
           <div
             key={template.id}
             className={`template-card ${selectedTemplate?.id === template.id ? 'selected' : ''}`}
-            onClick={() => handleTemplateClick(template)}
+            onClick={() => onSelectTemplate(template)}
           >
             <div className="template-preview">
-              <img 
-                src={template.thumbnail} 
+              <img
+                src={template.image_url || ''}
                 alt={template.name}
                 onError={(e) => {
-                  // Fallback to a simple colored div instead of external placeholder
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   const parent = target.parentElement;
@@ -80,7 +74,7 @@ function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: Te
           </div>
         </div>
       )}
-      
+
       {onClearAll && (
         <div className="clear-button-container">
           <button onClick={onClearAll} className="clear-button">
@@ -96,4 +90,3 @@ function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: Te
 }
 
 export default TemplateSelector;
-
