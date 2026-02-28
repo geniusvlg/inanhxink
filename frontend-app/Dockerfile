@@ -1,4 +1,4 @@
-# Stage 1: Build
+# Build stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -13,9 +13,9 @@ ENV VITE_API_URL=$VITE_API_URL
 
 RUN npm run build
 
-# Stage 2: Export built files (used as a build artifact by nginx)
+# Runtime stage: copy dist to volume on startup
 FROM alpine:3.19
 
-WORKDIR /dist
+COPY --from=builder /app/dist /app/dist
 
-COPY --from=builder /app/dist .
+CMD ["sh", "-c", "cp -r /app/dist/. /dist && echo 'Frontend files copied'"]
