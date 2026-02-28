@@ -37,7 +37,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: inanhxink
     volumes:
-      - uploads:/app/public/uploads
+      - uploads:/app/dist/public/uploads
     depends_on:
       postgres:
         condition: service_healthy
