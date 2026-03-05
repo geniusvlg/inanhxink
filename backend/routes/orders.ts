@@ -188,55 +188,37 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     const qrNameLower = qrName.toLowerCase();
     const fullUrl = `${qrNameLower}.${DOMAIN}`;
 
-    await db.query('BEGIN');
+    // Store order (QR code is created later when payment is confirmed)
     try {
-      // Upsert QR code row (supports re-ordering the same name)
-      const qrResult = await db.query(
-        `INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (qr_name) DO UPDATE
-           SET full_url      = EXCLUDED.full_url,
-               content       = EXCLUDED.content,
-               template_id   = EXCLUDED.template_id,
-               template_type = EXCLUDED.template_type,
-               template_data = EXCLUDED.template_data,
-               updated_at    = NOW()
-         RETURNING id`,
-        [qrNameLower, fullUrl, content, templateId, resolvedTemplateType, JSON.stringify(templateData)]
-      );
-
-      const qrCodeId = qrResult.rows[0].id;
-
       const orderResult = await db.query(
         `INSERT INTO orders (
-          qr_code_id, customer_name, customer_email, customer_phone,
-          template_id, qr_name, content, music_link, music_added,
+          customer_name, customer_email, customer_phone,
+          template_id, template_type, template_data, qr_name, content, music_link, music_added,
           keychain_purchased, keychain_price, tip_amount, voucher_code, voucher_discount,
-          subtotal, total_amount, status
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          subtotal, total_amount, status, payment_status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
         RETURNING *`,
         [
-          qrCodeId, customerName || null, customerEmail || null, customerPhone || null,
-          templateId, qrNameLower, content, musicUrl || musicLink || null,
+          customerName || null, customerEmail || null, customerPhone || null,
+          templateId, resolvedTemplateType, JSON.stringify(templateData),
+          qrNameLower, content, musicUrl || musicLink || null,
           musicAdded || false, keychainPurchased || false, keychainPrice,
-          tipAmount || 0, voucherCode || null, discount, subtotal, total, 'pending',
+          tipAmount || 0, voucherCode || null, discount, subtotal, total, 'pending', 'pending',
         ]
       );
 
-      await db.query('COMMIT');
+      const order = orderResult.rows[0];
 
       return res.json({
         success: true,
-        order: orderResult.rows[0],
+        order,
         qrCode: {
-          id: qrCodeId,
           qrName: qrNameLower,
           fullUrl,
           templateType: resolvedTemplateType,
         },
       });
     } catch (err) {
-      await db.query('ROLLBACK');
       throw err;
     }
   } catch (error) {

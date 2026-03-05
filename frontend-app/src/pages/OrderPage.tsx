@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../App.css';
 import TemplateSelector from '../components/TemplateSelector';
 import QrNameInput from '../components/QrNameInput';
@@ -16,13 +17,8 @@ interface Voucher {
   discountValue: number;
 }
 
-interface OrderSuccess {
-  qrName: string;
-  fullUrl: string;
-  templateType: string;
-}
-
 function OrderPage() {
+  const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [qrName, setQrName] = useState('');
   const [qrNameValid, setQrNameValid] = useState(false);
@@ -35,7 +31,6 @@ function OrderPage() {
   const [customTipAmount, setCustomTipAmount] = useState(0);
   const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState<OrderSuccess | null>(null);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
 
@@ -91,7 +86,6 @@ function OrderPage() {
       setSelectedTip(null);
       setCustomTipAmount(0);
       setVoucher(null);
-      setOrderSuccess(null);
       setError('');
       setUploadedImages([]);
     }
@@ -129,11 +123,7 @@ function OrderPage() {
       });
 
       if (response.success) {
-        setOrderSuccess({
-          qrName: response.qrCode.qrName,
-          fullUrl: response.qrCode.fullUrl,
-          templateType: response.qrCode.templateType,
-        });
+        navigate(`/payment/${response.qrCode.qrName}`);
       } else {
         setError(response.error || 'Đặt hàng thất bại');
       }
@@ -146,56 +136,6 @@ function OrderPage() {
   };
 
   const totals = calculateTotal();
-
-  // ── Success screen ──────────────────────────────────────────────────────────
-  if (orderSuccess) {
-    const liveUrl = `https://${orderSuccess.fullUrl}`;
-    return (
-      <div className="app">
-        <div className="app-container" style={{ textAlign: 'center', padding: '2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-          <h1 style={{ color: '#e63b7a', marginBottom: '1rem' }}>Đặt hàng thành công!</h1>
-          <p style={{ marginBottom: '0.5rem' }}>Trang của bạn sẽ sẵn sàng tại:</p>
-          <a
-            href={liveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-block',
-              fontSize: '1.2rem',
-              fontWeight: 700,
-              color: '#fff',
-              background: 'linear-gradient(135deg, #e63b7a, #ff512f)',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              marginTop: '0.5rem',
-              marginBottom: '2rem',
-              wordBreak: 'break-all',
-            }}
-          >
-            {liveUrl}
-          </a>
-          <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '2rem' }}>
-            Sau khi thanh toán và chúng tôi xác nhận, trang sẽ được kích hoạt trong vài phút.
-          </p>
-          <button
-            onClick={handleClearAll}
-            style={{
-              background: 'none',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              padding: '0.5rem 1.5rem',
-              cursor: 'pointer',
-              color: '#555',
-            }}
-          >
-            Đặt thêm
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ── Order form ──────────────────────────────────────────────────────────────
   return (

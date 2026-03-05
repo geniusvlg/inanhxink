@@ -35,6 +35,9 @@ services:
       DB_USER: inanhxink
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: inanhxink
+      SEPAY_API_KEY: ${SEPAY_API_KEY}
+      SEPAY_ACCOUNT_NO: ${SEPAY_ACCOUNT_NO}
+      SEPAY_BANK: ${SEPAY_BANK:-MBBank}
     volumes:
       - uploads:/app/dist/public/uploads
     depends_on:
