@@ -68,5 +68,21 @@ export const uploadFiles = async (files: File[]): Promise<string[]> => {
   return response.data.urls as string[];
 };
 
+// Payments
+export const createPayment = async (orderId: number) => {
+  const response = await api.post('/api/payments', { orderId });
+  return response.data;
+};
+
+export const getPaymentStatus = async (orderId: number) => {
+  const response = await api.get(`/api/payments/order/${orderId}`);
+  return response.data;
+};
+
+export const getPaymentByQrName = async (qrName: string) => {
+  const response = await api.get(`/api/payments/qr/${qrName}`);
+  return response.data;
+};
+
 export default api;
 

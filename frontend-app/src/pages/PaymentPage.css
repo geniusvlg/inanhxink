@@ -1,0 +1,162 @@
+.payment-page {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.payment-page .app-title {
+  margin-bottom: 1rem;
+}
+
+.payment-back-button {
+  display: inline-block;
+  padding: 0.6rem 1.5rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.15s;
+}
+
+.payment-back-button:hover {
+  background: #e5e7eb;
+}
+
+.payment-qr-container {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+}
+
+.payment-qr-container img {
+  max-width: 280px;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.payment-bank-info {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1rem 1.5rem;
+  margin: 0 auto 1.5rem;
+  max-width: 400px;
+}
+
+.payment-bank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.payment-bank-row:last-child {
+  border-bottom: none;
+}
+
+.payment-bank-label {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.payment-bank-value {
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.payment-copy-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  color: #9ca3af;
+  transition: color 0.15s;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.payment-copy-button:hover {
+  color: #6b7280;
+}
+
+.payment-amount {
+  color: #e63b7a;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.payment-status {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.payment-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.payment-status.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.payment-note {
+  color: #9ca3af;
+  font-size: 0.8rem;
+  margin-top: 1rem;
+  line-height: 1.4;
+}
+
+.payment-success-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.payment-success-title {
+  color: #16a34a;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.payment-live-url {
+  display: inline-block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #e63b7a, #ff512f);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  margin: 0.5rem 0 1.5rem;
+  word-break: break-all;
+}
+
+.payment-new-order-button {
+  background: none;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
+  color: #555;
+  font-size: 0.9rem;
+  transition: background-color 0.15s;
+}
+
+.payment-new-order-button:hover {
+  background: #f3f4f6;
+}

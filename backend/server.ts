@@ -139,11 +139,13 @@ import templatesRouter from './routes/templates';
 import vouchersRouter from './routes/vouchers';
 import ordersRouter from './routes/orders';
 import qrcodesRouter from './routes/qrcodes';
+import paymentsRouter from './routes/payments';
 
 app.use('/api/templates', templatesRouter);
 app.use('/api/vouchers', vouchersRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/qrcodes', qrcodesRouter);
+app.use('/api/payments', paymentsRouter);
 
 // ── Template serving helpers ─────────────────────────────────────────────────
 const templatesRoot = path.join(__dirname, 'public', 'templates');
