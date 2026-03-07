@@ -1,5 +1,6 @@
 services:
   frontend:
+    image: ghcr.io/geniusvlg/inanhxink/frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend-app
       args:
@@ -25,6 +26,7 @@ services:
       retries: 5
 
   backend:
+    image: ghcr.io/geniusvlg/inanhxink/backend:${IMAGE_TAG:-latest}
     build: ./backend
     environment:
       NODE_ENV: production
