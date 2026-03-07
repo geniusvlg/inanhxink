@@ -219,15 +219,15 @@ function OrderPage() {
             <div className="price-breakdown">
               <div className="price-line">
                 <span>Giá gốc:</span>
-                <span>{totals.subtotal.toLocaleString('vi-VN')}đ</span>
+                <span>{totals.subtotal.toLocaleString('en')}đ</span>
               </div>
               <div className="price-line discount">
                 <span>Giảm giá:</span>
-                <span>-{totals.discount.toLocaleString('vi-VN')}đ</span>
+                <span>-{totals.discount.toLocaleString('en')}đ</span>
               </div>
               <div className="price-line total">
                 <span>Tổng cộng:</span>
-                <span>{totals.total.toLocaleString('vi-VN')}đ</span>
+                <span>{totals.total.toLocaleString('en')}đ</span>
               </div>
             </div>
           )}

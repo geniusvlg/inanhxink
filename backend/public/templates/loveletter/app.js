@@ -1,5 +1,5 @@
 /**
- * uynuyn.tokitoki.love — loveletter template clone
+ * uynuyn.inanhxink.com — loveletter template clone
  * Data sourced from /dynamic/data.js on the live site.
  */
 

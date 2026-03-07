@@ -10,22 +10,6 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
-      // Proxy TokiToki assets
-      '/qrTemplate': {
-        target: 'https://order.tokitoki.love',
-        changeOrigin: true,
-        secure: true,
-      },
-      '/static': {
-        target: 'https://order.tokitoki.love',
-        changeOrigin: true,
-        secure: true,
-      },
-      '/logo-vpbank.webp': {
-        target: 'https://order.tokitoki.love',
-        changeOrigin: true,
-        secure: true,
-      },
       // Proxy template images from backend
       '/backend-templates': {
         target: 'http://localhost:3001',
@@ -35,4 +19,3 @@ export default defineConfig({
     },
   },
 })
-

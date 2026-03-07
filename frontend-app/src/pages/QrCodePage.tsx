@@ -7,7 +7,7 @@ import './QrCodePage.css';
  * by Express at {qrName}.inanhxink.com — not via React Router.
  *
  * This page exists only as a convenience redirect: if someone accesses
- * order.inanhxink.com/qr/anhle they get redirected to anhle.inanhxink.com.
+ * store.inanhxink.com/qr/anhle they get redirected to anhle.inanhxink.com.
  */
 function QrCodePage() {
   const { qrName } = useParams<{ qrName: string }>();
