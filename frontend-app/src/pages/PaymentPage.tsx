@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createPayment, getPaymentByQrName } from '../services/api';
+import StyledQRCode from '../components/QRCode';
 import './PaymentPage.css';
 
 interface OrderInfo {
@@ -162,7 +163,11 @@ function PaymentPage() {
           >
             {liveUrl}
           </a>
-          <br />
+
+          <div style={{ margin: '1.5rem 0' }}>
+            <StyledQRCode url={liveUrl} />
+          </div>
+
           <button onClick={handleGoBack} className="payment-new-order-button">
             Đặt thêm
           </button>
