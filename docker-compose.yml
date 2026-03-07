@@ -4,7 +4,7 @@ services:
     build:
       context: ./frontend-app
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://store.inanhxink.com}
+        VITE_API_URL: ${VITE_API_URL:-https://inanhxink.com}
     volumes:
       - frontend_dist:/dist
 

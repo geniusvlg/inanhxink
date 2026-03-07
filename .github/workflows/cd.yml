@@ -37,7 +37,7 @@ jobs:
             ${{ env.IMAGE_PREFIX }}/frontend:latest
             ${{ env.IMAGE_PREFIX }}/frontend:sha-${{ github.sha }}
           build-args: |
-            VITE_API_URL=https://store.inanhxink.com
+            VITE_API_URL=https://inanhxink.com
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
