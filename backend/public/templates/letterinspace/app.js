@@ -1,4 +1,4 @@
-const textData = window.dataFromSubdomain?.data?.texts || ['tokitoki.love', 'khám phá vũ trụ', 'yêu em mãi mãi'];
+const textData = window.dataFromSubdomain?.data?.texts || ['inanhxink.com', 'khám phá vũ trụ', 'yêu em mãi mãi'];
 const songUrl = window.dataFromSubdomain?.data?.song;
 const width = window.innerWidth;
 const height = window.innerHeight;

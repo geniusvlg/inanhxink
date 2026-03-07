@@ -31,14 +31,14 @@ function QrNameInput({ value, onChange, onValidation }: QrNameInputProps) {
     setTimeout(() => {
       setIsValid(true);
       setMessage('Tên QR có sẵn!');
-      onValidation(true, `${value}.tokitoki.love`);
+      onValidation(true, `${value}.inanhxink.com`);
       setChecking(false);
     }, 500);
   };
 
   return (
     <div className="qr-name-input">
-      <label>Tên QR (tên.tokitoki.love)</label>
+      <label>Tên QR (tên.inanhxink.com)</label>
       <div className="qr-name-input-group">
         <input
           type="text"
@@ -62,7 +62,7 @@ function QrNameInput({ value, onChange, onValidation }: QrNameInputProps) {
       )}
       {isValid && (
         <div className="qr-name-url">
-          URL: <strong>{value}.tokitoki.love</strong>
+          URL: <strong>{value}.inanhxink.com</strong>
         </div>
       )}
     </div>

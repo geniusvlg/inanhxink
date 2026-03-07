@@ -211,7 +211,7 @@ function PaymentPage() {
               <div className="payment-bank-row">
                 <span className="payment-bank-label">Số tiền:</span>
                 <span className="payment-bank-value payment-amount">
-                  {payment.amount.toLocaleString('vi-VN')}đ
+                  {payment.amount.toLocaleString('en')}đ
                 </span>
               </div>
             </div>

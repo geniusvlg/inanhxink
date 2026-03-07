@@ -40,7 +40,7 @@ function getSubdomain(req: Request): string | null {
   // Production: subdomain is the first label of the Host header
   const parts = host.split('.');
   const sub = parts[0];
-  if (!sub || sub === 'order' || sub === 'www') return null;
+  if (!sub || sub === 'store' || sub === 'www') return null;
   return sub;
 }
 

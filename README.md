@@ -1,11 +1,9 @@
-# TokiToki.Love - QR Code Ordering System
-
-A full-stack web application inspired by TokiToki.Love for creating and ordering custom QR codes with beautiful templates.
+# inanhxink.com - QR Code Ordering System
 
 ## Features
 
 - 🎨 **Template Selection** - Choose from 10 beautiful templates
-- 🔤 **Custom QR Names** - Create unique subdomains (name.tokitoki.love)
+- 🔤 **Custom QR Names** - Create unique subdomains (name.inanhxink.com)
 - ✍️ **Content Editor** - Add custom messages (max 11 lines, 7 chars per line)
 - 🎁 **Keychain Option** - Optional QR keychain purchase
 - 💝 **Tip System** - Add tips to show extra love

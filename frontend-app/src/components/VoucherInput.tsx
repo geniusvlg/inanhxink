@@ -90,7 +90,7 @@ function VoucherInput({ onVoucherValidated }: VoucherInputProps) {
           ✓ Voucher hợp lệ: Giảm{' '}
           {voucher.discountType === 'percentage'
             ? `${voucher.discountValue}%`
-            : `${voucher.discountValue.toLocaleString('vi-VN')}đ`}
+            : `${voucher.discountValue.toLocaleString('en')}đ`}
         </div>
       )}
     </div>

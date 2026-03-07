@@ -57,7 +57,7 @@ function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: Te
             </div>
             <div className="template-info">
               <div className="template-name">{template.name}</div>
-              <div className="template-price">{template.price.toLocaleString('vi-VN')}đ</div>
+              <div className="template-price">{Number(template.price).toLocaleString('en')}đ</div>
             </div>
           </div>
         ))}
@@ -70,7 +70,7 @@ function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: Te
           </div>
           <div className="template-selected-row">
             <span className="template-selected-label">Giá:</span>
-            <span className="template-selected-price">{selectedTemplate.price.toLocaleString('vi-VN')}đ</span>
+            <span className="template-selected-price">{Number(selectedTemplate.price).toLocaleString('en')}đ</span>
           </div>
         </div>
       )}

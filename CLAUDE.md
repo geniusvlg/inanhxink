@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **inanhxink** is a QR-code ordering system where customers purchase a personalised subdomain (e.g. `anhyeuem.inanhxink.com`) that serves a themed template page. The system has two user-facing surfaces:
 
-1. **Order site** (`order.inanhxink.com`) — React SPA where customers choose a template, pick a `qr_name`, customise content, and submit an order.
+1. **Order site** (`store.inanhxink.com`) — React SPA where customers choose a template, pick a `qr_name`, customise content, and submit an order.
 2. **Template pages** (`<qr_name>.inanhxink.com`) — Static HTML/JS pages (stored in `backend/public/templates/`) that are served by Express with per-subdomain data injected as globals (`window.__SUBDOMAIN__`, `window.dataFromSubdomain`).
 
 ## Repository Layout
@@ -74,7 +74,7 @@ DB_PASSWORD=<strong_password>
 
 ```
 Browser → nginx (:443)
-  ├── order.inanhxink.com         → /var/www/order (React static) + /api/ → backend:3001
+  ├── store.inanhxink.com         → /var/www/order (React static) + /api/ → backend:3001
   └── *.inanhxink.com             → backend:3001 (Express catch-all)
 ```
 
