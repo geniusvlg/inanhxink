@@ -62,8 +62,8 @@ export const getQrCodeByName = async (qrName: string) => {
 export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
-  if (qrName) formData.append('qrName', qrName);
-  const response = await api.post('/api/upload', formData, {
+  const url = qrName ? `/api/upload?qrName=${encodeURIComponent(qrName)}` : '/api/upload';
+  const response = await api.post(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data.urls as string[];

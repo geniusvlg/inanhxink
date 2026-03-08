@@ -27,8 +27,8 @@
 
 .voucher-input-group input:focus {
   outline: none;
-  border-color: #ec4899;
-  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.1);
+  border-color: #ffc9c9;
+  box-shadow: 0 0 0 3px rgba(255, 201, 201, 0.3);
 }
 
 .voucher-input-group input.error {
@@ -51,12 +51,12 @@
 }
 
 .check-button {
-  background: #ec4899;
+  background: #f05448;
   color: white;
 }
 
 .check-button:hover:not(:disabled) {
-  background: #db2777;
+  background: #d94a3f;
 }
 
 .check-button:disabled {

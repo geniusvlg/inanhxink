@@ -34,7 +34,7 @@ function QrCodePage() {
     <div className="qr-code-page loading">
       <div className="loading-text">
         Đang chuyển hướng tới{' '}
-        <a href={targetUrl!} style={{ color: '#e63b7a' }}>
+        <a href={targetUrl!} style={{ color: '#f05448' }}>
           {targetUrl}
         </a>
         …

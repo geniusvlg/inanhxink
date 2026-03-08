@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createPayment, getPaymentByQrName } from '../services/api';
-import StyledQRCode from '../components/QRCode';
 import './PaymentPage.css';
 
 interface OrderInfo {
@@ -28,7 +27,10 @@ function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
+  const [pollExpired, setPollExpired] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(5 * 60);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load order and payment info by qrName
   useEffect(() => {
@@ -87,9 +89,17 @@ function PaymentPage() {
     loadPaymentInfo();
   }, [qrName, navigate]);
 
-  // Poll for payment status
+  // Poll for payment status + countdown timer
   useEffect(() => {
     if (!order || isPaid) return;
+
+    const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+    const timeoutId = setTimeout(() => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      setPollExpired(true);
+    }, POLL_TIMEOUT_MS);
 
     pollingRef.current = setInterval(async () => {
       try {
@@ -98,14 +108,28 @@ function PaymentPage() {
           setIsPaid(true);
           if (res.payment) setPayment(res.payment);
           if (pollingRef.current) clearInterval(pollingRef.current);
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          clearTimeout(timeoutId);
         }
       } catch {
         // Silently ignore polling errors
       }
     }, 5000);
 
+    countdownRef.current = setInterval(() => {
+      setSecondsLeft(s => {
+        if (s <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      clearTimeout(timeoutId);
     };
   }, [order, isPaid]);
 
@@ -117,6 +141,12 @@ function PaymentPage() {
 
   const handleGoBack = () => {
     navigate('/', { replace: true });
+  };
+
+  const formatCountdown = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
   if (loading) {
@@ -144,36 +174,10 @@ function PaymentPage() {
     );
   }
 
-  const liveUrl = `https://${order.fullUrl}`;
-
-  // ── Payment confirmed ────────────────────────────────────────────────────
+  // ── Payment confirmed — redirect to QR customization ─────────────────────
   if (isPaid) {
-    return (
-      <div className="app">
-        <div className="app-container payment-page">
-          <h1 className="app-title">Inanhxink</h1>
-          <div className="payment-success-icon">🎉</div>
-          <div className="payment-success-title">Thanh toán thành công!</div>
-          <p style={{ marginBottom: '0.5rem' }}>Trang của bạn đã sẵn sàng tại:</p>
-          <a
-            href={liveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="payment-live-url"
-          >
-            {liveUrl}
-          </a>
-
-          <div style={{ margin: '1.5rem 0' }}>
-            <StyledQRCode url={liveUrl} />
-          </div>
-
-          <button onClick={handleGoBack} className="payment-new-order-button">
-            Đặt thêm
-          </button>
-        </div>
-      </div>
-    );
+    navigate(`/qr/${order.qrName}`, { replace: true });
+    return null;
   }
 
   // ── Payment QR page ──────────────────────────────────────────────────────
@@ -196,6 +200,19 @@ function PaymentPage() {
 
             <div className="payment-bank-info">
               <div className="payment-bank-row">
+                <span className="payment-bank-label">Số tài khoản:</span>
+                <span className="payment-bank-value">
+                  77741116868
+                  <button
+                    className="payment-copy-button"
+                    onClick={() => handleCopy('77741116868', 'account')}
+                    title="Sao chép"
+                  >
+                    {copied === 'account' ? '✓' : '📋'}
+                  </button>
+                </span>
+              </div>
+              <div className="payment-bank-row">
                 <span className="payment-bank-label">Nội dung CK:</span>
                 <span className="payment-bank-value">
                   {payment.paymentCode}
@@ -216,9 +233,20 @@ function PaymentPage() {
               </div>
             </div>
 
-            <div className="payment-status pending">
-              Đang chờ thanh toán...
-            </div>
+            {pollExpired ? (
+              <div className="payment-status pending">
+                Phiên thanh toán đã hết hạn. Vui lòng tải lại trang nếu bạn đã thanh toán.
+              </div>
+            ) : (
+              <>
+                <div className="payment-countdown">
+                  Phiên thanh toán còn <span className={secondsLeft <= 60 ? 'payment-countdown-urgent' : ''}>{formatCountdown(secondsLeft)}</span>
+                </div>
+                <div className="payment-status pending">
+                  Đang chờ thanh toán...
+                </div>
+              </>
+            )}
 
             <p className="payment-note">
               Quét mã QR bằng app ngân hàng để thanh toán.<br />

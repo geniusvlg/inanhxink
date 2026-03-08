@@ -6,7 +6,7 @@
   display: block;
   margin-bottom: 0.25rem;
   font-weight: 500;
-  color: #ec4899;
+  color: #f05448;
 }
 
 .tip-buttons {
@@ -27,20 +27,20 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
   background: white;
-  color: #db2777;
+  color: #f05448;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .tip-button:hover {
-  border-color: #ec4899;
+  border-color: #ffc9c9;
   background: #fdf2f8;
 }
 
 .tip-button.selected {
-  border-color: #db2777;
-  background: #ec4899;
+  border-color: #f05448;
+  background: #f05448;
   color: white;
 }
 
@@ -59,8 +59,8 @@
 
 .custom-tip-input input:focus {
   outline: none;
-  border-color: #ec4899;
-  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.1);
+  border-color: #ffc9c9;
+  box-shadow: 0 0 0 3px rgba(255, 201, 201, 0.3);
 }
 
 .custom-tip-input span {

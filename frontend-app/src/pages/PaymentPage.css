@@ -1,3 +1,7 @@
+.app:has(.payment-page) {
+  background: linear-gradient(180deg, #ffc9c9 0%, #fff5f5 40%, #f9fafb 100%);
+}
+
 .payment-page {
   text-align: center;
   padding: 1.5rem;
@@ -8,7 +12,8 @@
 }
 
 .payment-back-button {
-  display: inline-block;
+  display: block;
+  margin: 0 auto 1.5rem;
   padding: 0.6rem 1.5rem;
   background: #f3f4f6;
   color: #374151;
@@ -17,7 +22,6 @@
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  margin-bottom: 1.5rem;
   transition: background-color 0.15s;
 }
 
@@ -30,8 +34,9 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
   padding: 1rem;
-  margin-bottom: 1.5rem;
-  display: inline-block;
+  margin: 0 auto 1.5rem;
+  display: block;
+  width: fit-content;
 }
 
 .payment-qr-container img {
@@ -42,8 +47,8 @@
 }
 
 .payment-bank-info {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: #fff;
+  border: 1px solid #ffc9c9;
   border-radius: 0.75rem;
   padding: 1rem 1.5rem;
   margin: 0 auto 1.5rem;
@@ -91,7 +96,7 @@
 }
 
 .payment-amount {
-  color: #e63b7a;
+  color: #f05448;
   font-size: 1.3rem;
   font-weight: 700;
 }
@@ -138,7 +143,7 @@
   font-size: 1rem;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #e63b7a, #ff512f);
+  background: linear-gradient(135deg, #f05448, #ff512f);
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   text-decoration: none;
@@ -159,4 +164,20 @@
 
 .payment-new-order-button:hover {
   background: #f3f4f6;
+}
+
+.payment-countdown {
+  text-align: center;
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.payment-countdown span {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.payment-countdown-urgent {
+  color: #e53e3e;
 }

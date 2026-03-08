@@ -51,13 +51,6 @@ function OrderPage() {
     }
   }, [preselectedTemplateId, selectedTemplate]);
 
-  // Auto-scroll when template changes
-  useEffect(() => {
-    if (!selectedTemplate) return;
-    const target = document.querySelector<HTMLElement>('.content-editor textarea, .content-editor');
-    if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
-  }, [selectedTemplate]);
-
   const calculateTotal = () => {
     let subtotal = selectedTemplate ? selectedTemplate.price : 0;
     const MUSIC_PRICE = 10000;
@@ -162,7 +155,7 @@ function OrderPage() {
       />
 
       {qrNameValid && qrUrl && (
-        <div style={{ textAlign: 'center', margin: '0.5rem 0 1rem', color: '#e63b7a', fontWeight: 600 }}>
+        <div style={{ textAlign: 'center', margin: '0.5rem 0 1rem', color: '#f05448', fontWeight: 600 }}>
           URL của bạn: <span style={{ textDecoration: 'underline' }}>{qrUrl}</span>
         </div>
       )}
@@ -177,12 +170,7 @@ function OrderPage() {
         images={uploadedImages}
         onImagesChange={setUploadedImages}
         maxImages={9}
-        onImageSelected={() => {
-          setTimeout(() => {
-            const music = document.querySelector<HTMLElement>('.music-option');
-            if (music) music.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 200);
-        }}
+        onImageSelected={() => {}}
       />
 
       <MusicOption
@@ -213,6 +201,12 @@ function OrderPage() {
       <VoucherInput onVoucherValidated={handleVoucherValidated} />
 
       <div className="payment-section">
+        {!qrNameValid && (
+          <div className="qr-name-reminder">
+            <span className="qr-name-reminder-arrow">↑</span>
+            <span>Nhập tên QR trước nhé!</span>
+          </div>
+        )}
         <button
           onClick={handleSubmit}
           disabled={submitting || !selectedTemplate || !qrNameValid}

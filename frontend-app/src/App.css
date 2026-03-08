@@ -26,7 +26,7 @@
 
 .app-title {
   text-align: center;
-  color: #ec4899;
+  color: #f05448;
   font-size: 2rem;
   margin-bottom: 1.5rem;
   font-weight: 700;
@@ -54,7 +54,7 @@
 }
 
 .order-success strong {
-  color: #ec4899;
+  color: #f05448;
 }
 
 .close-button {
@@ -141,7 +141,7 @@
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
-  accent-color: #db2777;
+  accent-color: #f05448;
   flex-shrink: 0;
   border-radius: 0.25rem;
 }
@@ -152,10 +152,30 @@
   border-top: 1px solid #e5e7eb;
 }
 
+.qr-name-reminder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 0.75rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.qr-name-reminder-arrow {
+  font-size: 1.25rem;
+  animation: bounce-up 1s ease-in-out infinite;
+}
+
+@keyframes bounce-up {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
 .payment-button {
   width: 100%;
   padding: 0.75rem 2rem;
-  background: #db2777;
+  background: #f05448;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -170,7 +190,7 @@
 }
 
 .payment-button:hover:not(:disabled) {
-  background: #be185d;
+  background: #d94a3f;
 }
 
 .payment-button:disabled {
@@ -200,7 +220,7 @@
 .price-line.total {
   font-weight: 700;
   font-size: 1.1rem;
-  color: #ec4899;
+  color: #f05448;
   border-top: 1px solid #e5e7eb;
   padding-top: 0.75rem;
   margin-top: 0.5rem;
@@ -219,7 +239,7 @@
 }
 
 .back-link:hover {
-  color: #db2777;
+  color: #f05448;
 }
 
 .preselected-template {
@@ -254,7 +274,7 @@
 .preselected-template-price {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #db2777;
+  color: #f05448;
   margin-top: 0.25rem;
 }
 
@@ -296,7 +316,7 @@
 .order-detail-price {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #db2777;
+  color: #f05448;
   margin-bottom: 1.5rem;
 }
 

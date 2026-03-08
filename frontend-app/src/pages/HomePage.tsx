@@ -36,7 +36,7 @@ function HomePage() {
       <header className="homepage-header">
         <Link to="/" className="homepage-logo">
           <img src={logo} alt="Inanhxink" className="homepage-logo-img" />
-          <span className="homepage-logo-text"><strong>miuynstore</strong> In Ảnh Xink</span>
+          <span className="homepage-logo-text">In Ảnh Xink</span>
         </Link>
       </header>
 

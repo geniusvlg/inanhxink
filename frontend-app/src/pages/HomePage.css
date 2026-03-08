@@ -51,7 +51,7 @@
 }
 
 .homepage-hero-title span {
-  color: #db2777;
+  color: #f05448;
 }
 
 .homepage-hero-desc {
@@ -119,7 +119,7 @@
 .product-card-price {
   font-size: 1rem;
   font-weight: 700;
-  color: #db2777;
+  color: #f05448;
   margin-bottom: 1rem;
 }
 
@@ -131,10 +131,10 @@
 .btn-detail {
   flex: 1;
   padding: 0.5rem 0;
-  border: 2px solid #db2777;
+  border: 2px solid #ffc9c9;
   border-radius: 0.5rem;
   background: transparent;
-  color: #db2777;
+  color: #f05448;
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
@@ -152,7 +152,7 @@
   padding: 0.5rem 0;
   border: none;
   border-radius: 0.5rem;
-  background: #db2777;
+  background: #f05448;
   color: #fff;
   font-weight: 600;
   font-size: 0.875rem;
@@ -163,7 +163,7 @@
 }
 
 .btn-buy:hover {
-  background: #be185d;
+  background: #d94a3f;
 }
 
 /* Loading / error */

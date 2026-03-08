@@ -55,7 +55,7 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
-    const qrName = (req.body?.qrName || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const qrName = ((req.query?.qrName as string) || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
     const dest = qrName ? path.join(uploadsDir, qrName) : uploadsDir;
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
     cb(null, dest);
@@ -84,13 +84,34 @@ app.use('/static', express.static(path.join(__dirname, 'public')));
 app.use('/templates', express.static(path.join(__dirname, 'public', 'templates')));
 
 // ── File upload endpoint ─────────────────────────────────────────────────────
-app.post('/api/upload', upload.array('files', 20), (req: Request, res: Response) => {
+app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files uploaded' });
     }
-    const qrName = (req.body?.qrName || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const qrName = ((req.query?.qrName as string) || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+    if (qrName) {
+      // Guard: never wipe files for an already-paid qrName
+      const paid = await db.query(
+        `SELECT 1 FROM orders WHERE qr_name = $1 AND payment_status = 'paid' LIMIT 1`,
+        [qrName]
+      );
+
+      if (paid.rows.length === 0) {
+        // Delete any pre-existing files from abandoned uploads
+        const newFilenames = new Set(files.map(f => f.filename));
+        const dir = path.join(uploadsDir, qrName);
+        const existing = fs.readdirSync(dir);
+        for (const filename of existing) {
+          if (!newFilenames.has(filename)) {
+            fs.unlinkSync(path.join(dir, filename));
+          }
+        }
+      }
+    }
+
     const urls = files.map(f => qrName ? `/uploads/${qrName}/${f.filename}` : `/uploads/${f.filename}`);
     return res.json({ success: true, urls });
   } catch (err) {

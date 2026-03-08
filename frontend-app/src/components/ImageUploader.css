@@ -16,7 +16,7 @@
 
 .batch-upload-button {
   padding: 0.5rem 1rem;
-  background: #ec4899;
+  background: #f05448;
   color: white;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -26,7 +26,7 @@
 }
 
 .batch-upload-button:hover {
-  background: #db2777;
+  background: #d94a3f;
 }
 
 .batch-upload-label input:disabled + .batch-upload-button {
@@ -71,7 +71,7 @@
 }
 
 .image-upload-placeholder:hover {
-  border-color: #ec4899;
+  border-color: #ffc9c9;
   background: #fdf2f8;
 }
 
