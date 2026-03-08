@@ -54,7 +54,12 @@ const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  destination: (req, _file, cb) => {
+    const qrName = (req.body?.qrName || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const dest = qrName ? path.join(uploadsDir, qrName) : uploadsDir;
+    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
@@ -85,7 +90,8 @@ app.post('/api/upload', upload.array('files', 20), (req: Request, res: Response)
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files uploaded' });
     }
-    const urls = files.map(f => `/uploads/${f.filename}`);
+    const qrName = (req.body?.qrName || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const urls = files.map(f => qrName ? `/uploads/${qrName}/${f.filename}` : `/uploads/${f.filename}`);
     return res.json({ success: true, urls });
   } catch (err) {
     const e = err as Error;

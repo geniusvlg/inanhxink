@@ -119,7 +119,7 @@ function OrderPage() {
       const realFiles = uploadedImages.filter(Boolean) as File[];
       let imageUrls: string[] = [];
       if (realFiles.length > 0) {
-        imageUrls = await uploadFiles(realFiles);
+        imageUrls = await uploadFiles(realFiles, qrName);
       }
 
       const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);

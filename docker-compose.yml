@@ -41,7 +41,7 @@ services:
       SEPAY_ACCOUNT_NO: ${SEPAY_ACCOUNT_NO}
       SEPAY_BANK: ${SEPAY_BANK:-MBBank}
     volumes:
-      - uploads:/app/dist/public/uploads
+      - ./uploads:/app/dist/public/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,5 +63,4 @@ services:
 
 volumes:
   postgres_data:
-  uploads:
   frontend_dist:

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { checkQrName } from '../services/api';
 import './QrNameInput.css';
 
 interface QrNameInputProps {
@@ -19,7 +20,7 @@ function QrNameInput({ value, onChange, onValidation }: QrNameInputProps) {
     setMessage('');
   };
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     if (!value.trim()) {
       setMessage('Vui lòng nhập tên QR');
       setIsValid(false);
@@ -27,13 +28,24 @@ function QrNameInput({ value, onChange, onValidation }: QrNameInputProps) {
     }
 
     setChecking(true);
-    // Mock validation - always return available for display purposes
-    setTimeout(() => {
-      setIsValid(true);
-      setMessage('Tên QR có sẵn!');
-      onValidation(true, `${value}.inanhxink.com`);
+    try {
+      const data = await checkQrName(value);
+      if (data.available) {
+        setIsValid(true);
+        setMessage('Tên QR có sẵn!');
+        onValidation(true, `${value}.inanhxink.com`);
+      } else {
+        setIsValid(false);
+        setMessage('Tên QR đã được sử dụng, vui lòng chọn tên khác');
+        onValidation(false);
+      }
+    } catch {
+      setIsValid(false);
+      setMessage('Không thể kiểm tra, vui lòng thử lại');
+      onValidation(false);
+    } finally {
       setChecking(false);
-    }, 500);
+    }
   };
 
   return (
