@@ -6,13 +6,12 @@ const router: Router = express.Router();
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
 
 // Valid template types that we have cloned
-const VALID_TEMPLATE_TYPES = ['galaxy', 'christmas', 'loveletter'] as const;
+const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter'] as const;
 type TemplateType = typeof VALID_TEMPLATE_TYPES[number];
 
 // Map the frontend template IDs to the template_type folder names
 const TEMPLATE_TYPE_MAP: Record<string, TemplateType> = {
   letterinspace: 'galaxy',
-  christmastree: 'christmas',
   loveletter: 'loveletter',
 };
 
@@ -92,10 +91,10 @@ interface CreateOrderBody {
   // Identification
   qrName: string;
   templateId: number | string;
-  templateType?: string;         // 'galaxy' | 'christmas' | 'loveletter'
+  templateType?: string;         // 'galaxy' | 'loveletter'
   // Content varies by template type
-  content?: string;              // letter text (loveletter / christmas)
-  imageUrls?: string[];          // uploaded image URLs (galaxy / christmas / loveletter)
+  content?: string;              // letter text (loveletter)
+  imageUrls?: string[];          // uploaded image URLs (galaxy / loveletter)
   musicUrl?: string;             // music file URL
   // Legacy / extras
   musicLink?: string;

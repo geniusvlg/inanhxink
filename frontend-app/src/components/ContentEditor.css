@@ -18,7 +18,7 @@
   font-family: inherit;
   resize: vertical;
   transition: all 0.15s;
-  min-height: 100px;
+  min-height: 200px;
 }
 
 .content-textarea:focus {

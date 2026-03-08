@@ -60,7 +60,7 @@
 
 .image-upload-placeholder {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   border: 2px dashed #d1d5db;
   border-radius: 0.5rem;
   display: flex;
@@ -84,7 +84,7 @@
 .image-preview-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   border-radius: 0.5rem;
   overflow: hidden;
   border: 2px solid #e5e7eb;

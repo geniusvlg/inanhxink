@@ -1,0 +1,259 @@
+.homepage {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.homepage-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.5rem max(2rem, calc((100% - 1100px) / 2 + 2rem));
+}
+
+.homepage-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.homepage-logo-text {
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+.homepage-logo-img {
+  height: 80px;
+  width: auto;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Hero */
+.homepage-hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #ffc9c9 0%, #fff 100%);
+}
+
+.homepage-hero-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.homepage-hero-title span {
+  color: #db2777;
+}
+
+.homepage-hero-desc {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Products */
+.homepage-products {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.homepage-section-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 2rem;
+}
+
+.homepage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+/* Product card */
+.product-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.product-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.product-card-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: #f3f4f6;
+}
+
+.product-card-body {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.product-card-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.product-card-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #db2777;
+  margin-bottom: 1rem;
+}
+
+.product-card-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-detail {
+  flex: 1;
+  padding: 0.5rem 0;
+  border: 2px solid #db2777;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #db2777;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-detail:hover {
+  background: #fdf2f8;
+}
+
+.btn-buy {
+  flex: 1;
+  padding: 0.5rem 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: #db2777;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.btn-buy:hover {
+  background: #be185d;
+}
+
+/* Loading / error */
+.homepage-loading,
+.homepage-error {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+}
+
+.homepage-error {
+  color: #dc2626;
+}
+
+/* Footer */
+.homepage-footer {
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-top: auto;
+}
+
+.footer-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.footer-info p {
+  margin: 0.25rem 0;
+}
+
+.footer-social h4 {
+  color: #374151;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+
+.footer-social a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #6b7280;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s;
+}
+
+.footer-social a:hover {
+  color: #1f2937;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .homepage-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .homepage-hero-title {
+    font-size: 2rem;
+  }
+
+  .homepage-hero-desc {
+    font-size: 1rem;
+  }
+
+  .homepage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .homepage-header {
+    padding: 1rem;
+  }
+
+  .homepage-products {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+}
