@@ -10,6 +10,51 @@ interface ImageUploaderProps {
   onPreviewsChange?: (previews: string[]) => void;
 }
 
+// Compress image using Canvas API — resizes + re-encodes as JPEG if > maxSizeMB
+const compressImage = (file: File, maxSizeMB = 2, maxDimension = 1920): Promise<File> => {
+  return new Promise((resolve) => {
+    if (file.size <= maxSizeMB * 1024 * 1024) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          const compressed = new File(
+            [blob],
+            file.name.replace(/\.[^.]+$/, '.jpg'),
+            { type: 'image/jpeg', lastModified: Date.now() }
+          );
+          resolve(compressed);
+        },
+        'image/jpeg',
+        0.85
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+};
+
 function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected, initialPreviews, onPreviewsChange }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>(initialPreviews || []);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -25,49 +70,36 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     }
   }, [images, onImageSelected]);
 
-  const handleFileChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Vui lòng chọn file ảnh');
       return;
     }
 
-    // Validate file size (max 5MB per image)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 5MB');
-      return;
-    }
+    const compressed = await compressImage(file);
 
     const newImages: (File | null)[] = [...images];
-    // Ensure array is long enough, fill with null slots if needed
-    while (newImages.length <= index) {
-      newImages.push(null);
-    }
-    newImages[index] = file;
+    while (newImages.length <= index) newImages.push(null);
+    newImages[index] = compressed;
 
-    // Create preview
+    // Create preview from compressed file
     const reader = new FileReader();
     reader.onloadend = () => {
       const newPreviews = [...previews];
-      while (newPreviews.length <= index) {
-        newPreviews.push('');
-      }
+      while (newPreviews.length <= index) newPreviews.push('');
       newPreviews[index] = reader.result as string;
       setPreviews(newPreviews);
       onPreviewsChange?.(newPreviews);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(compressed);
 
     onImagesChange(newImages);
-    
-    // Scroll to next section after image is selected
+
     if (onImageSelected) {
-      setTimeout(() => {
-        onImageSelected();
-      }, 300);
+      setTimeout(() => onImageSelected(), 300);
     }
   };
 
@@ -91,16 +123,14 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     }
   };
 
-  const handleBatchUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBatchUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
     // Find empty slots
     const emptySlots: number[] = [];
     for (let i = 0; i < maxImages; i++) {
-      if (!images[i]) {
-        emptySlots.push(i);
-      }
+      if (!images[i]) emptySlots.push(i);
     }
 
     const slotsToFill = Math.min(files.length, emptySlots.length);
@@ -110,34 +140,33 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
       alert(`Chỉ có thể upload tối đa ${maxImages} ảnh. Đã thêm ${slotsToFill} ảnh đầu tiên.`);
     }
 
+    // Compress all files in parallel
+    const compressedFiles = await Promise.all(filesToAdd.map(f => compressImage(f)));
+
     const newImages: (File | null)[] = [...images];
     const newPreviews: string[] = [...previews];
 
-    // Create previews for all new images
     let loadedCount = 0;
-    filesToAdd.forEach((file, fileIndex) => {
+    compressedFiles.forEach((compressed, fileIndex) => {
       const slotIndex = emptySlots[fileIndex];
-      newImages[slotIndex] = file;
-      
+      newImages[slotIndex] = compressed;
+
       const reader = new FileReader();
       reader.onloadend = () => {
         newPreviews[slotIndex] = reader.result as string;
         loadedCount++;
-        if (loadedCount === filesToAdd.length) {
-          setPreviews(newPreviews);
-          onPreviewsChange?.(newPreviews);
+        if (loadedCount === compressedFiles.length) {
+          setPreviews([...newPreviews]);
+          onPreviewsChange?.([...newPreviews]);
         }
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressed);
     });
 
     onImagesChange(newImages);
-    
-    // Scroll to next section after batch upload
+
     if (onImageSelected && filesToAdd.length > 0) {
-      setTimeout(() => {
-        onImageSelected();
-      }, 500);
+      setTimeout(() => onImageSelected(), 500);
     }
   };
 
