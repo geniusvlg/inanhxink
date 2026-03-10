@@ -8,8 +8,9 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
-# Install yt-dlp
-RUN wget -O /usr/local/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp && \
+# Install python3 (required by yt-dlp) and yt-dlp binary
+RUN apk add --no-cache python3 && \
+    wget -O /usr/local/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp && \
     chmod +x /usr/local/bin/yt-dlp
 
 COPY --from=builder /app/package*.json ./
