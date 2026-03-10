@@ -14,6 +14,9 @@ docker compose pull frontend backend
 # Recreate containers with new images
 docker compose up -d
 
+# Always restart nginx to pick up any nginx.conf changes
+docker compose restart nginx
+
 # Clean up old images
 docker image prune -f
 
