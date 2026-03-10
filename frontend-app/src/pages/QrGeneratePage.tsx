@@ -5,7 +5,7 @@ import './QrGeneratePage.css';
 
 const QR_TEMPLATES = [
   { id: 'qr', name: 'Mã QR', thumbnail: '/qr-template/qr.png' },
-  { id: 'heart', name: 'Heart', thumbnail: '/qr-template/heart.png' },
+  { id: 'heart', name: 'Heart', thumbnail: '/qr-template/heart1.png' },
   { id: 'banhdeo', name: 'Bánh Dẻo', thumbnail: '/qr-template/banhdeo.png' },
   { id: 'capturedmoments', name: 'Captured Moments', thumbnail: '/qr-template/capturedmoments.png' },
 ];
