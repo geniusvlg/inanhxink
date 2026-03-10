@@ -18,7 +18,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const orderResult = await db.query(
-      'SELECT id, total_amount, payment_status FROM orders WHERE id = $1',
+      'SELECT id, total_amount, payment_status, qr_name FROM orders WHERE id = $1',
       [orderId]
     );
 
@@ -46,15 +46,15 @@ router.post('/', async (req: Request, res: Response) => {
           id: existing.id,
           qrUrl: existing.payment_qr_url,
           amount: parseFloat(order.total_amount),
-          paymentCode: `DH${orderId}`,
+          paymentCode: `INXK${orderId}${order.qr_name.toUpperCase()}`,
         },
       });
     }
 
     const amount = Math.round(parseFloat(order.total_amount));
-    const paymentCode = `DH${orderId}`;
+    const paymentCode = `INXK${orderId}${order.qr_name.toUpperCase()}`;
 
-    const qrUrl = `https://qr.sepay.vn/img?acc=${encodeURIComponent(SEPAY_ACCOUNT_NO)}&bank=${encodeURIComponent(SEPAY_BANK)}&amount=${amount}&des=${encodeURIComponent(paymentCode)}`;
+    const qrUrl = `https://qr.sepay.vn/img?acc=${encodeURIComponent(SEPAY_ACCOUNT_NO)}&bank=${encodeURIComponent(SEPAY_BANK)}&amount=${amount}&des=${encodeURIComponent(paymentCode)}&template=compact`;
 
     const paymentResult = await db.query(
       `INSERT INTO transactions (order_id, amount, status, payment_qr_url)
@@ -108,8 +108,8 @@ router.post('/webhook', async (req: Request, res: Response) => {
       return res.json({ success: true, message: 'Ignored: not an incoming transfer' });
     }
 
-    // Parse order ID from content (e.g. "DH42" or "DH102969")
-    const match = webhookData.content?.match(/DH(\d+)/i);
+    // Parse order ID from content (e.g. "INXK9UYNUYN" or legacy "DH42")
+    const match = webhookData.content?.match(/INXK(\d+)/i);
     if (!match) {
       console.warn('Webhook: could not parse order ID from content:', webhookData.content);
       return res.json({ success: true, message: 'No matching order code found in content' });
@@ -130,6 +130,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     const tx = txResult.rows[0];
 
+    // Reject underpayment
+    const requiredAmount = parseFloat(tx.amount);
+    if (webhookData.transferAmount < requiredAmount) {
+      console.warn(`Webhook: underpayment for order ${orderId} — received ${webhookData.transferAmount}, required ${requiredAmount}`);
+      return res.json({ success: true, message: 'Underpayment ignored' });
+    }
+
     await db.query('BEGIN');
     try {
       // Mark transaction as paid
@@ -138,9 +145,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
          SET status = 'paid',
              sepay_transaction_id = $1,
              paid_at = NOW(),
-             updated_at = NOW()
-         WHERE id = $2`,
-        [webhookData.id, tx.id]
+             updated_at = NOW(),
+             webhook_payload = $2
+         WHERE id = $3`,
+        [webhookData.id, JSON.stringify(webhookData), tx.id]
       );
 
       // Update order payment_status
@@ -264,7 +272,7 @@ router.get('/qr/:qrName', async (req: Request<{ qrName: string }>, res: Response
         id: payment.id,
         qrUrl: payment.payment_qr_url,
         amount: parseFloat(payment.amount),
-        paymentCode: `DH${order.id}`,
+        paymentCode: `INXK${order.id}${order.qr_name.toUpperCase()}`,
         status: payment.status,
       } : null,
     });

@@ -59,13 +59,26 @@ export const getQrCodeByName = async (qrName: string) => {
 };
 
 // File upload
-export const uploadFiles = async (files: File[]): Promise<string[]> => {
+export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
-  const response = await api.post('/api/upload', formData, {
+  const url = qrName ? `/api/upload?qrName=${encodeURIComponent(qrName)}` : '/api/upload';
+  const response = await api.post(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data.urls as string[];
+};
+
+// Music extraction
+export const extractMusic = async (url: string, qrName?: string): Promise<string> => {
+  const response = await api.post('/api/music/extract', { url, qrName });
+  return response.data.url as string;
+};
+
+// Metadata / config
+export const getMetadata = async (): Promise<Record<string, string>> => {
+  const response = await api.get('/api/metadata');
+  return response.data.data as Record<string, string>;
 };
 
 // Payments

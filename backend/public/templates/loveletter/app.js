@@ -42,20 +42,26 @@ function setupBackgroundMusic() {
   const targetVolume = 0.8, fadeDuration = 3000, fadeSteps = 60;
   const volumeStep = targetVolume / fadeSteps;
   const stepDuration = fadeDuration / fadeSteps;
-  let currentVolume = 0;
+
   function startMusicWithFade() {
     backgroundMusic.play()
       .then(() => {
-        console.log("Background music started playing");
         const fadeInterval = setInterval(() => {
-          currentVolume = Math.min(currentVolume + volumeStep, targetVolume);
-          backgroundMusic.volume = currentVolume;
-          if (currentVolume >= targetVolume) clearInterval(fadeInterval);
+          backgroundMusic.volume = Math.min(backgroundMusic.volume + volumeStep, targetVolume);
+          if (backgroundMusic.volume >= targetVolume) clearInterval(fadeInterval);
         }, stepDuration);
       })
-      .catch((e) => console.log("Could not play background music:", e));
+      .catch(() => {});
   }
-  startMusicWithFade();
+
+  // Don't autoplay — wait for the first user interaction to satisfy browser policy
+  function onFirstInteraction() {
+    document.removeEventListener('click', onFirstInteraction);
+    document.removeEventListener('touchstart', onFirstInteraction);
+    startMusicWithFade();
+  }
+  document.addEventListener('click', onFirstInteraction);
+  document.addEventListener('touchstart', onFirstInteraction);
 }
 
 function renderImagesFromArray() {

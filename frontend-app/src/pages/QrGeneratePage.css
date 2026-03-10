@@ -20,7 +20,7 @@
 }
 
 .qr-gen-url-value {
-  color: #e63b7a;
+  color: #fe2c56;
   font-weight: 600;
   font-size: 1rem;
   word-break: break-all;
@@ -60,7 +60,7 @@
 }
 
 .qr-gen-template-card.selected {
-  border-color: #e63b7a;
+  border-color: #ffb3c1;
 }
 
 .qr-gen-template-card img {
@@ -68,6 +68,19 @@
   height: 120px;
   object-fit: cover;
   display: block;
+}
+
+.qr-gen-template-plain {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  background: #f3f4f6;
+  letter-spacing: 2px;
 }
 
 .qr-gen-template-card span {
@@ -82,7 +95,7 @@
 .qr-gen-button {
   width: 100%;
   padding: 0.75rem 2rem;
-  background: #db2777;
+  background: #fe2c56;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -94,7 +107,7 @@
 }
 
 .qr-gen-button:hover {
-  background: #be185d;
+  background: #e01e45;
 }
 
 .qr-gen-result {

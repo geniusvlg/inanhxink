@@ -8,9 +8,19 @@ interface QRTemplateConfig {
   qrSize: number;   // QR width/height in px
   canvasW: number;   // canvas width in px
   canvasH: number;   // canvas height in px
+  plainBg?: string;  // if set, use this solid background color instead of an image
 }
 
 const TEMPLATES: Record<string, QRTemplateConfig> = {
+  qr: {
+    color: '#000000',
+    qrX: 40,
+    qrY: 40,
+    qrSize: 440,
+    canvasW: 520,
+    canvasH: 520,
+    plainBg: '#ffffff',
+  },
   heart: {
     color: '#545353',
     qrX: 355,
@@ -85,8 +95,11 @@ function StyledQRCode({ url, template = 'heart' }: StyledQRCodeProps) {
 
       ctx.clearRect(0, 0, config.canvasW, config.canvasH);
 
-      // --- Layer 1: Background image ---
-      if (bgLoaded) {
+      // --- Layer 1: Background (solid color or image) ---
+      if (config.plainBg) {
+        ctx.fillStyle = config.plainBg;
+        ctx.fillRect(0, 0, config.canvasW, config.canvasH);
+      } else if (bgLoaded) {
         ctx.drawImage(bgImg, 0, 0, config.canvasW, config.canvasH);
       }
 
