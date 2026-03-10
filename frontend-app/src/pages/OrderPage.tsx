@@ -9,7 +9,7 @@ import TipSelector from '../components/TipSelector';
 import VoucherInput from '../components/VoucherInput';
 import ImageUploader from '../components/ImageUploader';
 import { type Template } from '../data/mockTemplates';
-import { createOrder, uploadFiles, getTemplate } from '../services/api';
+import { createOrder, uploadFiles, getTemplate, getMetadata } from '../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -36,10 +36,55 @@ function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [musicPrice, setMusicPrice] = useState(10000);
+  const [keychainPrice, setKeychainPrice] = useState(35000);
 
   const templateType = selectedTemplate?.template_type || '';
 
   const preselectedTemplateId = searchParams.get('template');
+
+  // Fetch prices from metadata
+  useEffect(() => {
+    getMetadata().then(data => {
+      if (data.music_price) setMusicPrice(parseInt(data.music_price));
+      if (data.keychain_price) setKeychainPrice(parseInt(data.keychain_price));
+    }).catch(() => {});
+  }, []);
+
+  // Restore draft from sessionStorage on mount
+  useEffect(() => {
+    const draft = sessionStorage.getItem('orderFormDraft');
+    if (draft) {
+      try {
+        const d = JSON.parse(draft);
+        if (d.selectedTemplate) setSelectedTemplate(d.selectedTemplate);
+        if (d.qrName) setQrName(d.qrName);
+        if (d.qrNameValid) setQrNameValid(d.qrNameValid);
+        if (d.qrUrl) setQrUrl(d.qrUrl);
+        if (d.content) setContent(d.content);
+        if (d.musicAdded) setMusicAdded(d.musicAdded);
+        if (d.musicLink) setMusicLink(d.musicLink);
+        if (d.keychainPurchased) setKeychainPurchased(d.keychainPurchased);
+        if (d.selectedTip !== undefined) setSelectedTip(d.selectedTip);
+        if (d.customTipAmount) setCustomTipAmount(d.customTipAmount);
+        if (d.voucher) setVoucher(d.voucher);
+        if (d.imagePreviews?.length) {
+          setImagePreviews(d.imagePreviews);
+          // Convert base64 previews back to File objects
+          Promise.all(
+            (d.imagePreviews as string[]).map(async (b64: string, i: number) => {
+              if (!b64) return null;
+              const res = await fetch(b64);
+              const blob = await res.blob();
+              return new File([blob], `image-${i}.jpg`, { type: blob.type });
+            })
+          ).then(files => setUploadedImages(files));
+        }
+      } catch { /* ignore */ }
+      sessionStorage.removeItem('orderFormDraft');
+    }
+  }, []);
 
   // Auto-select template from URL param
   useEffect(() => {
@@ -53,8 +98,8 @@ function OrderPage() {
 
   const calculateTotal = () => {
     let subtotal = selectedTemplate ? selectedTemplate.price : 0;
-    const MUSIC_PRICE = 10000;
-    if (musicAdded) subtotal += MUSIC_PRICE;
+    if (musicAdded) subtotal += musicPrice;
+    if (keychainPurchased) subtotal += keychainPrice;
     const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);
     subtotal += tipAmount;
     let total = subtotal;
@@ -96,6 +141,7 @@ function OrderPage() {
       setVoucher(null);
       setError('');
       setUploadedImages([]);
+      setImagePreviews([]);
     }
   };
 
@@ -105,6 +151,7 @@ function OrderPage() {
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
     if (!content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
 
     setSubmitting(true);
     try {
@@ -131,6 +178,11 @@ function OrderPage() {
       });
 
       if (response.success) {
+        sessionStorage.setItem('orderFormDraft', JSON.stringify({
+          selectedTemplate, qrName, qrNameValid, qrUrl, content,
+          musicAdded, musicLink, keychainPurchased, selectedTip,
+          customTipAmount, voucher, imagePreviews,
+        }));
         navigate(`/payment/${response.qrCode.qrName}`);
       } else {
         setError(response.error || 'Đặt hàng thất bại');
@@ -171,6 +223,8 @@ function OrderPage() {
         onImagesChange={setUploadedImages}
         maxImages={9}
         onImageSelected={() => {}}
+        initialPreviews={imagePreviews}
+        onPreviewsChange={setImagePreviews}
       />
 
       <MusicOption
@@ -178,6 +232,8 @@ function OrderPage() {
         onMusicToggle={setMusicAdded}
         musicLink={musicLink}
         onMusicLinkChange={setMusicLink}
+        qrName={qrName}
+        musicPrice={musicPrice}
       />
 
       <div className="keychain-option">
@@ -187,7 +243,7 @@ function OrderPage() {
             checked={keychainPurchased}
             onChange={(e) => setKeychainPurchased(e.target.checked)}
           />
-          Mua móc khóa quét QR (Đã bao gồm phí ship)
+          Mua móc khóa quét QR (Đã bao gồm phí ship) <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>+{keychainPrice.toLocaleString('en')}đ</span>
         </label>
       </div>
 
@@ -207,6 +263,7 @@ function OrderPage() {
             <span>Nhập tên QR trước nhé!</span>
           </div>
         )}
+        {error && <div className="error-message">{error}</div>}
         <button
           onClick={handleSubmit}
           disabled={submitting || !selectedTemplate || !qrNameValid}
@@ -244,8 +301,6 @@ function OrderPage() {
         <div className="app-container app-container--wide">
           <Link to="/" className="back-link">&larr; Quay lại</Link>
 
-          {error && <div className="error-message">{error}</div>}
-
           {selectedTemplate && (
             <>
               <div className="order-detail-layout">
@@ -276,8 +331,6 @@ function OrderPage() {
       <div className="app-container">
         <Link to="/" className="back-link">&larr; Quay lại</Link>
         <h1 className="app-title">Inanhxink</h1>
-
-        {error && <div className="error-message">{error}</div>}
 
         <TemplateSelector
           selectedTemplate={selectedTemplate}

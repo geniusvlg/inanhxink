@@ -6,10 +6,12 @@ interface ImageUploaderProps {
   onImagesChange: (images: (File | null)[]) => void;
   maxImages?: number;
   onImageSelected?: () => void;
+  initialPreviews?: string[];
+  onPreviewsChange?: (previews: string[]) => void;
 }
 
-function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected }: ImageUploaderProps) {
-  const [previews, setPreviews] = useState<string[]>([]);
+function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected, initialPreviews, onPreviewsChange }: ImageUploaderProps) {
+  const [previews, setPreviews] = useState<string[]>(initialPreviews || []);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Scroll to next section when image is selected
@@ -55,6 +57,7 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected 
       }
       newPreviews[index] = reader.result as string;
       setPreviews(newPreviews);
+      onPreviewsChange?.(newPreviews);
     };
     reader.readAsDataURL(file);
 
@@ -74,6 +77,7 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected 
     const newPreviews = [...previews];
     newPreviews[index] = '';
     setPreviews(newPreviews);
+    onPreviewsChange?.(newPreviews);
     onImagesChange(newImages);
     
     // Clear the file input
@@ -121,6 +125,7 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected 
         loadedCount++;
         if (loadedCount === filesToAdd.length) {
           setPreviews(newPreviews);
+          onPreviewsChange?.(newPreviews);
         }
       };
       reader.readAsDataURL(file);

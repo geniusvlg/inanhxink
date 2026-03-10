@@ -1,5 +1,39 @@
 import express, { Router, Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
+import { execFile } from 'child_process';
 import db from '../config/database';
+
+const MAX_MUSIC_BYTES = 15 * 1024 * 1024; // 15 MB
+const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
+
+async function downloadMusicFile(tiktokUrl: string, qrName: string): Promise<string> {
+  const destDir = path.join(uploadsDir, qrName);
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+  // Remove any previous music file
+  for (const old of fs.readdirSync(destDir)) {
+    if (old.startsWith('music.')) fs.unlinkSync(path.join(destDir, old));
+  }
+
+  // Download audio in native format — yt-dlp picks the best available
+  await new Promise<void>((resolve, reject) => {
+    execFile('yt-dlp', [
+      '-x',
+      '-o', path.join(destDir, 'music.%(ext)s'),
+      tiktokUrl,
+    ], (err, _stdout, stderr) => {
+      if (err) reject(new Error(`yt-dlp error: ${stderr || err.message}`));
+      else resolve();
+    });
+  });
+
+  // Find the downloaded file (e.g. music.m4a, music.webm)
+  const musicFile = fs.readdirSync(destDir).find(f => f.startsWith('music.'));
+  if (!musicFile) throw new Error('Không tìm thấy file nhạc sau khi tải');
+
+  return `/uploads/${qrName}/${musicFile}`;
+}
 
 const router: Router = express.Router();
 
@@ -146,7 +180,19 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     // Build template_data JSON based on template type
     const templateData: Record<string, unknown> = { content };
     if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
-    if (musicUrl) templateData.musicUrl = musicUrl;
+
+    // Download music from CDN and store locally
+    let resolvedMusicUrl = musicUrl || musicLink || undefined;
+    if (resolvedMusicUrl && musicAdded) {
+      try {
+        resolvedMusicUrl = await downloadMusicFile(resolvedMusicUrl, qrName.toLowerCase());
+      } catch (e) {
+        const err = e as Error;
+        return res.status(400).json({ success: false, error: err.message || 'Tải nhạc thất bại' });
+      }
+    }
+
+    if (resolvedMusicUrl) templateData.musicUrl = resolvedMusicUrl;
     if (musicLink) templateData.musicUrl = musicLink; // legacy field
 
     // Get template price
@@ -156,8 +202,13 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     }
     const templatePrice = templateResult.rows[0].price;
 
-    const MUSIC_PRICE = 10000;
-    const KEYCHAIN_PRICE = 0;
+    const metaResult = await db.query(
+      `SELECT key, value FROM metadata WHERE key IN ('music_price', 'keychain_price')`
+    );
+    const meta: Record<string, number> = {};
+    for (const row of metaResult.rows) meta[row.key] = parseInt(row.value);
+    const MUSIC_PRICE = meta['music_price'] ?? 10000;
+    const KEYCHAIN_PRICE = meta['keychain_price'] ?? 35000;
     const musicPrice = musicAdded ? MUSIC_PRICE : 0;
     const keychainPrice = keychainPurchased ? KEYCHAIN_PRICE : 0;
 
@@ -200,7 +251,7 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
         [
           customerName || null, customerEmail || null, customerPhone || null,
           templateId, resolvedTemplateType, JSON.stringify(templateData),
-          qrNameLower, content, musicUrl || musicLink || null,
+          qrNameLower, content, resolvedMusicUrl || null,
           musicAdded || false, keychainPurchased || false, keychainPrice,
           tipAmount || 0, voucherCode || null, discount, subtotal, total, 'pending', 'pending',
         ]

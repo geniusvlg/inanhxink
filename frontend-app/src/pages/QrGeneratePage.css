@@ -20,7 +20,7 @@
 }
 
 .qr-gen-url-value {
-  color: #f05448;
+  color: #fe2c56;
   font-weight: 600;
   font-size: 1rem;
   word-break: break-all;
@@ -60,7 +60,7 @@
 }
 
 .qr-gen-template-card.selected {
-  border-color: #ffc9c9;
+  border-color: #ffb3c1;
 }
 
 .qr-gen-template-card img {
@@ -95,7 +95,7 @@
 .qr-gen-button {
   width: 100%;
   padding: 0.75rem 2rem;
-  background: #f05448;
+  background: #fe2c56;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -107,7 +107,7 @@
 }
 
 .qr-gen-button:hover {
-  background: #d94a3f;
+  background: #e01e45;
 }
 
 .qr-gen-result {

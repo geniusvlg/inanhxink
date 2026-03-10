@@ -167,12 +167,16 @@ import vouchersRouter from './routes/vouchers';
 import ordersRouter from './routes/orders';
 import qrcodesRouter from './routes/qrcodes';
 import paymentsRouter from './routes/payments';
+import musicRouter from './routes/music';
+import metadataRouter from './routes/metadata';
 
 app.use('/api/templates', templatesRouter);
 app.use('/api/vouchers', vouchersRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/qrcodes', qrcodesRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/music', musicRouter);
+app.use('/api/metadata', metadataRouter);
 
 // ── Template serving helpers ─────────────────────────────────────────────────
 const templatesRoot = path.join(__dirname, 'public', 'templates');

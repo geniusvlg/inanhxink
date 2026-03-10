@@ -140,7 +140,7 @@ function PaymentPage() {
   };
 
   const handleGoBack = () => {
-    navigate('/', { replace: true });
+    navigate(-1);
   };
 
   const formatCountdown = (secs: number) => {
