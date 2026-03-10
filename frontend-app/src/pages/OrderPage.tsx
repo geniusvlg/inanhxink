@@ -178,11 +178,14 @@ function OrderPage() {
       });
 
       if (response.success) {
-        sessionStorage.setItem('orderFormDraft', JSON.stringify({
-          selectedTemplate, qrName, qrNameValid, qrUrl, content,
-          musicAdded, musicLink, keychainPurchased, selectedTip,
-          customTipAmount, voucher, imagePreviews,
-        }));
+        try {
+          sessionStorage.setItem('orderFormDraft', JSON.stringify({
+            selectedTemplate, qrName, qrNameValid, qrUrl, content,
+            musicAdded, musicLink, keychainPurchased, selectedTip,
+            customTipAmount, voucher,
+            // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
+          }));
+        } catch { /* ignore quota errors — back-nav draft is optional */ }
         navigate(`/payment/${response.qrCode.qrName}`);
       } else {
         setError(response.error || 'Đặt hàng thất bại');
