@@ -8,8 +8,9 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
-# Install python3 (required by yt-dlp) and yt-dlp binary
-RUN apk add --no-cache python3 && \
+# Install ffmpeg, python3, pip, yt-dlp and curl_cffi (for TikTok impersonation)
+RUN apk add --no-cache ffmpeg python3 py3-pip && \
+    pip3 install --no-cache-dir --break-system-packages curl_cffi && \
     wget -O /usr/local/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp && \
     chmod +x /usr/local/bin/yt-dlp
 
