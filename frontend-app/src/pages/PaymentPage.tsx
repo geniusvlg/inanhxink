@@ -28,7 +28,7 @@ function PaymentPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
   const [pollExpired, setPollExpired] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(5 * 60);
+  const [secondsLeft, setSecondsLeft] = useState(2 * 60);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -93,7 +93,7 @@ function PaymentPage() {
   useEffect(() => {
     if (!order || isPaid) return;
 
-    const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    const POLL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
     const timeoutId = setTimeout(() => {
       if (pollingRef.current) clearInterval(pollingRef.current);
@@ -114,7 +114,7 @@ function PaymentPage() {
       } catch {
         // Silently ignore polling errors
       }
-    }, 5000);
+    }, 2000);
 
     countdownRef.current = setInterval(() => {
       setSecondsLeft(s => {
