@@ -90,6 +90,34 @@ function HomePage() {
             <p>Inanhxink — Tạo mã QR cá nhân, truyền tải yêu thương</p>
             <p>&copy; {new Date().getFullYear()} Inanhxink. All rights reserved.</p>
           </div>
+
+          <div className="footer-payments">
+            <div className="footer-payments-section">
+              <h4>THANH TOÁN</h4>
+              <div className="footer-badge-grid">
+                <div className="logo-badge"><img src="/assets/images/payment/visa.png" alt="VISA" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/payment/mastercard.png" alt="Mastercard" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/payment/banking.png" alt="Banking" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/payment/cod.png" alt="COD" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/payment/paypal.png" alt="PayPal" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+              </div>
+            </div>
+            <div className="footer-payments-section">
+              <h4>ĐƠN VỊ VẬN CHUYỂN</h4>
+              <div className="footer-badge-grid">
+                <div className="logo-badge"><img src="/assets/images/shipping/spx.png" alt="SPX" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/ghn.png" alt="GHN" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/viettel-post.png" alt="Viettel Post" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/vietnampost.png" alt="Vietnam Post" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/jt-express.png" alt="J&T Express" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/grabexpress.png" alt="GrabExpress" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/ninjavan.png" alt="NinjaVan" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/be.png" alt="be" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+                <div className="logo-badge"><img src="/assets/images/shipping/ahamove.png" alt="Ahamove" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+              </div>
+            </div>
+          </div>
+
           <div className="footer-social">
             <h4>Theo dõi inanhxink</h4>
             <a href="https://www.facebook.com/profile.php?id=61579688101318" target="_blank" rel="noopener noreferrer">
