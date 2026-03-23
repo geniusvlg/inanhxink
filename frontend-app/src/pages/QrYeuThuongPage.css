@@ -1,0 +1,76 @@
+@import './HomePage.css';
+
+.qryt-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.qryt-hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #ffb3c1 0%, #fff 100%);
+}
+
+.qryt-hero-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.qryt-hero-title span {
+  color: #fe2c56;
+}
+
+.qryt-hero-desc {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.qryt-products {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+.qryt-section-title {
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 2rem;
+}
+
+.qryt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.qryt-loading,
+.qryt-error {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+}
+
+.qryt-error {
+  color: #dc2626;
+}
+
+@media (max-width: 900px) {
+  .qryt-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 560px) {
+  .qryt-grid { grid-template-columns: 1fr; }
+  .qryt-hero-title { font-size: 2rem; }
+  .qryt-products { padding: 1.5rem 1rem; }
+}

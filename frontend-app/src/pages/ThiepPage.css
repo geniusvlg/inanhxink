@@ -1,0 +1,52 @@
+@import './HomePage.css';
+
+.thiep-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.thiep-hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #ffd6e7 0%, #fff 100%);
+}
+
+.thiep-hero-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.thiep-hero-title span {
+  color: #fe2c56;
+}
+
+.thiep-hero-desc {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.thiep-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+.thiep-coming-soon {
+  font-size: 1.25rem;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.homepage-nav-link.active {
+  background: #fdf2f8;
+  color: #fe2c56;
+}

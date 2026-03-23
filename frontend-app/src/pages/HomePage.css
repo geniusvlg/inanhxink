@@ -13,8 +13,30 @@
   background: #fff;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   padding: 0.5rem max(2rem, calc((100% - 1100px) / 2 + 2rem));
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.homepage-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.homepage-nav-link {
+  padding: 0.45rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.homepage-nav-link:hover {
+  background: #fdf2f8;
+  color: #fe2c56;
 }
 
 .homepage-logo {
@@ -286,6 +308,11 @@
 
   .homepage-header {
     padding: 1rem;
+  }
+
+  .homepage-nav-link {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.65rem;
   }
 
   .homepage-products {
