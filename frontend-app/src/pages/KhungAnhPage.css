@@ -1,0 +1,52 @@
+@import './HomePage.css';
+
+.khuganh-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.khuganh-hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #d6eaff 0%, #fff 100%);
+}
+
+.khuganh-hero-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.khuganh-hero-title span {
+  color: #2563eb;
+}
+
+.khuganh-hero-desc {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.khuganh-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+.khuganh-coming-soon {
+  font-size: 1.25rem;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.homepage-nav-link.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
