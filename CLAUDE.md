@@ -2,8 +2,9 @@
 
 ## Rules
 
-- Always call `mcp__serena__check_onboarding_performed` at the start of a conversation
+- At the start of every conversation, call `mcp__serena__check_onboarding_performed`; if onboarding has NOT been performed yet, immediately call `mcp__serena__onboarding` to onboard the project
 - Prefer Serena symbolic tools (`find_symbol`, `get_symbols_overview`, `search_for_pattern`, `replace_symbol_body`, `insert_after_symbol`) over full file reads
+- Whenever the user asks to check, visit, inspect, or test a website/URL, use MCP Playwright tools (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_take_screenshot`, etc.) to open and interact with it
 
 ## Project Overview
 
