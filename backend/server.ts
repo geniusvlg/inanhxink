@@ -178,6 +178,25 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/music', musicRouter);
 app.use('/api/metadata', metadataRouter);
 
+// ── Admin API routes (JWT-protected) ─────────────────────────────────────────
+import { requireAdmin } from './middleware/adminAuth';
+import adminAuthRouter from './routes/admin/auth';
+import adminTemplatesRouter from './routes/admin/templates';
+import adminOrdersRouter from './routes/admin/orders';
+import adminVouchersRouter from './routes/admin/vouchers';
+import adminMetadataRouter from './routes/admin/metadata';
+
+app.use('/api/admin/auth',               adminAuthRouter);
+app.use('/api/admin/templates',          requireAdmin, adminTemplatesRouter);
+app.use('/api/admin/orders',             requireAdmin, adminOrdersRouter);
+app.use('/api/admin/vouchers',           requireAdmin, adminVouchersRouter);
+app.use('/api/admin/metadata',           requireAdmin, adminMetadataRouter);
+
+import adminProductsRouter           from './routes/admin/products';
+import adminProductCategoriesRouter  from './routes/admin/product-categories';
+app.use('/api/admin/products',           requireAdmin, adminProductsRouter);
+app.use('/api/admin/product-categories', requireAdmin, adminProductCategoriesRouter);
+
 // ── Template serving helpers ─────────────────────────────────────────────────
 const templatesRoot = path.join(__dirname, 'public', 'templates');
 
