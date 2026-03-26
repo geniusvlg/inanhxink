@@ -55,7 +55,12 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
-    const qrName = ((req.query?.qrName as string) || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const qrName = ((req.query?.qrName as string) || '')
+      .toLowerCase()
+      .split('/')
+      .map(seg => seg.replace(/[^a-z0-9_-]/g, ''))
+      .filter(Boolean)
+      .join('/');
     const dest = qrName ? path.join(uploadsDir, qrName) : uploadsDir;
     if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
     cb(null, dest);
@@ -90,7 +95,12 @@ app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Res
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files uploaded' });
     }
-    const qrName = ((req.query?.qrName as string) || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    const qrName = ((req.query?.qrName as string) || '')
+      .toLowerCase()
+      .split('/')
+      .map(seg => seg.replace(/[^a-z0-9_-]/g, ''))
+      .filter(Boolean)
+      .join('/');
 
     if (qrName) {
       // Guard: never wipe files for an already-paid qrName
@@ -169,6 +179,7 @@ import qrcodesRouter from './routes/qrcodes';
 import paymentsRouter from './routes/payments';
 import musicRouter from './routes/music';
 import metadataRouter from './routes/metadata';
+import productsRouter from './routes/products';
 
 app.use('/api/templates', templatesRouter);
 app.use('/api/vouchers', vouchersRouter);
@@ -177,6 +188,7 @@ app.use('/api/qrcodes', qrcodesRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/music', musicRouter);
 app.use('/api/metadata', metadataRouter);
+app.use('/api/products', productsRouter);
 
 // ── Admin API routes (JWT-protected) ─────────────────────────────────────────
 import { requireAdmin } from './middleware/adminAuth';

@@ -68,7 +68,7 @@ export const productsApi = {
 };
 
 export const productCategoriesApi = {
-  list:   (type: string)  => api.get('/api/admin/product-categories', { params: { type } }),
+  list:   ()              => api.get('/api/admin/product-categories'),
   create: (data: unknown) => api.post('/api/admin/product-categories', data),
   delete: (id: number)    => api.delete(`/api/admin/product-categories/${id}`),
 };

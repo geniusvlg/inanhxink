@@ -34,17 +34,46 @@
 
 .thiep-content {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3rem 2rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.thiep-coming-soon {
-  font-size: 1.25rem;
-  color: #9ca3af;
-  text-align: center;
+.thiep-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
 }
+
+@media (max-width: 1024px) {
+  .thiep-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .thiep-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+.thiep-loading,
+.thiep-error,
+.thiep-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+  grid-column: 1 / -1;
+}
+
+.thiep-error {
+  color: #dc2626;
+}
+
 
 .homepage-nav-link.active {
   background: #fdf2f8;

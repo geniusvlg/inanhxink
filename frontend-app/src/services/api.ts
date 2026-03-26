@@ -97,5 +97,28 @@ export const getPaymentByQrName = async (qrName: string) => {
   return response.data;
 };
 
+export interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  images: string[];
+  type: 'thiep' | 'khung_anh';
+  categories: { id: number; name: string }[];
+  is_active: boolean;
+  created_at: string;
+}
+
+export const getProducts = async (type?: 'thiep' | 'khung_anh'): Promise<Product[]> => {
+  const params = type ? { type } : {};
+  const response = await api.get<{ success: boolean; products: Product[] }>('/api/products', { params });
+  return response.data.products ?? [];
+};
+
+export const getProductById = async (id: number): Promise<Product> => {
+  const response = await api.get<{ success: boolean; product: Product }>(`/api/products/${id}`);
+  return response.data.product;
+};
+
 export default api;
 

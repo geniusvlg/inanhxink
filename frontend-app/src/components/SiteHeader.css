@@ -106,8 +106,6 @@
 .site-nav-link.active {
   color: #fe2c56;
   font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 /* ── Responsive ── */

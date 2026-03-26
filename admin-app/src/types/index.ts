@@ -42,7 +42,6 @@ export interface Voucher {
 export interface ProductCategory {
   id: number;
   name: string;
-  type: 'thiep' | 'khung_anh';
 }
 
 export interface Product {
