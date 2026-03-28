@@ -78,7 +78,7 @@ export const uploadApi = {
     const form = new FormData();
     files.forEach(f => form.append('files', f));
     return api.post<{ success: boolean; urls: string[] }>(
-      `/api/upload?qrName=${folder}`,
+      `/api/upload?prefix=products/${folder}`,
       form,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );

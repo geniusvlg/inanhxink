@@ -6,6 +6,7 @@ import SiteFooter from '../components/SiteFooter';
 import './ProductDetailPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('vi-VN') + 'đ';
@@ -31,7 +32,7 @@ export default function ProductDetailPage() {
   const backLabel = product?.type === 'khung_anh' ? 'Khung Ảnh' : 'Thiệp';
 
   const images = product?.images?.length
-    ? product.images.map((img) => `${API_BASE_URL}${img}`)
+    ? product.images.map(resolveUrl)
     : ['/placeholder.png'];
 
   if (loading) {

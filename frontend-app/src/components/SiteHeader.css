@@ -87,6 +87,13 @@
   gap: 0.25rem;
   padding: 0 max(1.5rem, calc((100% - 1100px) / 2 + 1.5rem));
   padding-bottom: 0.4rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.site-header-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .site-nav-link {
@@ -96,6 +103,8 @@
   padding: 0.2rem 0.6rem;
   border-radius: 0.25rem;
   transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .site-nav-link:hover {

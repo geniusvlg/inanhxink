@@ -284,3 +284,46 @@
 /* Loading / error */
 .admin-loading { text-align: center; padding: 4rem; color: #64748b; }
 .admin-error   { text-align: center; padding: 4rem; color: #dc2626; }
+
+/* ── Toggle switch ───────────────────────────────────────────── */
+.cfg-toggle {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cfg-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.cfg-toggle-track {
+  width: 44px;
+  height: 24px;
+  background: #cbd5e1;
+  border-radius: 12px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+}
+
+.cfg-toggle input:checked + .cfg-toggle-track {
+  background: #22c55e;
+}
+
+.cfg-toggle-thumb {
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 0.2s;
+}
+
+.cfg-toggle input:checked + .cfg-toggle-track .cfg-toggle-thumb {
+  transform: translateX(20px);
+}

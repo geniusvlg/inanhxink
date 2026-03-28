@@ -9,6 +9,7 @@ import VouchersPage from './pages/VouchersPage';
 import ConfigPage from './pages/ConfigPage';
 import ThiepPage from './pages/ThiepPage';
 import KhungAnhPage from './pages/KhungAnhPage';
+import ScrapbookPage from './pages/ScrapbookPage';
 import CategoriesPage from './pages/CategoriesPage';
 
 export default function App() {
@@ -21,8 +22,9 @@ export default function App() {
             <Route element={<Layout />}>
               <Route index element={<Navigate to="/products" replace />} />
               <Route path="/products"  element={<ProductsPage />} />
-              <Route path="/thiep"      element={<ThiepPage />} />
-              <Route path="/khung-anh"  element={<KhungAnhPage />} />
+              <Route path="/thiep"        element={<ThiepPage />} />
+              <Route path="/khung-anh"    element={<KhungAnhPage />} />
+              <Route path="/so-scrapbook" element={<ScrapbookPage />} />
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/orders"    element={<OrdersPage />} />
               <Route path="/vouchers"  element={<VouchersPage />} />
