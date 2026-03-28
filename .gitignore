@@ -30,6 +30,7 @@ logs/
 
 # Database
 postgres-data/
+postgres_data/
 *.db
 *.sqlite
 *.sqlite3

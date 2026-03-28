@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: inanhxink
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
     restart: always
@@ -31,6 +31,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  flyway:
+    image: flyway/flyway:10-alpine
+    command: migrate
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/inanhxink
+      FLYWAY_USER: inanhxink
+      FLYWAY_PASSWORD: ${DB_PASSWORD}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_BASELINE_VERSION: "0"
+    volumes:
+      - ./backend/database:/flyway/sql:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
 
   backend:
     image: ghcr.io/geniusvlg/inanhxink/backend:${IMAGE_TAG:-latest}
@@ -58,6 +75,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
     restart: always
 
   nginx:
@@ -77,6 +96,5 @@ services:
     restart: always
 
 volumes:
-  postgres_data:
   frontend_dist:
   admin_dist:
