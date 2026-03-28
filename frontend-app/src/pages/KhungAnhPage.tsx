@@ -7,6 +7,7 @@ import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/
 import './KhungAnhPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('en') + 'đ';
@@ -82,7 +83,7 @@ export default function KhungAnhPage() {
                   <div className="product-card-img-wrap">
                     <img
                       className="product-card-img"
-                      src={p.images?.[0] ? `${API_BASE_URL}${p.images[0]}` : '/placeholder.png'}
+                      src={p.images?.[0] ? resolveUrl(p.images[0]) : '/placeholder.png'}
                       alt={p.name}
                     />
                   </div>

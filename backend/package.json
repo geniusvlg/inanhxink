@@ -17,6 +17,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1019.0",
     "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
@@ -24,7 +25,8 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
-    "pg": "^8.18.0"
+    "pg": "^8.18.0",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

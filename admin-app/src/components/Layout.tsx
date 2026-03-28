@@ -19,8 +19,9 @@ function QrIcon() {
 
 const NAV: { to: string; label: ReactNode }[] = [
   { to: '/products',   label: <><QrIcon /> QR Templates</> },
-  { to: '/thiep',      label: '🎴 Thiệp' },
-  { to: '/khung-anh',  label: '🖼️ Khung Ảnh' },
+  { to: '/thiep',        label: '🎴 Thiệp' },
+  { to: '/khung-anh',   label: '🖼️ Khung Ảnh' },
+  { to: '/so-scrapbook', label: '📒 Sổ & Scrapbook' },
   { to: '/categories', label: '🏷️ Danh mục' },
   { to: '/orders',     label: '📋 Đơn hàng' },
   { to: '/vouchers',   label: '🎟️ Voucher' },

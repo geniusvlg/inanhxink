@@ -11,7 +11,7 @@ router.get('/', async (_req: Request, res: Response) => {
     for (const row of result.rows) {
       config[row.key] = row.value;
     }
-    return res.json({ success: true, data: config });
+    return res.json({ success: true, config });
   } catch (err) {
     console.error('Error fetching metadata:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch config' });

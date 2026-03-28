@@ -1,0 +1,79 @@
+@import './HomePage.css';
+@import '../components/ProductFilter.css';
+
+.scrapbook-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.scrapbook-hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #ede9fe 0%, #fff 100%);
+}
+
+.scrapbook-hero-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.scrapbook-hero-title span { color: #7c3aed; }
+
+.scrapbook-hero-desc {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.scrapbook-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .scrapbook-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .scrapbook-hero-title { font-size: 2rem; }
+  .scrapbook-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+}
+
+.scrapbook-loading,
+.scrapbook-error,
+.scrapbook-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+  grid-column: 1 / -1;
+}
+
+.scrapbook-error { color: #dc2626; }
+
+.scrapbook-reset-btn {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  border: 1.5px solid #7c3aed;
+  border-radius: 2rem;
+  background: #fff;
+  color: #7c3aed;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.scrapbook-reset-btn:hover { background: #f5f3ff; }
+
+.homepage-nav-link.active {
+  background: #f5f3ff;
+  color: #7c3aed;
+}

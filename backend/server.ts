@@ -5,6 +5,7 @@ import fs from 'fs';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import db from './config/database';
+import { uploadToS3, pruneS3Folder } from './config/s3';
 
 dotenv.config();
 
@@ -53,25 +54,9 @@ app.use(express.urlencoded({ extended: true }));
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (req, _file, cb) => {
-    const qrName = ((req.query?.qrName as string) || '')
-      .toLowerCase()
-      .split('/')
-      .map(seg => seg.replace(/[^a-z0-9_-]/g, ''))
-      .filter(Boolean)
-      .join('/');
-    const dest = qrName ? path.join(uploadsDir, qrName) : uploadsDir;
-    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-    cb(null, dest);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
+// Always use memoryStorage — S3 path streams from RAM; local fallback writes to disk
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
@@ -95,6 +80,7 @@ app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Res
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, error: 'No files uploaded' });
     }
+
     const qrName = ((req.query?.qrName as string) || '')
       .toLowerCase()
       .split('/')
@@ -102,28 +88,35 @@ app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Res
       .filter(Boolean)
       .join('/');
 
-    if (qrName) {
-      // Guard: never wipe files for an already-paid qrName
+    // Admin product uploads pass ?prefix=products/... directly
+    // Customer QR uploads pass ?qrName=... which gets stored under qr/
+    const prefix = (req.query?.prefix as string) || '';
+    const folder = prefix
+      ? prefix.toLowerCase().split('/').map(seg => seg.replace(/[^a-z0-9_-]/g, '')).filter(Boolean).join('/')
+      : qrName ? `uploads/${qrName}` : 'uploads';
+    const urls: string[] = [];
+
+    for (const file of files) {
+      const url = await uploadToS3(file.buffer, folder, file.originalname, file.mimetype);
+      urls.push(url);
+    }
+
+    // Only prune old files for customer QR uploads (not admin product uploads)
+    if (qrName && !prefix) {
       const paid = await db.query(
         `SELECT 1 FROM orders WHERE qr_name = $1 AND payment_status = 'paid' LIMIT 1`,
         [qrName]
       );
-
       if (paid.rows.length === 0) {
-        // Delete any pre-existing files from abandoned uploads
-        const newFilenames = new Set(files.map(f => f.filename));
-        const dir = path.join(uploadsDir, qrName);
-        const existing = fs.readdirSync(dir);
-        for (const filename of existing) {
-          if (!newFilenames.has(filename)) {
-            fs.unlinkSync(path.join(dir, filename));
-          }
-        }
+        const keepKeys = new Set(
+          urls.map(u => u.split(`${process.env.S3_BUCKET}/`)[1])
+        );
+        await pruneS3Folder(folder, keepKeys);
       }
     }
 
-    const urls = files.map(f => qrName ? `/uploads/${qrName}/${f.filename}` : `/uploads/${f.filename}`);
     return res.json({ success: true, urls });
+
   } catch (err) {
     const e = err as Error;
     return res.status(500).json({ success: false, error: e.message });

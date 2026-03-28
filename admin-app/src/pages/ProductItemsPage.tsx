@@ -4,6 +4,7 @@ import { type Product, type ProductCategory } from '../types';
 import '../components/Layout.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 interface Props {
   type: 'thiep' | 'khung_anh';
@@ -187,7 +188,7 @@ export default function ProductItemsPage({ type }: Props) {
                 <td>{p.id}</td>
                 <td>
                   {p.images?.[0]
-                    ? <img src={`${API_BASE_URL}${p.images[0]}`} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
+                    ? <img src={resolveUrl(p.images[0])} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
                     : <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📷</div>
                   }
                 </td>
@@ -279,11 +280,14 @@ export default function ProductItemsPage({ type }: Props) {
               {/* Image Upload */}
               <div className="form-group">
                 <label className="form-label">Ảnh sản phẩm</label>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
+                  💡 Ảnh đầu tiên sẽ được dùng làm thumbnail hiển thị ngoài danh sách.
+                </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   {imageEntries.map(entry => (
                     <div key={entry.url} style={{ position: 'relative' }}>
                       <img
-                        src={entry.file ? entry.url : `${API_BASE_URL}${entry.url}`}
+                        src={entry.file ? entry.url : resolveUrl(entry.url)}
                         alt=""
                         style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }}
                       />
