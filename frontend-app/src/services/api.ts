@@ -109,8 +109,21 @@ export interface Product {
   created_at: string;
 }
 
-export const getProducts = async (type?: 'thiep' | 'khung_anh'): Promise<Product[]> => {
-  const params = type ? { type } : {};
+export interface ProductFilters {
+  type?: 'thiep' | 'khung_anh';
+  category_ids?: string; // comma-separated ids, e.g. "1,2,3"
+  min_price?: number;
+  max_price?: number;
+  sort?: 'newest' | 'price_asc' | 'price_desc';
+}
+
+export const getProducts = async (filters: ProductFilters = {}): Promise<Product[]> => {
+  const params: Record<string, string | number> = {};
+  if (filters.type)         params.type         = filters.type;
+  if (filters.category_ids) params.category_ids = filters.category_ids;
+  if (filters.min_price != null && filters.min_price !== 0) params.min_price = filters.min_price;
+  if (filters.max_price != null) params.max_price = filters.max_price;
+  if (filters.sort && filters.sort !== 'newest') params.sort = filters.sort;
   const response = await api.get<{ success: boolean; products: Product[] }>('/api/products', { params });
   return response.data.products ?? [];
 };
@@ -118,6 +131,11 @@ export const getProducts = async (type?: 'thiep' | 'khung_anh'): Promise<Product
 export const getProductById = async (id: number): Promise<Product> => {
   const response = await api.get<{ success: boolean; product: Product }>(`/api/products/${id}`);
   return response.data.product;
+};
+
+export const getCategories = async (): Promise<{ id: number; name: string }[]> => {
+  const response = await api.get<{ success: boolean; categories: { id: number; name: string }[] }>('/api/categories');
+  return response.data.categories ?? [];
 };
 
 export default api;

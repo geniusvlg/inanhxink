@@ -190,6 +190,9 @@ app.use('/api/music', musicRouter);
 app.use('/api/metadata', metadataRouter);
 app.use('/api/products', productsRouter);
 
+import categoriesRouter from './routes/categories';
+app.use('/api/categories', categoriesRouter);
+
 // ── Admin API routes (JWT-protected) ─────────────────────────────────────────
 import { requireAdmin } from './middleware/adminAuth';
 import adminAuthRouter from './routes/admin/auth';
