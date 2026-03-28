@@ -144,15 +144,15 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/admin/products/:id (soft-delete)
+// DELETE /api/admin/products/:id (hard delete)
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const result = await db.query(
-      'UPDATE products SET is_active = false WHERE id = $1 RETURNING id',
+      'DELETE FROM products WHERE id = $1 RETURNING id',
       [req.params.id]
     );
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
-    return res.json({ success: true, message: 'Product deactivated' });
+    return res.json({ success: true, message: 'Product deleted' });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }

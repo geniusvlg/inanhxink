@@ -1,0 +1,339 @@
+/* ─── Layout: filter sidebar + product grid ─────────────────────────── */
+.products-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.products-grid-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Desktop sidebar ────────────────────────────────────────────────── */
+.pf-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
+  background: #fff;
+  padding: 0.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pf-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.pf-sidebar-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pf-reset-link {
+  background: none;
+  border: none;
+  font-size: 0.8125rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pf-reset-link:hover { color: #111827; }
+
+/* ─── Shared section ─────────────────────────────────────────────────── */
+.pf-section {
+  padding: 0.875rem 0;
+  border-top: 1px solid #f3f4f6;
+}
+
+.pf-section:first-child { border-top: none; padding-top: 0; }
+
+.pf-section-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.625rem;
+}
+
+/* Sort buttons */
+.pf-sort-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pf-sort-btn {
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #fff;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.pf-sort-btn:hover { background: #f9fafb; }
+.pf-sort-btn--active { background: #fdf2f8; font-weight: 600; }
+
+/* Category checkboxes */
+.pf-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.pf-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.pf-check-label:hover .pf-check-text { color: #111827; }
+
+.pf-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+/* Price inputs */
+.pf-price-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pf-price-input {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  color: #111827;
+  background: #fff;
+  min-width: 0;
+  -moz-appearance: textfield;
+}
+
+.pf-price-input::-webkit-outer-spin-button,
+.pf-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.pf-price-input:focus {
+  outline: none;
+  border-color: #9ca3af;
+}
+
+.pf-price-dash {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+/* ─── Mobile bar ─────────────────────────────────────────────────────── */
+.pf-mobile-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pf-mobile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 2rem;
+  background: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.pf-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+/* The badge inherits the button's color — override text color */
+.pf-mobile-btn .pf-badge { color: #fff; }
+
+.pf-result-count {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+/* ─── Mobile bottom sheet ────────────────────────────────────────────── */
+.pf-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  animation: pf-fade-in 0.18s ease;
+}
+
+@keyframes pf-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pf-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 1.25rem 1.25rem 0 0;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  animation: pf-slide-up 0.22s ease;
+}
+
+@keyframes pf-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.pf-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin: 0.75rem auto 0;
+  flex-shrink: 0;
+}
+
+.pf-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.pf-sheet-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pf-sheet-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.pf-sheet-close:hover { color: #374151; }
+
+.pf-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pf-sheet-body .pf-section {
+  padding: 1rem 0;
+}
+
+.pf-sheet-body .pf-sort-group {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.pf-sheet-body .pf-sort-btn {
+  width: auto;
+  flex: none;
+  padding: 0.5rem 1rem;
+}
+
+.pf-sheet-footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom));
+  border-top: 1px solid #f3f4f6;
+}
+
+.pf-sheet-reset {
+  padding: 0.7rem 1.25rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 0.75rem;
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pf-sheet-reset:hover { background: #f9fafb; }
+
+.pf-sheet-apply {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 0.75rem;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.pf-sheet-apply:hover { opacity: 0.88; }
+
+/* ─── Responsive: hide sidebar / show mobile bar on small screens ─────── */
+@media (max-width: 768px) {
+  .products-layout {
+    flex-direction: column;
+    padding: 1.25rem 1rem 3rem;
+    gap: 0;
+  }
+
+  .pf-sidebar { display: none; }
+  .pf-mobile-bar { display: flex; }
+}

@@ -45,6 +45,14 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
+      - name: Build admin image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./admin-app
+          push: false
+          cache-from: type=gha,scope=admin
+          cache-to: type=gha,mode=max,scope=admin
+
       - name: Build backend image
         uses: docker/build-push-action@v6
         with:

@@ -1,4 +1,5 @@
 @import './HomePage.css';
+@import '../components/ProductFilter.css';
 
 .thiep-page {
   min-height: 100vh;
@@ -20,9 +21,7 @@
   margin-bottom: 1rem;
 }
 
-.thiep-hero-title span {
-  color: #fe2c56;
-}
+.thiep-hero-title span { color: #fe2c56; }
 
 .thiep-hero-desc {
   font-size: 1.125rem;
@@ -32,19 +31,47 @@
   line-height: 1.7;
 }
 
-.thiep-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
+.thiep-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
 }
 
-.thiep-coming-soon {
-  font-size: 1.25rem;
-  color: #9ca3af;
-  text-align: center;
+@media (max-width: 1024px) {
+  .thiep-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+@media (max-width: 640px) {
+  .thiep-hero-title { font-size: 2rem; }
+  .thiep-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+}
+
+.thiep-loading,
+.thiep-error,
+.thiep-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+  grid-column: 1 / -1;
+}
+
+.thiep-error { color: #dc2626; }
+
+.thiep-reset-btn {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  border: 1.5px solid #fe2c56;
+  border-radius: 2rem;
+  background: #fff;
+  color: #fe2c56;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.thiep-reset-btn:hover { background: #fdf2f8; }
 
 .homepage-nav-link.active {
   background: #fdf2f8;

@@ -57,6 +57,14 @@
   padding-right: 2.75rem;
 }
 
+/* Hide the browser's native password-reveal button */
+.password-wrap .form-input::-ms-reveal,
+.password-wrap .form-input::-ms-clear,
+.password-wrap .form-input::-webkit-credentials-auto-fill-button,
+.password-wrap .form-input::-webkit-contacts-auto-fill-button {
+  display: none;
+}
+
 .password-eye {
   position: absolute;
   right: 0.75rem;

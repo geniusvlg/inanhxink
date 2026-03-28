@@ -3,6 +3,8 @@ import { productsApi, productCategoriesApi, uploadApi } from '../services/api';
 import { type Product, type ProductCategory } from '../types';
 import '../components/Layout.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 interface Props {
   type: 'thiep' | 'khung_anh';
 }
@@ -12,8 +14,14 @@ const PAGE_TITLE: Record<string, string> = {
   khung_anh: '🖼️ Khung Ảnh',
 };
 
+// Represents either an already-saved URL or a pending local file
+interface ImageEntry {
+  url: string;        // server URL (saved) or object URL (local preview)
+  file?: File;        // present only for pending local files
+}
+
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
-  name: '', description: '', price: 0, images: [], is_active: true, category_ids: [],
+  name: '', description: '', price: undefined, images: [], is_active: true, category_ids: [],
 });
 
 export default function ProductItemsPage({ type }: Props) {
@@ -23,15 +31,15 @@ export default function ProductItemsPage({ type }: Props) {
   const [showModal, setShowModal]   = useState(false);
   const [editing, setEditing]       = useState<Product | null>(null);
   const [form, setForm]             = useState<Partial<Product> & { category_ids: number[] }>(emptyForm());
+  const [imageEntries, setImageEntries] = useState<ImageEntry[]>([]);
   const [saving, setSaving]         = useState(false);
-  const [uploading, setUploading]   = useState(false);
   const fileRef                     = useRef<HTMLInputElement>(null);
 
   const load = () => {
     setLoading(true);
     Promise.all([
       productsApi.list(type),
-      productCategoriesApi.list(type),
+      productCategoriesApi.list(),
     ])
       .then(([pr, cr]) => {
         setProducts(pr.data.products ?? []);
@@ -46,38 +54,42 @@ export default function ProductItemsPage({ type }: Props) {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm());
+    setImageEntries([]);
     setShowModal(true);
   };
 
   const openEdit = (p: Product) => {
     setEditing(p);
-    setForm({
-      ...p,
-      category_ids: p.categories.map(c => c.id),
-    });
+    setForm({ ...p, category_ids: p.categories.map(c => c.id) });
+    setImageEntries(p.images.map(url => ({ url })));
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setEditing(null); };
+  const closeModal = () => {
+    // Revoke any object URLs to free memory
+    imageEntries.forEach(e => { if (e.file) URL.revokeObjectURL(e.url); });
+    setShowModal(false);
+    setEditing(null);
+    setImageEntries([]);
+  };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setUploading(true);
-    try {
-      const folder = editing ? `product-${editing.id}` : 'product-new';
-      const res = await uploadApi.images(files, folder);
-      setForm(f => ({ ...f, images: [...(f.images ?? []), ...res.data.urls] }));
-    } catch {
-      alert('Lỗi khi tải ảnh lên');
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
+    const newEntries: ImageEntry[] = files.map(file => ({
+      url: URL.createObjectURL(file),
+      file,
+    }));
+    setImageEntries(prev => [...prev, ...newEntries]);
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   const removeImage = (url: string) => {
-    setForm(f => ({ ...f, images: (f.images ?? []).filter(i => i !== url) }));
+    setImageEntries(prev => {
+      const entry = prev.find(e => e.url === url);
+      if (entry?.file) URL.revokeObjectURL(entry.url);
+      return prev.filter(e => e.url !== url);
+    });
   };
 
   const toggleCategory = (id: number) => {
@@ -94,12 +106,36 @@ export default function ProductItemsPage({ type }: Props) {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, type };
+      const pendingFiles = imageEntries.filter(e => e.file).map(e => e.file!);
+      const savedUrls    = imageEntries.filter(e => !e.file).map(e => e.url);
+
       if (editing) {
-        await productsApi.update(editing.id, payload);
+        // Upload new files (if any) to the product's own folder
+        let uploadedUrls: string[] = [];
+        if (pendingFiles.length) {
+          const res = await uploadApi.images(pendingFiles, `${type}/product-${editing.id}`);
+          uploadedUrls = res.data.urls;
+        }
+        await productsApi.update(editing.id, {
+          ...form,
+          type,
+          images: [...savedUrls, ...uploadedUrls],
+        });
       } else {
-        await productsApi.create(payload);
+        // Create product first (no images yet), then upload, then update
+        const created = await productsApi.create({ ...form, type, images: [] });
+        const productId = created.data.product.id;
+
+        let images: string[] = [];
+        if (pendingFiles.length) {
+          const res = await uploadApi.images(pendingFiles, `${type}/product-${productId}`);
+          images = res.data.urls;
+        }
+        if (images.length) {
+          await productsApi.update(productId, { images });
+        }
       }
+
       closeModal();
       load();
     } catch {
@@ -115,7 +151,7 @@ export default function ProductItemsPage({ type }: Props) {
   };
 
   const handleDelete = async (p: Product) => {
-    if (!confirm(`Ẩn sản phẩm "${p.name}"?`)) return;
+    if (!confirm(`Xoá sản phẩm "${p.name}"? Hành động này không thể hoàn tác.`)) return;
     await productsApi.delete(p.id);
     load();
   };
@@ -151,7 +187,7 @@ export default function ProductItemsPage({ type }: Props) {
                 <td>{p.id}</td>
                 <td>
                   {p.images?.[0]
-                    ? <img src={p.images[0]} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
+                    ? <img src={`${API_BASE_URL}${p.images[0]}`} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
                     : <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📷</div>
                   }
                 </td>
@@ -206,7 +242,20 @@ export default function ProductItemsPage({ type }: Props) {
               {/* Price */}
               <div className="form-group">
                 <label className="form-label">Giá (đ) *</label>
-                <input className="form-input" type="number" min="0" value={form.price ?? 0} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} required />
+                <input
+                  className="form-input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={form.price != null ? form.price.toLocaleString('en') : ''}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/,/g, '');
+                    if (raw === '') { setForm(f => ({ ...f, price: undefined })); return; }
+                    const num = Number(raw);
+                    if (!isNaN(num)) setForm(f => ({ ...f, price: num }));
+                  }}
+                  required
+                />
               </div>
 
               {/* Categories */}
@@ -231,12 +280,16 @@ export default function ProductItemsPage({ type }: Props) {
               <div className="form-group">
                 <label className="form-label">Ảnh sản phẩm</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  {(form.images ?? []).map(url => (
-                    <div key={url} style={{ position: 'relative' }}>
-                      <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }} />
+                  {imageEntries.map(entry => (
+                    <div key={entry.url} style={{ position: 'relative' }}>
+                      <img
+                        src={entry.file ? entry.url : `${API_BASE_URL}${entry.url}`}
+                        alt=""
+                        style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }}
+                      />
                       <button
                         type="button"
-                        onClick={() => removeImage(url)}
+                        onClick={() => removeImage(entry.url)}
                         style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
                       >×</button>
                     </div>
@@ -249,10 +302,8 @@ export default function ProductItemsPage({ type }: Props) {
                   multiple
                   className="form-input"
                   style={{ padding: '0.35rem' }}
-                  onChange={handleImageUpload}
-                  disabled={uploading}
+                  onChange={handleImagePick}
                 />
-                {uploading && <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>Đang tải ảnh lên...</div>}
               </div>
 
               {/* Active */}
@@ -263,7 +314,7 @@ export default function ProductItemsPage({ type }: Props) {
 
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={closeModal}>Huỷ</button>
-                <button type="submit" className="btn-primary" disabled={saving || uploading}>
+                <button type="submit" className="btn-primary" disabled={saving}>
                   {saving ? 'Đang lưu...' : 'Lưu'}
                 </button>
               </div>

@@ -8,6 +8,7 @@ import TemplatePreviewPage from './pages/TemplatePreviewPage';
 import ThiepPage from './pages/ThiepPage';
 import KhungAnhPage from './pages/KhungAnhPage';
 import QrYeuThuongPage from './pages/QrYeuThuongPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
       <Route path="/preview/:templateName" element={<TemplatePreviewPage />} />
       <Route path="/thiep" element={<ThiepPage />} />
       <Route path="/khung-anh" element={<KhungAnhPage />} />
+      <Route path="/product/:id" element={<ProductDetailPage />} />
       <Route path="/qr-yeu-thuong" element={<QrYeuThuongPage />} />
       <Route path="/:qrName" element={<QrCodePage />} />
     </Routes>

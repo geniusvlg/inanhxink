@@ -9,7 +9,7 @@ cd "$APP_DIR"
 git pull origin main
 
 # Pull pre-built images from GHCR
-docker compose pull frontend backend
+docker compose pull frontend admin backend
 
 # Recreate containers with new images
 docker compose up -d

@@ -1,0 +1,259 @@
+.pd-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Loading / Error ── */
+.pd-loading,
+.pd-error {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  color: #6b7280;
+  padding: 4rem 2rem;
+}
+.pd-error { color: #dc2626; }
+
+/* ── Main container ── */
+.pd-main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 1.5rem 2rem 4rem;
+  box-sizing: border-box;
+}
+
+/* ── Breadcrumb ── */
+.pd-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+.pd-breadcrumb a {
+  color: #6b7280;
+  text-decoration: none;
+}
+.pd-breadcrumb a:hover { color: #fe2c56; }
+.pd-breadcrumb-sep { color: #d1d5db; }
+
+/* ── Body: gallery + info side by side ── */
+.pd-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+/* ── Gallery ── */
+.pd-gallery {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pd-thumbnails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pd-thumb-btn {
+  width: 80px;
+  height: 80px;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f3f4f6;
+  padding: 0;
+  transition: border-color 0.15s;
+}
+.pd-thumb-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+}
+.pd-thumb-btn.active,
+.pd-thumb-btn:hover {
+  border-color: #fe2c56;
+}
+
+.pd-main-img-wrap {
+  flex: 1;
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #fff;
+}
+
+.pd-main-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+}
+
+.pd-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transition: background 0.15s;
+}
+.pd-arrow:hover { background: #fff; }
+.pd-arrow--prev { left: 0.75rem; }
+.pd-arrow--next { right: 0.75rem; }
+
+/* ── Info panel ── */
+.pd-info {
+  padding-top: 0.5rem;
+}
+
+.pd-name {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1rem;
+  line-height: 1.3;
+}
+
+.pd-price {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.pd-desc {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 1rem 0 0;
+}
+
+/* ── Zalo CTA button ── */
+.pd-zalo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.7rem 1.5rem;
+  background: #0068ff;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0.625rem;
+  transition: background 0.15s, transform 0.1s;
+  width: 100%;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.pd-zalo-btn:hover {
+  background: #0057d6;
+  transform: translateY(-1px);
+}
+.pd-zalo-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.pd-divider {
+  border: none;
+  border-top: 1px solid #f3f4f6;
+  margin: 1.5rem 0;
+}
+
+/* ── Feature badges ── */
+.pd-badges {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.pd-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.25rem;
+}
+
+.pd-badge span {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.pd-badge strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .pd-body {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .pd-badges {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pd-main {
+    padding: 1rem 1rem 3rem;
+  }
+
+  .pd-name {
+    font-size: 1.375rem;
+  }
+
+  .pd-price {
+    font-size: 1.25rem;
+  }
+
+  .pd-thumbnails {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .pd-thumb-btn {
+    width: 60px;
+    height: 60px;
+  }
+
+  .pd-badges {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

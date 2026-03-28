@@ -3,13 +3,10 @@ import db from '../../config/database';
 
 const router = Router();
 
-// GET /api/admin/product-categories?type=thiep|khung_anh
-router.get('/', async (req: Request, res: Response) => {
+// GET /api/admin/product-categories
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const { type } = req.query as { type?: string };
-    const result = type
-      ? await db.query('SELECT * FROM product_categories WHERE type = $1 ORDER BY name', [type])
-      : await db.query('SELECT * FROM product_categories ORDER BY type, name');
+    const result = await db.query('SELECT * FROM product_categories ORDER BY name');
     return res.json({ success: true, categories: result.rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
@@ -19,11 +16,11 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/admin/product-categories
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, type } = req.body as { name: string; type: string };
-    if (!name || !type) return res.status(400).json({ success: false, error: 'name and type required' });
+    const { name } = req.body as { name: string };
+    if (!name) return res.status(400).json({ success: false, error: 'name required' });
     const result = await db.query(
-      'INSERT INTO product_categories (name, type) VALUES ($1,$2) RETURNING *',
-      [name, type]
+      'INSERT INTO product_categories (name) VALUES ($1) RETURNING *',
+      [name]
     );
     return res.status(201).json({ success: true, category: result.rows[0] });
   } catch (err) {
