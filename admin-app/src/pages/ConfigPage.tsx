@@ -3,10 +3,11 @@ import { metadataApi } from '../services/api';
 import '../components/Layout.css';
 
 const PAGE_FLAGS: { key: string; label: string; description: string }[] = [
-  { key: 'page_qr_yeu_thuong', label: 'QR Yêu Thương', description: 'Trang tạo QR code cá nhân' },
-  { key: 'page_thiep',         label: 'Thiệp',         description: 'Trang sản phẩm thiệp' },
-  { key: 'page_khung_anh',     label: 'Khung Ảnh',     description: 'Trang sản phẩm khung ảnh' },
-  { key: 'page_so_scrapbook',  label: 'Sổ & Scrapbook', description: 'Trang sản phẩm sổ và phụ kiện scrapbook' },
+  { key: 'page_qr_yeu_thuong',     label: 'QR Yêu Thương',      description: 'Trang tạo QR code cá nhân' },
+  { key: 'page_thiep',             label: 'Thiệp',              description: 'Trang sản phẩm thiệp' },
+  { key: 'page_khung_anh',         label: 'Khung Ảnh',          description: 'Trang sản phẩm khung ảnh' },
+  { key: 'page_so_scrapbook',      label: 'Sổ & Scrapbook',     description: 'Trang sản phẩm sổ và phụ kiện scrapbook' },
+  { key: 'page_cac_san_pham_khac', label: 'Các Sản Phẩm Khác', description: 'Trang các sản phẩm khác' },
 ];
 
 export default function ConfigPage() {

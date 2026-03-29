@@ -4,7 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
-import './ThiepPage.css';
+import './KhacPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
@@ -13,24 +13,22 @@ function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('en') + 'đ';
 }
 
-export default function ThiepPage() {
+export default function KhacPage() {
   const [products,   setProducts]   = useState<Product[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [filters,    setFilters]    = useState<FilterState>(DEFAULT_FILTERS);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
 
-  // Load categories once
   useEffect(() => {
     getCategories().then(setCategories).catch(() => setCategories([]));
   }, []);
 
-  // Debounced fetch whenever filters change
   const fetchProducts = useCallback(() => {
     setLoading(true);
     setError('');
     getProducts({
-      type: 'thiep',
+      type: 'khac',
       sort: filters.sort,
       category_ids: filters.category_ids.length > 0 ? filters.category_ids.join(',') : undefined,
       min_price: filters.min_price ? Number(filters.min_price) : undefined,
@@ -47,12 +45,12 @@ export default function ThiepPage() {
   }, [fetchProducts]);
 
   return (
-    <div className="thiep-page">
-      <SiteHeader activePage="thiep" />
+    <div className="khac-page">
+      <SiteHeader activePage="cac-san-pham-khac" />
 
-      <section className="thiep-hero">
-        <h1 className="thiep-hero-title">Thiệp <span>Của Bạn</span></h1>
-        <p className="thiep-hero-desc">Tạo thiệp cá nhân độc đáo, gửi trao yêu thương đến người thân.</p>
+      <section className="khac-hero">
+        <h1 className="khac-hero-title">Các Sản Phẩm <span>Khác</span></h1>
+        <p className="khac-hero-desc">Khám phá thêm nhiều sản phẩm độc đáo và ý nghĩa khác.</p>
       </section>
 
       <div className="products-layout">
@@ -61,19 +59,19 @@ export default function ThiepPage() {
           filters={filters}
           onChange={setFilters}
           resultCount={products.length}
-          accentColor="#fe2c56"
+          accentColor="#f97316"
         />
 
         <div className="products-grid-area">
-          {loading && <div className="thiep-loading">Đang tải...</div>}
-          {error   && <div className="thiep-error">{error}</div>}
+          {loading && <div className="khac-loading">Đang tải...</div>}
+          {error   && <div className="khac-error">{error}</div>}
 
           {!loading && !error && (
-            <div className="thiep-grid">
+            <div className="khac-grid">
               {products.length === 0 && (
-                <div className="thiep-empty">
+                <div className="khac-empty">
                   <p>Không tìm thấy sản phẩm phù hợp.</p>
-                  <button className="thiep-reset-btn" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                  <button className="khac-reset-btn" onClick={() => setFilters(DEFAULT_FILTERS)}>
                     Đặt lại bộ lọc
                   </button>
                 </div>

@@ -86,6 +86,13 @@ export default function KhungAnhPage() {
                       src={p.images?.[0] ? resolveUrl(p.images[0]) : '/placeholder.png'}
                       alt={p.name}
                     />
+                    {p.is_best_seller && (
+                      <img
+                        className="product-card-best-seller-badge"
+                        src="/assets/images/feature/bestseller.png"
+                        alt="Best Seller"
+                      />
+                    )}
                   </div>
                   <div className="product-card-info">
                     <div className="product-card-name">{p.name}</div>

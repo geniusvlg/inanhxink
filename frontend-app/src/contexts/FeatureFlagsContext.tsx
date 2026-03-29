@@ -2,17 +2,19 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import axios from 'axios';
 
 export interface FeatureFlags {
-  page_qr_yeu_thuong: boolean;
-  page_thiep:         boolean;
-  page_khung_anh:     boolean;
-  page_so_scrapbook:  boolean;
+  page_qr_yeu_thuong:      boolean;
+  page_thiep:              boolean;
+  page_khung_anh:          boolean;
+  page_so_scrapbook:       boolean;
+  page_cac_san_pham_khac:  boolean;
 }
 
 const DEFAULTS: FeatureFlags = {
-  page_qr_yeu_thuong: true,
-  page_thiep:         true,
-  page_khung_anh:     true,
-  page_so_scrapbook:  true,
+  page_qr_yeu_thuong:      true,
+  page_thiep:              true,
+  page_khung_anh:          true,
+  page_so_scrapbook:       true,
+  page_cac_san_pham_khac:  true,
 };
 
 const FeatureFlagsContext = createContext<FeatureFlags>(DEFAULTS);
@@ -26,10 +28,11 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
       .then(res => {
         const c = res.data.config ?? {};
         setFlags({
-          page_qr_yeu_thuong: c.page_qr_yeu_thuong !== 'false',
-          page_thiep:         c.page_thiep         !== 'false',
-          page_khung_anh:     c.page_khung_anh     !== 'false',
-          page_so_scrapbook:  c.page_so_scrapbook  !== 'false',
+          page_qr_yeu_thuong:     c.page_qr_yeu_thuong     !== 'false',
+          page_thiep:             c.page_thiep             !== 'false',
+          page_khung_anh:         c.page_khung_anh         !== 'false',
+          page_so_scrapbook:      c.page_so_scrapbook      !== 'false',
+          page_cac_san_pham_khac: c.page_cac_san_pham_khac !== 'false',
         });
       })
       .catch(() => { /* keep defaults — all enabled */ });

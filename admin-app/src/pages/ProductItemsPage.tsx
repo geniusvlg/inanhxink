@@ -7,13 +7,14 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 interface Props {
-  type: 'thiep' | 'khung_anh' | 'so_scrapbook';
+  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
 }
 
 const PAGE_TITLE: Record<string, string> = {
   thiep:        '🎴 Thiệp',
   khung_anh:    '🖼️ Khung Ảnh',
   so_scrapbook: '📒 Sổ Scrapbook',
+  khac:         '📦 Các Sản Phẩm Khác',
 };
 
 // Represents either an already-saved URL or a pending local file
@@ -23,7 +24,7 @@ interface ImageEntry {
 }
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
-  name: '', description: '', price: undefined, images: [], is_active: true, category_ids: [],
+  name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, category_ids: [],
 });
 
 export default function ProductItemsPage({ type }: Props) {
@@ -315,6 +316,12 @@ export default function ProductItemsPage({ type }: Props) {
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" id="pi_active" checked={form.is_active ?? true} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
                 <label htmlFor="pi_active" className="form-label" style={{ margin: 0 }}>Đang bán</label>
+              </div>
+
+              {/* Best seller */}
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" id="pi_best_seller" checked={form.is_best_seller ?? false} onChange={e => setForm(f => ({ ...f, is_best_seller: e.target.checked }))} />
+                <label htmlFor="pi_best_seller" className="form-label" style={{ margin: 0 }}>⭐ Best Seller</label>
               </div>
 
               <div className="modal-actions">

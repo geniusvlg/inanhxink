@@ -103,14 +103,15 @@ export interface Product {
   description: string | null;
   price: number;
   images: string[];
-  type: 'thiep' | 'khung_anh' | 'so_scrapbook';
+  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
   categories: { id: number; name: string }[];
   is_active: boolean;
+  is_best_seller: boolean;
   created_at: string;
 }
 
 export interface ProductFilters {
-  type?: 'thiep' | 'khung_anh' | 'so_scrapbook';
+  type?: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
   category_ids?: string; // comma-separated ids, e.g. "1,2,3"
   min_price?: number;
   max_price?: number;

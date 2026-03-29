@@ -5,7 +5,7 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import './SiteHeader.css';
 
 interface SiteHeaderProps {
-  activePage?: 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook';
+  activePage?: 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'cac-san-pham-khac';
 }
 
 function SiteHeader({ activePage }: SiteHeaderProps) {
@@ -46,10 +46,11 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
       </div>
 
       <nav className="site-header-nav">
-        {flags.page_qr_yeu_thuong && <Link to="/qr-yeu-thuong" className={`site-nav-link${activePage === 'qr-yeu-thuong' ? ' active' : ''}`}>QR Yêu Thương</Link>}
-        {flags.page_thiep         && <Link to="/thiep"         className={`site-nav-link${activePage === 'thiep'         ? ' active' : ''}`}>Thiệp</Link>}
-        {flags.page_khung_anh     && <Link to="/khung-anh"     className={`site-nav-link${activePage === 'khung-anh'     ? ' active' : ''}`}>Khung Ảnh</Link>}
-        {flags.page_so_scrapbook  && <Link to="/so-scrapbook"  className={`site-nav-link${activePage === 'so-scrapbook'  ? ' active' : ''}`}>Sổ &amp; Scrapbook</Link>}
+        {flags.page_qr_yeu_thuong      && <Link to="/qr-yeu-thuong"      className={`site-nav-link${activePage === 'qr-yeu-thuong'      ? ' active' : ''}`}>QR Yêu Thương</Link>}
+        {flags.page_thiep              && <Link to="/thiep"              className={`site-nav-link${activePage === 'thiep'              ? ' active' : ''}`}>Thiệp</Link>}
+        {flags.page_khung_anh          && <Link to="/khung-anh"          className={`site-nav-link${activePage === 'khung-anh'          ? ' active' : ''}`}>Khung Ảnh</Link>}
+        {flags.page_so_scrapbook       && <Link to="/so-scrapbook"       className={`site-nav-link${activePage === 'so-scrapbook'       ? ' active' : ''}`}>Sổ &amp; Scrapbook</Link>}
+        {flags.page_cac_san_pham_khac  && <Link to="/cac-san-pham-khac"  className={`site-nav-link${activePage === 'cac-san-pham-khac'  ? ' active' : ''}`}>Các Sản Phẩm Khác</Link>}
       </nav>
     </header>
   );

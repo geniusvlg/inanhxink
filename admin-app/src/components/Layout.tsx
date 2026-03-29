@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { type ReactNode } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { type ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
@@ -18,19 +18,27 @@ function QrIcon() {
 }
 
 const NAV: { to: string; label: ReactNode }[] = [
-  { to: '/products',   label: <><QrIcon /> QR Templates</> },
-  { to: '/thiep',        label: '🎴 Thiệp' },
-  { to: '/khung-anh',   label: '🖼️ Khung Ảnh' },
-  { to: '/so-scrapbook', label: '📒 Sổ & Scrapbook' },
-  { to: '/categories', label: '🏷️ Danh mục' },
-  { to: '/orders',     label: '📋 Đơn hàng' },
-  { to: '/vouchers',   label: '🎟️ Voucher' },
-  { to: '/config',     label: '⚙️ Cấu hình' },
+  { to: '/products',          label: <><QrIcon /> QR Templates</> },
+  { to: '/thiep',             label: '🎴 Thiệp' },
+  { to: '/khung-anh',        label: '🖼️ Khung Ảnh' },
+  { to: '/so-scrapbook',     label: '📒 Sổ & Scrapbook' },
+  { to: '/cac-san-pham-khac', label: '📦 Các Sản Phẩm Khác' },
+  { to: '/categories',       label: '🏷️ Danh mục' },
+  { to: '/orders',           label: '📋 Đơn hàng' },
+  { to: '/vouchers',         label: '🎟️ Voucher' },
+  { to: '/config',           label: '⚙️ Cấu hình' },
 ];
 
 export default function Layout() {
   const { username, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close sidebar on route change (mobile nav)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -39,7 +47,12 @@ export default function Layout() {
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="admin-sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      <aside className={`admin-sidebar${sidebarOpen ? ' admin-sidebar--open' : ''}`}>
         <div className="admin-sidebar-logo">
           <span>🛠️</span>
           <span>Admin</span>
@@ -62,7 +75,15 @@ export default function Layout() {
           <button className="admin-logout-btn" onClick={handleLogout}>Đăng xuất</button>
         </div>
       </aside>
+
       <main className="admin-main">
+        {/* Mobile top bar */}
+        <div className="admin-topbar">
+          <button className="admin-hamburger" onClick={() => setSidebarOpen(o => !o)}>
+            ☰
+          </button>
+          <span className="admin-topbar-title">🛠️ Admin</span>
+        </div>
         <Outlet />
       </main>
     </div>
