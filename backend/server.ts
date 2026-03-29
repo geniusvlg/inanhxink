@@ -1,21 +1,14 @@
+import './instrument'; // Must be first — initialises Sentry before express is loaded
 import * as Sentry from '@sentry/node';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
-import dotenv from 'dotenv';
 import db from './config/database';
 import { uploadToS3, pruneS3Folder } from './config/s3';
 
-dotenv.config();
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
-  environment: process.env.NODE_ENV || 'development',
-});
-
+// dotenv already loaded in instrument.ts
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
