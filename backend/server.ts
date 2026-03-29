@@ -128,6 +128,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// ── Sentry test — remove after confirming Sentry is working ──────────────────
+app.get('/api/debug-sentry', function mainHandler(_req: Request, _res: Response) {
+  throw new Error('Sentry test error!');
+});
+
 app.get('/api/test-db', async (_req: Request, res: Response) => {
   try {
     const result = await db.query('SELECT NOW()');
