@@ -196,7 +196,11 @@ export default function ProductItemsPage({ type }: Props) {
                 </td>
                 <td>
                   <strong>{p.name}</strong>
-                  {p.description && <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{p.description}</div>}
+                  {p.description && (
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                      {p.description}
+                    </div>
+                  )}
                 </td>
                 <td>{Number(p.price).toLocaleString('vi-VN')}đ</td>
                 <td>
