@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { FeatureFlagsProvider, useFeatureFlags, type FeatureFlags } from './contexts/FeatureFlagsContext';
-import HomePage from './pages/HomePage';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
 import QrGeneratePage from './pages/QrGeneratePage';
@@ -12,16 +11,31 @@ import QrYeuThuongPage from './pages/QrYeuThuongPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import type { ReactElement } from 'react';
 
-// Redirects to / when the feature flag is disabled
+// Ordered list of pages — homepage is the first enabled one
+const NAV_PAGES: { flag: keyof FeatureFlags; path: string }[] = [
+  { flag: 'page_qr_yeu_thuong', path: '/qr-yeu-thuong' },
+  { flag: 'page_thiep',         path: '/thiep' },
+  { flag: 'page_khung_anh',     path: '/khung-anh' },
+  { flag: 'page_so_scrapbook',  path: '/so-scrapbook' },
+];
+
+// Redirects to the first enabled page in the nav
+function HomeRedirect() {
+  const flags = useFeatureFlags();
+  const first = NAV_PAGES.find(p => flags[p.flag]);
+  return <Navigate to={first ? first.path : '/thiep'} replace />;
+}
+
+// Redirects to homepage when the feature flag is disabled
 function FlaggedRoute({ flag, element }: { flag: keyof FeatureFlags; element: ReactElement }) {
   const flags = useFeatureFlags();
-  return flags[flag] ? element : <Navigate to="/" replace />;
+  return flags[flag] ? element : <HomeRedirect />;
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<HomeRedirect />} />
       <Route path="/order" element={<OrderPage />} />
       <Route path="/payment/:qrName" element={<PaymentPage />} />
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
