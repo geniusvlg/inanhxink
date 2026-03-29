@@ -17,10 +17,32 @@ function QrIcon() {
   );
 }
 
+type FormState = {
+  name: string;
+  description: string;
+  image_url: string;
+  price: string;
+  template_type: string;
+  is_active: boolean;
+};
+
+const emptyForm = (): FormState => ({
+  name: '',
+  description: '',
+  image_url: '',
+  price: '',
+  template_type: '',
+  is_active: true,
+});
+
 export default function ProductsPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing]     = useState<Template | null>(null);
+  const [form, setForm]           = useState<FormState>(emptyForm());
+  const [saving, setSaving]       = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -31,6 +53,56 @@ export default function ProductsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm());
+    setShowModal(true);
+  };
+
+  const openEdit = (t: Template) => {
+    setEditing(t);
+    setForm({
+      name:          t.name,
+      description:   t.description ?? '',
+      image_url:     t.image_url ?? '',
+      price:         String(t.price),
+      template_type: t.template_type,
+      is_active:     t.is_active,
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditing(null);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        name:          form.name.trim(),
+        description:   form.description.trim() || null,
+        image_url:     form.image_url.trim() || null,
+        price:         parseFloat(form.price),
+        template_type: form.template_type.trim(),
+        is_active:     form.is_active,
+      };
+      if (editing) {
+        await templatesApi.update(editing.id, payload);
+      } else {
+        await templatesApi.create(payload);
+      }
+      closeModal();
+      load();
+    } catch {
+      alert('Lỗi khi lưu template');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleToggle = async (t: Template) => {
     await templatesApi.update(t.id, { is_active: !t.is_active });
@@ -46,6 +118,7 @@ export default function ProductsPage() {
         <h1 className="admin-page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <QrIcon /> QR Templates
         </h1>
+        <button className="btn-primary" onClick={openCreate}>+ Thêm mới</button>
       </div>
 
       <div className="admin-table-wrap">
@@ -79,7 +152,14 @@ export default function ProductsPage() {
                     {t.is_active ? 'Đang bán' : 'Ẩn'}
                   </span>
                 </td>
-                <td>
+                <td style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    className="btn-secondary"
+                    style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }}
+                    onClick={() => openEdit(t)}
+                  >
+                    Sửa
+                  </button>
                   <button
                     className="btn-secondary"
                     style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }}
@@ -93,6 +173,76 @@ export default function ProductsPage() {
           </tbody>
         </table>
       </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editing ? 'Sửa template' : 'Thêm template'}</h2>
+              <button className="modal-close" onClick={closeModal}>✕</button>
+            </div>
+            <form onSubmit={handleSave} className="modal-body">
+              <label className="form-label">Tên *</label>
+              <input
+                className="form-input"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+              />
+
+              <label className="form-label">Mô tả</label>
+              <textarea
+                className="form-input"
+                rows={2}
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              />
+
+              <label className="form-label">Loại template * <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(loveletter, letterinspace…)</span></label>
+              <input
+                className="form-input"
+                value={form.template_type}
+                onChange={e => setForm(f => ({ ...f, template_type: e.target.value }))}
+                required
+              />
+
+              <label className="form-label">Giá (đ) *</label>
+              <input
+                className="form-input"
+                type="number"
+                min={0}
+                value={form.price}
+                onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                required
+              />
+
+              <label className="form-label">URL ảnh</label>
+              <input
+                className="form-input"
+                placeholder="/templates/loveletter/thumbnail.jpg"
+                value={form.image_url}
+                onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+              />
+
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
+                />
+                Đang bán
+              </label>
+
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={closeModal}>Huỷ</button>
+                <button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? 'Đang lưu…' : 'Lưu'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

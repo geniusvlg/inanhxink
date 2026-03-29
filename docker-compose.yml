@@ -53,7 +53,7 @@ services:
     image: ghcr.io/geniusvlg/inanhxink/backend:${IMAGE_TAG:-latest}
     build: ./backend
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: 3001
       DOMAIN: ${DOMAIN}
       DB_HOST: postgres
