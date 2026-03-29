@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -8,6 +9,12 @@ import db from './config/database';
 import { uploadToS3, pruneS3Folder } from './config/s3';
 
 dotenv.config();
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+  environment: process.env.NODE_ENV || 'development',
+});
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -266,6 +273,9 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
+
+// ── Sentry error handler (must be before any other error middleware) ──────────
+Sentry.setupExpressErrorHandler(app);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
