@@ -128,11 +128,6 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// ── Sentry test — remove after confirming Sentry is working ──────────────────
-app.get('/api/debug-sentry', function mainHandler(_req: Request, _res: Response) {
-  throw new Error('Sentry test error!');
-});
-
 app.get('/api/test-db', async (_req: Request, res: Response) => {
   try {
     const result = await db.query('SELECT NOW()');
@@ -256,8 +251,13 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     // For non-root paths, serve the static asset directly from the template folder
     if (urlPath !== '/' && urlPath !== '') {
       const assetPath = path.join(templateDir, urlPath);
-      if (fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
-        return res.sendFile(assetPath);
+      const safeBase = path.resolve(templateDir) + path.sep;
+      const resolvedAsset = path.resolve(assetPath);
+      if (!resolvedAsset.startsWith(safeBase)) {
+        return res.status(403).send('Forbidden');
+      }
+      if (fs.existsSync(resolvedAsset) && fs.statSync(resolvedAsset).isFile()) {
+        return res.sendFile(resolvedAsset);
       }
     }
 
