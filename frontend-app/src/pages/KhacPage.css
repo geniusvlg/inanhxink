@@ -1,29 +1,29 @@
 @import './HomePage.css';
 @import '../components/ProductFilter.css';
 
-.scrapbook-page {
+.khac-page {
   min-height: 100vh;
   background: #fff;
   display: flex;
   flex-direction: column;
 }
 
-.scrapbook-hero {
+.khac-hero {
   text-align: center;
   padding: 4rem 2rem 3rem;
-  background: linear-gradient(180deg, #ede9fe 0%, #fff 100%);
+  background: linear-gradient(180deg, #ffedd5 0%, #fff 100%);
 }
 
-.scrapbook-hero-title {
+.khac-hero-title {
   font-size: 2.75rem;
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 1rem;
 }
 
-.scrapbook-hero-title span { color: #7c3aed; }
+.khac-hero-title span { color: #f97316; }
 
-.scrapbook-hero-desc {
+.khac-hero-desc {
   font-size: 1.125rem;
   color: #6b7280;
   max-width: 600px;
@@ -31,7 +31,7 @@
   line-height: 1.7;
 }
 
-.scrapbook-grid {
+.khac-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem 1.5rem;
@@ -39,20 +39,20 @@
 }
 
 @media (max-width: 1024px) {
-  .scrapbook-grid { grid-template-columns: repeat(2, 1fr); }
+  .khac-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
-  .scrapbook-hero-title { font-size: 2rem; }
-  .scrapbook-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-  .scrapbook-grid .product-card--link .product-card-name {
+  .khac-hero-title { font-size: 2rem; }
+  .khac-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .khac-grid .product-card--link .product-card-name {
     -webkit-line-clamp: 1;
   }
 }
 
-.scrapbook-loading,
-.scrapbook-error,
-.scrapbook-empty {
+.khac-loading,
+.khac-error,
+.khac-empty {
   text-align: center;
   padding: 4rem 2rem;
   color: #6b7280;
@@ -60,24 +60,24 @@
   grid-column: 1 / -1;
 }
 
-.scrapbook-error { color: #dc2626; }
+.khac-error { color: #dc2626; }
 
-.scrapbook-reset-btn {
+.khac-reset-btn {
   margin-top: 1rem;
   padding: 0.6rem 1.5rem;
-  border: 1.5px solid #7c3aed;
+  border: 1.5px solid #f97316;
   border-radius: 2rem;
   background: #fff;
-  color: #7c3aed;
+  color: #f97316;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.scrapbook-reset-btn:hover { background: #f5f3ff; }
+.khac-reset-btn:hover { background: #fff7ed; }
 
 .homepage-nav-link.active {
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: #fff7ed;
+  color: #f97316;
 }

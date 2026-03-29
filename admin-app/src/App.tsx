@@ -10,6 +10,7 @@ import ConfigPage from './pages/ConfigPage';
 import ThiepPage from './pages/ThiepPage';
 import KhungAnhPage from './pages/KhungAnhPage';
 import ScrapbookPage from './pages/ScrapbookPage';
+import KhacPage from './pages/KhacPage';
 import CategoriesPage from './pages/CategoriesPage';
 
 export default function App() {
@@ -21,14 +22,15 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route index element={<Navigate to="/products" replace />} />
-              <Route path="/products"  element={<ProductsPage />} />
-              <Route path="/thiep"        element={<ThiepPage />} />
-              <Route path="/khung-anh"    element={<KhungAnhPage />} />
-              <Route path="/so-scrapbook" element={<ScrapbookPage />} />
-              <Route path="/categories" element={<CategoriesPage />} />
-              <Route path="/orders"    element={<OrdersPage />} />
-              <Route path="/vouchers"  element={<VouchersPage />} />
-              <Route path="/config"    element={<ConfigPage />} />
+              <Route path="/products"         element={<ProductsPage />} />
+              <Route path="/thiep"            element={<ThiepPage />} />
+              <Route path="/khung-anh"        element={<KhungAnhPage />} />
+              <Route path="/so-scrapbook"     element={<ScrapbookPage />} />
+              <Route path="/cac-san-pham-khac" element={<KhacPage />} />
+              <Route path="/categories"       element={<CategoriesPage />} />
+              <Route path="/orders"           element={<OrdersPage />} />
+              <Route path="/vouchers"         element={<VouchersPage />} />
+              <Route path="/config"           element={<ConfigPage />} />
             </Route>
           </Route>
         </Routes>
