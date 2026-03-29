@@ -182,11 +182,12 @@ export default function ProductsPage() {
               <button className="modal-close" onClick={closeModal}>✕</button>
             </div>
             <form onSubmit={handleSave} className="modal-body">
-              <label className="form-label">Tên *</label>
+              <label className="form-label">Tên * <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(tối đa 50 ký tự)</span></label>
               <input
                 className="form-input"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                maxLength={50}
                 required
               />
 

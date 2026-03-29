@@ -231,14 +231,14 @@ export default function ProductItemsPage({ type }: Props) {
 
               {/* Name */}
               <div className="form-group">
-                <label className="form-label">Tên *</label>
-                <input className="form-input" value={form.name ?? ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+                <label className="form-label">Tên * <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(tối đa 50 ký tự)</span></label>
+                <input className="form-input" value={form.name ?? ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} maxLength={50} required />
               </div>
 
               {/* Description */}
               <div className="form-group">
                 <label className="form-label">Mô tả</label>
-                <textarea className="form-textarea" rows={2} value={form.description ?? ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                <textarea className="form-textarea" rows={6} value={form.description ?? ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
 
               {/* Price */}
