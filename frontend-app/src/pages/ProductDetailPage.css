@@ -157,6 +157,7 @@
   color: #6b7280;
   line-height: 1.7;
   margin: 1rem 0 0;
+  white-space: pre-wrap;
 }
 
 /* ── Zalo CTA button ── */
