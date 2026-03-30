@@ -5,21 +5,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import path from 'path';
-import fs from 'fs';
 import sharp from 'sharp';
-
-const WATERMARK_PATH = path.join(__dirname, '..', 'public', 'watermark.png');
-const WATERMARK_WIDTH  = 200; // fixed px width regardless of image size
-const WATERMARK_MARGIN = 30;  // px gap from right/bottom edge
-
-// Cache watermark buffer so it's only read from disk once
-let _watermarkBuffer: Buffer | null = null;
-function getWatermarkBuffer(): Buffer {
-  if (!_watermarkBuffer) {
-    _watermarkBuffer = fs.readFileSync(WATERMARK_PATH);
-  }
-  return _watermarkBuffer;
-}
 
 const ENDPOINT   = process.env.S3_ENDPOINT   || '';
 const REGION     = process.env.S3_REGION     || 'north1';
@@ -46,7 +32,7 @@ export function getPublicUrl(key: string): string {
 }
 
 /** Upload a single file buffer to S3, returns the public URL.
- *  Images are watermarked (bottom-right) then converted to WebP before uploading. */
+ *  Images are converted to WebP before uploading. */
 export async function uploadToS3(
   buffer: Buffer,
   folder: string,
@@ -57,26 +43,11 @@ export async function uploadToS3(
   let ext          = path.extname(originalname).toLowerCase();
   let contentType  = mimetype;
 
-  if (IMAGE_MIMES.has(mimetype)) {
-    // Get uploaded image dimensions
-    const { width = 800, height = 600 } = await sharp(buffer).metadata();
-
-    // Trim transparent padding, then resize to fixed width
-    const wmResized  = await sharp(getWatermarkBuffer()).trim().resize(WATERMARK_WIDTH).toBuffer();
-    const wmMeta     = await sharp(wmResized).metadata();
-    const wmHeight   = wmMeta.height ?? 0;
-
-    // Position: bottom-right with margin
-    const left = width  - WATERMARK_WIDTH  - WATERMARK_MARGIN;
-    const top  = height - wmHeight - WATERMARK_MARGIN;
-
-    uploadBuffer = await sharp(buffer)
-      .composite([{ input: wmResized, left, top }])
-      .webp({ quality: 90 })
-      .toBuffer();
-
-    ext         = '.webp';
-    contentType = 'image/webp';
+  // Convert any image to WebP
+  if (IMAGE_MIMES.has(mimetype) && mimetype !== 'image/webp') {
+    uploadBuffer = await sharp(buffer).webp({ quality: 90 }).toBuffer();
+    ext          = '.webp';
+    contentType  = 'image/webp';
   }
 
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;

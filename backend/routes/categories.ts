@@ -13,12 +13,7 @@ router.get('/', async (req: Request, res: Response) => {
     let result;
     if (type) {
       result = await db.query(
-        `SELECT DISTINCT pc.id, pc.name
-         FROM product_categories pc
-         JOIN product_category_map m ON m.category_id = pc.id
-         JOIN products p ON p.id = m.product_id
-         WHERE p.type = $1 AND p.is_active = true
-         ORDER BY pc.name`,
+        `SELECT id, name FROM product_categories WHERE type = $1 ORDER BY name`,
         [type]
       );
     } else {

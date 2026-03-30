@@ -42,6 +42,7 @@ export interface Voucher {
 export interface ProductCategory {
   id: number;
   name: string;
+  type: string;
 }
 
 export interface Product {
