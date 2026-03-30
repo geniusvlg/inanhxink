@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getProductById, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
+import PageLoader from '../components/PageLoader';
 import './ProductDetailPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -39,7 +40,7 @@ export default function ProductDetailPage() {
     return (
       <div className="pd-page">
         <SiteHeader />
-        <div className="pd-loading">Đang tải...</div>
+        <PageLoader />
         <SiteFooter />
       </div>
     );

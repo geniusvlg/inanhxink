@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import PageLoader from '../components/PageLoader';
 import './KhungAnhPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -66,7 +67,7 @@ export default function KhungAnhPage() {
 
         <div className="products-grid-area">
           <div className="pf-result-bar">{products.length} sản phẩm</div>
-          {loading && <div className="khuganh-loading">Đang tải...</div>}
+          {loading && <PageLoader />}
           {error   && <div className="khuganh-error">{error}</div>}
 
           {!loading && !error && (

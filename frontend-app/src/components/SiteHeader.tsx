@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.jpeg';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import './SiteHeader.css';
 
@@ -24,7 +23,7 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
     <header className="site-header">
       <div className="site-header-top">
         <Link to="/" className="site-logo">
-          <img src={logo} alt="Inanhxink" className="site-logo-img" />
+          <img src="/logo.jpeg" alt="Inanhxink" className="site-logo-img" />
           <span className="site-logo-text">In Ảnh Xink</span>
         </Link>
 

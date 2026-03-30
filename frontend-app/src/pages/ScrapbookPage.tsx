@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import PageLoader from '../components/PageLoader';
 import './ScrapbookPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -64,7 +65,7 @@ export default function ScrapbookPage() {
 
         <div className="products-grid-area">
           <div className="pf-result-bar">{products.length} sản phẩm</div>
-          {loading && <div className="scrapbook-loading">Đang tải...</div>}
+          {loading && <PageLoader />}
           {error   && <div className="scrapbook-error">{error}</div>}
 
           {!loading && !error && (

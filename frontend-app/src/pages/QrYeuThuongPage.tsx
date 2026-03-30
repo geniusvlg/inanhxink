@@ -4,6 +4,7 @@ import { getTemplates } from '../services/api';
 import { type Template } from '../data/mockTemplates';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
+import PageLoader from '../components/PageLoader';
 import './QrYeuThuongPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -46,7 +47,7 @@ function QrYeuThuongPage() {
       <section className="qryt-products">
         <h2 className="qryt-section-title">Sản phẩm</h2>
 
-        {loading && <div className="qryt-loading">Đang tải...</div>}
+        {loading && <PageLoader />}
         {error && <div className="qryt-error">{error}</div>}
 
         {!loading && !error && (

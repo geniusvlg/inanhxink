@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createPayment, getPaymentByQrName } from '../services/api';
+import PageLoader from '../components/PageLoader';
 import './PaymentPage.css';
 
 interface OrderInfo {
@@ -154,7 +155,7 @@ function PaymentPage() {
       <div className="app">
         <div className="app-container payment-page">
           <h1 className="app-title">Inanhxink</h1>
-          <p>Đang tải...</p>
+          <PageLoader />
         </div>
       </div>
     );

@@ -4,6 +4,7 @@ import { getTemplates } from '../services/api';
 import { type Template } from '../data/mockTemplates';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
+import PageLoader from '../components/PageLoader';
 import './HomePage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -48,7 +49,7 @@ function HomePage() {
       <section className="homepage-products">
         <h2 className="homepage-section-title">Sản phẩm</h2>
 
-        {loading && <div className="homepage-loading">Đang tải...</div>}
+        {loading && <PageLoader />}
         {error && <div className="homepage-error">{error}</div>}
 
         {!loading && !error && (
