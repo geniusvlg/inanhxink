@@ -3,11 +3,23 @@ import { productCategoriesApi } from '../services/api';
 import { type ProductCategory } from '../types';
 import '../components/Layout.css';
 
+const PRODUCT_TYPES = [
+  { value: 'thiep',        label: 'Thiệp' },
+  { value: 'khung_anh',    label: 'Khung Ảnh' },
+  { value: 'so_scrapbook', label: 'Sổ & Scrapbook' },
+  { value: 'set-qua-tang', label: 'Set Quà Tặng' },
+  { value: 'khac',         label: 'Các Sản Phẩm Khác' },
+];
+
+const typeLabel = (type: string) =>
+  PRODUCT_TYPES.find(t => t.value === type)?.label ?? type;
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
   const [name, setName]             = useState('');
+  const [type, setType]             = useState('thiep');
   const [saving, setSaving]         = useState(false);
 
   const load = () => {
@@ -20,14 +32,14 @@ export default function CategoriesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setName(''); setShowModal(true); };
+  const openCreate = () => { setName(''); setType('thiep'); setShowModal(true); };
   const closeModal = () => setShowModal(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await productCategoriesApi.create({ name });
+      await productCategoriesApi.create({ name, type });
       closeModal();
       load();
     } catch {
@@ -62,13 +74,14 @@ export default function CategoriesPage() {
             <tr>
               <th>ID</th>
               <th>Tên danh mục</th>
+              <th>Loại sản phẩm</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {categories.length === 0 && (
               <tr>
-                <td colSpan={3} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
+                <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
                   Chưa có danh mục nào
                 </td>
               </tr>
@@ -77,6 +90,7 @@ export default function CategoriesPage() {
               <tr key={c.id}>
                 <td>{c.id}</td>
                 <td><strong>{c.name}</strong></td>
+                <td>{typeLabel(c.type)}</td>
                 <td>
                   <button className="btn-danger" onClick={() => handleDelete(c)}>Xoá</button>
                 </td>
@@ -91,6 +105,19 @@ export default function CategoriesPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">Thêm danh mục mới</h2>
             <form onSubmit={handleSave}>
+              <div className="form-group">
+                <label className="form-label">Loại sản phẩm *</label>
+                <select
+                  className="form-input"
+                  value={type}
+                  onChange={e => setType(e.target.value)}
+                  required
+                >
+                  {PRODUCT_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
               <div className="form-group">
                 <label className="form-label">Tên danh mục *</label>
                 <input
