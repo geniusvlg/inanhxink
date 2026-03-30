@@ -9,6 +9,7 @@ import KhungAnhPage from './pages/KhungAnhPage';
 import ScrapbookPage from './pages/ScrapbookPage';
 import QrYeuThuongPage from './pages/QrYeuThuongPage';
 import KhacPage from './pages/KhacPage';
+import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import type { ReactElement } from 'react';
 
@@ -18,6 +19,7 @@ const NAV_PAGES: { flag: keyof FeatureFlags; path: string }[] = [
   { flag: 'page_thiep',             path: '/thiep' },
   { flag: 'page_khung_anh',         path: '/khung-anh' },
   { flag: 'page_so_scrapbook',      path: '/so-scrapbook' },
+  { flag: 'page_set_qua_tang',      path: '/set-qua-tang' },
   { flag: 'page_cac_san_pham_khac', path: '/cac-san-pham-khac' },
 ];
 
@@ -48,6 +50,7 @@ function AppRoutes() {
       <Route path="/thiep"             element={<FlaggedRoute flag="page_thiep"             element={<ThiepPage />} />} />
       <Route path="/khung-anh"         element={<FlaggedRoute flag="page_khung_anh"         element={<KhungAnhPage />} />} />
       <Route path="/so-scrapbook"      element={<FlaggedRoute flag="page_so_scrapbook"      element={<ScrapbookPage />} />} />
+      <Route path="/set-qua-tang"      element={<FlaggedRoute flag="page_set_qua_tang"      element={<SetQuaTangPage />} />} />
       <Route path="/cac-san-pham-khac" element={<FlaggedRoute flag="page_cac_san_pham_khac" element={<KhacPage />} />} />
     </Routes>
   );

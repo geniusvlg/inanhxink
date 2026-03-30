@@ -1,0 +1,83 @@
+@import './HomePage.css';
+@import '../components/ProductFilter.css';
+
+.set-qua-tang-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.set-qua-tang-hero {
+  text-align: center;
+  padding: 4rem 2rem 3rem;
+  background: linear-gradient(180deg, #d4f0e0 0%, #fff 100%);
+}
+
+.set-qua-tang-hero-title {
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.set-qua-tang-hero-title span { color: #16a34a; }
+
+.set-qua-tang-hero-desc {
+  font-size: 1.125rem;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.set-qua-tang-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .set-qua-tang-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .set-qua-tang-hero-title { font-size: 2rem; }
+  .set-qua-tang-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .set-qua-tang-grid .product-card--link .product-card-name {
+    -webkit-line-clamp: 1;
+  }
+}
+
+.set-qua-tang-loading,
+.set-qua-tang-error,
+.set-qua-tang-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1.125rem;
+  grid-column: 1 / -1;
+}
+
+.set-qua-tang-error { color: #dc2626; }
+
+.set-qua-tang-reset-btn {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  border: 1.5px solid #16a34a;
+  border-radius: 2rem;
+  background: #fff;
+  color: #16a34a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.set-qua-tang-reset-btn:hover { background: #f0fdf4; }
+
+.homepage-nav-link.active {
+  background: #fef3e8;
+  color: #16a34a;
+}

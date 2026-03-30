@@ -21,7 +21,7 @@ export default function KhacPage() {
   const [error,      setError]      = useState('');
 
   useEffect(() => {
-    getCategories().then(setCategories).catch(() => setCategories([]));
+    getCategories('khac').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   const fetchProducts = useCallback(() => {
@@ -63,6 +63,7 @@ export default function KhacPage() {
         />
 
         <div className="products-grid-area">
+          <div className="pf-result-bar">{products.length} sản phẩm</div>
           {loading && <div className="khac-loading">Đang tải...</div>}
           {error   && <div className="khac-error">{error}</div>}
 

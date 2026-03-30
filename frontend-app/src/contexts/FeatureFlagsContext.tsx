@@ -7,6 +7,7 @@ export interface FeatureFlags {
   page_khung_anh:          boolean;
   page_so_scrapbook:       boolean;
   page_cac_san_pham_khac:  boolean;
+  page_set_qua_tang:       boolean;
 }
 
 const DEFAULTS: FeatureFlags = {
@@ -15,6 +16,7 @@ const DEFAULTS: FeatureFlags = {
   page_khung_anh:          true,
   page_so_scrapbook:       true,
   page_cac_san_pham_khac:  true,
+  page_set_qua_tang:       true,
 };
 
 const FeatureFlagsContext = createContext<FeatureFlags>(DEFAULTS);
@@ -33,6 +35,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           page_khung_anh:         c.page_khung_anh         !== 'false',
           page_so_scrapbook:      c.page_so_scrapbook      !== 'false',
           page_cac_san_pham_khac: c.page_cac_san_pham_khac !== 'false',
+          page_set_qua_tang:      c.page_set_qua_tang      !== 'false',
         });
       })
       .catch(() => { /* keep defaults — all enabled */ });

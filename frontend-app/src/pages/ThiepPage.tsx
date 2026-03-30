@@ -22,7 +22,7 @@ export default function ThiepPage() {
 
   // Load categories once
   useEffect(() => {
-    getCategories().then(setCategories).catch(() => setCategories([]));
+    getCategories('thiep').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   // Debounced fetch whenever filters change
@@ -65,6 +65,7 @@ export default function ThiepPage() {
         />
 
         <div className="products-grid-area">
+          <div className="pf-result-bar">{products.length} sản phẩm</div>
           {loading && <div className="thiep-loading">Đang tải...</div>}
           {error   && <div className="thiep-error">{error}</div>}
 
