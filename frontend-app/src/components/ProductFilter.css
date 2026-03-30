@@ -35,6 +35,14 @@
   margin-bottom: 0.75rem;
 }
 
+.pf-result-bar {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
 .pf-sidebar-title {
   font-size: 0.9375rem;
   font-weight: 700;
@@ -197,10 +205,6 @@
 /* The badge inherits the button's color — override text color */
 .pf-mobile-btn .pf-badge { color: #fff; }
 
-.pf-result-count {
-  font-size: 0.8125rem;
-  color: #9ca3af;
-}
 
 /* ─── Mobile bottom sheet ────────────────────────────────────────────── */
 .pf-overlay {

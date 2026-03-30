@@ -140,7 +140,6 @@ export default function ProductFilter({ categories, filters, onChange, resultCou
           </svg>
           Bộ lọc{activeCount > 0 && <span className="pf-badge">{activeCount}</span>}
         </button>
-        <span className="pf-result-count">{resultCount} sản phẩm</span>
       </div>
 
       {/* ── Mobile bottom sheet ──────────────────────────────── */}

@@ -134,8 +134,9 @@ export const getProductById = async (id: number): Promise<Product> => {
   return response.data.product;
 };
 
-export const getCategories = async (): Promise<{ id: number; name: string }[]> => {
-  const response = await api.get<{ success: boolean; categories: { id: number; name: string }[] }>('/api/categories');
+export const getCategories = async (type?: string): Promise<{ id: number; name: string }[]> => {
+  const params = type ? { type } : {};
+  const response = await api.get<{ success: boolean; categories: { id: number; name: string }[] }>('/api/categories', { params });
   return response.data.categories ?? [];
 };
 

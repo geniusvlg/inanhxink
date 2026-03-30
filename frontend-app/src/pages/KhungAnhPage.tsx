@@ -22,7 +22,7 @@ export default function KhungAnhPage() {
 
   // Load categories once
   useEffect(() => {
-    getCategories().then(setCategories).catch(() => setCategories([]));
+    getCategories('khung_anh').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   // Debounced fetch whenever filters change
@@ -65,6 +65,7 @@ export default function KhungAnhPage() {
         />
 
         <div className="products-grid-area">
+          <div className="pf-result-bar">{products.length} sản phẩm</div>
           {loading && <div className="khuganh-loading">Đang tải...</div>}
           {error   && <div className="khuganh-error">{error}</div>}
 

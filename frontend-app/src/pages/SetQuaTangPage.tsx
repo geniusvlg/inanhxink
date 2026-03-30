@@ -4,7 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
-import './ScrapbookPage.css';
+import './SetQuaTangPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
@@ -13,22 +13,24 @@ function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('en') + 'đ';
 }
 
-export default function ScrapbookPage() {
+export default function SetQuaTangPage() {
   const [products,   setProducts]   = useState<Product[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [filters,    setFilters]    = useState<FilterState>(DEFAULT_FILTERS);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
 
+  // Load categories once
   useEffect(() => {
-    getCategories('so_scrapbook').then(setCategories).catch(() => setCategories([]));
+    getCategories('set-qua-tang').then(setCategories).catch(() => setCategories([]));
   }, []);
 
+  // Debounced fetch whenever filters change
   const fetchProducts = useCallback(() => {
     setLoading(true);
     setError('');
     getProducts({
-      type: 'so_scrapbook',
+      type: 'set-qua-tang',
       sort: filters.sort,
       category_ids: filters.category_ids.length > 0 ? filters.category_ids.join(',') : undefined,
       min_price: filters.min_price ? Number(filters.min_price) : undefined,
@@ -45,12 +47,12 @@ export default function ScrapbookPage() {
   }, [fetchProducts]);
 
   return (
-    <div className="scrapbook-page">
-      <SiteHeader activePage="so-scrapbook" />
+    <div className="set-qua-tang-page">
+      <SiteHeader activePage="set-qua-tang" />
 
-      <section className="scrapbook-hero">
-        <h1 className="scrapbook-hero-title">Sổ &amp; Phụ Kiện <span>Scrapbook</span></h1>
-        <p className="scrapbook-hero-desc">Lưu giữ kỷ niệm đẹp với những cuốn sổ và phụ kiện scrapbook độc đáo.</p>
+      <section className="set-qua-tang-hero">
+        <h1 className="set-qua-tang-hero-title">Set Quà <span>Tặng</span></h1>
+        <p className="set-qua-tang-hero-desc">Những bộ quà tặng tinh tế, ý nghĩa — gói trọn yêu thương gửi đến người đặc biệt.</p>
       </section>
 
       <div className="products-layout">
@@ -59,20 +61,20 @@ export default function ScrapbookPage() {
           filters={filters}
           onChange={setFilters}
           resultCount={products.length}
-          accentColor="#7c3aed"
+          accentColor="#16a34a"
         />
 
         <div className="products-grid-area">
           <div className="pf-result-bar">{products.length} sản phẩm</div>
-          {loading && <div className="scrapbook-loading">Đang tải...</div>}
-          {error   && <div className="scrapbook-error">{error}</div>}
+          {loading && <div className="set-qua-tang-loading">Đang tải...</div>}
+          {error   && <div className="set-qua-tang-error">{error}</div>}
 
           {!loading && !error && (
-            <div className="scrapbook-grid">
+            <div className="set-qua-tang-grid">
               {products.length === 0 && (
-                <div className="scrapbook-empty">
+                <div className="set-qua-tang-empty">
                   <p>Không tìm thấy sản phẩm phù hợp.</p>
-                  <button className="scrapbook-reset-btn" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                  <button className="set-qua-tang-reset-btn" onClick={() => setFilters(DEFAULT_FILTERS)}>
                     Đặt lại bộ lọc
                   </button>
                 </div>
