@@ -91,13 +91,14 @@ app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Res
     // Admin product uploads pass ?prefix=products/... directly
     // Customer QR uploads pass ?qrName=... which gets stored under qr/
     const prefix = (req.query?.prefix as string) || '';
+    const watermark = req.query?.watermark === 'true';
     const folder = prefix
       ? prefix.toLowerCase().split('/').map(seg => seg.replace(/[^a-z0-9_-]/g, '')).filter(Boolean).join('/')
       : qrName ? `uploads/${qrName}` : 'uploads';
     const urls: string[] = [];
 
     for (const file of files) {
-      const url = await uploadToS3(file.buffer, folder, file.originalname, file.mimetype);
+      const url = await uploadToS3(file.buffer, folder, file.originalname, file.mimetype, watermark);
       urls.push(url);
     }
 

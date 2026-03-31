@@ -338,6 +338,10 @@
     gap: 0;
   }
 
+  .products-grid-area {
+    width: 100%;
+  }
+
   .pf-sidebar { display: none; }
   .pf-mobile-bar { display: flex; }
 }

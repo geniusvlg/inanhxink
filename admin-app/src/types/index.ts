@@ -56,6 +56,7 @@ export interface Product {
   category_ids?: number[];
   is_active: boolean;
   is_best_seller: boolean;
+  watermark_enabled: boolean;
   created_at: string;
 }
 

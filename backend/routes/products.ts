@@ -35,9 +35,9 @@ router.get('/', async (req: Request, res: Response) => {
 
     const where = `WHERE ${conditions.join(' AND ')}`;
 
-    let orderBy = 'ORDER BY p.created_at DESC';
-    if (sort === 'price_asc')  orderBy = 'ORDER BY p.price ASC,  p.created_at DESC';
-    if (sort === 'price_desc') orderBy = 'ORDER BY p.price DESC, p.created_at DESC';
+    let orderBy = 'ORDER BY p.updated_at DESC, p.created_at DESC';
+    if (sort === 'price_asc')  orderBy = 'ORDER BY p.price ASC,  p.updated_at DESC, p.created_at DESC';
+    if (sort === 'price_desc') orderBy = 'ORDER BY p.price DESC, p.updated_at DESC, p.created_at DESC';
 
     const result = await db.query(
       `SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_best_seller,
