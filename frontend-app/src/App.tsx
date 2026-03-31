@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { FeatureFlagsProvider, useFeatureFlags, type FeatureFlags } from './contexts/FeatureFlagsContext';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
@@ -36,9 +37,18 @@ function FlaggedRoute({ flag, element }: { flag: keyof FeatureFlags; element: Re
   return flags[flag] ? element : <HomeRedirect />;
 }
 
+// Scrolls to top on every route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 function AppRoutes() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/order" element={<OrderPage />} />
       <Route path="/payment/:qrName" element={<PaymentPage />} />
@@ -53,6 +63,7 @@ function AppRoutes() {
       <Route path="/set-qua-tang"      element={<FlaggedRoute flag="page_set_qua_tang"      element={<SetQuaTangPage />} />} />
       <Route path="/cac-san-pham-khac" element={<FlaggedRoute flag="page_cac_san_pham_khac" element={<KhacPage />} />} />
     </Routes>
+    </>
   );
 }
 

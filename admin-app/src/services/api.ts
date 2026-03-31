@@ -74,11 +74,11 @@ export const productCategoriesApi = {
 };
 
 export const uploadApi = {
-  images: (files: File[], folder = 'product-new') => {
+  images: (files: File[], folder = 'product-new', watermark = false) => {
     const form = new FormData();
     files.forEach(f => form.append('files', f));
     return api.post<{ success: boolean; urls: string[] }>(
-      `/api/upload?prefix=products/${folder}`,
+      `/api/upload?prefix=products/${folder}&watermark=${watermark}`,
       form,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );

@@ -24,7 +24,7 @@ interface ImageEntry {
 }
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
-  name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, category_ids: [],
+  name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: false, category_ids: [],
 });
 
 export default function ProductItemsPage({ type }: Props) {
@@ -116,7 +116,7 @@ export default function ProductItemsPage({ type }: Props) {
         // Upload new files (if any) to the product's own folder
         let uploadedUrls: string[] = [];
         if (pendingFiles.length) {
-          const res = await uploadApi.images(pendingFiles, `${type}/product-${editing.id}`);
+          const res = await uploadApi.images(pendingFiles, `${type}/product-${editing.id}`, form.watermark_enabled ?? false);
           uploadedUrls = res.data.urls;
         }
         await productsApi.update(editing.id, {
@@ -131,7 +131,7 @@ export default function ProductItemsPage({ type }: Props) {
 
         let images: string[] = [];
         if (pendingFiles.length) {
-          const res = await uploadApi.images(pendingFiles, `${type}/product-${productId}`);
+          const res = await uploadApi.images(pendingFiles, `${type}/product-${productId}`, form.watermark_enabled ?? false);
           images = res.data.urls;
         }
         if (images.length) {
@@ -326,6 +326,17 @@ export default function ProductItemsPage({ type }: Props) {
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" id="pi_best_seller" checked={form.is_best_seller ?? false} onChange={e => setForm(f => ({ ...f, is_best_seller: e.target.checked }))} />
                 <label htmlFor="pi_best_seller" className="form-label" style={{ margin: 0 }}>⭐ Best Seller</label>
+              </div>
+
+              {/* Watermark */}
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" id="pi_watermark" checked={form.watermark_enabled ?? false} onChange={e => setForm(f => ({ ...f, watermark_enabled: e.target.checked }))} />
+                <label htmlFor="pi_watermark" className="form-label" style={{ margin: 0 }}>
+                  🔏 Thêm watermark vào ảnh
+                  <span style={{ marginLeft: '0.4rem', fontSize: '0.78rem', color: '#94a3b8', fontWeight: 400 }}>
+                    (áp dụng khi upload ảnh mới)
+                  </span>
+                </label>
               </div>
 
               <div className="modal-actions">

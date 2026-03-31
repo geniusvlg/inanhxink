@@ -24,7 +24,7 @@ router.get('/', async (req: Request, res: Response) => {
        LEFT JOIN product_categories   pc ON pc.id = m.category_id
        ${where}
        GROUP BY p.id
-       ORDER BY p.created_at DESC`,
+       ORDER BY p.updated_at DESC, p.created_at DESC`,
       params
     );
     return res.json({ success: true, products: result.rows });
@@ -58,10 +58,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 // POST /api/admin/products
 router.post('/', async (req: Request, res: Response) => {
-  const { name, description, price, images = [], type, is_active = true, is_best_seller = false, category_ids = [] } =
+  const { name, description, price, images = [], type, is_active = true, is_best_seller = false, watermark_enabled = false, category_ids = [] } =
     req.body as {
       name: string; description?: string; price: number;
-      images?: string[]; type: string; is_active?: boolean; is_best_seller?: boolean; category_ids?: number[];
+      images?: string[]; type: string; is_active?: boolean; is_best_seller?: boolean; watermark_enabled?: boolean; category_ids?: number[];
     };
 
   if (!name || price == null || !type) {
@@ -72,9 +72,9 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     await client.query('BEGIN');
     const insert = await client.query(
-      `INSERT INTO products (name, description, price, images, type, is_active, is_best_seller)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [name, description ?? null, price, JSON.stringify(images), type, is_active, is_best_seller]
+      `INSERT INTO products (name, description, price, images, type, is_active, is_best_seller, watermark_enabled)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [name, description ?? null, price, JSON.stringify(images), type, is_active, is_best_seller, watermark_enabled]
     );
     const product = insert.rows[0];
 
@@ -96,10 +96,10 @@ router.post('/', async (req: Request, res: Response) => {
 
 // PUT /api/admin/products/:id
 router.put('/:id', async (req: Request, res: Response) => {
-  const { name, description, price, images, is_active, is_best_seller, category_ids } =
+  const { name, description, price, images, is_active, is_best_seller, watermark_enabled, category_ids } =
     req.body as {
       name?: string; description?: string; price?: number;
-      images?: string[]; is_active?: boolean; is_best_seller?: boolean; category_ids?: number[];
+      images?: string[]; is_active?: boolean; is_best_seller?: boolean; watermark_enabled?: boolean; category_ids?: number[];
     };
 
   const client = await db.pool.connect();
@@ -111,8 +111,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (description !== undefined) allowed['description'] = description;
     if (price       !== undefined) allowed['price']       = price;
     if (images      !== undefined) allowed['images']      = JSON.stringify(images);
-    if (is_active      !== undefined) allowed['is_active']      = is_active;
-    if (is_best_seller !== undefined) allowed['is_best_seller'] = is_best_seller;
+    if (is_active          !== undefined) allowed['is_active']          = is_active;
+    if (is_best_seller     !== undefined) allowed['is_best_seller']     = is_best_seller;
+    if (watermark_enabled  !== undefined) allowed['watermark_enabled']  = watermark_enabled;
 
     if (Object.keys(allowed).length > 0) {
       const setClauses = Object.keys(allowed).map((k, i) => `${k} = $${i + 1}`);

@@ -5,7 +5,21 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import path from 'path';
+import fs from 'fs';
 import sharp from 'sharp';
+
+const WATERMARK_PATH   = path.join(__dirname, '..', 'public', 'watermark.png');
+const WATERMARK_RATIO  = 0.3;
+const WATERMARK_MARGIN_RATIO = 0.03; // margin is 3% of image width
+
+// Cache watermark buffer so it's only read from disk once
+let _watermarkBuffer: Buffer | null = null;
+function getWatermarkBuffer(): Buffer {
+  if (!_watermarkBuffer) {
+    _watermarkBuffer = fs.readFileSync(WATERMARK_PATH);
+  }
+  return _watermarkBuffer;
+}
 
 const ENDPOINT   = process.env.S3_ENDPOINT   || '';
 const REGION     = process.env.S3_REGION     || 'north1';
@@ -32,20 +46,35 @@ export function getPublicUrl(key: string): string {
 }
 
 /** Upload a single file buffer to S3, returns the public URL.
- *  Images are converted to WebP before uploading. */
+ *  Images are converted to WebP. If watermark=true, a watermark is
+ *  composited at the bottom-right before uploading. */
 export async function uploadToS3(
   buffer: Buffer,
   folder: string,
   originalname: string,
   mimetype: string,
+  watermark = false,
 ): Promise<string> {
   let uploadBuffer = buffer;
   let ext          = path.extname(originalname).toLowerCase();
   let contentType  = mimetype;
 
-  // Convert any image to WebP
-  if (IMAGE_MIMES.has(mimetype) && mimetype !== 'image/webp') {
-    uploadBuffer = await sharp(buffer).webp({ quality: 90 }).toBuffer();
+  if (IMAGE_MIMES.has(mimetype)) {
+    let pipeline = sharp(buffer);
+
+    if (watermark) {
+      const { width = 800, height = 600 } = await sharp(buffer).metadata();
+      const wmWidth   = Math.round(width * WATERMARK_RATIO);
+      const margin    = Math.round(width * WATERMARK_MARGIN_RATIO);
+      const wmResized = await sharp(getWatermarkBuffer()).trim().resize(wmWidth).toBuffer();
+      const wmMeta    = await sharp(wmResized).metadata();
+      const wmHeight  = wmMeta.height ?? 0;
+      const left      = width  - wmWidth  - margin;
+      const top       = height - wmHeight - margin;
+      pipeline = sharp(await pipeline.toBuffer()).composite([{ input: wmResized, left, top }]);
+    }
+
+    uploadBuffer = await pipeline.webp({ quality: 90 }).toBuffer();
     ext          = '.webp';
     contentType  = 'image/webp';
   }
