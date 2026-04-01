@@ -11,6 +11,7 @@ import ThiepPage from './pages/ThiepPage';
 import KhungAnhPage from './pages/KhungAnhPage';
 import ScrapbookPage from './pages/ScrapbookPage';
 import KhacPage from './pages/KhacPage';
+import SetQuaTangPage from './pages/SetQuaTangPage';
 import CategoriesPage from './pages/CategoriesPage';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/khung-anh"        element={<KhungAnhPage />} />
               <Route path="/so-scrapbook"     element={<ScrapbookPage />} />
               <Route path="/cac-san-pham-khac" element={<KhacPage />} />
+              <Route path="/set-qua-tang"     element={<SetQuaTangPage />} />
               <Route path="/categories"       element={<CategoriesPage />} />
               <Route path="/orders"           element={<OrdersPage />} />
               <Route path="/vouchers"         element={<VouchersPage />} />
