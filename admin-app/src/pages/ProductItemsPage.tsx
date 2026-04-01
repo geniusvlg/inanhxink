@@ -7,14 +7,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 interface Props {
-  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
+  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang';
 }
 
 const PAGE_TITLE: Record<string, string> = {
-  thiep:        '🎴 Thiệp',
-  khung_anh:    '🖼️ Khung Ảnh',
-  so_scrapbook: '📒 Sổ Scrapbook',
-  khac:         '📦 Các Sản Phẩm Khác',
+  thiep:          '🎴 Thiệp',
+  khung_anh:      '🖼️ Khung Ảnh',
+  so_scrapbook:   '📒 Sổ Scrapbook',
+  khac:           '📦 Các Sản Phẩm Khác',
+  'set-qua-tang': '🎁 Set Quà Tặng',
 };
 
 // Represents either an already-saved URL or a pending local file
