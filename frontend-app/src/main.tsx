@@ -11,6 +11,10 @@ Sentry.init({
   tracesSampleRate: 1.0,
   replaysOnErrorSampleRate: 1.0,
   environment: import.meta.env.MODE,
+  ignoreErrors: [
+    // Injected by Zalo in-app browser (iOS WebView) — not our code
+    /zaloJSV2/,
+  ],
 });
 
 const rootElement = document.getElementById('root')
