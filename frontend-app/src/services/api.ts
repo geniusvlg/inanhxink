@@ -116,17 +116,33 @@ export interface ProductFilters {
   min_price?: number;
   max_price?: number;
   sort?: 'newest' | 'price_asc' | 'price_desc';
+  page?: number;
+  limit?: number;
 }
 
-export const getProducts = async (filters: ProductFilters = {}): Promise<Product[]> => {
+export interface ProductsPage {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export const getProducts = async (filters: ProductFilters = {}): Promise<ProductsPage> => {
   const params: Record<string, string | number> = {};
   if (filters.type)         params.type         = filters.type;
   if (filters.category_ids) params.category_ids = filters.category_ids;
   if (filters.min_price != null && filters.min_price !== 0) params.min_price = filters.min_price;
   if (filters.max_price != null) params.max_price = filters.max_price;
   if (filters.sort && filters.sort !== 'newest') params.sort = filters.sort;
-  const response = await api.get<{ success: boolean; products: Product[] }>('/api/products', { params });
-  return response.data.products ?? [];
+  if (filters.page  != null) params.page  = filters.page;
+  if (filters.limit != null) params.limit = filters.limit;
+  const response = await api.get<{ success: boolean } & ProductsPage>('/api/products', { params });
+  return {
+    products:  response.data.products ?? [],
+    total:     response.data.total    ?? 0,
+    page:      response.data.page     ?? 1,
+    limit:     response.data.limit    ?? 12,
+  };
 };
 
 export const getProductById = async (id: number): Promise<Product> => {

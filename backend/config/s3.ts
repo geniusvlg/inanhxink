@@ -26,6 +26,7 @@ const REGION     = process.env.S3_REGION     || 'north1';
 const BUCKET     = process.env.S3_BUCKET     || 'inanhxink-prod';
 const ACCESS_KEY = process.env.S3_ACCESS_KEY || '';
 const SECRET_KEY = process.env.S3_SECRET_KEY || '';
+const CDN_BASE   = process.env.CDN_BASE_URL  || '';
 
 if (!ENDPOINT || !ACCESS_KEY || !SECRET_KEY) {
   throw new Error('Missing S3 configuration: S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY are required');
@@ -42,7 +43,8 @@ const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp
 
 /** Returns the public URL for a given S3 key */
 export function getPublicUrl(key: string): string {
-  return `${ENDPOINT}/${BUCKET}/${key}`;
+  const base = CDN_BASE || `${ENDPOINT}/${BUCKET}`;
+  return `${base}/${key}`;
 }
 
 /** Upload a single file buffer to S3, returns the public URL.
