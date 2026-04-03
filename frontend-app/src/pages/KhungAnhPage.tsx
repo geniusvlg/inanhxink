@@ -9,7 +9,12 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import './KhungAnhPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+const CDN_URL      = import.meta.env.VITE_CDN_URL || '';
+const S3_ORIGIN    = 'https://s3-north1.viettelidc.com.vn/inanhxink-prod';
+const resolveUrl   = (url: string) => {
+  if (CDN_URL && url.startsWith(S3_ORIGIN)) return CDN_URL + url.slice(S3_ORIGIN.length);
+  return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+};
 
 function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('en') + 'đ';
