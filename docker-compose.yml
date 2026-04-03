@@ -6,6 +6,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-https://inanhxink.com}
         VITE_CDN_URL: ${VITE_CDN_URL:-https://cdn.inanhxink.com/inanhxink-prod}
+        VITE_S3_BUCKET: ${VITE_S3_BUCKET:-inanhxink-prod}
     volumes:
       - frontend_dist:/dist
 
