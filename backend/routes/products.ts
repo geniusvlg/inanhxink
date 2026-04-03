@@ -3,10 +3,13 @@ import db from '../config/database';
 
 const router = Router();
 
-// GET /api/products?type=&category_ids=1,2&min_price=&max_price=&sort=newest|price_asc|price_desc
+// GET /api/products?type=&category_ids=1,2&min_price=&max_price=&sort=newest|price_asc|price_desc&page=1&limit=12
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { type, category_ids, min_price, max_price, sort } = req.query as Record<string, string | undefined>;
+    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+    const limit = Math.min(48, parseInt(req.query.limit as string) || 12);
+    const offset = (page - 1) * limit;
 
     const params: unknown[] = [];
     const conditions: string[] = ['p.is_active = true'];
@@ -39,6 +42,18 @@ router.get('/', async (req: Request, res: Response) => {
     if (sort === 'price_asc')  orderBy = 'ORDER BY p.price ASC,  p.updated_at DESC, p.created_at DESC';
     if (sort === 'price_desc') orderBy = 'ORDER BY p.price DESC, p.updated_at DESC, p.created_at DESC';
 
+    // COUNT uses the same WHERE but no GROUP BY / ORDER BY
+    const countResult = await db.query(
+      `SELECT COUNT(DISTINCT p.id) AS total
+       FROM products p
+       LEFT JOIN product_category_map m ON m.product_id = p.id
+       ${where}`,
+      [...params]
+    );
+    const total = parseInt(countResult.rows[0].total, 10);
+
+    // Paginated main query
+    params.push(limit, offset);
     const result = await db.query(
       `SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_best_seller,
          COALESCE(
@@ -50,10 +65,12 @@ router.get('/', async (req: Request, res: Response) => {
        LEFT JOIN product_categories   pc ON pc.id = m.category_id
        ${where}
        GROUP BY p.id
-       ${orderBy}`,
+       ${orderBy}
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
-    return res.json({ success: true, products: result.rows });
+
+    return res.json({ success: true, products: result.rows, total, page, limit });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }

@@ -36,11 +36,41 @@
 }
 
 .pf-result-bar {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   color: #6b7280;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #f3f4f6;
+}
+
+/* ── Load More ── */
+.load-more-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 0 0.5rem;
+}
+
+.load-more-btn {
+  padding: 0.65rem 2.5rem;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 2rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.load-more-btn:hover:not(:disabled) {
+  border-color: #fe2c56;
+  color: #fe2c56;
+  box-shadow: 0 2px 8px rgba(254, 44, 86, 0.12);
+}
+.load-more-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .pf-sidebar-title {
