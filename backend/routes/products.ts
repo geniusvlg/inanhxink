@@ -55,7 +55,7 @@ router.get('/', async (req: Request, res: Response) => {
     // Paginated main query
     params.push(limit, offset);
     const result = await db.query(
-      `SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_best_seller,
+      `SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_best_seller, p.tiktok_url, p.instagram_url,
          COALESCE(
            json_agg(json_build_object('id', pc.id, 'name', pc.name))
            FILTER (WHERE pc.id IS NOT NULL), '[]'
@@ -81,7 +81,7 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await db.query(
-      `SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_active, p.is_best_seller, p.created_at,
+      `SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_active, p.is_best_seller, p.tiktok_url, p.instagram_url, p.created_at,
          COALESCE(
            json_agg(json_build_object('id', pc.id, 'name', pc.name))
            FILTER (WHERE pc.id IS NOT NULL), '[]'

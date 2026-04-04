@@ -57,6 +57,8 @@ export interface Product {
   is_active: boolean;
   is_best_seller: boolean;
   watermark_enabled: boolean;
+  tiktok_url: string | null;
+  instagram_url: string | null;
   created_at: string;
 }
 
