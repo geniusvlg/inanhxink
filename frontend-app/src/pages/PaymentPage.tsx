@@ -203,7 +203,7 @@ function PaymentPage() {
               <div className="payment-bank-row">
                 <span className="payment-bank-label">Số tài khoản:</span>
                 <span className="payment-bank-value">
-                  77741116868
+                  249550889
                   <button
                     className="payment-copy-button"
                     onClick={() => handleCopy('77741116868', 'account')}

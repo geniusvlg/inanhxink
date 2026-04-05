@@ -75,7 +75,7 @@ function StyledQRCode({ url, template = 'heart' }: StyledQRCodeProps) {
 
       // Load background image
       const bgImg = new Image();
-      bgImg.src = `/qr-template/${template}.png`;
+      bgImg.src = `/assets/images/qr-template/${template}.png`;
 
       const bgLoaded = await new Promise<boolean>((resolve) => {
         bgImg.onload = () => resolve(true);
