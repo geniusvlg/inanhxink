@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import * as Sentry from '@sentry/react';
 import { productsApi, productCategoriesApi, uploadApi } from '../services/api';
 import { type Product, type ProductCategory } from '../types';
 import '../components/Layout.css';
@@ -126,23 +127,29 @@ export default function ProductItemsPage({ type }: Props) {
           images: [...savedUrls, ...uploadedUrls],
         });
       } else {
-        // Create product first (no images yet), then upload, then update
-        const created = await productsApi.create({ ...form, type, images: [] });
+        // Create product as inactive first (avoids showing imageless product publicly)
+        const created = await productsApi.create({ ...form, type, images: [], is_active: false });
         const productId = created.data.product.id;
 
-        let images: string[] = [];
-        if (pendingFiles.length) {
-          const res = await uploadApi.images(pendingFiles, `${type}/product-${productId}`, form.watermark_enabled ?? false);
-          images = res.data.urls;
-        }
-        if (images.length) {
-          await productsApi.update(productId, { images });
+        try {
+          let images: string[] = [];
+          if (pendingFiles.length) {
+            const res = await uploadApi.images(pendingFiles, `${type}/product-${productId}`, form.watermark_enabled ?? false);
+            images = res.data.urls;
+          }
+          // Activate + attach images in one update
+          await productsApi.update(productId, { images, is_active: form.is_active ?? true });
+        } catch (err) {
+          // Rollback: remove the product so no ghost entries are left
+          await productsApi.delete(productId);
+          throw err;
         }
       }
 
       closeModal();
       load();
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err);
       alert('Lỗi khi lưu sản phẩm');
     } finally {
       setSaving(false);
