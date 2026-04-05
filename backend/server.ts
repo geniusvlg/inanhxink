@@ -158,7 +158,14 @@ app.get('/api/site-data', async (req: Request, res: Response) => {
       return res.status(404).json({ error: `Site '${subdomain}' not found` });
     }
 
-    return res.json(result.rows[0]);
+    const row = result.rows[0];
+    if (row.template_data) {
+      const td = row.template_data;
+      if (td.musicUrl)  td.musicUrl  = rewriteS3ToCdn(td.musicUrl);
+      if (td.imageUrls) td.imageUrls = (td.imageUrls as unknown[]).map(rewriteS3ToCdn);
+    }
+
+    return res.json(row);
   } catch (error) {
     const err = error as Error;
     return res.status(500).json({ error: err.message });
@@ -209,6 +216,15 @@ app.use('/api/admin/product-categories', requireAdmin, adminProductCategoriesRou
 // ── Template serving helpers ─────────────────────────────────────────────────
 const templatesRoot = path.join(__dirname, 'public', 'templates');
 
+const S3_ORIGIN  = `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET || 'inanhxink-prod'}`;
+const CDN_BASE   = process.env.CDN_BASE_URL || '';
+
+function rewriteS3ToCdn(url: unknown): unknown {
+  if (typeof url !== 'string') return url;
+  if (CDN_BASE && url.startsWith(S3_ORIGIN)) return CDN_BASE + url.slice(S3_ORIGIN.length);
+  return url;
+}
+
 // Inject window.__SUBDOMAIN__ and window.dataFromSubdomain before </head>
 // so template JS can use the data without an extra /api/site-data round-trip.
 function injectScripts(
@@ -217,7 +233,12 @@ function injectScripts(
   templateType: string,
   templateData: Record<string, unknown> | null,
 ): string {
-  const dataPayload = JSON.stringify({ template: templateType, data: templateData ?? {} });
+  // Rewrite any S3 URLs to CDN URLs before injecting into the template
+  const data = templateData ? { ...templateData } : {};
+  if (data.musicUrl)   data.musicUrl   = rewriteS3ToCdn(data.musicUrl);
+  if (data.imageUrls)  data.imageUrls  = (data.imageUrls as unknown[]).map(rewriteS3ToCdn);
+
+  const dataPayload = JSON.stringify({ template: templateType, data });
   const tag =
     `<script>` +
     `window.__SUBDOMAIN__=${JSON.stringify(subdomain)};` +

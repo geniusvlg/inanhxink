@@ -1,38 +1,55 @@
 import express, { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { execFile } from 'child_process';
 import db from '../config/database';
+import { uploadToS3 } from '../config/s3';
 
 const MAX_MUSIC_BYTES = 15 * 1024 * 1024; // 15 MB
-const uploadsDir = path.join(__dirname, '..', 'public', 'uploads');
 
 async function downloadMusicFile(tiktokUrl: string, qrName: string): Promise<string> {
-  const destDir = path.join(uploadsDir, qrName);
-  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  // Download to a temp directory
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `music-${qrName}-`));
 
-  // Remove any previous music file
-  for (const old of fs.readdirSync(destDir)) {
-    if (old.startsWith('music.')) fs.unlinkSync(path.join(destDir, old));
-  }
-
-  // Download audio in native format — yt-dlp picks the best available
-  await new Promise<void>((resolve, reject) => {
-    execFile('yt-dlp', [
-      '-x',
-      '-o', path.join(destDir, 'music.%(ext)s'),
-      tiktokUrl,
-    ], (err, _stdout, stderr) => {
-      if (err) reject(new Error(`yt-dlp error: ${stderr || err.message}`));
-      else resolve();
+  try {
+    // Download audio in native format — yt-dlp picks the best available
+    await new Promise<void>((resolve, reject) => {
+      execFile('yt-dlp', [
+        '-x',
+        '-o', path.join(tmpDir, 'music.%(ext)s'),
+        tiktokUrl,
+      ], (err, _stdout, stderr) => {
+        if (err) reject(new Error(`yt-dlp error: ${stderr || err.message}`));
+        else resolve();
+      });
     });
-  });
 
-  // Find the downloaded file (e.g. music.m4a, music.webm)
-  const musicFile = fs.readdirSync(destDir).find(f => f.startsWith('music.'));
-  if (!musicFile) throw new Error('Không tìm thấy file nhạc sau khi tải');
+    // Find the downloaded file (e.g. music.m4a, music.webm)
+    const musicFile = fs.readdirSync(tmpDir).find(f => f.startsWith('music.'));
+    if (!musicFile) throw new Error('Không tìm thấy file nhạc sau khi tải');
 
-  return `/uploads/${qrName}/${musicFile}`;
+    const filePath = path.join(tmpDir, musicFile);
+    const buffer = fs.readFileSync(filePath);
+
+    if (buffer.length > MAX_MUSIC_BYTES) {
+      throw new Error('File nhạc quá lớn (tối đa 15MB)');
+    }
+
+    const ext = path.extname(musicFile).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg', '.webm': 'audio/webm',
+      '.ogg': 'audio/ogg', '.opus': 'audio/opus', '.wav': 'audio/wav',
+    };
+    const mimetype = mimeMap[ext] || 'audio/mpeg';
+
+    // Upload to S3 under uploads/<qrName>/
+    const url = await uploadToS3(buffer, `uploads/${qrName}`, musicFile, mimetype);
+    return url;
+  } finally {
+    // Clean up temp directory
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 const router: Router = express.Router();

@@ -78,7 +78,7 @@ export const extractMusic = async (url: string, qrName?: string): Promise<string
 // Metadata / config
 export const getMetadata = async (): Promise<Record<string, string>> => {
   const response = await api.get('/api/metadata');
-  return response.data.data as Record<string, string>;
+  return response.data.config as Record<string, string>;
 };
 
 // Payments
