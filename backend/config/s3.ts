@@ -43,8 +43,7 @@ const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp
 
 /** Returns the public URL for a given S3 key */
 export function getPublicUrl(key: string): string {
-  const base = CDN_BASE || `${ENDPOINT}/${BUCKET}`;
-  return `${base}/${key}`;
+  return `${ENDPOINT}/${BUCKET}/${key}`;
 }
 
 /** Upload a single file buffer to S3, returns the public URL.
