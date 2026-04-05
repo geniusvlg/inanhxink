@@ -38,23 +38,27 @@ export default function ProductItemsPage({ type }: Props) {
   const [form, setForm]             = useState<Partial<Product> & { category_ids: number[] }>(emptyForm());
   const [imageEntries, setImageEntries] = useState<ImageEntry[]>([]);
   const [saving, setSaving]         = useState(false);
+  const [page, setPage]             = useState(1);
+  const [total, setTotal]           = useState(0);
+  const [limit, setLimit]           = useState(20);
   const fileRef                     = useRef<HTMLInputElement>(null);
 
-  const load = () => {
+  const load = (p = page, l = limit) => {
     setLoading(true);
     Promise.all([
-      productsApi.list(type),
+      productsApi.list(type, p, l),
       productCategoriesApi.list(type),
     ])
       .then(([pr, cr]) => {
         setProducts(pr.data.products ?? []);
+        setTotal(pr.data.total ?? 0);
         setCategories(cr.data.categories ?? []);
       })
       .catch(() => { setProducts([]); setCategories([]); })
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [type]);
+  useEffect(() => { setPage(1); load(1, limit); }, [type]);
 
   const openCreate = () => {
     setEditing(null);
@@ -235,6 +239,24 @@ export default function ProductItemsPage({ type }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {total > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+          <button className="btn-secondary" disabled={page === 1} onClick={() => { setPage(page - 1); load(page - 1); }}>← Trước</button>
+          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
+            Trang {page} / {Math.ceil(total / limit)} ({total} sản phẩm)
+          </span>
+          <button className="btn-secondary" disabled={page >= Math.ceil(total / limit)} onClick={() => { setPage(page + 1); load(page + 1); }}>Sau →</button>
+          <select
+            value={limit}
+            onChange={e => { const l = Number(e.target.value); setLimit(l); setPage(1); load(1, l); }}
+            style={{ padding: '0.35rem 0.5rem', borderRadius: '0.375rem', border: '1px solid #e2e8f0', fontSize: '0.875rem' }}
+          >
+            {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n} / trang</option>)}
+          </select>
+        </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>

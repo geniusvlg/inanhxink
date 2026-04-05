@@ -3,15 +3,25 @@ import db from '../../config/database';
 
 const router = Router();
 
-// GET /api/admin/products?type=thiep|khung_anh
+// GET /api/admin/products?type=thiep|khung_anh&page=1&limit=20
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { type } = req.query as { type?: string };
+    const page  = Math.max(1, parseInt(req.query.page  as string) || 1);
+    const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
+    const offset = (page - 1) * limit;
+
     const conditions: string[] = [];
     const params: unknown[] = [];
     let idx = 1;
     if (type) { conditions.push(`p.type = $${idx++}`); params.push(type); }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const countResult = await db.query(
+      `SELECT COUNT(DISTINCT p.id) AS total FROM products p ${where}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].total, 10);
 
     const result = await db.query(
       `SELECT p.*,
@@ -24,10 +34,11 @@ router.get('/', async (req: Request, res: Response) => {
        LEFT JOIN product_categories   pc ON pc.id = m.category_id
        ${where}
        GROUP BY p.id
-       ORDER BY p.updated_at DESC, p.created_at DESC`,
-      params
+       ORDER BY p.updated_at DESC, p.created_at DESC
+       LIMIT $${idx} OFFSET $${idx + 1}`,
+      [...params, limit, offset]
     );
-    return res.json({ success: true, products: result.rows });
+    return res.json({ success: true, products: result.rows, total, page, limit });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }

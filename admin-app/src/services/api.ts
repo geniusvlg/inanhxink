@@ -61,7 +61,7 @@ export const metadataApi = {
 };
 
 export const productsApi = {
-  list:   (type: string)              => api.get('/api/admin/products', { params: { type } }),
+  list:   (type: string, page = 1, limit = 20) => api.get('/api/admin/products', { params: { type, page, limit } }),
   create: (data: unknown)             => api.post('/api/admin/products', data),
   update: (id: number, data: unknown) => api.put(`/api/admin/products/${id}`, data),
   delete: (id: number)                => api.delete(`/api/admin/products/${id}`),
