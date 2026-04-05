@@ -42,6 +42,8 @@ jobs:
             ${{ env.IMAGE_PREFIX }}/frontend:sha-${{ github.sha }}
           build-args: |
             VITE_API_URL=https://inanhxink.com
+            VITE_CDN_URL=https://cdn.inanhxink.com/inanhxink-prod
+            VITE_S3_BUCKET=inanhxink-prod
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
