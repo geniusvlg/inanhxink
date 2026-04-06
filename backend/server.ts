@@ -50,6 +50,17 @@ app.use(cors({ origin: (_origin, cb) => cb(null, true), credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── HTTP request logger ──────────────────────────────────────────────────────
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    const color = res.statusCode >= 500 ? '\x1b[31m' : res.statusCode >= 400 ? '\x1b[33m' : '\x1b[32m';
+    console.log(`${color}${req.method}\x1b[0m ${req.originalUrl} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
+
 // ── File upload (multer) ─────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
