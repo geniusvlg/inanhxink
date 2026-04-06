@@ -57,13 +57,14 @@ const router: Router = express.Router();
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
 
 // Valid template types that we have cloned
-const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter'] as const;
+const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace'] as const;
 type TemplateType = typeof VALID_TEMPLATE_TYPES[number];
 
-// Map the frontend template IDs to the template_type folder names
-const TEMPLATE_TYPE_MAP: Record<string, TemplateType> = {
+// Map the frontend template_type strings to the actual template folder names
+const TEMPLATE_FOLDER_MAP: Record<string, string> = {
   letterinspace: 'galaxy',
   loveletter: 'loveletter',
+  galaxy: 'galaxy',
 };
 
 interface OrderTotal {
@@ -185,7 +186,7 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     const resolvedTemplateType: TemplateType =
       (templateType && VALID_TEMPLATE_TYPES.includes(templateType as TemplateType)
         ? templateType as TemplateType
-        : TEMPLATE_TYPE_MAP[String(templateId)] || null) as TemplateType;
+        : TEMPLATE_FOLDER_MAP[String(templateType)] || null) as TemplateType;
 
     if (!resolvedTemplateType) {
       return res.status(400).json({
@@ -196,6 +197,9 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
 
     // Build template_data JSON based on template type
     const templateData: Record<string, unknown> = { content };
+    if (templateType === 'letterinspace' || templateType === 'galaxy') {
+      templateData.texts = content.split('\n').map(s => s.trim()).filter(Boolean);
+    }
     if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
 
     // Download music from CDN and store locally

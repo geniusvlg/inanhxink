@@ -9,11 +9,6 @@ import './QrYeuThuongPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-const DEMO_URLS: Record<string, string> = {
-  loveletter: 'https://699c2a78976d58f0a2724a1c--timely-otter-19f794.netlify.app/',
-  galaxy: 'https://699c370a8c460f27315a8ef6--letterinspace.netlify.app/',
-};
-
 function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('en') + 'đ';
 }
@@ -63,8 +58,8 @@ function QrYeuThuongPage() {
                   <div className="product-card-name">{t.name}</div>
                   <div className="product-card-price">{formatPrice(t.price)}</div>
                   <div className="product-card-actions">
-                    {DEMO_URLS[t.template_type] && (
-                      <a href={DEMO_URLS[t.template_type]} className="btn-detail" target="_blank" rel="noopener noreferrer">
+                    {t.demo_url && (
+                      <a href={t.demo_url} className="btn-detail" target="_blank" rel="noopener noreferrer">
                         Demo
                       </a>
                     )}

@@ -6,6 +6,7 @@ export interface Template {
   price: number;
   template_type: string;
   is_active: boolean;
+  demo_url: string | null;
   created_at: string;
 }
 

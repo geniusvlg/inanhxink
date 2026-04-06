@@ -4,6 +4,7 @@ import '../App.css';
 import TemplateSelector from '../components/TemplateSelector';
 import QrNameInput from '../components/QrNameInput';
 import ContentEditor from '../components/ContentEditor';
+import LetterInSpaceForm from '../components/LetterInSpaceForm';
 import MusicOption from '../components/MusicOption';
 import TipSelector from '../components/TipSelector';
 import VoucherInput from '../components/VoucherInput';
@@ -215,20 +216,25 @@ function OrderPage() {
         </div>
       )}
 
-      <ContentEditor value={content} onChange={setContent} />
+      {templateType === 'letterinspace'
+        ? <LetterInSpaceForm value={content} onChange={setContent} />
+        : <ContentEditor value={content} onChange={setContent} />
+      }
     </>
   );
 
   const orderFormBottom = (
     <>
-      <ImageUploader
-        images={uploadedImages}
-        onImagesChange={setUploadedImages}
-        maxImages={9}
-        onImageSelected={() => {}}
-        initialPreviews={imagePreviews}
-        onPreviewsChange={setImagePreviews}
-      />
+      {templateType !== 'letterinspace' && (
+        <ImageUploader
+          images={uploadedImages}
+          onImagesChange={setUploadedImages}
+          maxImages={9}
+          onImageSelected={() => {}}
+          initialPreviews={imagePreviews}
+          onPreviewsChange={setImagePreviews}
+        />
+      )}
 
       <MusicOption
         musicAdded={musicAdded}

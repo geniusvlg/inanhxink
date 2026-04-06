@@ -39,6 +39,8 @@
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         var config = (data && data.template_data) ? data.template_data : {};
+                        // Map our field names to what sphere.js expects
+                        if (config.musicUrl && !config.audioUrl) config.audioUrl = config.musicUrl;
                         return new Response(
                             JSON.stringify({ success: true, config: config }),
                             { status: 200, headers: { 'Content-Type': 'application/json' } }

@@ -1,5 +1,5 @@
 const textData = window.dataFromSubdomain?.data?.texts || ['inanhxink.com', 'khám phá vũ trụ', 'yêu em mãi mãi'];
-const songUrl = window.dataFromSubdomain?.data?.song;
+const songUrl = window.dataFromSubdomain?.data?.musicUrl || window.dataFromSubdomain?.data?.song;
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -408,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bgAudio) {
         initAudio();
         bgAudio.addEventListener('error', () => isAudioAllowed = false);
-        try { bgAudio.load(); } catch (e) { isAudioAllowed = false; }
     } else {
         isAudioAllowed = false;
     }
