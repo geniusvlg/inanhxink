@@ -27,17 +27,17 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST /api/admin/templates
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, image_url, price, template_type, is_active = true } = req.body as {
+    const { name, description, image_url, price, template_type, is_active = true, demo_url } = req.body as {
       name: string; description?: string; image_url?: string;
-      price: number; template_type: string; is_active?: boolean;
+      price: number; template_type: string; is_active?: boolean; demo_url?: string;
     };
     if (!name || !price || !template_type) {
       return res.status(400).json({ success: false, error: 'name, price, template_type required' });
     }
     const result = await db.query(
-      `INSERT INTO templates (name, description, image_url, price, template_type, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [name, description ?? null, image_url ?? null, price, template_type, is_active]
+      `INSERT INTO templates (name, description, image_url, price, template_type, is_active, demo_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [name, description ?? null, image_url ?? null, price, template_type, is_active, demo_url ?? null]
     );
     return res.status(201).json({ success: true, template: result.rows[0] });
   } catch (err) {
@@ -48,7 +48,7 @@ router.post('/', async (req: Request, res: Response) => {
 // PUT /api/admin/templates/:id
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const allowed = ['name', 'description', 'image_url', 'price', 'template_type', 'is_active'];
+    const allowed = ['name', 'description', 'image_url', 'price', 'template_type', 'is_active', 'demo_url'];
     const fields = req.body as Record<string, unknown>;
     const setClauses: string[] = [];
     const values: unknown[] = [];

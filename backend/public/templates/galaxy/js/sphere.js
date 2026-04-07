@@ -1187,7 +1187,12 @@ export class CentralSphere {
                             }
 
                             // Đảm bảo overlay chỉ tắt sau khi ảnh (nếu có) đã load xong
-                            if (this.flowerRing) {
+                            const _applyImagesAndHideOverlay = () => {
+                                if (!this.flowerRing) {
+                                    // flowerRing chưa init — thử lại sau 100ms
+                                    setTimeout(_applyImagesAndHideOverlay, 100);
+                                    return;
+                                }
                                 if (data.config.textureRotationSpeed !== undefined) {
                                     this.flowerRing.updateRotationSpeed(data.config.textureRotationSpeed);
                                 }
@@ -1195,18 +1200,15 @@ export class CentralSphere {
                                     this.flowerRing.flyingConfig.floatSpeed = data.config.flowerFloatSpeed;
                                 }
                                 if (data.config.imageUrls && data.config.imageUrls.length > 0 && this.flowerRing.preloadTextures) {
-                                    // Chỉ preload 1 lần, sau đó random lại texture không load lại từ URL
                                     this.flowerRing.preloadTextures(data.config.imageUrls).then(() => {
                                         this.flowerRing.randomizeFlowerTextures();
-                                        // Tắt overlay sau khi ảnh đã load xong
                                         if (overlay) overlay.style.display = 'none';
                                     });
                                 } else {
                                     if (overlay) overlay.style.display = 'none';
                                 }
-                            } else {
-                                if (overlay) overlay.style.display = 'none';
-                            }
+                            };
+                            _applyImagesAndHideOverlay();
                             // Nếu có audioUrl thì set cho audio.js
                             if (data.config.audioUrl && window.audioManager && window.audioManager.setAudioUrl) {
                                 window.audioManager.setAudioUrl(data.config.audioUrl);
@@ -1366,7 +1368,22 @@ export class CentralSphere {
                             if (overlay) overlay.style.display = 'none';
                         }
                     } else {
-                        if (overlay) overlay.style.display = 'none';
+                        // flowerRing chưa init — thử lại sau 100ms
+                        const _applyImagesAndHideOverlay2 = () => {
+                            if (!this.flowerRing) {
+                                setTimeout(_applyImagesAndHideOverlay2, 100);
+                                return;
+                            }
+                            if (config.imageUrls && config.imageUrls.length > 0 && this.flowerRing.preloadTextures) {
+                                this.flowerRing.preloadTextures(config.imageUrls).then(() => {
+                                    this.flowerRing.randomizeFlowerTextures();
+                                    if (overlay) overlay.style.display = 'none';
+                                });
+                            } else {
+                                if (overlay) overlay.style.display = 'none';
+                            }
+                        };
+                        _applyImagesAndHideOverlay2();
                     }
                     // Bổ sung: nếu có audioUrl thì set cho audio.js
                     if (config.audioUrl && window.audioManager && window.audioManager.setAudioUrl) {

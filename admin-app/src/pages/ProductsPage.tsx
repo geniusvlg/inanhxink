@@ -24,6 +24,7 @@ type FormState = {
   price: string;
   template_type: string;
   is_active: boolean;
+  demo_url: string;
 };
 
 const emptyForm = (): FormState => ({
@@ -33,6 +34,7 @@ const emptyForm = (): FormState => ({
   price: '',
   template_type: '',
   is_active: true,
+  demo_url: '',
 });
 
 export default function ProductsPage() {
@@ -69,6 +71,7 @@ export default function ProductsPage() {
       price:         String(t.price),
       template_type: t.template_type,
       is_active:     t.is_active,
+      demo_url:      t.demo_url ?? '',
     });
     setShowModal(true);
   };
@@ -89,6 +92,7 @@ export default function ProductsPage() {
         price:         parseFloat(form.price),
         template_type: form.template_type.trim(),
         is_active:     form.is_active,
+        demo_url:      form.demo_url.trim() || null,
       };
       if (editing) {
         await templatesApi.update(editing.id, payload);
@@ -223,6 +227,14 @@ export default function ProductsPage() {
                 placeholder="/templates/loveletter/thumbnail.jpg"
                 value={form.image_url}
                 onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+              />
+
+              <label className="form-label">URL Demo <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(để trống nếu không có)</span></label>
+              <input
+                className="form-input"
+                placeholder="https://..."
+                value={form.demo_url}
+                onChange={e => setForm(f => ({ ...f, demo_url: e.target.value }))}
               />
 
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>

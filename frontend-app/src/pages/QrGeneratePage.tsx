@@ -4,10 +4,10 @@ import StyledQRCode from '../components/QRCode';
 import './QrGeneratePage.css';
 
 const QR_TEMPLATES = [
-  { id: 'qr', name: 'Mã QR', thumbnail: '/qr-template/qr.png' },
-  { id: 'heart', name: 'Heart', thumbnail: '/qr-template/heart1.png' },
-  { id: 'banhdeo', name: 'Bánh Dẻo', thumbnail: '/qr-template/banhdeo.png' },
-  { id: 'capturedmoments', name: 'Captured Moments', thumbnail: '/qr-template/capturedmoments.png' },
+  { id: 'qr', name: 'Mã QR', thumbnail: '/assets/images/qr-template/qr.png' },
+  { id: 'heart', name: 'Heart', thumbnail: '/assets/images/qr-template/heart1.png' },
+  { id: 'banhdeo', name: 'Bánh Dẻo', thumbnail: '/assets/images/qr-template/banhdeo.png' },
+  { id: 'capturedmoments', name: 'Captured Moments', thumbnail: '/assets/images/qr-template/capturedmoments.png' },
 ];
 
 function QrGeneratePage() {

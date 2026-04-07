@@ -66,7 +66,6 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
         />
         <span className="music-label-text">
           Thêm nhạc nền (TikTok / Instagram)
-          <span className="music-price">+{musicPrice.toLocaleString('en')}đ</span>
         </span>
       </label>
 
