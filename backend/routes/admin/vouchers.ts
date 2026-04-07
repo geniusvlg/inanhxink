@@ -3,41 +3,64 @@ import db from '../../config/database';
 
 const router = Router();
 
-// GET /api/admin/metadata
+// GET /api/admin/vouchers
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const result = await db.query('SELECT key, value FROM metadata ORDER BY key');
-    const config: Record<string, string> = {};
-    for (const row of result.rows) config[row.key] = row.value;
-    return res.json({ success: true, config });
+    const result = await db.query('SELECT * FROM vouchers ORDER BY created_at DESC');
+    return res.json({ success: true, vouchers: result.rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 
-// PUT /api/admin/metadata — bulk upsert { key: value, ... }
-router.put('/', async (req: Request, res: Response) => {
-  const updates = req.body as Record<string, string>;
-  if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
-    return res.status(400).json({ success: false, error: 'Body must be a { key: value } object' });
+// POST /api/admin/vouchers
+router.post('/', async (req: Request, res: Response) => {
+  const { code, discount_type, discount_value, max_uses, expires_at, is_active } = req.body;
+  if (!code || !discount_type || discount_value == null) {
+    return res.status(400).json({ success: false, error: 'code, discount_type and discount_value are required' });
   }
-  const client = await db.pool.connect();
   try {
-    await client.query('BEGIN');
-    for (const [key, value] of Object.entries(updates)) {
-      await client.query(
-        `INSERT INTO metadata (key, value) VALUES ($1, $2)
-         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-        [key, String(value)]
-      );
-    }
-    await client.query('COMMIT');
-    return res.json({ success: true, message: 'Config updated' });
+    const result = await db.query(
+      `INSERT INTO vouchers (code, discount_type, discount_value, max_uses, expires_at, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [code.toUpperCase(), discount_type, discount_value, max_uses ?? null, expires_at ?? null, is_active ?? true]
+    );
+    return res.json({ success: true, voucher: result.rows[0] });
   } catch (err) {
-    await client.query('ROLLBACK');
     return res.status(500).json({ success: false, error: (err as Error).message });
-  } finally {
-    client.release();
+  }
+});
+
+// PUT /api/admin/vouchers/:id
+router.put('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { discount_type, discount_value, max_uses, expires_at, is_active } = req.body;
+  try {
+    const result = await db.query(
+      `UPDATE vouchers
+       SET discount_type = $1, discount_value = $2, max_uses = $3, expires_at = $4, is_active = $5
+       WHERE id = $6
+       RETURNING *`,
+      [discount_type, discount_value, max_uses ?? null, expires_at ?? null, is_active, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Voucher not found' });
+    }
+    return res.json({ success: true, voucher: result.rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: (err as Error).message });
+  }
+});
+
+// DELETE /api/admin/vouchers/:id
+router.delete('/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    await db.query('DELETE FROM vouchers WHERE id = $1', [id]);
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 

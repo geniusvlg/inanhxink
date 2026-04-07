@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { validateVoucher } from '../services/api';
 import './VoucherInput.css';
 
 interface Voucher {
@@ -17,32 +18,31 @@ function VoucherInput({ onVoucherValidated }: VoucherInputProps) {
   const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [error, setError] = useState('');
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     if (!code.trim()) {
       setError('Vui lòng nhập mã voucher');
       return;
     }
-
     setChecking(true);
     setError('');
-    // Mock validation - for display only
-    setTimeout(() => {
-      // Mock: accept any code starting with "VIP" or "LOVE"
-      if (code.toUpperCase().startsWith('VIP') || code.toUpperCase().startsWith('LOVE')) {
-        const mockVoucher: Voucher = {
-          code: code.toUpperCase(),
-          discountType: 'percentage',
-          discountValue: 10,
-        };
-        setVoucher(mockVoucher);
-        onVoucherValidated(mockVoucher);
-      } else {
-        setError('Mã voucher không hợp lệ');
-        setVoucher(null);
-        onVoucherValidated(null);
-      }
+    try {
+      const res = await validateVoucher(code.trim());
+      const v = res.voucher;
+      const validated: Voucher = {
+        code: v.code,
+        discountType: v.discountType,
+        discountValue: v.discountValue,
+      };
+      setVoucher(validated);
+      onVoucherValidated(validated);
+    } catch (err) {
+      console.error('Voucher error:', err);
+      setError('Mã voucher không hợp lệ');
+      setVoucher(null);
+      onVoucherValidated(null);
+    } finally {
       setChecking(false);
-    }, 500);
+    }
   };
 
   const handleRemove = () => {

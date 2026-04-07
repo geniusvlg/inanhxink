@@ -252,7 +252,7 @@ function OrderPage() {
             checked={keychainPurchased}
             onChange={(e) => setKeychainPurchased(e.target.checked)}
           />
-          Mua móc khóa quét QR (Đã bao gồm phí ship) <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>+{keychainPrice.toLocaleString('en')}đ</span>
+          Mua móc khóa quét QR <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>+{keychainPrice.toLocaleString('en')}đ</span>
         </label>
       </div>
 
