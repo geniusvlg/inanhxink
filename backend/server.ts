@@ -6,7 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 import db from './config/database';
-import { uploadToS3, pruneS3Folder } from './config/s3';
+import { uploadToS3 } from './config/s3';
 
 // dotenv already loaded in instrument.ts
 const app: Express = express();
@@ -111,20 +111,6 @@ app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Res
     for (const file of files) {
       const url = await uploadToS3(file.buffer, folder, file.originalname, file.mimetype, watermark);
       urls.push(url);
-    }
-
-    // Only prune old files for customer QR uploads (not admin product uploads)
-    if (qrName && !prefix) {
-      const paid = await db.query(
-        `SELECT 1 FROM orders WHERE qr_name = $1 AND payment_status = 'paid' LIMIT 1`,
-        [qrName]
-      );
-      if (paid.rows.length === 0) {
-        const keepKeys = new Set(
-          urls.map(u => u.split(`${process.env.S3_BUCKET}/`)[1])
-        );
-        await pruneS3Folder(folder, keepKeys);
-      }
     }
 
     return res.json({ success: true, urls });

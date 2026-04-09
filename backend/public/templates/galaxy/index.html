@@ -24,6 +24,12 @@
         if (!window.location.hash || window.location.hash === '#') {
             history.replaceState(null, '', '#id=' + FAKE_GALAXY_ID);
         }
+        
+        window.addEventListener('load', function() {
+            if (window.location.hash === '#id=' + FAKE_GALAXY_ID) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+        });
 
                 // Intercept sphere.js's fetch to /api/galaxy-configs/site
         // and redirect it to our backend's /api/site-data endpoint instead.
