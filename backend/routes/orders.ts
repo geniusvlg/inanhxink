@@ -148,6 +148,10 @@ interface CreateOrderBody {
   content?: string;              // letter text (loveletter)
   imageUrls?: string[];          // uploaded image URLs (galaxy / loveletter)
   musicUrl?: string;             // music file URL
+  // Love Letter specific
+  letterTitle?: string;
+  letterSender?: string;
+  letterReceiver?: string;
   // Legacy / extras
   musicLink?: string;
   musicAdded?: boolean;
@@ -176,6 +180,9 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       customerName,
       customerEmail,
       customerPhone,
+      letterTitle,
+      letterSender,
+      letterReceiver,
     } = req.body;
 
     if (!qrName || !templateId) {
@@ -199,6 +206,11 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     const templateData: Record<string, unknown> = { content };
     if (templateType === 'letterinspace' || templateType === 'galaxy') {
       templateData.texts = content.split('\n').map(s => s.trim()).filter(Boolean);
+    }
+    if (templateType === 'loveletter') {
+      templateData.title    = letterTitle    || 'Love Letter';
+      templateData.sender   = letterSender   || '';
+      templateData.receiver = letterReceiver || '';
     }
     if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
 

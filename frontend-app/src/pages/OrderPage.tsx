@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import '../App.css';
 import TemplateSelector from '../components/TemplateSelector';
@@ -34,12 +34,21 @@ function OrderPage() {
   const [selectedTip, setSelectedTip] = useState<number | 'custom' | null>(null);
   const [customTipAmount, setCustomTipAmount] = useState(0);
   const [voucher, setVoucher] = useState<Voucher | null>(null);
+  const [letterTitle, setLetterTitle] = useState('Love Letter');
+  const [letterSender, setLetterSender] = useState('');
+  const [letterReceiver, setLetterReceiver] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [musicPrice, setMusicPrice] = useState(10000);
   const [keychainPrice, setKeychainPrice] = useState(35000);
+
+  // Background upload tracking: slot index → { promise, cancelled }
+  const bgUploads = useRef<Map<number, { promise: Promise<string | null>; cancelled: boolean }>>(new Map());
+  const [uploadStates, setUploadStates] = useState<Record<number, 'uploading' | 'done' | 'error'>>({});
+  // Files selected before qrName was valid — flushed once qrName is validated
+  const pendingFiles = useRef<{ index: number; file: File }[]>([]);
 
   const templateType = selectedTemplate?.template_type || '';
 
@@ -127,6 +136,53 @@ function OrderPage() {
     setVoucher(voucherData);
   };
 
+  const startUpload = (index: number, file: File, name: string) => {
+    setUploadStates(prev => ({ ...prev, [index]: 'uploading' }));
+    const entry: { promise: Promise<string | null>; cancelled: boolean } = { promise: null!, cancelled: false };
+    entry.promise = uploadFiles([file], name)
+      .then(urls => {
+        if (entry.cancelled) return null;
+        setUploadStates(prev => ({ ...prev, [index]: 'done' }));
+        return urls[0];
+      })
+      .catch(() => {
+        if (!entry.cancelled) setUploadStates(prev => ({ ...prev, [index]: 'error' }));
+        return null;
+      });
+    bgUploads.current.set(index, entry);
+  };
+
+  const handleNewFiles = (files: { index: number; file: File }[]) => {
+    if (qrNameValid && qrName) {
+      files.forEach(({ index, file }) => startUpload(index, file, qrName));
+    } else {
+      // Queue until qrName is validated
+      pendingFiles.current.push(...files);
+    }
+  };
+
+  // Flush queued uploads once qrName becomes valid
+  useEffect(() => {
+    if (!qrNameValid || !qrName) return;
+    const queued = pendingFiles.current.splice(0);
+    queued.forEach(({ index, file }) => startUpload(index, file, qrName));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrNameValid, qrName]);
+
+  const handleFileRemoved = (index: number) => {
+    const entry = bgUploads.current.get(index);
+    if (entry) {
+      entry.cancelled = true;
+      bgUploads.current.delete(index);
+    }
+    pendingFiles.current = pendingFiles.current.filter(f => f.index !== index);
+    setUploadStates(prev => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  };
+
   const handleClearAll = () => {
     if (window.confirm('Bạn có chắc muốn xóa toàn bộ dữ liệu đã nhập?')) {
       setSelectedTemplate(null);
@@ -140,9 +196,16 @@ function OrderPage() {
       setSelectedTip(null);
       setCustomTipAmount(0);
       setVoucher(null);
+      setLetterTitle('Love Letter');
+      setLetterSender('');
+      setLetterReceiver('');
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
+      bgUploads.current.forEach(entry => { entry.cancelled = true; });
+      bgUploads.current.clear();
+      pendingFiles.current = [];
+      setUploadStates({});
     }
   };
 
@@ -156,11 +219,26 @@ function OrderPage() {
 
     setSubmitting(true);
     try {
-      // Upload images first (if any)
+      // Collect image URLs: await any still-in-progress background uploads
       const realFiles = uploadedImages.filter(Boolean) as File[];
       let imageUrls: string[] = [];
       if (realFiles.length > 0) {
-        imageUrls = await uploadFiles(realFiles, qrName);
+        const urlResults = await Promise.all(
+          uploadedImages.map((file, index) => {
+            if (!file) return Promise.resolve(null);
+            const entry = bgUploads.current.get(index);
+            if (entry) return entry.promise;
+            // Fallback: file present but no bg upload entry (e.g. restored from draft)
+            return uploadFiles([file]).then(urls => urls[0]).catch(() => null);
+          })
+        );
+        imageUrls = urlResults.filter((u): u is string => !!u);
+        // If any uploads failed, abort
+        if (imageUrls.length < realFiles.length) {
+          setError('Một số ảnh upload thất bại, vui lòng thử lại');
+          setSubmitting(false);
+          return;
+        }
       }
 
       const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);
@@ -176,6 +254,11 @@ function OrderPage() {
         keychainPurchased,
         tipAmount,
         voucherCode: voucher?.code,
+        ...(templateType === 'loveletter' && {
+          letterTitle: letterTitle || 'Love Letter',
+          letterSender,
+          letterReceiver,
+        }),
       });
 
       if (response.success) {
@@ -220,6 +303,44 @@ function OrderPage() {
         ? <LetterInSpaceForm value={content} onChange={setContent} />
         : <ContentEditor value={content} onChange={setContent} />
       }
+
+      {templateType === 'loveletter' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tiêu đề</label>
+            <input
+              type="text"
+              value={letterTitle}
+              onChange={e => setLetterTitle(e.target.value)}
+              placeholder="Love Letter"
+              maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Người gửi</label>
+            <input
+              type="text"
+              value={letterSender}
+              onChange={e => setLetterSender(e.target.value)}
+              placeholder="Sender Name"
+              maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Người nhận</label>
+            <input
+              type="text"
+              value={letterReceiver}
+              onChange={e => setLetterReceiver(e.target.value)}
+              placeholder="Receiver Name"
+              maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -233,6 +354,9 @@ function OrderPage() {
           onImageSelected={() => {}}
           initialPreviews={imagePreviews}
           onPreviewsChange={setImagePreviews}
+          onNewFiles={handleNewFiles}
+          onFileRemoved={handleFileRemoved}
+          uploadStates={uploadStates}
         />
       )}
 

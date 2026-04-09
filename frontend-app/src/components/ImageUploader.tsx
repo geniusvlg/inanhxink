@@ -8,9 +8,15 @@ interface ImageUploaderProps {
   onImageSelected?: () => void;
   initialPreviews?: string[];
   onPreviewsChange?: (previews: string[]) => void;
+  /** Called with newly added files so the parent can start background uploads */
+  onNewFiles?: (files: { index: number; file: File }[]) => void;
+  /** Called when a slot is cleared so the parent can cancel any pending upload */
+  onFileRemoved?: (index: number) => void;
+  /** Per-slot upload state for showing progress indicators */
+  uploadStates?: Record<number, 'uploading' | 'done' | 'error'>;
 }
 
-function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected, initialPreviews, onPreviewsChange }: ImageUploaderProps) {
+function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected, initialPreviews, onPreviewsChange, onNewFiles, onFileRemoved, uploadStates = {} }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>(initialPreviews || []);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -62,7 +68,8 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     reader.readAsDataURL(file);
 
     onImagesChange(newImages);
-    
+    onNewFiles?.([{ index, file }]);
+
     // Scroll to next section after image is selected
     if (onImageSelected) {
       setTimeout(() => {
@@ -79,6 +86,7 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     setPreviews(newPreviews);
     onPreviewsChange?.(newPreviews);
     onImagesChange(newImages);
+    onFileRemoved?.(index);
     
     // Clear the file input
     if (fileInputRefs.current[index]) {
@@ -132,7 +140,8 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     });
 
     onImagesChange(newImages);
-    
+    onNewFiles?.(filesToAdd.map((file, fileIndex) => ({ index: emptySlots[fileIndex], file })));
+
     // Scroll to next section after batch upload
     if (onImageSelected && filesToAdd.length > 0) {
       setTimeout(() => {
@@ -187,6 +196,15 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
                       }
                     }}
                   />
+                  {uploadStates[index] === 'uploading' && (
+                    <div className="image-upload-status uploading">⏳</div>
+                  )}
+                  {uploadStates[index] === 'done' && (
+                    <div className="image-upload-status done">✓</div>
+                  )}
+                  {uploadStates[index] === 'error' && (
+                    <div className="image-upload-status error">!</div>
+                  )}
                   <button
                     type="button"
                     className="remove-image-button"

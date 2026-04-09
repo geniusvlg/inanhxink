@@ -1203,6 +1203,8 @@ export class CentralSphere {
                                     this.flowerRing.preloadTextures(data.config.imageUrls).then(() => {
                                         this.flowerRing.randomizeFlowerTextures();
                                         if (overlay) overlay.style.display = 'none';
+                                    }).catch(() => {
+                                        if (overlay) overlay.style.display = 'none';
                                     });
                                 } else {
                                     if (overlay) overlay.style.display = 'none';
@@ -1363,6 +1365,8 @@ export class CentralSphere {
                             this.flowerRing.preloadTextures(config.imageUrls).then(() => {
                                 this.flowerRing.randomizeFlowerTextures();
                                 if (overlay) overlay.style.display = 'none';
+                            }).catch(() => {
+                                if (overlay) overlay.style.display = 'none';
                             });
                         } else {
                             if (overlay) overlay.style.display = 'none';
@@ -1377,6 +1381,8 @@ export class CentralSphere {
                             if (config.imageUrls && config.imageUrls.length > 0 && this.flowerRing.preloadTextures) {
                                 this.flowerRing.preloadTextures(config.imageUrls).then(() => {
                                     this.flowerRing.randomizeFlowerTextures();
+                                    if (overlay) overlay.style.display = 'none';
+                                }).catch(() => {
                                     if (overlay) overlay.style.display = 'none';
                                 });
                             } else {
