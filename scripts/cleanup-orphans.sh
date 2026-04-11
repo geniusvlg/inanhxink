@@ -41,14 +41,12 @@ STALE_QR_NAMES=$(
           AND created_at < NOW() - INTERVAL '1 day';"
 )
 
-if [ -z "$STALE_QR_NAMES" ]; then
-  echo "[$(date -Iseconds)] ✔ No stale orders found, nothing to clean up."
-  exit 0
-fi
-
 DELETED_FOLDERS=0
 SKIPPED=0
 
+if [ -z "$STALE_QR_NAMES" ]; then
+  echo "[$(date -Iseconds)] ✔ No stale orders found for full-folder cleanup."
+else
 for QR_NAME in $STALE_QR_NAMES; do
   PREFIX="uploads/$QR_NAME"
 
@@ -74,5 +72,78 @@ for QR_NAME in $STALE_QR_NAMES; do
   echo "[$(date -Iseconds)] 🗑  Deleted s3://$S3_BUCKET/$PREFIX/ ($OBJECT_COUNT objects)"
   DELETED_FOLDERS=$((DELETED_FOLDERS + 1))
 done
+fi
 
 echo "[$(date -Iseconds)] ✔ Cleanup complete. Folders deleted: $DELETED_FOLDERS, skipped (empty): $SKIPPED"
+
+
+# Also remove orphan audio files that were pre-downloaded at "Kiểm tra" step
+# but never reached paid status (either no order created, or unpaid > 1 day).
+UPLOAD_PREFIXES=$(awscli s3api list-objects-v2 \
+  --bucket "$S3_BUCKET" \
+  --prefix "uploads/" \
+  --delimiter "/" \
+  --endpoint-url "$S3_ENDPOINT" \
+  --region "$S3_REGION" \
+  --query 'CommonPrefixes[].Prefix' \
+  --output text || true)
+
+AUDIO_CLEANED=0
+AUDIO_SKIPPED=0
+
+for PREFIX_WITH_SLASH in $UPLOAD_PREFIXES; do
+  QR_NAME=${PREFIX_WITH_SLASH#uploads/}
+  QR_NAME=${QR_NAME%/}
+  [ -z "$QR_NAME" ] && continue
+
+  HAS_PAID=$(
+    cd "$PROJECT_DIR"
+    docker compose exec -T postgres \
+      psql -U "$DB_USER" "$DB_NAME" -t -A -v qr_name="$QR_NAME" \
+      -c "SELECT 1 FROM orders WHERE qr_name = :'qr_name' AND payment_status = 'paid' LIMIT 1;"
+  )
+
+  if [ -n "$HAS_PAID" ]; then
+    AUDIO_SKIPPED=$((AUDIO_SKIPPED + 1))
+    continue
+  fi
+
+  HAS_ANY_ORDER=$(
+    cd "$PROJECT_DIR"
+    docker compose exec -T postgres \
+      psql -U "$DB_USER" "$DB_NAME" -t -A -v qr_name="$QR_NAME" \
+      -c "SELECT 1 FROM orders WHERE qr_name = :'qr_name' LIMIT 1;"
+  )
+
+  HAS_STALE_UNPAID=$(
+    cd "$PROJECT_DIR"
+    docker compose exec -T postgres \
+      psql -U "$DB_USER" "$DB_NAME" -t -A -v qr_name="$QR_NAME" \
+      -c "SELECT 1 FROM orders
+          WHERE qr_name = :'qr_name'
+            AND payment_status <> 'paid'
+            AND created_at < NOW() - INTERVAL '1 day'
+          LIMIT 1;"
+  )
+
+  if [ -z "$HAS_ANY_ORDER" ] || [ -n "$HAS_STALE_UNPAID" ]; then
+    awscli s3 rm "s3://$S3_BUCKET/uploads/$QR_NAME/" \
+      --recursive \
+      --exclude "*" \
+      --include "*.mp3" \
+      --include "*.m4a" \
+      --include "*.wav" \
+      --include "*.ogg" \
+      --include "*.opus" \
+      --include "*.webm" \
+      --endpoint-url "$S3_ENDPOINT" \
+      --region "$S3_REGION"
+
+    echo "[$(date -Iseconds)] 🎵 Removed unpaid/orphan audio in uploads/$QR_NAME/"
+    AUDIO_CLEANED=$((AUDIO_CLEANED + 1))
+  else
+    AUDIO_SKIPPED=$((AUDIO_SKIPPED + 1))
+  fi
+done
+
+echo "[$(date -Iseconds)] ✔ Audio cleanup complete. Prefixes cleaned: $AUDIO_CLEANED, skipped: $AUDIO_SKIPPED"
