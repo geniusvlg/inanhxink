@@ -7,6 +7,7 @@ import db from '../config/database';
 import { uploadToS3 } from '../config/s3';
 
 const MAX_MUSIC_BYTES = 15 * 1024 * 1024; // 15 MB
+const SOCIAL_MUSIC_URL = /tiktok\.com|instagram\.com/i;
 
 async function downloadMusicFile(tiktokUrl: string, qrName: string): Promise<string> {
   // Download to a temp directory
@@ -257,9 +258,10 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     }
     if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
 
-    // Download music from CDN and store locally
+    // Download music only for raw social URLs (TikTok/Instagram).
+    // If client already extracted & uploaded music via /api/music/extract, keep that URL as-is.
     let resolvedMusicUrl = musicUrl || musicLink || undefined;
-    if (resolvedMusicUrl && musicAdded) {
+    if (resolvedMusicUrl && musicAdded && SOCIAL_MUSIC_URL.test(resolvedMusicUrl)) {
       try {
         resolvedMusicUrl = await downloadMusicFile(resolvedMusicUrl, qrName.toLowerCase());
       } catch (e) {
@@ -269,7 +271,6 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
     }
 
     if (resolvedMusicUrl) templateData.musicUrl = resolvedMusicUrl;
-    if (musicLink) templateData.musicUrl = musicLink; // legacy field
 
     // Get template price
     const templateResult = await db.query('SELECT price FROM templates WHERE id = $1', [templateId]);

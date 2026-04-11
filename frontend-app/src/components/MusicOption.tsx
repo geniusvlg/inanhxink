@@ -36,8 +36,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
     setErrorMsg('');
     try {
       const resolvedUrl = await extractMusic(rawUrl.trim(), qrName);
-      void resolvedUrl;
-      onMusicLinkChange(rawUrl.trim());
+      onMusicLinkChange(resolvedUrl);
       setExtractState('success');
     } catch (err) {
       const e = err as { response?: { data?: { error?: string } } };
@@ -82,7 +81,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
           <button
             className="music-extract-button"
             onClick={handleExtract}
-            disabled={!rawUrl.trim() || extractState === 'loading' || extractState === 'success'}
+            disabled={!rawUrl.trim() || !qrName?.trim() || extractState === 'loading' || extractState === 'success'}
           >
             {extractState === 'loading' ? '...' : extractState === 'success' ? '✓' : 'Kiểm tra'}
           </button>
@@ -94,6 +93,9 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       )}
       {extractState === 'error' && (
         <p className="music-feedback music-feedback--error">{errorMsg}</p>
+      )}
+      {!qrName?.trim() && showInput && (
+        <p className="music-feedback music-feedback--error">Vui lòng nhập và kiểm tra tên QR trước khi tải nhạc.</p>
       )}
     </div>
   );
