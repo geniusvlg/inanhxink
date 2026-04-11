@@ -3,6 +3,8 @@ import db from '../../config/database';
 
 const router = Router();
 
+const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
+
 // GET /api/admin/orders?page=1&limit=20&payment_status=paid
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -82,13 +84,54 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
     if (!setClauses.length) {
       return res.status(400).json({ success: false, error: 'status or payment_status required' });
     }
-    values.push(req.params.id);
-    const result = await db.query(
-      `UPDATE orders SET ${setClauses.join(', ')} WHERE id = $${i} RETURNING *`,
-      values
-    );
-    if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
-    return res.json({ success: true, order: result.rows[0] });
+
+    await db.query('BEGIN');
+    try {
+      values.push(req.params.id);
+      const result = await db.query(
+        `UPDATE orders SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $${i} RETURNING *`,
+        values
+      );
+      if (!result.rows.length) {
+        await db.query('ROLLBACK');
+        return res.status(404).json({ success: false, error: 'Not found' });
+      }
+
+      const order = result.rows[0];
+
+      // If admin marks payment as paid manually, activate the QR code as well.
+      if (order.payment_status === 'paid' && order.qr_name) {
+        const qrName = String(order.qr_name).toLowerCase();
+        const fullUrl = `${qrName}.${DOMAIN}`;
+        const templateType = order.template_type || 'galaxy';
+        const templateData = order.template_data ? JSON.stringify(order.template_data) : '{}';
+
+        const qrResult = await db.query(
+          `INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (qr_name) DO UPDATE
+             SET full_url      = EXCLUDED.full_url,
+                 content       = EXCLUDED.content,
+                 template_id   = EXCLUDED.template_id,
+                 template_type = EXCLUDED.template_type,
+                 template_data = EXCLUDED.template_data,
+                 updated_at    = NOW()
+           RETURNING id`,
+          [qrName, fullUrl, order.content || '', order.template_id, templateType, templateData]
+        );
+
+        await db.query(
+          'UPDATE orders SET qr_code_id = $1 WHERE id = $2',
+          [qrResult.rows[0].id, order.id]
+        );
+      }
+
+      await db.query('COMMIT');
+      return res.json({ success: true, order });
+    } catch (innerErr) {
+      await db.query('ROLLBACK');
+      throw innerErr;
+    }
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }

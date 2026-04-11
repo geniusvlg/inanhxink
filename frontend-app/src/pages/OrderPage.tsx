@@ -20,6 +20,11 @@ interface Voucher {
   discountValue: number;
 }
 
+interface LoveDaysTimelineRow {
+  date: string;
+  text: string;
+}
+
 function OrderPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,6 +42,12 @@ function OrderPage() {
   const [letterTitle, setLetterTitle] = useState('Love Letter');
   const [letterSender, setLetterSender] = useState('');
   const [letterReceiver, setLetterReceiver] = useState('');
+  // Love Days fields
+  const [loveDaysDate, setLoveDaysDate] = useState('');
+  const [loveDaysNameFrom, setLoveDaysNameFrom] = useState('');
+  const [loveDaysNameTo, setLoveDaysNameTo] = useState('');
+  const [loveDaysMessage, setLoveDaysMessage] = useState('');
+  const [loveDaysTimeline, setLoveDaysTimeline] = useState<LoveDaysTimelineRow[]>([{ date: '', text: '' }]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -51,6 +62,9 @@ function OrderPage() {
   const pendingFiles = useRef<{ index: number; file: File }[]>([]);
 
   const templateType = selectedTemplate?.template_type || '';
+  const AVATAR_SLOTS = 2;
+  const GALLERY_SLOTS = 10;
+  const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
 
   const preselectedTemplateId = searchParams.get('template');
 
@@ -183,6 +197,35 @@ function OrderPage() {
     });
   };
 
+  const updateImageSegment = (start: number, length: number, segment: (File | null)[]) => {
+    const next = [...uploadedImages];
+    for (let i = 0; i < length; i++) {
+      next[start + i] = segment[i] ?? null;
+    }
+    onImagesChangeSafe(next);
+  };
+
+  const updatePreviewSegment = (start: number, length: number, segment: string[]) => {
+    const next = [...imagePreviews];
+    for (let i = 0; i < length; i++) {
+      next[start + i] = segment[i] ?? '';
+    }
+    setImagePreviews(next);
+  };
+
+  const onImagesChangeSafe = (next: (File | null)[]) => {
+    setUploadedImages(next);
+  };
+
+  const segmentStates = (start: number, length: number): Record<number, 'uploading' | 'done' | 'error'> => {
+    const out: Record<number, 'uploading' | 'done' | 'error'> = {};
+    for (let i = 0; i < length; i++) {
+      const st = uploadStates[start + i];
+      if (st) out[i] = st;
+    }
+    return out;
+  };
+
   const handleClearAll = () => {
     if (window.confirm('Bạn có chắc muốn xóa toàn bộ dữ liệu đã nhập?')) {
       setSelectedTemplate(null);
@@ -199,6 +242,11 @@ function OrderPage() {
       setLetterTitle('Love Letter');
       setLetterSender('');
       setLetterReceiver('');
+      setLoveDaysDate('');
+      setLoveDaysNameFrom('');
+      setLoveDaysNameTo('');
+      setLoveDaysMessage('');
+      setLoveDaysTimeline([{ date: '', text: '' }]);
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
@@ -214,7 +262,7 @@ function OrderPage() {
 
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
-    if (!content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (templateType !== 'lovedays' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
 
     setSubmitting(true);
@@ -242,6 +290,9 @@ function OrderPage() {
       }
 
       const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);
+      const parsedTimeline = loveDaysTimeline
+        .map(item => ({ date: item.date.trim(), text: item.text.trim() }))
+        .filter(item => item.date || item.text);
 
       const response = await createOrder({
         qrName,
@@ -258,6 +309,16 @@ function OrderPage() {
           letterTitle: letterTitle || 'Love Letter',
           letterSender,
           letterReceiver,
+        }),
+        ...(templateType === 'lovedays' && {
+          loveDaysDate,
+          loveDaysNameFrom,
+          loveDaysNameTo,
+          loveDaysAvatarFrom: imageUrls[0] || '',
+          loveDaysAvatarTo:   imageUrls[1] || '',
+          loveDaysGalleryImages: imageUrls.slice(2),
+          loveDaysMessage,
+          loveDaysTimeline: parsedTimeline,
         }),
       });
 
@@ -299,10 +360,13 @@ function OrderPage() {
         </div>
       )}
 
-      {templateType === 'letterinspace'
-        ? <LetterInSpaceForm value={content} onChange={setContent} />
-        : <ContentEditor value={content} onChange={setContent} />
-      }
+      {templateType === 'letterinspace' && (
+        <LetterInSpaceForm value={content} onChange={setContent} />
+      )}
+
+      {templateType !== 'letterinspace' && templateType !== 'lovedays' && (
+        <ContentEditor value={content} onChange={setContent} />
+      )}
 
       {templateType === 'loveletter' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
@@ -341,23 +405,182 @@ function OrderPage() {
           </div>
         </div>
       )}
+
+      {templateType === 'lovedays' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày bắt đầu yêu nhau 💕</label>
+            <input
+              type="date"
+              value={loveDaysDate}
+              onChange={e => setLoveDaysDate(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người 1</label>
+              <input
+                type="text"
+                value={loveDaysNameFrom}
+                onChange={e => setLoveDaysNameFrom(e.target.value)}
+                placeholder="Ví dụ: Lan Anh"
+                maxLength={30}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người 2</label>
+              <input
+                type="text"
+                value={loveDaysNameTo}
+                onChange={e => setLoveDaysNameTo(e.target.value)}
+                placeholder="Ví dụ: Minh Khôi"
+                maxLength={30}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Tin nhắn bí mật 🔒
+              <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.8rem', marginLeft: '0.4rem' }}>
+                (hiện ra khi trái tim đầy)
+              </span>
+            </label>
+            <textarea
+              value={loveDaysMessage}
+              onChange={e => setLoveDaysMessage(e.target.value)}
+              placeholder="Viết gì đó thật ngọt ngào..."
+              maxLength={500}
+              rows={4}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.4rem' }}>
+              Timeline kỷ niệm
+              <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.8rem', marginLeft: '0.4rem' }}>
+                (mỗi timeline là một dòng)
+              </span>
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {loveDaysTimeline.map((row, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '160px 1fr auto', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="date"
+                    value={row.date}
+                    onChange={e => setLoveDaysTimeline(prev => prev.map((it, i) => i === idx ? { ...it, date: e.target.value } : it))}
+                    style={{ width: '100%', padding: '0.45rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                  />
+                  <input
+                    type="text"
+                    value={row.text}
+                    onChange={e => setLoveDaysTimeline(prev => prev.map((it, i) => i === idx ? { ...it, text: e.target.value } : it))}
+                    placeholder="Nhập nội dung timeline..."
+                    maxLength={120}
+                    style={{ width: '100%', padding: '0.45rem 0.6rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLoveDaysTimeline(prev => prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx))}
+                    style={{
+                      padding: '0.4rem 0.65rem',
+                      border: '1px solid #fecaca',
+                      background: '#fff1f2',
+                      color: '#be123c',
+                      borderRadius: '0.45rem',
+                      cursor: loveDaysTimeline.length <= 1 ? 'not-allowed' : 'pointer',
+                      opacity: loveDaysTimeline.length <= 1 ? 0.5 : 1,
+                    }}
+                    disabled={loveDaysTimeline.length <= 1}
+                  >
+                    Xóa
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setLoveDaysTimeline(prev => [...prev, { date: '', text: '' }])}
+              style={{
+                marginTop: '0.6rem',
+                padding: '0.5rem 0.85rem',
+                border: '1px solid #fda4af',
+                background: '#fff1f2',
+                color: '#be123c',
+                borderRadius: '0.55rem',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              Thêm timeline
+            </button>
+          </div>
+          <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '-0.25rem' }}>
+            Ảnh 1 = avatar người 1, ảnh 2 = avatar người 2, các ảnh còn lại dùng cho slider popup.
+          </p>
+        </div>
+      )}
     </>
   );
 
   const orderFormBottom = (
     <>
       {templateType !== 'letterinspace' && (
-        <ImageUploader
-          images={uploadedImages}
-          onImagesChange={setUploadedImages}
-          maxImages={9}
-          onImageSelected={() => {}}
-          initialPreviews={imagePreviews}
-          onPreviewsChange={setImagePreviews}
-          onNewFiles={handleNewFiles}
-          onFileRemoved={handleFileRemoved}
-          uploadStates={uploadStates}
-        />
+        <>
+          {templateType === 'lovedays' ? (
+            <>
+              <p style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
+                Ảnh đại diện 💑
+                <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                  (ảnh 1 = người 1, ảnh 2 = người 2)
+                </span>
+              </p>
+              <ImageUploader
+                images={uploadedImages.slice(0, AVATAR_SLOTS)}
+                onImagesChange={(segment) => updateImageSegment(0, AVATAR_SLOTS, segment)}
+                maxImages={AVATAR_SLOTS}
+                onImageSelected={() => {}}
+                initialPreviews={imagePreviews.slice(0, AVATAR_SLOTS)}
+                onPreviewsChange={(segment) => updatePreviewSegment(0, AVATAR_SLOTS, segment)}
+                onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index })))}
+                onFileRemoved={(index) => handleFileRemoved(index)}
+                uploadStates={segmentStates(0, AVATAR_SLOTS)}
+              />
+
+              <p style={{ fontWeight: 500, margin: '0.85rem 0 0.25rem' }}>
+                Ảnh slider popup 🖼️
+                <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                  (tối đa {GALLERY_SLOTS} ảnh)
+                </span>
+              </p>
+              <ImageUploader
+                images={uploadedImages.slice(AVATAR_SLOTS, LOVEDAYS_MAX_IMAGES)}
+                onImagesChange={(segment) => updateImageSegment(AVATAR_SLOTS, GALLERY_SLOTS, segment)}
+                maxImages={GALLERY_SLOTS}
+                onImageSelected={() => {}}
+                initialPreviews={imagePreviews.slice(AVATAR_SLOTS, LOVEDAYS_MAX_IMAGES)}
+                onPreviewsChange={(segment) => updatePreviewSegment(AVATAR_SLOTS, GALLERY_SLOTS, segment)}
+                onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index + AVATAR_SLOTS })))}
+                onFileRemoved={(index) => handleFileRemoved(index + AVATAR_SLOTS)}
+                uploadStates={segmentStates(AVATAR_SLOTS, GALLERY_SLOTS)}
+              />
+            </>
+          ) : (
+            <ImageUploader
+              images={uploadedImages}
+              onImagesChange={setUploadedImages}
+              maxImages={9}
+              onImageSelected={() => {}}
+              initialPreviews={imagePreviews}
+              onPreviewsChange={setImagePreviews}
+              onNewFiles={handleNewFiles}
+              onFileRemoved={handleFileRemoved}
+              uploadStates={uploadStates}
+            />
+          )}
+        </>
       )}
 
       <MusicOption

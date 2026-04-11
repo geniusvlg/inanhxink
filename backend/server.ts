@@ -232,8 +232,10 @@ function injectScripts(
 ): string {
   // Rewrite any S3 URLs to CDN URLs before injecting into the template
   const data = templateData ? { ...templateData } : {};
-  if (data.musicUrl)   data.musicUrl   = rewriteS3ToCdn(data.musicUrl);
-  if (data.imageUrls)  data.imageUrls  = (data.imageUrls as unknown[]).map(rewriteS3ToCdn);
+  if (data.musicUrl)    data.musicUrl    = rewriteS3ToCdn(data.musicUrl);
+  if (data.imageUrls)   data.imageUrls   = (data.imageUrls as unknown[]).map(rewriteS3ToCdn);
+  if (data.avatarFrom)  data.avatarFrom  = rewriteS3ToCdn(data.avatarFrom);
+  if (data.avatarTo)    data.avatarTo    = rewriteS3ToCdn(data.avatarTo);
 
   const dataPayload = JSON.stringify({ template: templateType, data });
   const tag =
