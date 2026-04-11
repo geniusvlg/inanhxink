@@ -16,15 +16,28 @@ interface ImageUploaderProps {
   uploadStates?: Record<number, 'uploading' | 'done' | 'error'>;
 }
 
-function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected, initialPreviews, onPreviewsChange, onNewFiles, onFileRemoved, uploadStates = {} }: ImageUploaderProps) {
+function ImageUploader({
+  images,
+  onImagesChange,
+  maxImages = 9,
+  onImageSelected,
+  initialPreviews,
+  onPreviewsChange,
+  onNewFiles,
+  onFileRemoved,
+  uploadStates = {},
+}: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>(initialPreviews || []);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Scroll to next section when image is selected
+  // Keep local previews synced when parent provides new slices
+  useEffect(() => {
+    setPreviews(initialPreviews || []);
+  }, [initialPreviews]);
+
   useEffect(() => {
     const hasImages = images.some(img => img !== null);
     if (hasImages && onImageSelected) {
-      // Small delay to ensure DOM is updated
       setTimeout(() => {
         onImageSelected();
       }, 100);
@@ -35,26 +48,22 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Vui lòng chọn file ảnh');
       return;
     }
 
-    // Validate file size (max 5MB per image)
     if (file.size > 5 * 1024 * 1024) {
       alert('Kích thước ảnh không được vượt quá 5MB');
       return;
     }
 
     const newImages: (File | null)[] = [...images];
-    // Ensure array is long enough, fill with null slots if needed
     while (newImages.length <= index) {
       newImages.push(null);
     }
     newImages[index] = file;
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {
       const newPreviews = [...previews];
@@ -70,7 +79,6 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     onImagesChange(newImages);
     onNewFiles?.([{ index, file }]);
 
-    // Scroll to next section after image is selected
     if (onImageSelected) {
       setTimeout(() => {
         onImageSelected();
@@ -81,19 +89,18 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
   const handleRemoveImage = (index: number) => {
     const newImages: (File | null)[] = [...images];
     newImages[index] = null;
+
     const newPreviews = [...previews];
     newPreviews[index] = '';
+
     setPreviews(newPreviews);
     onPreviewsChange?.(newPreviews);
     onImagesChange(newImages);
     onFileRemoved?.(index);
-    
-    // Clear the file input
     if (fileInputRefs.current[index]) {
       fileInputRefs.current[index]!.value = '';
     }
-    
-    // Revoke object URL if it was created
+
     if (previews[index] && previews[index].startsWith('blob:')) {
       URL.revokeObjectURL(previews[index]);
     }
@@ -103,7 +110,6 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    // Find empty slots
     const emptySlots: number[] = [];
     for (let i = 0; i < maxImages; i++) {
       if (!images[i]) {
@@ -121,12 +127,11 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     const newImages: (File | null)[] = [...images];
     const newPreviews: string[] = [...previews];
 
-    // Create previews for all new images
     let loadedCount = 0;
     filesToAdd.forEach((file, fileIndex) => {
       const slotIndex = emptySlots[fileIndex];
       newImages[slotIndex] = file;
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         newPreviews[slotIndex] = reader.result as string;
@@ -142,7 +147,6 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
     onImagesChange(newImages);
     onNewFiles?.(filesToAdd.map((file, fileIndex) => ({ index: emptySlots[fileIndex], file })));
 
-    // Scroll to next section after batch upload
     if (onImageSelected && filesToAdd.length > 0) {
       setTimeout(() => {
         onImageSelected();
@@ -188,13 +192,6 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
                     src={previews[index] || (images[index] ? URL.createObjectURL(images[index]) : '')}
                     alt={`Ảnh ${index + 1}`}
                     className="image-preview"
-                    onLoad={(e) => {
-                      // Clean up object URL after image loads if it was created
-                      const img = e.target as HTMLImageElement;
-                      if (img.src.startsWith('blob:') && previews[index]) {
-                        // Keep the preview, don't revoke yet
-                      }
-                    }}
                   />
                   {uploadStates[index] === 'uploading' && (
                     <div className="image-upload-status uploading">⏳</div>
@@ -234,4 +231,3 @@ function ImageUploader({ images, onImagesChange, maxImages = 9, onImageSelected,
 }
 
 export default ImageUploader;
-

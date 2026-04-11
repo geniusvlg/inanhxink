@@ -57,7 +57,7 @@ const router: Router = express.Router();
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
 
 // Valid template types that we have cloned
-const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace'] as const;
+const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace', 'lovedays'] as const;
 type TemplateType = typeof VALID_TEMPLATE_TYPES[number];
 
 // Map the frontend template_type strings to the actual template folder names
@@ -65,6 +65,7 @@ const TEMPLATE_FOLDER_MAP: Record<string, string> = {
   letterinspace: 'galaxy',
   loveletter: 'loveletter',
   galaxy: 'galaxy',
+  lovedays: 'lovedays',
 };
 
 interface OrderTotal {
@@ -152,6 +153,16 @@ interface CreateOrderBody {
   letterTitle?: string;
   letterSender?: string;
   letterReceiver?: string;
+  // Love Days specific
+  loveDaysDate?: string;     // ISO date string e.g. "2025-12-20"
+  loveDaysNameFrom?: string;
+  loveDaysNameTo?: string;
+  loveDaysAvatarFrom?: string; // S3 URL
+  loveDaysAvatarTo?: string;   // S3 URL
+  loveDaysMessage?: string;    // secret message shown when heart is fully filled
+  loveDaysTheme?: 'soft' | 'sunset' | 'night' | 'polaroid';
+  loveDaysGalleryImages?: string[];
+  loveDaysTimeline?: Array<{ date?: string; text?: string }>;
   // Legacy / extras
   musicLink?: string;
   musicAdded?: boolean;
@@ -183,6 +194,15 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       letterTitle,
       letterSender,
       letterReceiver,
+      loveDaysDate,
+      loveDaysNameFrom,
+      loveDaysNameTo,
+      loveDaysAvatarFrom,
+      loveDaysAvatarTo,
+      loveDaysMessage,
+      loveDaysTheme,
+      loveDaysGalleryImages = [],
+      loveDaysTimeline = [],
     } = req.body;
 
     if (!qrName || !templateId) {
@@ -211,6 +231,29 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       templateData.title    = letterTitle    || 'Love Letter';
       templateData.sender   = letterSender   || '';
       templateData.receiver = letterReceiver || '';
+    }
+    if (templateType === 'lovedays') {
+      templateData.date        = loveDaysDate       || '';
+      templateData.nameFrom    = loveDaysNameFrom   || '';
+      templateData.nameTo      = loveDaysNameTo     || '';
+      templateData.avatarFrom  = loveDaysAvatarFrom || '';
+      templateData.avatarTo    = loveDaysAvatarTo   || '';
+      templateData.message     = loveDaysMessage    || '';
+      templateData.theme       = loveDaysTheme      || 'soft';
+      templateData.popupImages = Array.isArray(loveDaysGalleryImages) ? loveDaysGalleryImages : [];
+      templateData.timeline    = Array.isArray(loveDaysTimeline)
+        ? loveDaysTimeline
+            .map((item) => ({
+              date: String(item?.date || '').trim(),
+              text: String(item?.text || '').trim(),
+            }))
+            .filter((item) => item.date || item.text)
+        : [];
+
+      // Backward-compatible fallback if client still sends a single imageUrls array
+      if ((templateData.popupImages as string[]).length === 0 && imageUrls.length > 2) {
+        templateData.popupImages = imageUrls.slice(2);
+      }
     }
     if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
 

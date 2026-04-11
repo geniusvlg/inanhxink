@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Love Days</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Music toggle -->
+    <div class="top-bar">
+      <button class="music-btn" id="musicBtn" title="Toggle music">
+        <!-- icon swapped by JS -->
+        <svg id="iconMuted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z"/>
+          <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <svg id="iconPlaying" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:none">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 6v12M9 9a3 3 0 000 6"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Main pink section -->
+    <div class="main-section">
+      <!-- 3 animated SVG waves at the bottom -->
+      <div class="wave-wrapper">
+        <svg class="wave wave1" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <path d="M0,200 Q360,150 720,200 T1440,200 V320 H0 Z" fill="white"/>
+        </svg>
+        <svg class="wave wave2" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <path d="M0,200 Q360,150 720,200 T1440,220 V320 H0 Z" fill="white"/>
+        </svg>
+        <svg class="wave wave3" viewBox="0 0 1440 320" preserveAspectRatio="none">
+          <path d="M0,200 Q360,150 720,200 T1440,240 V320 H0 Z" fill="white"/>
+        </svg>
+      </div>
+
+      <h1 class="love-days-title">LOVE DAYS</h1>
+
+      <div class="theme-switcher" id="themeSwitcher" aria-label="Theme presets">
+        <button class="theme-chip active" data-theme="soft" type="button">Soft Pink</button>
+        <button class="theme-chip" data-theme="sunset" type="button">Sunset</button>
+        <button class="theme-chip" data-theme="night" type="button">Night</button>
+        <button class="theme-chip" data-theme="polaroid" type="button">Polaroid</button>
+      </div>
+
+      <!-- Clickable heart — counter box lives INSIDE so heart visually wraps it -->
+      <div class="heart-wrapper" id="heartWrapper">
+        <!-- Aura ripples appended here by JS on each click -->
+
+        <!-- Main heart SVG — absolute top-0, 320×320 -->
+        <svg class="heart-svg draw-mode heartbeat" id="heartSvg" viewBox="0 0 24 24">
+          <defs>
+            <linearGradient id="heartGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop id="gradStop1" offset="0%"   stop-color="#ff9999"/>
+              <stop id="gradStop2" offset="0%"   stop-color="#ff9999"/>
+              <stop id="gradStop3" offset="0%"   stop-color="transparent"/>
+              <stop id="gradStop4" offset="100%" stop-color="transparent"/>
+            </linearGradient>
+          </defs>
+          <!-- Gradient fill path (fill overridden to none during draw-mode) -->
+          <path class="heart-fill" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            fill="url(#heartGrad)" />
+          <!-- Stroke outline -->
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            fill="none" stroke="#ff9999" stroke-width="0.5"/>
+        </svg>
+
+        <!-- Counter sits at the bottom of the wrapper, peeking out below the heart -->
+        <div class="counter-box">
+          <p class="counter-days" id="counterDays">0 DAYS</p>
+          <p class="counter-time" id="counterTime">00 : 00 : 00</p>
+        </div>
+      </div>
+
+      <!-- Couple row -->
+      <div class="couple-row">
+        <div class="person">
+          <div class="avatar-wrap" id="avatarFromWrap">
+            <img class="avatar-img" id="avatarFromImg" src="" alt="avatar" />
+          </div>
+          <span class="person-name" id="nameFrom"></span>
+        </div>
+
+        <div class="middle">
+          <!-- Beating pink heart icon -->
+          <svg class="center-heart-img" viewBox="0 0 24 24" fill="#ff9999">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span class="anniversary-date" id="anniversaryDate"></span>
+        </div>
+
+        <div class="person">
+          <div class="avatar-wrap" id="avatarToWrap">
+            <img class="avatar-img" id="avatarToImg" src="" alt="avatar" />
+          </div>
+          <span class="person-name" id="nameTo"></span>
+        </div>
+      </div>
+
+      <section class="timeline-card" id="timelineCard" aria-label="Memory timeline">
+        <h3 class="timeline-title">Our Timeline</h3>
+        <div class="timeline-list" id="timelineList"></div>
+      </section>
+    </div><!-- /main-section -->
+  </div><!-- /app -->
+
+  <!-- Secret message overlay (shown when heart is fully filled) -->
+  <div class="message-overlay" id="messageOverlay">
+    <div class="message-card">
+      <button class="message-close" id="messageClose">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+      <h2 class="message-title">A GIFT FOR U</h2>
+      <div class="message-gallery-wrap" id="messageGalleryWrap">
+        <button class="gallery-nav prev" id="galleryPrev" aria-label="Previous image">‹</button>
+        <div class="message-gallery" id="messageGallery"></div>
+        <button class="gallery-nav next" id="galleryNext" aria-label="Next image">›</button>
+      </div>
+      <div class="gallery-dots" id="galleryDots"></div>
+      <div class="message-body" id="messageText"></div>
+      <p class="message-brand">inanhxink</p>
+    </div>
+  </div>
+
+  <!-- Photo lightbox -->
+  <div class="lightbox" id="lightbox">
+    <img class="lightbox-img" id="lightboxImg" src="" alt="photo" />
+  </div>
+
+  <audio id="audio" loop></audio>
+
+  <script>
+    // Data is injected by the backend as window.dataFromSubdomain
+    var _data = (window.dataFromSubdomain && window.dataFromSubdomain.data) || {};
+    window.siteData = _data;
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>
