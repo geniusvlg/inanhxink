@@ -3,85 +3,141 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <base href=".">
-  <title>Iu em</title>
-  <link rel="icon" type="image/x-icon" href="https://uynuyn.inanhxink.com/asset/favicon.ico">
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&family=Pacifico&family=Itim&display=swap" rel="stylesheet">
+  <title>Love Letter</title>
+  <link rel="icon" type="image/x-icon" href="https://uynuyn.tokitoki.love/asset/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head><body>
-    <div class="background-title" id="backgroundTitle">Iu em</div>
 
-    <div class="container">
-        <div class="envelope">
-            <div class="envelope-back-flap"></div>
-            <svg class="envelope-flap-heart" width="64" height="64" viewBox="0 0 32 32">
-                <path d="M16 29s-13-8.35-13-17A7 7 0 0 1 16 7a7 7 0 0 1 13 5c0 8.65-13 17-13 17z" fill="#e53935"></path>
-            </svg>
-            <div class="envelope-back">
-                <div class="sender"></div>
-                <div class="receiver"></div>
-                <div class="stamp">
-                    <img src="./images/bgcqjh0a.55j.jpeg" alt="Stamp">
-                </div>
-            </div>
-            <div class="envelope-front">
-                <div class="envelope-body"></div>
-                <div class="envelope-edge edge-left"></div>
-                <div class="envelope-edge edge-right"></div>
-                <div class="envelope-edge edge-bottom"></div>
-                <div class="envelope-edge edge-top"></div>
-                <div class="flap"></div>
-                <div class="letter">
-                    <textarea class="letter-content" readonly=""></textarea>
-                </div>
-                <svg class="decoration heart decoration-1" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
-                <svg class="decoration heart decoration-2" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
-                <svg class="decoration sparkle decoration-3" viewBox="0 0 24 24" style="opacity:0.8"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"></path></svg>
-                <svg class="decoration sparkle decoration-4" viewBox="0 0 24 24" style="opacity:0.8"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"></path></svg>
-                <svg class="decoration flower decoration-5" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path></svg>
-                <svg class="decoration flower decoration-6" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path></svg>
-                <svg class="decoration heart decoration-7" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
-                <svg class="decoration sparkle decoration-8" viewBox="0 0 24 24" style="opacity:0.8"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"></path></svg>
-            </div>
-        </div>
+  <div class="background-title" id="backgroundTitle">Love Letter</div>
 
-        <div class="extracted-letter" id="extractedLetter">
-            <div class="extracted-letter-content" id="extractedLetterContent"></div>
-        </div>
+  <!-- Music toggle button -->
+  <button class="music-btn" id="musicBtn" title="Tắt/mở nhạc" aria-label="Toggle music">
+    <svg class="music-icon icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+    </svg>
+    <svg class="music-icon icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      <line x1="2" y1="2" x2="22" y2="22"/>
+    </svg>
+  </button>
 
-        <div class="polaroid-group" id="polaroidGroup">
-            <div class="polaroid polaroid-1"><img src="./images/5fhz0ver.gry.jpeg" alt="Polaroid 1"></div>
-            <div class="polaroid polaroid-2"><img src="./images/lzbnesb1.2ca.jpeg" alt="Polaroid 2"></div>
-            <div class="polaroid polaroid-3"><img src="./images/jyg2rqun.1fx.jpeg" alt="Polaroid 3"></div>
-            <div class="polaroid polaroid-4"><img src="./images/mzbnhhoq.tgu.jpeg" alt="Polaroid 4"></div>
-            <div class="polaroid polaroid-5"><img src="./images/mn41lj4p.eq0.jpeg" alt="Polaroid 5"></div>
-            <div class="polaroid polaroid-6"><img src="./images/dderhkan.v4d.jpeg" alt="Polaroid 6"></div>
-            <div class="polaroid polaroid-7"><img src="./images/and5bcb2.i0s.jpeg" alt="Polaroid 7"></div>
-            <div class="polaroid polaroid-8"><img src="./images/qvz5gq44.um2.jpeg" alt="Polaroid 8"></div>
-        </div>
+  <!-- Floating hearts (same as OurMemories letter screen) -->
+  <div class="letter-float-layer" aria-hidden="true">
+    <div class="heart-float heart-float-1">
+      <svg viewBox="0 0 32 32" width="80" height="80"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#F58E95"></path></svg>
     </div>
-
-    <div id="polaroidOverlay"></div>
-
-    <div id="polaroidFullscreenOverlay">
-        <div class="fullscreen-content">
-            <img id="fullscreenPolaroidImg">
-            <div id="fullscreenPolaroidLabel"></div>
-            <button id="closeFullscreenBtn">×</button>
-            <div class="fullscreen-arrow" title="Bấm để xem ảnh tiếp theo"></div>
-        </div>
+    <div class="heart-float heart-float-2">
+      <svg viewBox="0 0 32 32" width="80" height="80"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#b91c1c"></path></svg>
     </div>
+    <div class="heart-float heart-float-3">
+      <svg viewBox="0 0 32 32" width="80" height="80"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#feb1b0"></path></svg>
+    </div>
+    <div class="heart-float heart-float-4">
+      <svg viewBox="0 0 32 32" width="80" height="80"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#F58E95"></path></svg>
+    </div>
+    <div class="heart-float heart-float-5">
+      <svg viewBox="0 0 32 32" width="80" height="80"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#b91c1c"></path></svg>
+    </div>
+    <div class="heart-float heart-float-6">
+      <svg viewBox="0 0 32 32" width="80" height="80"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#feb1b0"></path></svg>
+    </div>
+  </div>
+
+  <!-- Envelope stage (OurMemories letter design) -->
+  <div class="letter-stage" id="letterStage">
+    <div class="envelope-wrap fly-in" id="envelope">
+
+      <!-- Paper lives INSIDE the envelope -->
+      <label class="envelope-label" id="letterLabel">
+        <div class="extracted-paper" id="extractedPaper" style="left: 50%">
+          <div class="paper-perspective" id="paperCard">
+
+            <div class="tile out" id="tileOut">
+              <p class="tile-hint" id="letterHint"></p>
+            </div>
+
+            <div class="tile in-top" id="tileInTop">
+              <div class="tile-inner-top">
+                <h2 class="tile-title">Love letter</h2>
+                <p class="tile-greeting" id="letterModalGreeting"></p>
+                <div class="tile-body" id="letterBodyTop"></div>
+              </div>
+            </div>
+
+            <div class="tile in-bottom" id="tileInBottom">
+              <div class="tile-inner-bottom">
+                <div class="tile-body" id="letterBodyBottom"></div>
+                <p class="tile-signoff" id="letterNote"></p>
+                <p class="tile-signature" id="letterModalSignature"></p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </label>
+
+      <!-- Envelope front face -->
+      <div class="clip-path-front">
+        <div class="clip-path-front-left"></div>
+        <div class="clip-path-front-right"></div>
+        <div class="clip-path-front-bottom"></div>
+      </div>
+
+      <!-- Envelope flap -->
+      <div class="clip-path-flap-bg" id="envelopeFlap"></div>
+
+      <!-- Seal heart -->
+      <div class="seal-heart-btn" id="openLetterBtn">
+        <svg viewBox="0 0 32 29.6" class="seal-svg" style="display:block">
+          <path d="M23.6,0c-2.7,0-5.1,1.3-6.6,3.3C15.5,1.3,13.1,0,10.4,0C4.7,0,0,4.7,0,10.4c0,11.1,16,19.2,16,19.2s16-8.1,16-19.2C32,4.7,27.3,0,23.6,0z" fill="#E66F71"/>
+        </svg>
+      </div>
+
+      <!-- Sender / Receiver address on envelope body -->
+      <div class="env-address">
+        <p class="env-sender" id="envSender"></p>
+        <p class="env-receiver" id="envReceiver"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Polaroid photos -->
+  <div class="polaroid-group" id="polaroidGroup">
+    <div class="polaroid polaroid-1"><img src="./images/5fhz0ver.gry.jpeg" alt="Polaroid 1"></div>
+    <div class="polaroid polaroid-2"><img src="./images/lzbnesb1.2ca.jpeg" alt="Polaroid 2"></div>
+    <div class="polaroid polaroid-3"><img src="./images/jyg2rqun.1fx.jpeg" alt="Polaroid 3"></div>
+    <div class="polaroid polaroid-4"><img src="./images/mzbnhhoq.tgu.jpeg" alt="Polaroid 4"></div>
+    <div class="polaroid polaroid-5"><img src="./images/mn41lj4p.eq0.jpeg" alt="Polaroid 5"></div>
+    <div class="polaroid polaroid-6"><img src="./images/dderhkan.v4d.jpeg" alt="Polaroid 6"></div>
+    <div class="polaroid polaroid-7"><img src="./images/and5bcb2.i0s.jpeg" alt="Polaroid 7"></div>
+    <div class="polaroid polaroid-8"><img src="./images/qvz5gq44.um2.jpeg" alt="Polaroid 8"></div>
+  </div>
+
+  <div id="polaroidOverlay"></div>
+
+  <div id="polaroidFullscreenOverlay">
+    <div class="fullscreen-content">
+      <img id="fullscreenPolaroidImg">
+      <div id="fullscreenPolaroidLabel"></div>
+      <button id="closeFullscreenBtn">×</button>
+      <div class="fullscreen-arrow" title="Bấm để xem ảnh tiếp theo"></div>
+    </div>
+  </div>
 
 <script>
-    // Fetch personalised data from backend, set window.siteData, then load app.js
-    var _sub = window.__SUBDOMAIN__ || '';
-    fetch('/api/site-data' + (_sub ? '?sub=' + _sub : ''))
-        .then(function(r) { return r.json(); })
-        .then(function(data) { window.siteData = (data && data.template_data) ? data.template_data : {}; })
-        .catch(function() { window.siteData = null; })
-        .finally(function() {
-            var s = document.createElement('script');
-            s.src = './app.js';
-            document.body.appendChild(s);
-        });
+  var _sub = window.__SUBDOMAIN__ || '';
+  fetch('/api/site-data' + (_sub ? '?sub=' + _sub : ''))
+    .then(function(r) { return r.json(); })
+    .then(function(data) { window.siteData = (data && data.template_data) ? data.template_data : {}; })
+    .catch(function() { window.siteData = null; })
+    .finally(function() {
+      var s = document.createElement('script');
+      s.src = './app.js';
+      document.body.appendChild(s);
+    });
 </script>
 </body></html>
