@@ -48,6 +48,11 @@ function OrderPage() {
   const [loveDaysNameTo, setLoveDaysNameTo] = useState('');
   const [loveDaysMessage, setLoveDaysMessage] = useState('');
   const [loveDaysTimeline, setLoveDaysTimeline] = useState<LoveDaysTimelineRow[]>([{ date: '', text: '' }]);
+  // Birthday fields
+  const [birthdayName, setBirthdayName] = useState('');
+  const [birthdayAge, setBirthdayAge] = useState('');
+  const [birthdayDate, setBirthdayDate] = useState('');
+  const [birthdayFinalText, setBirthdayFinalText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -262,7 +267,10 @@ function OrderPage() {
 
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
-    if (templateType !== 'lovedays' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (templateType !== 'lovedays' && templateType !== 'birthday' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (templateType === 'birthday' && birthdayFinalText.trim().split(/\s+/).filter(Boolean).length > 10) {
+      setError('Lời chúc không được quá 10 từ'); return;
+    }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
 
     setSubmitting(true);
@@ -320,6 +328,12 @@ function OrderPage() {
           loveDaysMessage,
           loveDaysTimeline: parsedTimeline,
         }),
+        ...(templateType === 'birthday' && {
+          birthdayName,
+          birthdayAge,
+          birthdayDate,
+          birthdayFinalText,
+        }),
       });
 
       if (response.success) {
@@ -364,7 +378,7 @@ function OrderPage() {
         <LetterInSpaceForm value={content} onChange={setContent} />
       )}
 
-      {templateType !== 'letterinspace' && templateType !== 'lovedays' && (
+      {templateType !== 'letterinspace' && templateType !== 'lovedays' && templateType !== 'birthday' && (
         <ContentEditor value={content} onChange={setContent} />
       )}
 
@@ -402,6 +416,59 @@ function OrderPage() {
               maxLength={30}
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
             />
+          </div>
+        </div>
+      )}
+
+      {templateType === 'birthday' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người được chúc 🎂</label>
+            <input
+              type="text"
+              value={birthdayName}
+              onChange={e => setBirthdayName(e.target.value)}
+              placeholder="Ví dụ: Nguyễn Thị Lan"
+              maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tuổi 🎈</label>
+              <input
+                type="text"
+                value={birthdayAge}
+                onChange={e => setBirthdayAge(e.target.value)}
+                placeholder="Ví dụ: 22"
+                maxLength={10}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày sinh nhật 📅</label>
+              <input
+                type="text"
+                value={birthdayDate}
+                onChange={e => setBirthdayDate(e.target.value)}
+                placeholder="Ví dụ: 28.03.2003"
+                maxLength={20}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời chúc ❤️ <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem' }}>(tối đa 10 từ)</span></label>
+            <textarea
+              value={birthdayFinalText}
+              onChange={e => setBirthdayFinalText(e.target.value)}
+              placeholder="Ví dụ: Chúc em tuổi mới hạnh phúc bên anh nha"
+              rows={2}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: birthdayFinalText.trim().split(/\s+/).filter(Boolean).length > 10 ? '#ef4444' : '#6b7280' }}>
+              {birthdayFinalText.trim().split(/\s+/).filter(Boolean).length}/10 từ
+            </p>
           </div>
         </div>
       )}
@@ -527,7 +594,7 @@ function OrderPage() {
 
   const orderFormBottom = (
     <>
-      {templateType !== 'letterinspace' && (
+      {templateType !== 'letterinspace' && templateType !== 'birthday' && (
         <>
           {templateType === 'lovedays' ? (
             <>

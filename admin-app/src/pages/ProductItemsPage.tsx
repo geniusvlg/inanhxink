@@ -19,6 +19,56 @@ const PAGE_TITLE: Record<string, string> = {
   'set-qua-tang': '🎁 Set Quà Tặng',
 };
 
+
+type DiscountStatus = 'active' | 'scheduled' | 'expired';
+
+function parseDiscountTime(value?: string | null): number | null {
+  if (!value) return null;
+  const ts = new Date(value).getTime();
+  return Number.isFinite(ts) ? ts : null;
+}
+
+function getDiscountStatus(product: Pick<Product, 'discount_from' | 'discount_to'>): DiscountStatus {
+  const now = Date.now();
+  const fromTs = parseDiscountTime(product.discount_from);
+  const toTs = parseDiscountTime(product.discount_to);
+
+  if (fromTs !== null && fromTs > now) return 'scheduled';
+  if (toTs !== null && toTs < now) return 'expired';
+  return 'active';
+}
+
+function getDiscountStatusUi(status: DiscountStatus): { label: string; style: React.CSSProperties } {
+  if (status === 'active') {
+    return {
+      label: 'Đang áp dụng',
+      style: {
+        color: '#166534',
+        background: '#dcfce7',
+        border: '1px solid #86efac',
+      },
+    };
+  }
+  if (status === 'scheduled') {
+    return {
+      label: 'Sắp bắt đầu',
+      style: {
+        color: '#1d4ed8',
+        background: '#dbeafe',
+        border: '1px solid #93c5fd',
+      },
+    };
+  }
+  return {
+    label: 'Đã kết thúc',
+    style: {
+      color: '#6b7280',
+      background: '#f3f4f6',
+      border: '1px solid #d1d5db',
+    },
+  };
+}
+
 // Represents either an already-saved URL or a pending local file
 interface ImageEntry {
   url: string;        // server URL (saved) or object URL (local preview)
@@ -27,6 +77,7 @@ interface ImageEntry {
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
   name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: false, tiktok_url: null, instagram_url: null, category_ids: [],
+  discount_price: null, discount_from: null, discount_to: null,
 });
 
 export default function ProductItemsPage({ type }: Props) {
@@ -187,7 +238,7 @@ export default function ProductItemsPage({ type }: Props) {
               <th>ID</th>
               <th>Ảnh</th>
               <th>Tên</th>
-              <th>Giá</th>
+              <th>Giá / Giảm giá</th>
               <th>Danh mục</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
@@ -214,7 +265,41 @@ export default function ProductItemsPage({ type }: Props) {
                     </div>
                   )}
                 </td>
-                <td>{Number(p.price).toLocaleString('vi-VN')}đ</td>
+                <td>
+                  <div>{Number(p.price).toLocaleString('vi-VN')}đ</div>
+                  {p.discount_price != null && (() => {
+                    const statusUi = getDiscountStatusUi(getDiscountStatus(p));
+                    return (
+                      <>
+                        <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 600 }}>
+                          ▼ {Number(p.discount_price).toLocaleString('vi-VN')}đ
+                        </div>
+                        <div style={{ marginTop: '0.2rem' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '0.08rem 0.42rem',
+                              borderRadius: 999,
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              lineHeight: 1.4,
+                              ...statusUi.style,
+                            }}
+                          >
+                            {statusUi.label}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                  {(p.discount_from || p.discount_to) && (
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                      {p.discount_from ? new Date(p.discount_from).toLocaleDateString('vi-VN') : '∞'}
+                      {' → '}
+                      {p.discount_to   ? new Date(p.discount_to).toLocaleDateString('vi-VN')   : '∞'}
+                    </div>
+                  )}
+                </td>
                 <td>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                     {p.categories?.map(c => (
@@ -294,6 +379,51 @@ export default function ProductItemsPage({ type }: Props) {
                   required
                 />
               </div>
+
+              {/* Discount price */}
+              <div className="form-group">
+                <label className="form-label">Giá khuyến mãi (đ) <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem' }}>— để trống nếu không giảm giá</span></label>
+                <input
+                  className="form-input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Để trống nếu không có"
+                  value={form.discount_price != null ? form.discount_price.toLocaleString('en') : ''}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/,/g, '');
+                    if (raw === '') { setForm(f => ({ ...f, discount_price: null })); return; }
+                    const num = Number(raw);
+                    if (!isNaN(num)) setForm(f => ({ ...f, discount_price: num }));
+                  }}
+                />
+              </div>
+
+              {/* Discount date range */}
+              {form.discount_price != null && (
+                <div className="form-group">
+                  <label className="form-label">Thời gian áp dụng <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem' }}>— để trống = không giới hạn</span></label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Từ</label>
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        value={form.discount_from ? form.discount_from.slice(0, 16) : ''}
+                        onChange={e => setForm(f => ({ ...f, discount_from: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.2rem' }}>Đến</label>
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        value={form.discount_to ? form.discount_to.slice(0, 16) : ''}
+                        onChange={e => setForm(f => ({ ...f, discount_to: e.target.value ? new Date(e.target.value).toISOString() : null }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Categories */}
               <div className="form-group">

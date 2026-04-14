@@ -6,6 +6,7 @@ import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import PriceTag from '../components/PriceTag';
 import './KhungAnhPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -15,10 +16,6 @@ const resolveUrl   = (url: string) => {
   if (CDN_URL && url.startsWith(S3_ORIGIN)) return CDN_URL + url.slice(S3_ORIGIN.length);
   return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 };
-
-function formatPrice(price: number): string {
-  return Math.round(price).toLocaleString('en') + 'đ';
-}
 
 export default function KhungAnhPage() {
   const { products_page_size } = useFeatureFlags();
@@ -118,7 +115,7 @@ export default function KhungAnhPage() {
                   </div>
                   <div className="product-card-info">
                     <div className="product-card-name">{p.name}</div>
-                    <div className="product-card-price">{formatPrice(p.price)}</div>
+                    <div className="product-card-price"><PriceTag product={p} /></div>
                   </div>
                 </Link>
               ))}

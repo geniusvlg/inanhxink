@@ -69,11 +69,12 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 // POST /api/admin/products
 router.post('/', async (req: Request, res: Response) => {
-  const { name, description, price, images = [], type, is_active = true, is_best_seller = false, watermark_enabled = false, tiktok_url, instagram_url, category_ids = [] } =
+  const { name, description, price, images = [], type, is_active = true, is_best_seller = false, watermark_enabled = false, tiktok_url, instagram_url, category_ids = [], discount_price, discount_from, discount_to } =
     req.body as {
       name: string; description?: string; price: number;
       images?: string[]; type: string; is_active?: boolean; is_best_seller?: boolean; watermark_enabled?: boolean;
       tiktok_url?: string; instagram_url?: string; category_ids?: number[];
+      discount_price?: number | null; discount_from?: string | null; discount_to?: string | null;
     };
 
   if (!name || price == null || !type) {
@@ -84,9 +85,9 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     await client.query('BEGIN');
     const insert = await client.query(
-      `INSERT INTO products (name, description, price, images, type, is_active, is_best_seller, watermark_enabled, tiktok_url, instagram_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [name, description ?? null, price, JSON.stringify(images), type, is_active, is_best_seller, watermark_enabled, tiktok_url ?? null, instagram_url ?? null]
+      `INSERT INTO products (name, description, price, images, type, is_active, is_best_seller, watermark_enabled, tiktok_url, instagram_url, discount_price, discount_from, discount_to)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [name, description ?? null, price, JSON.stringify(images), type, is_active, is_best_seller, watermark_enabled, tiktok_url ?? null, instagram_url ?? null, discount_price ?? null, discount_from ?? null, discount_to ?? null]
     );
     const product = insert.rows[0];
 
@@ -108,11 +109,12 @@ router.post('/', async (req: Request, res: Response) => {
 
 // PUT /api/admin/products/:id
 router.put('/:id', async (req: Request, res: Response) => {
-  const { name, description, price, images, is_active, is_best_seller, watermark_enabled, tiktok_url, instagram_url, category_ids } =
+  const { name, description, price, images, is_active, is_best_seller, watermark_enabled, tiktok_url, instagram_url, category_ids, discount_price, discount_from, discount_to } =
     req.body as {
       name?: string; description?: string; price?: number;
       images?: string[]; is_active?: boolean; is_best_seller?: boolean; watermark_enabled?: boolean;
       tiktok_url?: string | null; instagram_url?: string | null; category_ids?: number[];
+      discount_price?: number | null; discount_from?: string | null; discount_to?: string | null;
     };
 
   const client = await db.pool.connect();
@@ -129,6 +131,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (watermark_enabled  !== undefined) allowed['watermark_enabled']  = watermark_enabled;
     if (tiktok_url    !== undefined) allowed['tiktok_url']    = tiktok_url    ?? null;
     if (instagram_url !== undefined) allowed['instagram_url'] = instagram_url ?? null;
+    if (discount_price !== undefined) allowed['discount_price'] = discount_price ?? null;
+    if (discount_from  !== undefined) allowed['discount_from']  = discount_from  ?? null;
+    if (discount_to    !== undefined) allowed['discount_to']    = discount_to    ?? null;
 
     if (Object.keys(allowed).length > 0) {
       const setClauses = Object.keys(allowed).map((k, i) => `${k} = $${i + 1}`);
