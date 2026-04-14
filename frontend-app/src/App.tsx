@@ -10,6 +10,7 @@ import KhungAnhPage from './pages/KhungAnhPage';
 import ScrapbookPage from './pages/ScrapbookPage';
 import QrYeuThuongPage from './pages/QrYeuThuongPage';
 import KhacPage from './pages/KhacPage';
+import InAnhPage from './pages/InAnhPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import type { ReactElement } from 'react';
@@ -22,6 +23,7 @@ const NAV_PAGES: { flag: keyof FeatureFlags; path: string }[] = [
   { flag: 'page_so_scrapbook',      path: '/so-scrapbook' },
   { flag: 'page_set_qua_tang',      path: '/set-qua-tang' },
   { flag: 'page_cac_san_pham_khac', path: '/cac-san-pham-khac' },
+  { flag: 'page_in_anh',            path: '/in-anh' },
 ];
 
 // Redirects to the first enabled page in the nav
@@ -62,6 +64,7 @@ function AppRoutes() {
       <Route path="/so-scrapbook"      element={<FlaggedRoute flag="page_so_scrapbook"      element={<ScrapbookPage />} />} />
       <Route path="/set-qua-tang"      element={<FlaggedRoute flag="page_set_qua_tang"      element={<SetQuaTangPage />} />} />
       <Route path="/cac-san-pham-khac" element={<FlaggedRoute flag="page_cac_san_pham_khac" element={<KhacPage />} />} />
+      <Route path="/in-anh"            element={<FlaggedRoute flag="page_in_anh"            element={<InAnhPage />} />} />
     </Routes>
     </>
   );

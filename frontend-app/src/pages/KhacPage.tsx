@@ -124,13 +124,16 @@ export default function KhacPage() {
 
           {!loading && !error && products.length < total && (
             <div className="load-more-wrap">
-              <button
-                className="load-more-btn"
-                onClick={() => setPage(p => p + 1)}
-                disabled={loadingMore}
-              >
-                {loadingMore ? 'Đang tải...' : 'Tải thêm ↓'}
-              </button>
+              {loadingMore ? (
+                <img src="/load_more.gif" alt="Đang tải" className="load-more-icon" />
+              ) : (
+                <button
+                  className="load-more-btn"
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Tải thêm ↓
+                </button>
+              )}
             </div>
           )}
         </div>

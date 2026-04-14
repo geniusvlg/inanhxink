@@ -8,6 +8,7 @@ export interface FeatureFlags {
   page_so_scrapbook:       boolean;
   page_cac_san_pham_khac:  boolean;
   page_set_qua_tang:       boolean;
+  page_in_anh:             boolean;
   products_page_size:      number;
 }
 
@@ -18,6 +19,7 @@ const DEFAULTS: FeatureFlags = {
   page_so_scrapbook:       true,
   page_cac_san_pham_khac:  true,
   page_set_qua_tang:       true,
+  page_in_anh:             true,
   products_page_size:      12,
 };
 
@@ -38,6 +40,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           page_so_scrapbook:      c.page_so_scrapbook      !== 'false',
           page_cac_san_pham_khac: c.page_cac_san_pham_khac !== 'false',
           page_set_qua_tang:      c.page_set_qua_tang      !== 'false',
+          page_in_anh:            c.page_in_anh            !== 'false',
           products_page_size:     Math.max(1, parseInt(c.products_page_size) || 12),
         });
       })

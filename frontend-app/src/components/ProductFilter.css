@@ -375,3 +375,11 @@
   .pf-sidebar { display: none; }
   .pf-mobile-bar { display: flex; }
 }
+
+
+.load-more-icon {
+  display: block;
+  width: 180px;
+  height: 40px;
+  object-fit: contain;
+}

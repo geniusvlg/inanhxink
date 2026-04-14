@@ -103,7 +103,7 @@ export interface Product {
   description: string | null;
   price: number;
   images: string[];
-  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
+  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
   categories: { id: number; name: string }[];
   is_active: boolean;
   is_best_seller: boolean;
@@ -116,7 +116,7 @@ export interface Product {
 }
 
 export interface ProductFilters {
-  type?: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
+  type?: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
   category_ids?: string; // comma-separated ids, e.g. "1,2,3"
   min_price?: number;
   max_price?: number;

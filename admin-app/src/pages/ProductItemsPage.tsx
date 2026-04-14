@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 interface Props {
-  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang';
+  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
 }
 
 const PAGE_TITLE: Record<string, string> = {
@@ -17,6 +17,7 @@ const PAGE_TITLE: Record<string, string> = {
   so_scrapbook:   '📒 Sổ Scrapbook',
   khac:           '📦 Các Sản Phẩm Khác',
   'set-qua-tang': '🎁 Set Quà Tặng',
+  in_anh:       '🖨️ In Ảnh',
 };
 
 

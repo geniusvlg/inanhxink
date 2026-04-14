@@ -52,7 +52,9 @@ function OrderPage() {
   const [birthdayName, setBirthdayName] = useState('');
   const [birthdayAge, setBirthdayAge] = useState('');
   const [birthdayDate, setBirthdayDate] = useState('');
+  const [birthdayDay, birthdayMonth] = birthdayDate.split('.');
   const [birthdayFinalText, setBirthdayFinalText] = useState('');
+  const [birthdayBackgroundText, setBirthdayBackgroundText] = useState('I LOVE YOU');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -252,6 +254,11 @@ function OrderPage() {
       setLoveDaysNameTo('');
       setLoveDaysMessage('');
       setLoveDaysTimeline([{ date: '', text: '' }]);
+      setBirthdayName('');
+      setBirthdayAge('');
+      setBirthdayDate('');
+      setBirthdayFinalText('');
+      setBirthdayBackgroundText('I LOVE YOU');
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
@@ -333,6 +340,7 @@ function OrderPage() {
           birthdayAge,
           birthdayDate,
           birthdayFinalText,
+          birthdayBackgroundText,
         }),
       });
 
@@ -423,6 +431,17 @@ function OrderPage() {
       {templateType === 'birthday' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
           <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Chữ nền background ✨</label>
+            <input
+              type="text"
+              value={birthdayBackgroundText}
+              onChange={e => setBirthdayBackgroundText(e.target.value)}
+              placeholder="Ví dụ: I LOVE YOU"
+              maxLength={20}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
             <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người được chúc 🎂</label>
             <input
               type="text"
@@ -447,14 +466,37 @@ function OrderPage() {
             </div>
             <div>
               <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày sinh nhật 📅</label>
-              <input
-                type="text"
-                value={birthdayDate}
-                onChange={e => setBirthdayDate(e.target.value)}
-                placeholder="Ví dụ: 28.03.2003"
-                maxLength={20}
-                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <select
+                  value={birthdayDay || ''}
+                  onChange={e => {
+                    const day = e.target.value;
+                    const month = birthdayMonth || '';
+                    setBirthdayDate(day && month ? `${day}.${month}` : '');
+                  }}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value="">Ngày</option>
+                  {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                <select
+                  value={birthdayMonth || ''}
+                  onChange={e => {
+                    const month = e.target.value;
+                    const day = birthdayDay || '';
+                    setBirthdayDate(day && month ? `${day}.${month}` : '');
+                  }}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value="">Tháng</option>
+                  {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>Chọn ngày và tháng (không cần năm)</p>
             </div>
           </div>
           <div>
