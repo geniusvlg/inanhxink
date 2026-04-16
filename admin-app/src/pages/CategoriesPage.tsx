@@ -9,6 +9,7 @@ const PRODUCT_TYPES = [
   { value: 'so_scrapbook', label: 'Sổ & Scrapbook' },
   { value: 'set-qua-tang', label: 'Set Quà Tặng' },
   { value: 'khac',         label: 'Các Sản Phẩm Khác' },
+  { value: 'in_anh',       label: 'In Ảnh' },
 ];
 
 const typeLabel = (type: string) =>

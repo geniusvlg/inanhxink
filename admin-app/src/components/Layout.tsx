@@ -24,6 +24,7 @@ const NAV: { to: string; label: ReactNode }[] = [
   { to: '/so-scrapbook',     label: '📒 Sổ & Scrapbook' },
   { to: '/cac-san-pham-khac', label: '📦 Các Sản Phẩm Khác' },
   { to: '/set-qua-tang',     label: '🎁 Set Quà Tặng' },
+  { to: '/in-anh',           label: '🖨️ In Ảnh' },
   { to: '/categories',       label: '🏷️ Danh mục' },
   { to: '/orders',           label: '📋 Đơn hàng' },
   { to: '/vouchers',         label: '🎟️ Voucher' },

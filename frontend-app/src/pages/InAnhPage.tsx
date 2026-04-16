@@ -7,7 +7,7 @@ import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
-import './ThiepPage.css';
+import './InAnhPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const CDN_URL      = import.meta.env.VITE_CDN_URL || '';
@@ -17,7 +17,7 @@ const resolveUrl   = (url: string) => {
   return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 };
 
-export default function ThiepPage() {
+export default function InAnhPage() {
   const { products_page_size } = useFeatureFlags();
   const [products,     setProducts]     = useState<Product[]>([]);
   const [total,        setTotal]        = useState(0);
@@ -28,12 +28,10 @@ export default function ThiepPage() {
   const [loadingMore,  setLoadingMore]  = useState(false);
   const [error,        setError]        = useState('');
 
-  // Load categories once
   useEffect(() => {
-    getCategories('thiep').then(setCategories).catch(() => setCategories([]));
+    getCategories('in_anh').then(setCategories).catch(() => setCategories([]));
   }, []);
 
-  // Fetch whenever filters or page changes
   useEffect(() => {
     const isFirstPage = page === 1;
     if (isFirstPage) { setLoading(true); setProducts([]); }
@@ -42,7 +40,7 @@ export default function ThiepPage() {
 
     const t = setTimeout(() => {
       getProducts({
-        type: 'thiep',
+        type: 'in_anh',
         sort: filters.sort,
         category_ids: filters.category_ids.length > 0 ? filters.category_ids.join(',') : undefined,
         min_price: filters.min_price ? Number(filters.min_price) : undefined,
@@ -61,19 +59,18 @@ export default function ThiepPage() {
     return () => clearTimeout(t);
   }, [filters, page, products_page_size]);
 
-  // Reset to page 1 when filters change
   const handleFilterChange = (newFilters: FilterState) => {
     setPage(1);
     setFilters(newFilters);
   };
 
   return (
-    <div className="thiep-page">
-      <SiteHeader activePage="thiep" />
+    <div className="in-anh-page">
+      <SiteHeader activePage="in-anh" />
 
-      <section className="thiep-hero">
-        <h1 className="thiep-hero-title">Thiệp <span>Của Bạn</span></h1>
-        <p className="thiep-hero-desc">Tạo thiệp cá nhân độc đáo, gửi trao yêu thương đến người thân.</p>
+      <section className="in-anh-hero">
+        <h1 className="in-anh-hero-title">In <span>Ảnh</span></h1>
+        <p className="in-anh-hero-desc">Dịch vụ in ảnh theo yêu cầu — sắc nét, bền màu, lưu giữ kỷ niệm đẹp.</p>
       </section>
 
       <div className="products-layout">
@@ -82,20 +79,20 @@ export default function ThiepPage() {
           filters={filters}
           onChange={handleFilterChange}
           resultCount={total}
-          accentColor="#fe2c56"
+          accentColor="#f97316"
         />
 
         <div className="products-grid-area">
           <div className="pf-result-bar">Đang hiển thị {products.length} / {total} sản phẩm</div>
           {loading && <PageLoader />}
-          {error   && <div className="thiep-error">{error}</div>}
+          {error   && <div className="in-anh-error">{error}</div>}
 
           {!loading && !error && (
-            <div className="thiep-grid">
+            <div className="in-anh-grid">
               {products.length === 0 && (
-                <div className="thiep-empty">
+                <div className="in-anh-empty">
                   <p>Không tìm thấy sản phẩm phù hợp.</p>
-                  <button className="thiep-reset-btn" onClick={() => handleFilterChange(DEFAULT_FILTERS)}>
+                  <button className="in-anh-reset-btn" onClick={() => handleFilterChange(DEFAULT_FILTERS)}>
                     Đặt lại bộ lọc
                   </button>
                 </div>

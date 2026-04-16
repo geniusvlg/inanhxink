@@ -52,7 +52,7 @@ export interface Product {
   description: string | null;
   price: number;
   images: string[];
-  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac';
+  type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
   categories: { id: number; name: string }[];
   category_ids?: number[];
   is_active: boolean;
@@ -60,6 +60,9 @@ export interface Product {
   watermark_enabled: boolean;
   tiktok_url: string | null;
   instagram_url: string | null;
+  discount_price: number | null;
+  discount_from: string | null;
+  discount_to: string | null;
   created_at: string;
 }
 

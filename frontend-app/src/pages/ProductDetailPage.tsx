@@ -4,6 +4,7 @@ import { getProductById, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
+import PriceTag, { getActiveDiscountPrice } from '../components/PriceTag';
 import './ProductDetailPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -115,7 +116,17 @@ export default function ProductDetailPage() {
           {/* ── Right: info panel ── */}
           <div className="pd-info">
             <h1 className="pd-name">{product.name}</h1>
-            <div className="pd-price">{formatPrice(product.price)}</div>
+            {getActiveDiscountPrice(product) !== null ? (
+              <div className="pd-price">
+                <span style={{ color: '#fe2c56' }}>{formatPrice(getActiveDiscountPrice(product)!)}</span>
+                <span style={{ color: '#9ca3af', textDecoration: 'line-through', fontSize: '0.85em', marginLeft: '0.5rem', fontWeight: 400 }}>{formatPrice(product.price)}</span>
+                <span style={{ background: '#fe2c56', color: '#fff', fontSize: '0.72rem', fontWeight: 700, borderRadius: '0.25rem', padding: '0.1rem 0.4rem', marginLeft: '0.5rem', verticalAlign: 'middle' }}>
+                  -{Math.round((1 - getActiveDiscountPrice(product)! / product.price) * 100)}%
+                </span>
+              </div>
+            ) : (
+              <div className="pd-price"><PriceTag product={product} /></div>
+            )}
 
             {product.description && (
               <p className="pd-desc">{product.description}</p>

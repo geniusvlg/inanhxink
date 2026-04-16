@@ -6,6 +6,7 @@ import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import PriceTag from '../components/PriceTag';
 import './ScrapbookPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -15,10 +16,6 @@ const resolveUrl   = (url: string) => {
   if (CDN_URL && url.startsWith(S3_ORIGIN)) return CDN_URL + url.slice(S3_ORIGIN.length);
   return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 };
-
-function formatPrice(price: number): string {
-  return Math.round(price).toLocaleString('en') + 'đ';
-}
 
 export default function ScrapbookPage() {
   const { products_page_size } = useFeatureFlags();
@@ -118,7 +115,7 @@ export default function ScrapbookPage() {
                   </div>
                   <div className="product-card-info">
                     <div className="product-card-name">{p.name}</div>
-                    <div className="product-card-price">{formatPrice(p.price)}</div>
+                    <div className="product-card-price"><PriceTag product={p} /></div>
                   </div>
                 </Link>
               ))}
@@ -127,13 +124,16 @@ export default function ScrapbookPage() {
 
           {!loading && !error && products.length < total && (
             <div className="load-more-wrap">
-              <button
-                className="load-more-btn"
-                onClick={() => setPage(p => p + 1)}
-                disabled={loadingMore}
-              >
-                {loadingMore ? 'Đang tải...' : 'Tải thêm ↓'}
-              </button>
+              {loadingMore ? (
+                <img src="/load_more.gif" alt="Đang tải" className="load-more-icon" />
+              ) : (
+                <button
+                  className="load-more-btn"
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Tải thêm ↓
+                </button>
+              )}
             </div>
           )}
         </div>

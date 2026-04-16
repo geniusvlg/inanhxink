@@ -58,7 +58,7 @@ const router: Router = express.Router();
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
 
 // Valid template types that we have cloned
-const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace', 'lovedays'] as const;
+const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace', 'lovedays', 'birthday'] as const;
 type TemplateType = typeof VALID_TEMPLATE_TYPES[number];
 
 // Map the frontend template_type strings to the actual template folder names
@@ -67,6 +67,7 @@ const TEMPLATE_FOLDER_MAP: Record<string, string> = {
   loveletter: 'loveletter',
   galaxy: 'galaxy',
   lovedays: 'lovedays',
+  birthday: 'birthday',
 };
 
 interface OrderTotal {
@@ -164,6 +165,16 @@ interface CreateOrderBody {
   loveDaysTheme?: 'soft' | 'sunset' | 'night' | 'polaroid';
   loveDaysGalleryImages?: string[];
   loveDaysTimeline?: Array<{ date?: string; text?: string }>;
+  // Birthday specific
+  birthdayBackgroundText?: string;
+  birthdayBackgroundColor?: string;
+  birthdayTextColor?: { r: number; g: number; b: number };
+  birthdayHeartColor?: { r: number; g: number; b: number };
+  birthdayTitle?: string;        // shown as message #1 in countdown (default: Happy Birthday)
+  birthdayName?: string;         // shown as message #2 in countdown
+  birthdayAge?: string;        // shown as message #4 in countdown
+  birthdayDate?: string;       // shown as message #6 in countdown (e.g. "28.03.2006")
+  birthdayFinalText?: string;
   // Legacy / extras
   musicLink?: string;
   musicAdded?: boolean;
@@ -204,6 +215,15 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       loveDaysTheme,
       loveDaysGalleryImages = [],
       loveDaysTimeline = [],
+      birthdayBackgroundText,
+      birthdayBackgroundColor,
+      birthdayTextColor,
+      birthdayHeartColor,
+      birthdayTitle,
+      birthdayName,
+      birthdayAge,
+      birthdayDate,
+      birthdayFinalText,
     } = req.body;
 
     if (!qrName || !templateId) {
@@ -221,6 +241,16 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
         success: false,
         error: `Unknown template type. Supported: ${VALID_TEMPLATE_TYPES.join(', ')}`,
       });
+    }
+
+    // Birthday: finalText limited to 50 characters
+    if (resolvedTemplateType === 'birthday' && birthdayFinalText) {
+      if (birthdayFinalText.length > 50) {
+        return res.status(400).json({
+          success: false,
+          error: 'Lời chúc không được quá 50 ký tự',
+        });
+      }
     }
 
     // Build template_data JSON based on template type
@@ -255,6 +285,19 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       if ((templateData.popupImages as string[]).length === 0 && imageUrls.length > 2) {
         templateData.popupImages = imageUrls.slice(2);
       }
+    }
+    if (templateType === 'birthday') {
+      templateData.backgroundText  = birthdayBackgroundText  || 'I LOVE YOU';
+      templateData.backgroundColor = birthdayBackgroundColor || '#ffa3e0';
+      templateData.textColor       = birthdayTextColor       || { r: 179, g: 204, b: 255 };
+      templateData.heartColor      = birthdayHeartColor      || { r: 255, g: 105, b: 180 };
+      templateData.messages        = [
+        birthdayTitle  || 'Happy Birthday',
+        birthdayName || '',
+        birthdayAge  || '',
+        birthdayDate ? `${birthdayDate}.${new Date().getFullYear()}` : '',
+      ];
+      templateData.finalText       = birthdayFinalText || '';
     }
     if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
 
