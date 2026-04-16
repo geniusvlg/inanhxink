@@ -170,7 +170,8 @@ interface CreateOrderBody {
   birthdayBackgroundColor?: string;
   birthdayTextColor?: { r: number; g: number; b: number };
   birthdayHeartColor?: { r: number; g: number; b: number };
-  birthdayName?: string;       // shown as message #2 in countdown
+  birthdayTitle?: string;        // shown as message #1 in countdown (default: Happy Birthday)
+  birthdayName?: string;         // shown as message #2 in countdown
   birthdayAge?: string;        // shown as message #4 in countdown
   birthdayDate?: string;       // shown as message #6 in countdown (e.g. "28.03.2006")
   birthdayFinalText?: string;
@@ -218,6 +219,7 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       birthdayBackgroundColor,
       birthdayTextColor,
       birthdayHeartColor,
+      birthdayTitle,
       birthdayName,
       birthdayAge,
       birthdayDate,
@@ -241,13 +243,12 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       });
     }
 
-    // Birthday: finalText limited to 10 words
+    // Birthday: finalText limited to 50 characters
     if (resolvedTemplateType === 'birthday' && birthdayFinalText) {
-      const wordCount = birthdayFinalText.trim().split(/\s+/).filter(Boolean).length;
-      if (wordCount > 10) {
+      if (birthdayFinalText.length > 50) {
         return res.status(400).json({
           success: false,
-          error: 'Birthday message must be 10 words or fewer',
+          error: 'Lời chúc không được quá 50 ký tự',
         });
       }
     }
@@ -291,10 +292,10 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       templateData.textColor       = birthdayTextColor       || { r: 179, g: 204, b: 255 };
       templateData.heartColor      = birthdayHeartColor      || { r: 255, g: 105, b: 180 };
       templateData.messages        = [
-        'Happy Birthday',
+        birthdayTitle  || 'Happy Birthday',
         birthdayName || '',
         birthdayAge  || '',
-        birthdayDate || '',
+        birthdayDate ? `${birthdayDate}.${new Date().getFullYear()}` : '',
       ];
       templateData.finalText       = birthdayFinalText || '';
     }

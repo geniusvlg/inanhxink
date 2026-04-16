@@ -83,7 +83,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
             onClick={handleExtract}
             disabled={!rawUrl.trim() || !qrName?.trim() || extractState === 'loading' || extractState === 'success'}
           >
-            {extractState === 'loading' ? '...' : extractState === 'success' ? '✓' : 'Kiểm tra'}
+            {extractState === 'loading' ? <span className="music-spinner" /> : extractState === 'success' ? '✓' : 'Kiểm tra'}
           </button>
         </div>
       )}

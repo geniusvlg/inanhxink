@@ -49,10 +49,11 @@ function OrderPage() {
   const [loveDaysMessage, setLoveDaysMessage] = useState('');
   const [loveDaysTimeline, setLoveDaysTimeline] = useState<LoveDaysTimelineRow[]>([{ date: '', text: '' }]);
   // Birthday fields
+  const [birthdayTitle, setBirthdayTitle] = useState('Happy Birthday');
   const [birthdayName, setBirthdayName] = useState('');
   const [birthdayAge, setBirthdayAge] = useState('');
   const [birthdayDate, setBirthdayDate] = useState('');
-  const [birthdayDay, birthdayMonth] = birthdayDate.split('.');
+  const [birthdayDay = '', birthdayMonth = ''] = birthdayDate.split('.');
   const [birthdayFinalText, setBirthdayFinalText] = useState('');
   const [birthdayBackgroundText, setBirthdayBackgroundText] = useState('I LOVE YOU');
   const [submitting, setSubmitting] = useState(false);
@@ -254,6 +255,7 @@ function OrderPage() {
       setLoveDaysNameTo('');
       setLoveDaysMessage('');
       setLoveDaysTimeline([{ date: '', text: '' }]);
+      setBirthdayTitle('Happy Birthday');
       setBirthdayName('');
       setBirthdayAge('');
       setBirthdayDate('');
@@ -275,8 +277,8 @@ function OrderPage() {
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
     if (templateType !== 'lovedays' && templateType !== 'birthday' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
-    if (templateType === 'birthday' && birthdayFinalText.trim().split(/\s+/).filter(Boolean).length > 10) {
-      setError('Lời chúc không được quá 10 từ'); return;
+    if (templateType === 'birthday' && birthdayFinalText.length > 50) {
+      setError('Lời chúc không được quá 50 ký tự'); return;
     }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
 
@@ -336,6 +338,7 @@ function OrderPage() {
           loveDaysTimeline: parsedTimeline,
         }),
         ...(templateType === 'birthday' && {
+          birthdayTitle,
           birthdayName,
           birthdayAge,
           birthdayDate,
@@ -442,6 +445,17 @@ function OrderPage() {
             />
           </div>
           <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tiêu đề 🎉</label>
+            <input
+              type="text"
+              value={birthdayTitle}
+              onChange={e => setBirthdayTitle(e.target.value)}
+              placeholder="Ví dụ: Happy Birthday"
+              maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
             <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người được chúc 🎂</label>
             <input
               type="text"
@@ -468,11 +482,12 @@ function OrderPage() {
               <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày sinh nhật 📅</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <select
-                  value={birthdayDay || ''}
+                  value={birthdayDay}
                   onChange={e => {
                     const day = e.target.value;
-                    const month = birthdayMonth || '';
-                    setBirthdayDate(day && month ? `${day}.${month}` : '');
+                    const month = birthdayMonth;
+                    if (!day && !month) { setBirthdayDate(''); return; }
+                    setBirthdayDate(day ? (month ? `${day}.${month}` : `${day}.`) : `.${month}`);
                   }}
                   style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', background: '#fff' }}
                 >
@@ -482,11 +497,12 @@ function OrderPage() {
                   ))}
                 </select>
                 <select
-                  value={birthdayMonth || ''}
+                  value={birthdayMonth}
                   onChange={e => {
                     const month = e.target.value;
-                    const day = birthdayDay || '';
-                    setBirthdayDate(day && month ? `${day}.${month}` : '');
+                    const day = birthdayDay;
+                    if (!day && !month) { setBirthdayDate(''); return; }
+                    setBirthdayDate(day ? (month ? `${day}.${month}` : `${day}.`) : `.${month}`);
                   }}
                   style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', background: '#fff' }}
                 >
@@ -500,16 +516,21 @@ function OrderPage() {
             </div>
           </div>
           <div>
-            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời chúc ❤️ <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem' }}>(tối đa 10 từ)</span></label>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời chúc ❤️</label>
             <textarea
               value={birthdayFinalText}
-              onChange={e => setBirthdayFinalText(e.target.value)}
+              onChange={e => {
+                const val = e.target.value;
+                if (val.length <= 50) {
+                  setBirthdayFinalText(val);
+                }
+              }}
               placeholder="Ví dụ: Chúc em tuổi mới hạnh phúc bên anh nha"
               rows={2}
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
             />
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: birthdayFinalText.trim().split(/\s+/).filter(Boolean).length > 10 ? '#ef4444' : '#6b7280' }}>
-              {birthdayFinalText.trim().split(/\s+/).filter(Boolean).length}/10 từ
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: birthdayFinalText.length >= 50 ? '#ef4444' : '#6b7280', textAlign: 'right' }}>
+              {birthdayFinalText.length}/50
             </p>
           </div>
         </div>
