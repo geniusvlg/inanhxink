@@ -11,11 +11,11 @@ router.get('/', async (req: Request, res: Response) => {
     const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
     const offset = (page - 1) * limit;
 
-    const conditions: string[] = [];
+    const conditions: string[] = ['p.is_draft = false'];
     const params: unknown[] = [];
     let idx = 1;
     if (type) { conditions.push(`p.type = $${idx++}`); params.push(type); }
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const where = `WHERE ${conditions.join(' AND ')}`;
 
     const countResult = await db.query(
       `SELECT COUNT(DISTINCT p.id) AS total FROM products p ${where}`,
@@ -64,6 +64,51 @@ router.get('/:id', async (req: Request, res: Response) => {
     return res.json({ success: true, product: result.rows[0] });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
+  }
+});
+
+// POST /api/admin/products/check-name — check if a product name is already taken for a type
+router.post('/check-name', async (req: Request, res: Response) => {
+  const { name, type } = req.body as { name?: string; type?: string };
+  if (!name || !type) {
+    return res.status(400).json({ success: false, error: 'name and type are required' });
+  }
+  try {
+    const result = await db.query(
+      'SELECT id FROM products WHERE LOWER(name) = LOWER($1) AND type = $2 AND is_draft = false LIMIT 1',
+      [name.trim(), type]
+    );
+    if (result.rows.length > 0) {
+      return res.json({ success: true, available: false, message: 'Tên sản phẩm đã tồn tại' });
+    }
+    return res.json({ success: true, available: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: (err as Error).message });
+  }
+});
+
+// POST /api/admin/products/reserve — create a draft product to obtain an ID for S3 uploads
+// The draft is inactive and flagged; caller must PUT /:id to finalise or it will be cleaned up after 1 day
+router.post('/reserve', async (req: Request, res: Response) => {
+  const { name, type } = req.body as { name?: string; type?: string };
+  if (!name || !type) {
+    return res.status(400).json({ success: false, error: 'name and type are required' });
+  }
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const insert = await client.query(
+      `INSERT INTO products (name, type, price, images, is_active, is_draft)
+       VALUES ($1, $2, 0, '[]', false, true) RETURNING id`,
+      [name.trim(), type]
+    );
+    await client.query('COMMIT');
+    return res.status(201).json({ success: true, productId: insert.rows[0].id });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    return res.status(500).json({ success: false, error: (err as Error).message });
+  } finally {
+    client.release();
   }
 });
 
@@ -134,6 +179,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (discount_price !== undefined) allowed['discount_price'] = discount_price ?? null;
     if (discount_from  !== undefined) allowed['discount_from']  = discount_from  ?? null;
     if (discount_to    !== undefined) allowed['discount_to']    = discount_to    ?? null;
+    // Finalise a reserved draft when any real data is saved
+    allowed['is_draft'] = false;
 
     if (Object.keys(allowed).length > 0) {
       const setClauses = Object.keys(allowed).map((k, i) => `${k} = $${i + 1}`);
