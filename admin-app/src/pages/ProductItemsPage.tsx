@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as Sentry from '@sentry/react';
 import { productsApi, productCategoriesApi, uploadApi } from '../services/api';
 import { type Product, type ProductCategory } from '../types';
+import LoadingGif from '../components/LoadingGif';
 import '../components/Layout.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -478,7 +479,21 @@ export default function ProductItemsPage({ type }: Props) {
                 <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
                   💡 Ảnh đầu tiên sẽ được dùng làm thumbnail hiển thị ngoài danh sách.
                 </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
+                    minHeight: imageEntries.length === 0 && uploadingImages ? 180 : undefined,
+                    padding: uploadingImages ? '0.5rem' : 0,
+                    border: uploadingImages ? '1px dashed #e2e8f0' : 'none',
+                    borderRadius: uploadingImages ? 6 : 0,
+                    background: uploadingImages ? '#f8fafc' : 'transparent',
+                    transition: 'background 150ms ease',
+                  }}
+                >
                   {imageEntries.map(url => (
                     <div key={url} style={{ position: 'relative' }}>
                       <img
@@ -494,8 +509,26 @@ export default function ProductItemsPage({ type }: Props) {
                     </div>
                   ))}
                   {uploadingImages && (
-                    <div style={{ width: 72, height: 72, borderRadius: 4, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem' }}>
-                      Đang tải...
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        background: 'rgba(248, 250, 252, 0.85)',
+                        backdropFilter: 'blur(2px)',
+                        borderRadius: 6,
+                        zIndex: 2,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <LoadingGif size={140} label="Đang tải ảnh lên..." />
+                      <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+                        Đang tải ảnh lên...
+                      </span>
                     </div>
                   )}
                 </div>

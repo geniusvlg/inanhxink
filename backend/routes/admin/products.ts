@@ -11,11 +11,11 @@ router.get('/', async (req: Request, res: Response) => {
     const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
     const offset = (page - 1) * limit;
 
-    const conditions: string[] = [];
+    const conditions: string[] = ['p.is_draft = false'];
     const params: unknown[] = [];
     let idx = 1;
     if (type) { conditions.push(`p.type = $${idx++}`); params.push(type); }
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const where = `WHERE ${conditions.join(' AND ')}`;
 
     const countResult = await db.query(
       `SELECT COUNT(DISTINCT p.id) AS total FROM products p ${where}`,

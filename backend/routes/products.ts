@@ -12,7 +12,7 @@ router.get('/', async (req: Request, res: Response) => {
     const offset = (page - 1) * limit;
 
     const params: unknown[] = [];
-    const conditions: string[] = ['p.is_active = true'];
+    const conditions: string[] = ['p.is_active = true', 'p.is_draft = false'];
 
     if (type) {
       params.push(type);
@@ -91,7 +91,7 @@ router.get('/:id', async (req: Request, res: Response) => {
        FROM products p
        LEFT JOIN product_category_map m  ON m.product_id  = p.id
        LEFT JOIN product_categories   pc ON pc.id = m.category_id
-       WHERE p.id = $1 AND p.is_active = true
+       WHERE p.id = $1 AND p.is_active = true AND p.is_draft = false
        GROUP BY p.id`,
       [id]
     );
