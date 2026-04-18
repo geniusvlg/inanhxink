@@ -13,6 +13,7 @@ import KhacPage from './pages/KhacPage';
 import InAnhPage from './pages/InAnhPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
 // Ordered list of pages — homepage is the first enabled one
@@ -74,6 +75,7 @@ function App() {
   return (
     <FeatureFlagsProvider>
       <AppRoutes />
+      <FloatingContact />
     </FeatureFlagsProvider>
   );
 }

@@ -1,0 +1,135 @@
+.floating-contact {
+  position: fixed;
+  right: 14px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.fc-button {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.fc-button a {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.fc-button a:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.fc-instagram a {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+.fc-instagram a:hover {
+  box-shadow: 0 6px 18px rgba(225, 48, 108, 0.35);
+}
+
+.fc-instagram svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.fc-tiktok a {
+  background: #000;
+}
+
+.fc-tiktok a:hover {
+  box-shadow: 0 6px 18px rgba(254, 44, 85, 0.35);
+}
+
+.fc-facebook a {
+  background: #1877f2;
+}
+
+.fc-facebook a:hover {
+  box-shadow: 0 6px 18px rgba(24, 119, 242, 0.4);
+}
+
+.fc-zalo a {
+  background: #fff;
+  padding: 4px;
+}
+
+.fc-zalo a img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.fc-circle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 1;
+  animation: fc-ripple 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.fc-instagram .fc-circle {
+  background: #fcd9e3;
+}
+
+.fc-tiktok .fc-circle {
+  background: #d1d5db;
+}
+
+.fc-facebook .fc-circle {
+  background: #bfdbfe;
+}
+
+.fc-zalo .fc-circle {
+  background: #bfdbfe;
+}
+
+.fc-circle-1 { animation-delay: 0s; }
+.fc-circle-2 { animation-delay: 0.6s; }
+.fc-circle-3 { animation-delay: 1.2s; }
+
+@keyframes fc-ripple {
+  0%   { opacity: 0.7; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(2.4); }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .fc-circle { animation: none; opacity: 0; }
+}
+
+/* Small screens — tuck closer to the edge */
+@media (max-width: 480px) {
+  .floating-contact {
+    right: 10px;
+    bottom: 18px;
+    gap: 18px;
+  }
+  .fc-button {
+    width: 40px;
+    height: 40px;
+  }
+}
