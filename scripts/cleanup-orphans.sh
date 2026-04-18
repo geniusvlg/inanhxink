@@ -147,3 +147,46 @@ for PREFIX_WITH_SLASH in $UPLOAD_PREFIXES; do
 done
 
 echo "[$(date -Iseconds)] ✔ Audio cleanup complete. Prefixes cleaned: $AUDIO_CLEANED, skipped: $AUDIO_SKIPPED"
+
+
+# Remove orphan draft products (reserved but never finalised) older than 1 day,
+# along with their S3 image folders under products/<type>/product-<id>/
+STALE_DRAFTS=$(
+  cd "$PROJECT_DIR"
+  docker compose exec -T postgres \
+    psql -U "$DB_USER" "$DB_NAME" -t -A \
+    -c "SELECT id, type FROM products
+        WHERE is_draft = true
+          AND created_at < NOW() - INTERVAL '1 day';"
+)
+
+DRAFT_DELETED=0
+
+if [ -z "$STALE_DRAFTS" ]; then
+  echo "[$(date -Iseconds)] ✔ No orphaned draft products found."
+else
+  while IFS='|' read -r PRODUCT_ID PRODUCT_TYPE; do
+    [ -z "$PRODUCT_ID" ] && continue
+
+    PREFIX="products/$PRODUCT_TYPE/product-$PRODUCT_ID"
+
+    # Delete S3 folder (ignore errors if folder doesn't exist)
+    awscli s3 rm "s3://$S3_BUCKET/$PREFIX/" \
+      --recursive \
+      --endpoint-url "$S3_ENDPOINT" \
+      --region "$S3_REGION" 2>/dev/null || true
+
+    echo "[$(date -Iseconds)] 🗑  Deleted s3://$S3_BUCKET/$PREFIX/"
+
+    # Delete DB row
+    cd "$PROJECT_DIR"
+    docker compose exec -T postgres \
+      psql -U "$DB_USER" "$DB_NAME" -t -A \
+      -c "DELETE FROM products WHERE id = $PRODUCT_ID;"
+
+    echo "[$(date -Iseconds)] 🗑  Deleted draft product id=$PRODUCT_ID ($PRODUCT_TYPE)"
+    DRAFT_DELETED=$((DRAFT_DELETED + 1))
+  done <<< "$STALE_DRAFTS"
+fi
+
+echo "[$(date -Iseconds)] ✔ Draft product cleanup complete. Deleted: $DRAFT_DELETED"

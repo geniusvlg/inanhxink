@@ -70,11 +70,6 @@ function getDiscountStatusUi(status: DiscountStatus): { label: string; style: Re
   };
 }
 
-// Represents either an already-saved URL or a pending local file
-interface ImageEntry {
-  url: string;        // server URL (saved) or object URL (local preview)
-  file?: File;        // present only for pending local files
-}
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
   name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: false, tiktok_url: null, instagram_url: null, category_ids: [],
@@ -88,8 +83,11 @@ export default function ProductItemsPage({ type }: Props) {
   const [showModal, setShowModal]   = useState(false);
   const [editing, setEditing]       = useState<Product | null>(null);
   const [form, setForm]             = useState<Partial<Product> & { category_ids: number[] }>(emptyForm());
-  const [imageEntries, setImageEntries] = useState<ImageEntry[]>([]);
+  const [imageEntries, setImageEntries] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [reservedProductId, setReservedProductId] = useState<number | null>(null);
   const [saving, setSaving]         = useState(false);
+  const [nameCheckState, setNameCheckState] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [page, setPage]             = useState(1);
   const [total, setTotal]           = useState(0);
   const [limit, setLimit]           = useState(20);
@@ -116,41 +114,50 @@ export default function ProductItemsPage({ type }: Props) {
     setEditing(null);
     setForm(emptyForm());
     setImageEntries([]);
+    setReservedProductId(null);
+    setNameCheckState('idle');
     setShowModal(true);
   };
 
   const openEdit = (p: Product) => {
     setEditing(p);
     setForm({ ...p, category_ids: p.categories.map(c => c.id) });
-    setImageEntries(p.images.map(url => ({ url })));
+    setImageEntries(p.images);
+    setReservedProductId(null);
+    setNameCheckState('available');
     setShowModal(true);
   };
 
   const closeModal = () => {
-    // Revoke any object URLs to free memory
-    imageEntries.forEach(e => { if (e.file) URL.revokeObjectURL(e.url); });
     setShowModal(false);
     setEditing(null);
     setImageEntries([]);
+    setReservedProductId(null);
+    setNameCheckState('idle');
   };
 
-  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    const newEntries: ImageEntry[] = files.map(file => ({
-      url: URL.createObjectURL(file),
-      file,
-    }));
-    setImageEntries(prev => [...prev, ...newEntries]);
     if (fileRef.current) fileRef.current.value = '';
+
+    const productId = editing?.id ?? reservedProductId;
+    if (!productId) return;
+
+    setUploadingImages(true);
+    try {
+      const res = await uploadApi.images(files, `${type}/product-${productId}`, form.watermark_enabled ?? false);
+      setImageEntries(prev => [...prev, ...res.data.urls]);
+    } catch (err) {
+      Sentry.captureException(err);
+      alert('Lỗi khi tải ảnh lên');
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   const removeImage = (url: string) => {
-    setImageEntries(prev => {
-      const entry = prev.find(e => e.url === url);
-      if (entry?.file) URL.revokeObjectURL(entry.url);
-      return prev.filter(e => e.url !== url);
-    });
+    setImageEntries(prev => prev.filter(u => u !== url));
   };
 
   const toggleCategory = (id: number) => {
@@ -163,45 +170,36 @@ export default function ProductItemsPage({ type }: Props) {
     });
   };
 
+  const handleCheckName = async () => {
+    const name = form.name?.trim() ?? '';
+    if (!name) return;
+    setNameCheckState('checking');
+    try {
+      const checkRes = await productsApi.checkName(name, type);
+      if (!checkRes.data.available) {
+        setNameCheckState('taken');
+        return;
+      }
+      const reserveRes = await productsApi.reserve(name, type);
+      setReservedProductId(reserveRes.data.productId);
+      setNameCheckState('available');
+    } catch {
+      setNameCheckState('idle');
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editing && nameCheckState !== 'available') return;
     setSaving(true);
     try {
-      const pendingFiles = imageEntries.filter(e => e.file).map(e => e.file!);
-      const savedUrls    = imageEntries.filter(e => !e.file).map(e => e.url);
-
-      if (editing) {
-        // Upload new files (if any) to the product's own folder
-        let uploadedUrls: string[] = [];
-        if (pendingFiles.length) {
-          const res = await uploadApi.images(pendingFiles, `${type}/product-${editing.id}`, form.watermark_enabled ?? false);
-          uploadedUrls = res.data.urls;
-        }
-        await productsApi.update(editing.id, {
-          ...form,
-          type,
-          images: [...savedUrls, ...uploadedUrls],
-        });
-      } else {
-        // Create product as inactive first (avoids showing imageless product publicly)
-        const created = await productsApi.create({ ...form, type, images: [], is_active: false });
-        const productId = created.data.product.id;
-
-        try {
-          let images: string[] = [];
-          if (pendingFiles.length) {
-            const res = await uploadApi.images(pendingFiles, `${type}/product-${productId}`, form.watermark_enabled ?? false);
-            images = res.data.urls;
-          }
-          // Activate + attach images in one update
-          await productsApi.update(productId, { images, is_active: form.is_active ?? true });
-        } catch (err) {
-          // Rollback: remove the product so no ghost entries are left
-          await productsApi.delete(productId);
-          throw err;
-        }
-      }
-
+      const productId = editing?.id ?? reservedProductId!;
+      await productsApi.update(productId, {
+        ...form,
+        type,
+        images: imageEntries,
+        is_active: form.is_active ?? true,
+      });
       closeModal();
       load();
     } catch (err) {
@@ -353,7 +351,37 @@ export default function ProductItemsPage({ type }: Props) {
               {/* Name */}
               <div className="form-group">
                 <label className="form-label">Tên * <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(tối đa 50 ký tự)</span></label>
-                <input className="form-input" value={form.name ?? ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} maxLength={50} required />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    className="form-input"
+                    value={form.name ?? ''}
+                    onChange={e => {
+                      setForm(f => ({ ...f, name: e.target.value }));
+                      if (!editing) setNameCheckState('idle');
+                    }}
+                    maxLength={50}
+                    required
+                    disabled={!!editing}
+                    style={{ flex: 1 }}
+                  />
+                  {!editing && (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={handleCheckName}
+                      disabled={!form.name?.trim() || nameCheckState === 'checking'}
+                      style={{ whiteSpace: 'nowrap' }}
+                    >
+                      {nameCheckState === 'checking' ? 'Đang kiểm tra...' : 'Kiểm tra'}
+                    </button>
+                  )}
+                </div>
+                {!editing && nameCheckState === 'available' && (
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#16a34a' }}>✓ Tên hợp lệ, có thể sử dụng</p>
+                )}
+                {!editing && nameCheckState === 'taken' && (
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#dc2626' }}>✗ Tên đã tồn tại, vui lòng chọn tên khác</p>
+                )}
               </div>
 
               {/* Description */}
@@ -451,20 +479,25 @@ export default function ProductItemsPage({ type }: Props) {
                   💡 Ảnh đầu tiên sẽ được dùng làm thumbnail hiển thị ngoài danh sách.
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  {imageEntries.map(entry => (
-                    <div key={entry.url} style={{ position: 'relative' }}>
+                  {imageEntries.map(url => (
+                    <div key={url} style={{ position: 'relative' }}>
                       <img
-                        src={entry.file ? entry.url : resolveUrl(entry.url)}
+                        src={resolveUrl(url)}
                         alt=""
                         style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }}
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(entry.url)}
+                        onClick={() => removeImage(url)}
                         style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
                       >×</button>
                     </div>
                   ))}
+                  {uploadingImages && (
+                    <div style={{ width: 72, height: 72, borderRadius: 4, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem' }}>
+                      Đang tải...
+                    </div>
+                  )}
                 </div>
                 <input
                   ref={fileRef}
@@ -474,6 +507,7 @@ export default function ProductItemsPage({ type }: Props) {
                   className="form-input"
                   style={{ padding: '0.35rem' }}
                   onChange={handleImagePick}
+                  disabled={!editing && !reservedProductId}
                 />
               </div>
 
@@ -532,7 +566,7 @@ export default function ProductItemsPage({ type }: Props) {
 
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={closeModal}>Huỷ</button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+                <button type="submit" className="btn-primary" disabled={saving || (!editing && nameCheckState !== 'available')}>
                   {saving ? 'Đang lưu...' : 'Lưu'}
                 </button>
               </div>

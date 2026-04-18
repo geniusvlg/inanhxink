@@ -276,7 +276,7 @@ function OrderPage() {
 
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
-    if (templateType !== 'lovedays' && templateType !== 'birthday' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (templateType !== 'letterinspace' && templateType !== 'lovedays' && templateType !== 'birthday' && templateType !== 'galaxy' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
     if (templateType === 'birthday' && birthdayFinalText.length > 50) {
       setError('Lời chúc không được quá 50 ký tự'); return;
     }
@@ -389,7 +389,7 @@ function OrderPage() {
         <LetterInSpaceForm value={content} onChange={setContent} />
       )}
 
-      {templateType !== 'letterinspace' && templateType !== 'lovedays' && templateType !== 'birthday' && (
+      {templateType !== 'letterinspace' && templateType !== 'lovedays' && templateType !== 'birthday' && templateType !== 'galaxy' && (
         <ContentEditor value={content} onChange={setContent} />
       )}
 

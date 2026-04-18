@@ -21,7 +21,7 @@ interface Props {
   className?: string;
 }
 
-/** Renders price — shows sale price + struck-through original when a discount is active. */
+/** Renders price — shows sale price + struck-through original + % off when a discount is active. */
 export default function PriceTag({ product, className }: Props) {
   const salePrice = getActiveDiscountPrice(product);
 
@@ -29,10 +29,28 @@ export default function PriceTag({ product, className }: Props) {
     return <span className={className}>{fmt(product.price)}</span>;
   }
 
+  const percentOff =
+    product.price > 0 ? Math.round(((product.price - salePrice) / product.price) * 100) : 0;
+
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em', flexWrap: 'wrap' }}>
       <span style={{ color: '#fe2c56', fontWeight: 700 }}>{fmt(salePrice)}</span>
       <span style={{ color: '#9ca3af', fontWeight: 400, textDecoration: 'line-through', fontSize: '0.875em' }}>{fmt(product.price)}</span>
+      {percentOff > 0 && (
+        <span
+          style={{
+            color: '#fe2c56',
+            fontWeight: 700,
+            fontSize: '0.75em',
+            background: '#ffe5ea',
+            padding: '0.1em 0.4em',
+            borderRadius: '0.25em',
+            lineHeight: 1.4,
+          }}
+        >
+          -{percentOff}%
+        </span>
+      )}
     </span>
   );
 }
