@@ -16,6 +16,7 @@ import InAnhPage from './pages/InAnhPage';
 import CategoriesPage from './pages/CategoriesPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import BannersPage from './pages/BannersPage';
+import HeroShotsPage from './pages/HeroShotsPage';
 import FeaturedOnHomePage from './pages/FeaturedOnHomePage';
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/vouchers"         element={<VouchersPage />} />
               <Route path="/testimonials"     element={<TestimonialsPage />} />
               <Route path="/banners"          element={<BannersPage />} />
+              <Route path="/hero-shots"       element={<HeroShotsPage />} />
               <Route path="/config"           element={<ConfigPage />} />
             </Route>
           </Route>

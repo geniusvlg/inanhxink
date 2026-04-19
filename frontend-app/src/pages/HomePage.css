@@ -195,6 +195,33 @@
   transform: rotate(var(--tilt, 0deg));
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   width: 220px;
+  /* Default pin color — overridden per polaroid for variety. */
+  --pin-color: #fe2c56;
+}
+
+/* Decorative push-pin at the top-center of each polaroid. The radial
+   highlight + inset shadows fake a glossy 3D bead, and the outer
+   box-shadow provides the cast shadow on the photo below. */
+.polaroid::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.85) 0%,
+      rgba(255, 255, 255, 0) 45%),
+    var(--pin-color);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.22),
+    0 3px 5px rgba(40, 20, 30, 0.28);
+  z-index: 6;
+  pointer-events: none;
 }
 
 .polaroid:hover {
@@ -224,9 +251,9 @@
 }
 
 /* Stagger the 3 polaroids — clean overlapping arrangement */
-.polaroid-0 { top:   10px; right: 180px; z-index: 3; --tilt: -4deg; }
-.polaroid-1 { top:   60px; right:  20px; z-index: 2; --tilt:  5deg; }
-.polaroid-2 { top:  220px; right: 110px; z-index: 4; --tilt: -2deg; }
+.polaroid-0 { top:   10px; right: 180px; z-index: 3; --tilt: -4deg; --pin-color: #fe2c56; } /* brand red */
+.polaroid-1 { top:   60px; right:  20px; z-index: 2; --tilt:  5deg; --pin-color: #f7c948; } /* warm gold */
+.polaroid-2 { top:  220px; right: 110px; z-index: 4; --tilt: -2deg; --pin-color: #ff8fb1; } /* soft pink */
 
 /* ── Wavy divider between hero & products ─────────────────────────────── */
 
@@ -365,11 +392,22 @@
   }
   .hero-copy { max-width: 100%; text-align: center; margin: 0 auto; }
   .hero-ctas { justify-content: center; }
-  .hero-collage { height: 360px; max-width: 480px; margin: 0 auto; }
-  .polaroid { width: 180px; }
-  .polaroid-0 { top:   0px; right: 50%;  transform: translateX(50%) rotate(-4deg); }
-  .polaroid-1 { top:  40px; right: 5%;   }
-  .polaroid-2 { top: 200px; right: 35%;  }
+  /* Symmetric collage on tablet / small desktop: photo 0 on the left,
+     photo 1 mirrored on the right, photo 2 centered below. Container
+     width is set explicitly (rather than max-width) so all three cards
+     have a fixed canvas to anchor to and the cluster doesn't drift. */
+  .hero-collage {
+    position: relative;
+    width: 460px;
+    max-width: 100%;
+    height: 380px;
+    margin: 0 auto;
+  }
+  .polaroid     { width: 180px; }
+  .polaroid-0   { top:   0px; left:   0;  right: auto; --tilt: -5deg; z-index: 3; }
+  .polaroid-1   { top:  35px; right:  0;  left:  auto; --tilt:  5deg; z-index: 2; }
+  .polaroid-2   { top: 200px; left:  50%; right: auto; --tilt: -2deg; z-index: 4;
+                  margin-left: -90px; /* (180 / 2) keeps the card centered */ }
 }
 
 @media (max-width: 900px) {
@@ -383,12 +421,23 @@
   .homepage-hero { padding: 3rem 1rem 4rem; }
   .hero-title    { font-size: 2.8rem; }
   .hero-desc     { font-size: 0.98rem; }
-  .hero-collage  { height: 320px; }
-  .polaroid      { width: 150px; padding: 0.5rem 0.5rem 0.3rem; }
-  .polaroid-cap  { font-size: 1.05rem; }
-  .polaroid-0 { top:   0px; right: 50%;  transform: translateX(50%) rotate(-4deg); }
-  .polaroid-1 { top:  30px; right: 4%; }
-  .polaroid-2 { top: 170px; right: 30%; }
+  /* Phone version of the desktop overlapping cluster — same right-anchored
+     positions and tilts as the default PC rules, scaled ≈ 0.73× to fit a
+     320px container. Keeps the asymmetric "tossed onto the corkboard" feel
+     instead of a symmetric left/right split. */
+  .hero-collage {
+    position: relative;
+    width: 320px;
+    max-width: 100%;
+    height: 360px;
+    margin: 0 auto;
+  }
+  .polaroid     { width: 160px; padding: 0.55rem 0.55rem 0.35rem; }
+  .polaroid-cap { font-size: 1.05rem; }
+  .polaroid-0   { top:   8px; right: 130px; left: auto; --tilt: -4deg; z-index: 3; }
+  .polaroid-1   { top:  45px; right:  15px; left: auto; --tilt:  5deg; z-index: 2; }
+  .polaroid-2   { top: 160px; right:  80px; left: auto; --tilt: -2deg; z-index: 4;
+                  margin-left: 0; }
 
   .homepage-products { padding: 2rem 1rem 2.5rem; }
   .homepage-grid {
@@ -402,6 +451,13 @@
 
 @media (max-width: 380px) {
   .homepage-grid { grid-template-columns: 1fr; }
+  /* Same PC-style overlapping arrangement, shrunk again for very narrow
+     phones (≤380px) so nothing clips the viewport edges. */
+  .hero-collage { width: 290px; height: 330px; }
+  .polaroid     { width: 145px; }
+  .polaroid-0   { top:   6px; right: 120px; left: auto; }
+  .polaroid-1   { top:  40px; right:  12px; left: auto; }
+  .polaroid-2   { top: 145px; right:  72px; left: auto; margin-left: 0; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

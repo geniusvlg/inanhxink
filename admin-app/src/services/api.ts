@@ -107,6 +107,15 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+  heroShots: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=hero-shots',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
   /** Best-effort removal of S3 objects by their public URLs. Used to clean
    *  up orphans from cancelled uploads. Never throws — caller can fire-and-forget. */
   deleteMany: (urls: string[]) =>
@@ -120,11 +129,12 @@ export const uploadApi = {
 };
 
 export type TestimonialBulkItem = {
-  image_url:      string;
-  platform?:      string;
-  reviewer_name?: string | null;
-  caption?:       string | null;
-  is_featured?:   boolean;
+  image_url:            string;
+  platform?:            string;
+  reviewer_name?:       string | null;
+  caption?:             string | null;
+  is_featured?:         boolean;
+  is_featured_on_home?: boolean;
 };
 
 export const bannersApi = {
@@ -134,6 +144,17 @@ export const bannersApi = {
   reorder: (items: { id: number; sort_order: number }[]) =>
     api.patch('/api/admin/banners/reorder', { items }),
   delete:  (id: number)                => api.delete(`/api/admin/banners/${id}`),
+};
+
+export const heroShotsApi = {
+  list:   () => api.get<{ success: boolean; hero_shots: import('../types').HeroShot[] }>(
+    '/api/admin/hero-shots',
+  ),
+  update: (slot: 0 | 1 | 2, data: { image_url?: string | null; caption?: string | null }) =>
+    api.put<{ success: boolean; hero_shot: import('../types').HeroShot }>(
+      `/api/admin/hero-shots/${slot}`,
+      data,
+    ),
 };
 
 export const testimonialsApi = {

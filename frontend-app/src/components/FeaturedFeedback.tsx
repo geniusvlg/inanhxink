@@ -11,8 +11,9 @@ const PLATFORM_LABEL: Record<TestimonialPlatform, string> = {
 };
 
 interface Props {
-  /** All testimonials — the section internally picks featured ones (or
-   *  falls back to the most recent if there are no featured rows). */
+  /** All testimonials — the section displays only those flagged for the
+   *  homepage (`is_featured_on_home`). Admins curate which ones appear here
+   *  separately from the masonry /danh-gia page. */
   testimonials: Testimonial[];
   /** Max number of cards to display. */
   limit?: number;
@@ -21,8 +22,9 @@ interface Props {
 export default function FeaturedFeedback({ testimonials, limit = 12 }: Props) {
   const [lightbox, setLightbox] = useState<Testimonial | null>(null);
 
-  const featured = testimonials.filter(t => t.is_featured);
-  const display  = (featured.length > 0 ? featured : testimonials).slice(0, limit);
+  const display = testimonials
+    .filter(t => t.is_featured_on_home)
+    .slice(0, limit);
 
   if (display.length === 0) return null;
 

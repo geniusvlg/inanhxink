@@ -27,15 +27,16 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // POST /api/admin/testimonials
-// Body: { image_url, platform?, reviewer_name?, caption?, is_featured? }
+// Body: { image_url, platform?, reviewer_name?, caption?, is_featured?, is_featured_on_home? }
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { image_url, platform, reviewer_name, caption, is_featured } = req.body as {
+    const { image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home } = req.body as {
       image_url?: string;
       platform?: string;
       reviewer_name?: string | null;
       caption?: string | null;
       is_featured?: boolean;
+      is_featured_on_home?: boolean;
     };
     if (!image_url) {
       return res.status(400).json({ success: false, error: 'image_url required' });
@@ -46,8 +47,8 @@ router.post('/', async (req: Request, res: Response) => {
     );
 
     const result = await db.query(
-      `INSERT INTO testimonials (image_url, platform, reviewer_name, caption, is_featured, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO testimonials (image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         image_url,
@@ -55,6 +56,7 @@ router.post('/', async (req: Request, res: Response) => {
         reviewer_name ?? null,
         caption ?? null,
         is_featured ?? false,
+        is_featured_on_home ?? false,
         nextOrder.rows[0].next,
       ],
     );
@@ -74,6 +76,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
     reviewer_name?: string | null;
     caption?: string | null;
     is_featured?: boolean;
+    is_featured_on_home?: boolean;
   };
 
   const body = req.body as { items?: BulkItem[]; image_urls?: string[] };
@@ -106,14 +109,15 @@ router.post('/bulk', async (req: Request, res: Response) => {
     for (const it of items) {
       order += 1;
       const r = await client.query(
-        `INSERT INTO testimonials (image_url, platform, reviewer_name, caption, is_featured, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        `INSERT INTO testimonials (image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
         [
           it.image_url,
           normalisePlatform(it.platform),
           it.reviewer_name?.trim() ? it.reviewer_name.trim() : null,
           it.caption?.trim()       ? it.caption.trim()       : null,
           Boolean(it.is_featured),
+          Boolean(it.is_featured_on_home),
           order,
         ],
       );
@@ -132,20 +136,22 @@ router.post('/bulk', async (req: Request, res: Response) => {
 // PUT /api/admin/testimonials/:id
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { image_url, platform, reviewer_name, caption, is_featured } = req.body as {
+    const { image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home } = req.body as {
       image_url?: string;
       platform?: string;
       reviewer_name?: string | null;
       caption?: string | null;
       is_featured?: boolean;
+      is_featured_on_home?: boolean;
     };
 
     const allowed: Record<string, unknown> = {};
-    if (image_url     !== undefined) allowed['image_url']     = image_url;
-    if (platform      !== undefined) allowed['platform']      = normalisePlatform(platform);
-    if (reviewer_name !== undefined) allowed['reviewer_name'] = reviewer_name ?? null;
-    if (caption       !== undefined) allowed['caption']       = caption       ?? null;
-    if (is_featured   !== undefined) allowed['is_featured']   = is_featured;
+    if (image_url           !== undefined) allowed['image_url']           = image_url;
+    if (platform            !== undefined) allowed['platform']            = normalisePlatform(platform);
+    if (reviewer_name       !== undefined) allowed['reviewer_name']       = reviewer_name ?? null;
+    if (caption             !== undefined) allowed['caption']             = caption       ?? null;
+    if (is_featured         !== undefined) allowed['is_featured']         = is_featured;
+    if (is_featured_on_home !== undefined) allowed['is_featured_on_home'] = is_featured_on_home;
 
     if (Object.keys(allowed).length === 0) {
       return res.status(400).json({ success: false, error: 'No fields to update' });

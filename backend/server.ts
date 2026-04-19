@@ -180,6 +180,7 @@ import metadataRouter from './routes/metadata';
 import productsRouter from './routes/products';
 import testimonialsRouter from './routes/testimonials';
 import bannersRouter from './routes/banners';
+import heroShotsRouter from './routes/heroShots';
 
 app.use('/api/templates', templatesRouter);
 app.use('/api/vouchers', vouchersRouter);
@@ -191,6 +192,7 @@ app.use('/api/metadata', metadataRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/testimonials', testimonialsRouter);
 app.use('/api/banners', bannersRouter);
+app.use('/api/hero-shots', heroShotsRouter);
 
 import categoriesRouter from './routes/categories';
 app.use('/api/categories', categoriesRouter);
@@ -213,11 +215,13 @@ import adminProductsRouter           from './routes/admin/products';
 import adminProductCategoriesRouter  from './routes/admin/product-categories';
 import adminTestimonialsRouter       from './routes/admin/testimonials';
 import adminBannersRouter            from './routes/admin/banners';
+import adminHeroShotsRouter          from './routes/admin/heroShots';
 import adminUploadsRouter            from './routes/admin/uploads';
 app.use('/api/admin/products',           requireAdmin, adminProductsRouter);
 app.use('/api/admin/product-categories', requireAdmin, adminProductCategoriesRouter);
 app.use('/api/admin/testimonials',       requireAdmin, adminTestimonialsRouter);
 app.use('/api/admin/banners',            requireAdmin, adminBannersRouter);
+app.use('/api/admin/hero-shots',         requireAdmin, adminHeroShotsRouter);
 app.use('/api/admin/uploads',            requireAdmin, adminUploadsRouter);
 
 // ── Template serving helpers ─────────────────────────────────────────────────

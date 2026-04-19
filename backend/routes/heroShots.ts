@@ -3,16 +3,17 @@ import db from '../config/database';
 
 const router = Router();
 
-// GET /api/testimonials — public list, ordered by featured/sort/created
+// GET /api/hero-shots — public, returns the 3 hero polaroid slots ordered
+// by slot (0, 1, 2). Slots without an image are still returned so the
+// frontend can decide how to render fallbacks.
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const result = await db.query(
-      `SELECT id, image_url, platform, reviewer_name, caption,
-              is_featured, is_featured_on_home
-       FROM testimonials
-       ORDER BY is_featured DESC, sort_order ASC, created_at DESC`,
+      `SELECT slot, image_url, caption
+         FROM hero_shots
+        ORDER BY slot ASC`,
     );
-    return res.json({ success: true, testimonials: result.rows });
+    return res.json({ success: true, hero_shots: result.rows });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }
