@@ -18,25 +18,12 @@ import HomePage from './pages/HomePage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
-// Ordered list of pages — `/` resolves to the first enabled one
-const NAV_PAGES: { flag: keyof FeatureFlags; path: string }[] = [
-  { flag: 'page_qr_yeu_thuong',     path: '/qr-yeu-thuong' },
-  { flag: 'page_thiep',             path: '/thiep' },
-  { flag: 'page_khung_anh',         path: '/khung-anh' },
-  { flag: 'page_so_scrapbook',      path: '/so-scrapbook' },
-  { flag: 'page_set_qua_tang',      path: '/set-qua-tang' },
-  { flag: 'page_cac_san_pham_khac', path: '/cac-san-pham-khac' },
-  { flag: 'page_in_anh',            path: '/in-anh' },
-];
-
-// Redirects `/` to the first enabled category page (legacy behaviour).
+// Always send `/` to the cute homepage.
 function HomeRedirect() {
-  const flags = useFeatureFlags();
-  const first = NAV_PAGES.find(p => flags[p.flag]);
-  return <Navigate to={first ? first.path : '/home'} replace />;
+  return <Navigate to="/home" replace />;
 }
 
-// Renders `element` when the flag is enabled, otherwise redirects to `/`.
+// Renders `element` when the flag is enabled, otherwise redirects to `/home`.
 function FlaggedRoute({ flag, element }: { flag: keyof FeatureFlags; element: ReactElement }) {
   const flags = useFeatureFlags();
   return flags[flag] ? element : <HomeRedirect />;
