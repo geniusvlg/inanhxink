@@ -169,14 +169,10 @@ export const getCategories = async (type?: string): Promise<{ id: number; name: 
   return response.data.categories ?? [];
 };
 
-// Testimonials (customer review screenshots from external platforms)
-export type TestimonialPlatform =
-  | 'tiktok' | 'zalo' | 'instagram' | 'other';
-
+// Testimonials (customer review screenshots)
 export interface Testimonial {
   id: number;
   image_url: string;
-  platform: TestimonialPlatform;
   reviewer_name: string | null;
   caption: string | null;
   is_featured: boolean;
@@ -186,6 +182,36 @@ export interface Testimonial {
 export const getTestimonials = async (): Promise<Testimonial[]> => {
   const response = await api.get<{ success: boolean; testimonials: Testimonial[] }>('/api/testimonials');
   return response.data.testimonials ?? [];
+};
+
+// Paginated fetch for the public /danh-gia masonry. Page size is admin-tunable
+// via the `testimonials_page_size` metadata key (exposed through useFeatureFlags).
+export interface TestimonialsPage {
+  testimonials: Testimonial[];
+  total:        number;
+  page:         number;
+  page_size:    number;
+  total_pages:  number;
+}
+
+export const getTestimonialsPaginated = async (
+  params: { page: number; page_size?: number },
+): Promise<TestimonialsPage> => {
+  const response = await api.get<{
+    success: boolean;
+    testimonials: Testimonial[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  }>('/api/testimonials', { params });
+  return {
+    testimonials: response.data.testimonials ?? [],
+    total:        response.data.total       ?? 0,
+    page:         response.data.page        ?? params.page,
+    page_size:    response.data.page_size   ?? params.page_size ?? 12,
+    total_pages:  response.data.total_pages ?? 1,
+  };
 };
 
 // Homepage banners (admin-managed hero slides)

@@ -10,6 +10,7 @@ export interface FeatureFlags {
   page_set_qua_tang:       boolean;
   page_in_anh:             boolean;
   products_page_size:      number;
+  testimonials_page_size:  number;
 }
 
 const DEFAULTS: FeatureFlags = {
@@ -21,6 +22,7 @@ const DEFAULTS: FeatureFlags = {
   page_set_qua_tang:       true,
   page_in_anh:             true,
   products_page_size:      12,
+  testimonials_page_size:  12,
 };
 
 const FeatureFlagsContext = createContext<FeatureFlags>(DEFAULTS);
@@ -42,6 +44,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           page_set_qua_tang:      c.page_set_qua_tang      !== 'false',
           page_in_anh:            c.page_in_anh            !== 'false',
           products_page_size:     Math.max(1, parseInt(c.products_page_size) || 12),
+          testimonials_page_size: Math.max(1, parseInt(c.testimonials_page_size) || 12),
         });
       })
       .catch(() => { /* keep defaults — all enabled */ });

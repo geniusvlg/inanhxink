@@ -24,13 +24,13 @@
 }
 
 .ff-title {
-  font-family: 'Dancing Script', cursive;
-  font-size: 2.25rem;
+  font-family: inherit;
+  font-size: 1.7rem;
   font-weight: 700;
   color: var(--ff-accent);
   margin: 0 0 0.15rem;
-  letter-spacing: 0;
-  line-height: 1.1;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -59,9 +59,18 @@
 /* Card grid — auto-fills as more feedback is added, capping cards at a
    readable size on ultra-wide displays. */
 .ff-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1rem;
+}
+
+.ff-grid .ff-card {
+  /* Fixed-ish width so flex centers naturally when there are only a few
+     cards. flex-basis lets them sit comfortably on wider screens, and the
+     min/max keeps every card the same size in a row. */
+  flex: 0 1 200px;
+  max-width: 220px;
 }
 
 .ff-card {
@@ -109,46 +118,6 @@
 
 .ff-card:hover .ff-card-img-wrap img {
   transform: scale(1.03);
-}
-
-.ff-platform {
-  position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
-  padding: 0.22rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.02em;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
-}
-
-.ff-platform-tiktok    { background: #000; }
-.ff-platform-zalo      { background: #0068ff; }
-.ff-platform-instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-.ff-platform-other     { background: #6b7280; }
-
-.ff-card-meta {
-  padding: 0.7rem 0.85rem 0.85rem;
-  border-top: 1px solid var(--ff-accent-tint);
-}
-
-.ff-card-name {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.2rem;
-}
-
-.ff-card-caption {
-  font-size: 0.85rem;
-  color: #4b5563;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* CTA */
@@ -222,7 +191,8 @@
     margin: 1.5rem 0;
     padding: 0 1rem;
   }
-  .ff-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+  .ff-grid       { gap: 0.75rem; }
+  .ff-grid .ff-card { flex: 0 1 160px; max-width: 180px; }
 }
 
 @media (max-width: 560px) {
@@ -230,12 +200,10 @@
     margin: 1rem 0;
     padding: 0 0.75rem;
   }
-  .ff-title    { font-size: 1.7rem; }
+  .ff-title    { font-size: 1.35rem; }
+  /* Two cards per row on phones — keep them centred within the viewport. */
   .ff-subtitle { font-size: 0.8rem; }
-  .ff-grid     { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .ff-grid     { gap: 0.5rem; }
+  .ff-grid .ff-card { flex: 1 1 calc(50% - 0.25rem); max-width: calc(50% - 0.25rem); }
   .ff-card-img-wrap { aspect-ratio: 1 / 1; }
-  .ff-card-meta { padding: 0.5rem 0.55rem 0.6rem; }
-  .ff-card-name { font-size: 0.78rem; }
-  .ff-card-caption { font-size: 0.72rem; -webkit-line-clamp: 1; }
-  .ff-platform { font-size: 0.62rem; padding: 0.15rem 0.45rem; }
 }

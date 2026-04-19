@@ -74,10 +74,6 @@
   transform: translateY(-3px);
 }
 
-.masonry-card--featured .masonry-img-wrap {
-  box-shadow: 0 0 0 2px #fe2c56, 0 6px 18px rgba(254, 44, 86, 0.18);
-}
-
 .masonry-img-wrap {
   position: relative;
   border-radius: 0.75rem;
@@ -91,26 +87,6 @@
   height: auto;
   display: block;
 }
-
-.masonry-platform-badge {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.platform-tiktok    { background: #000;     }
-.platform-zalo      { background: #0068ff; }
-.platform-instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-.platform-other     { background: #6b7280; }
 
 .masonry-featured-badge {
   position: absolute;
@@ -142,6 +118,14 @@
   font-size: 0.85rem;
   color: #4b5563;
   line-height: 1.45;
+}
+
+/* "Đang hiển thị X / Y đánh giá" — mirrors the product-list result bar. */
+.testimonials-result-bar {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
 /* Lightbox (re-used styling from earlier) */

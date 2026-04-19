@@ -1,7 +1,13 @@
 import { Router, Request, Response } from 'express';
 import db from '../config/database';
+import { rewriteRowImageFields } from '../config/cdn';
 
 const router = Router();
+
+// All public product endpoints rewrite the `images` JSONB array from raw
+// S3 URLs to public CDN URLs. The DB always stores raw S3.
+const withCdn = <T extends Record<string, unknown>>(row: T) =>
+  rewriteRowImageFields(row, { array: ['images'] });
 
 // GET /api/products?type=&category_ids=1,2&min_price=&max_price=&sort=newest|price_asc|price_desc&page=1&limit=12
 router.get('/', async (req: Request, res: Response) => {
@@ -71,7 +77,7 @@ router.get('/', async (req: Request, res: Response) => {
       params
     );
 
-    return res.json({ success: true, products: result.rows, total, page, limit });
+    return res.json({ success: true, products: result.rows.map(withCdn), total, page, limit });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }
@@ -103,7 +109,7 @@ router.get('/featured-on-home', async (_req: Request, res: Response) => {
         GROUP BY p.id
         ORDER BY p.home_sort_order ASC, p.id ASC`
     );
-    return res.json({ success: true, products: result.rows });
+    return res.json({ success: true, products: result.rows.map(withCdn) });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }
@@ -130,7 +136,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Product not found' });
     }
-    return res.json({ success: true, product: result.rows[0] });
+    return res.json({ success: true, product: withCdn(result.rows[0]) });
   } catch (err) {
     return res.status(500).json({ success: false, error: (err as Error).message });
   }

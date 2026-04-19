@@ -4,15 +4,6 @@ import { deleteFromS3 } from '../../config/s3';
 
 const router = Router();
 
-const ALLOWED_PLATFORMS = new Set([
-  'tiktok', 'zalo', 'instagram', 'other',
-]);
-
-function normalisePlatform(p: unknown): string {
-  if (typeof p === 'string' && ALLOWED_PLATFORMS.has(p)) return p;
-  return 'other';
-}
-
 // GET /api/admin/testimonials
 router.get('/', async (_req: Request, res: Response) => {
   try {
@@ -27,12 +18,11 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // POST /api/admin/testimonials
-// Body: { image_url, platform?, reviewer_name?, caption?, is_featured?, is_featured_on_home? }
+// Body: { image_url, reviewer_name?, caption?, is_featured?, is_featured_on_home? }
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home } = req.body as {
+    const { image_url, reviewer_name, caption, is_featured, is_featured_on_home } = req.body as {
       image_url?: string;
-      platform?: string;
       reviewer_name?: string | null;
       caption?: string | null;
       is_featured?: boolean;
@@ -47,12 +37,11 @@ router.post('/', async (req: Request, res: Response) => {
     );
 
     const result = await db.query(
-      `INSERT INTO testimonials (image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home, sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO testimonials (image_url, reviewer_name, caption, is_featured, is_featured_on_home, sort_order)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         image_url,
-        normalisePlatform(platform),
         reviewer_name ?? null,
         caption ?? null,
         is_featured ?? false,
@@ -67,12 +56,11 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/testimonials/bulk
-// Body (preferred): { items: [{ image_url, platform?, reviewer_name?, caption?, is_featured? }, ...] }
-// Body (legacy):    { image_urls: string[] }  — defaults each row to platform='other'
+// Body (preferred): { items: [{ image_url, reviewer_name?, caption?, is_featured?, is_featured_on_home? }, ...] }
+// Body (legacy):    { image_urls: string[] }
 router.post('/bulk', async (req: Request, res: Response) => {
   type BulkItem = {
     image_url?: string;
-    platform?: string;
     reviewer_name?: string | null;
     caption?: string | null;
     is_featured?: boolean;
@@ -109,11 +97,10 @@ router.post('/bulk', async (req: Request, res: Response) => {
     for (const it of items) {
       order += 1;
       const r = await client.query(
-        `INSERT INTO testimonials (image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home, sort_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        `INSERT INTO testimonials (image_url, reviewer_name, caption, is_featured, is_featured_on_home, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [
           it.image_url,
-          normalisePlatform(it.platform),
           it.reviewer_name?.trim() ? it.reviewer_name.trim() : null,
           it.caption?.trim()       ? it.caption.trim()       : null,
           Boolean(it.is_featured),
@@ -136,9 +123,8 @@ router.post('/bulk', async (req: Request, res: Response) => {
 // PUT /api/admin/testimonials/:id
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { image_url, platform, reviewer_name, caption, is_featured, is_featured_on_home } = req.body as {
+    const { image_url, reviewer_name, caption, is_featured, is_featured_on_home } = req.body as {
       image_url?: string;
-      platform?: string;
       reviewer_name?: string | null;
       caption?: string | null;
       is_featured?: boolean;
@@ -147,7 +133,6 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     const allowed: Record<string, unknown> = {};
     if (image_url           !== undefined) allowed['image_url']           = image_url;
-    if (platform            !== undefined) allowed['platform']            = normalisePlatform(platform);
     if (reviewer_name       !== undefined) allowed['reviewer_name']       = reviewer_name ?? null;
     if (caption             !== undefined) allowed['caption']             = caption       ?? null;
     if (is_featured         !== undefined) allowed['is_featured']         = is_featured;

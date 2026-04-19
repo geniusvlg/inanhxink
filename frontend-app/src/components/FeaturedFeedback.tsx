@@ -1,14 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { type Testimonial, type TestimonialPlatform } from '../services/api';
+import { type Testimonial } from '../services/api';
 import './FeaturedFeedback.css';
-
-const PLATFORM_LABEL: Record<TestimonialPlatform, string> = {
-  tiktok:    'TikTok',
-  zalo:      'Zalo',
-  instagram: 'Instagram',
-  other:     'Khác',
-};
 
 interface Props {
   /** All testimonials — the section displays only those flagged for the
@@ -35,7 +28,7 @@ export default function FeaturedFeedback({ testimonials, limit = 12 }: Props) {
           <span className="ff-title-mark">♥</span> Khách hàng yêu tụi mình
         </h2>
         <p className="ff-subtitle">
-          Những lời đánh giá thật từ khách hàng trên TikTok, Zalo, Instagram
+          Những lời đánh giá thật từ khách hàng đã mua sản phẩm
         </p>
       </div>
 
@@ -53,16 +46,7 @@ export default function FeaturedFeedback({ testimonials, limit = 12 }: Props) {
                 alt={t.caption ?? 'Đánh giá khách hàng'}
                 loading="lazy"
               />
-              <span className={`ff-platform ff-platform-${t.platform}`}>
-                {PLATFORM_LABEL[t.platform]}
-              </span>
             </div>
-            {(t.reviewer_name || t.caption) && (
-              <div className="ff-card-meta">
-                {t.reviewer_name && <div className="ff-card-name">{t.reviewer_name}</div>}
-                {t.caption && <div className="ff-card-caption">{t.caption}</div>}
-              </div>
-            )}
           </button>
         ))}
       </div>
