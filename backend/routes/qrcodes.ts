@@ -1,5 +1,6 @@
 import express, { Router, Request, Response } from 'express';
 import db from '../config/database';
+import { cdnUrl } from '../config/cdn';
 
 const router: Router = express.Router();
 
@@ -41,7 +42,7 @@ router.get('/:qrName', async (req: Request<{ qrName: string }>, res: Response) =
           id: qrCode.template_id,
           name: qrCode.template_name,
           description: qrCode.template_description,
-          imageUrl: qrCode.template_image_url,
+          imageUrl: cdnUrl(qrCode.template_image_url),
           price: qrCode.template_price,
         },
         createdAt: qrCode.created_at,

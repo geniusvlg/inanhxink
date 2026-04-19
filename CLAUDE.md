@@ -8,6 +8,11 @@
 - Prefer Serena symbolic tools (`find_symbol`, `get_symbols_overview`, `search_for_pattern`, `replace_symbol_body`, `insert_after_symbol`) over full file reads. Only fall back to `Read`/`Edit` for files with no symbols (HTML, CSS, Markdown, plain text)
 - Whenever the user asks to check, visit, inspect, or test a website/URL, use MCP Playwright tools (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_take_screenshot`, etc.) to open and interact with it
 - Always write new code in TypeScript (`.ts` / `.tsx`); never create plain JavaScript files (`.js` / `.jsx`)
+- **Storage rule (S3 ↔ CDN)** — for all static assets (images, audio, etc.):
+  1. Always **store the raw S3 URL** in the database (never store the CDN URL — admin tooling like deletes parses the bucket key out of it).
+  2. Always **serve via CDN** to the public client. Apply the rewrite at *response time* in every public route (`backend/routes/*.ts`) using helpers from `backend/config/cdn.ts` (`cdnUrl`, `cdnUrlArray`, or `rewriteRowImageFields`).
+  3. **Admin routes** (`backend/routes/admin/*.ts`) MUST NOT rewrite — admins need raw S3 URLs so deletes and verification work.
+  4. When adding a new public endpoint that returns image fields, wire the rewrite immediately and confirm with `Network` tab that the response uses `cdn.inanhxink.com`.
 
 ## Project Overview
 

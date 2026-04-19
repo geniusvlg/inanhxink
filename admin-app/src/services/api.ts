@@ -89,11 +89,12 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
-  testimonials: (files: File[]) => {
+  testimonials: (files: File[], watermark = false) => {
     const form = new FormData();
     files.forEach(f => form.append('files', f));
+    const url = `/api/upload?prefix=testimonials${watermark ? '&watermark=true' : ''}`;
     return api.post<{ success: boolean; urls: string[] }>(
-      '/api/upload?prefix=testimonials',
+      url,
       form,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
@@ -130,7 +131,6 @@ export const uploadApi = {
 
 export type TestimonialBulkItem = {
   image_url:            string;
-  platform?:            string;
   reviewer_name?:       string | null;
   caption?:             string | null;
   is_featured?:         boolean;

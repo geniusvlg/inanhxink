@@ -7,6 +7,7 @@ import fs from 'fs';
 import multer from 'multer';
 import db from './config/database';
 import { uploadToS3 } from './config/s3';
+import { rewriteS3ToCdn } from './config/cdn';
 
 // dotenv already loaded in instrument.ts
 const app: Express = express();
@@ -226,15 +227,6 @@ app.use('/api/admin/uploads',            requireAdmin, adminUploadsRouter);
 
 // ── Template serving helpers ─────────────────────────────────────────────────
 const templatesRoot = path.join(__dirname, 'public', 'templates');
-
-const S3_ORIGIN  = `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET || 'inanhxink-prod'}`;
-const CDN_BASE   = process.env.CDN_BASE_URL || '';
-
-function rewriteS3ToCdn(url: unknown): unknown {
-  if (typeof url !== 'string') return url;
-  if (CDN_BASE && url.startsWith(S3_ORIGIN)) return CDN_BASE + url.slice(S3_ORIGIN.length);
-  return url;
-}
 
 // Inject window.__SUBDOMAIN__ and window.dataFromSubdomain before </head>
 // so template JS can use the data without an extra /api/site-data round-trip.

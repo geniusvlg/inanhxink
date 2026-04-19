@@ -1,22 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { testimonialsApi, uploadApi, type TestimonialBulkItem } from '../services/api';
-import { type Testimonial, type TestimonialPlatform } from '../types';
+import { type Testimonial } from '../types';
 import '../components/Layout.css';
 import './TestimonialsPage.css';
 
-const PLATFORMS: { value: TestimonialPlatform; label: string }[] = [
-  { value: 'tiktok',    label: 'TikTok' },
-  { value: 'zalo',      label: 'Zalo' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'other',     label: 'Khác' },
-];
-
-const platformLabel = (p: string) =>
-  PLATFORMS.find(x => x.value === p)?.label ?? p;
-
 type EditForm = {
   image_url: string;
-  platform: TestimonialPlatform;
   reviewer_name: string;
   caption: string;
   is_featured: boolean;
@@ -25,7 +14,6 @@ type EditForm = {
 
 const emptyForm = (): EditForm => ({
   image_url: '',
-  platform: 'other',
   reviewer_name: '',
   caption: '',
   is_featured: false,
@@ -35,7 +23,6 @@ const emptyForm = (): EditForm => ({
 type PendingItem = {
   tempId:              string;
   image_url:           string;
-  platform:            TestimonialPlatform;
   reviewer_name:       string;
   caption:             string;
   is_featured:         boolean;
@@ -45,7 +32,6 @@ type PendingItem = {
 const makePending = (image_url: string): PendingItem => ({
   tempId:              crypto.randomUUID(),
   image_url,
-  platform:            'other',
   reviewer_name:       '',
   caption:             '',
   is_featured:         false,
@@ -64,6 +50,12 @@ export default function TestimonialsPage() {
   const [pending, setPending]               = useState<PendingItem[]>([]);
   const [pendingSaving, setPendingSaving]   = useState(false);
 
+  // Upload-time watermark switches. Bulk applies to "Tải lên ảnh đánh giá";
+  // edit applies to the "Thay ảnh" replacement button inside the edit modal.
+  // Both default to false so admins must opt-in.
+  const [bulkWatermark, setBulkWatermark] = useState(false);
+  const [editWatermark, setEditWatermark] = useState(false);
+
   const fileInputRef    = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,13 +69,12 @@ export default function TestimonialsPage() {
 
   useEffect(() => { load(); }, []);
 
-  // ── Bulk upload (step 1: push to S3, then open Review modal) ────────────
   const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
     setUploading(true);
     try {
-      const upload = await uploadApi.testimonials(files);
+      const upload = await uploadApi.testimonials(files, bulkWatermark);
       const urls = upload.data.urls ?? [];
       if (urls.length > 0) {
         setPending(prev => [...prev, ...urls.map(makePending)]);
@@ -96,7 +87,6 @@ export default function TestimonialsPage() {
     }
   };
 
-  // ── Pending review (step 2: configure each item, then bulk-save) ────────
   const updatePending = (tempId: string, patch: Partial<PendingItem>) => {
     setPending(prev => prev.map(p => p.tempId === tempId ? { ...p, ...patch } : p));
   };
@@ -117,7 +107,6 @@ export default function TestimonialsPage() {
     try {
       const payload: TestimonialBulkItem[] = pending.map(p => ({
         image_url:           p.image_url,
-        platform:            p.platform,
         reviewer_name:       p.reviewer_name.trim() || null,
         caption:             p.caption.trim()       || null,
         is_featured:         p.is_featured,
@@ -133,17 +122,16 @@ export default function TestimonialsPage() {
     }
   };
 
-  // ── Edit ────────────────────────────────────────────────────────────────
   const openEdit = (t: Testimonial) => {
     setEditing(t);
     setForm({
       image_url:           t.image_url,
-      platform:            t.platform,
       reviewer_name:       t.reviewer_name ?? '',
       caption:             t.caption ?? '',
       is_featured:         t.is_featured,
       is_featured_on_home: t.is_featured_on_home,
     });
+    setEditWatermark(false);
   };
   /** Close the edit modal. When `discardUnsavedImage` is true (default — i.e.
    *  user dismissed without saving), an orphaned replacement upload is purged
@@ -169,13 +157,11 @@ export default function TestimonialsPage() {
     try {
       await testimonialsApi.update(editing.id, {
         image_url:           form.image_url,
-        platform:            form.platform,
         reviewer_name:       form.reviewer_name.trim() || null,
         caption:             form.caption.trim() || null,
         is_featured:         form.is_featured,
         is_featured_on_home: form.is_featured_on_home,
       });
-      // The image was replaced — purge the previous (now-unreferenced) file.
       if (form.image_url !== editing.image_url && editing.image_url) {
         uploadApi.deleteMany([editing.image_url]);
       }
@@ -193,11 +179,9 @@ export default function TestimonialsPage() {
     if (!file) return;
     setReplacing(true);
     try {
-      const upload = await uploadApi.testimonials([file]);
+      const upload = await uploadApi.testimonials([file], editWatermark);
       const url = upload.data.urls?.[0];
       if (url) {
-        // If the form already shows an UNSAVED replacement (i.e. user uploaded
-        // twice without clicking Lưu), purge the previous orphan from S3.
         const previous = form.image_url;
         const original = editing?.image_url;
         if (previous && previous !== url && previous !== original) {
@@ -213,7 +197,6 @@ export default function TestimonialsPage() {
     }
   };
 
-  // ── Quick toggles ───────────────────────────────────────────────────────
   const toggleFeatured = async (t: Testimonial) => {
     setItems(prev => prev.map(x => x.id === t.id ? { ...x, is_featured: !t.is_featured } : x));
     try {
@@ -236,7 +219,6 @@ export default function TestimonialsPage() {
     }
   };
 
-  // Swap sort_order with neighbour
   const move = async (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
     if (target < 0 || target >= items.length) return;
@@ -274,7 +256,15 @@ export default function TestimonialsPage() {
     <div>
       <div className="admin-page-header">
         <h1 className="admin-page-title">💬 Feedback</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: '#475569' }}>
+            <input
+              type="checkbox"
+              checked={bulkWatermark}
+              onChange={e => setBulkWatermark(e.target.checked)}
+            />
+            💧 Đóng dấu watermark
+          </label>
           <input
             ref={fileInputRef}
             type="file"
@@ -298,7 +288,6 @@ export default function TestimonialsPage() {
           <thead>
             <tr>
               <th style={{ width: '6rem' }}>Ảnh</th>
-              <th>Nền tảng</th>
               <th>Người đánh giá</th>
               <th>Caption</th>
               <th style={{ textAlign: 'center' }}>Nổi bật</th>
@@ -310,7 +299,7 @@ export default function TestimonialsPage() {
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
+                <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
                   Chưa có đánh giá nào — bấm "Tải lên ảnh đánh giá" để bắt đầu
                 </td>
               </tr>
@@ -322,7 +311,6 @@ export default function TestimonialsPage() {
                     <img src={t.image_url} alt="" className="testimonial-thumb" />
                   </a>
                 </td>
-                <td><span className="badge badge-platform">{platformLabel(t.platform)}</span></td>
                 <td>{t.reviewer_name || <span style={{ color: '#94a3b8' }}>—</span>}</td>
                 <td className="testimonial-caption-cell">
                   {t.caption || <span style={{ color: '#94a3b8' }}>—</span>}
@@ -392,29 +380,25 @@ export default function TestimonialsPage() {
                     onChange={handleReplaceImage}
                     style={{ display: 'none' }}
                   />
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => replaceInputRef.current?.click()}
-                    disabled={replacing}
-                  >
-                    {replacing ? 'Đang tải...' : 'Thay ảnh'}
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => replaceInputRef.current?.click()}
+                      disabled={replacing}
+                    >
+                      {replacing ? 'Đang tải...' : 'Thay ảnh'}
+                    </button>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.9rem', color: '#475569' }}>
+                      <input
+                        type="checkbox"
+                        checked={editWatermark}
+                        onChange={e => setEditWatermark(e.target.checked)}
+                      />
+                      💧 Đóng dấu watermark
+                    </label>
+                  </div>
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Nền tảng *</label>
-                <select
-                  className="form-select"
-                  value={form.platform}
-                  onChange={e => setForm(f => ({ ...f, platform: e.target.value as TestimonialPlatform }))}
-                  required
-                >
-                  {PLATFORMS.map(p => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                  ))}
-                </select>
               </div>
 
               <div className="form-group">
@@ -491,20 +475,6 @@ export default function TestimonialsPage() {
                 <div key={p.tempId} className="pending-row">
                   <img src={p.image_url} alt="" className="pending-thumb" />
                   <div className="pending-fields">
-                    <div className="pending-field-row">
-                      <label className="form-label">Nền tảng *</label>
-                      <select
-                        className="form-select"
-                        value={p.platform}
-                        onChange={e => updatePending(p.tempId, {
-                          platform: e.target.value as TestimonialPlatform,
-                        })}
-                      >
-                        {PLATFORMS.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                    </div>
                     <div className="pending-field-row">
                       <label className="form-label">Người đánh giá</label>
                       <input
