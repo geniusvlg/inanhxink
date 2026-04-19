@@ -161,5 +161,23 @@ export const getCategories = async (type?: string): Promise<{ id: number; name: 
   return response.data.categories ?? [];
 };
 
+// Testimonials (customer review screenshots from external platforms)
+export type TestimonialPlatform =
+  | 'tiktok' | 'zalo' | 'instagram' | 'other';
+
+export interface Testimonial {
+  id: number;
+  image_url: string;
+  platform: TestimonialPlatform;
+  reviewer_name: string | null;
+  caption: string | null;
+  is_featured: boolean;
+}
+
+export const getTestimonials = async (): Promise<Testimonial[]> => {
+  const response = await api.get<{ success: boolean; testimonials: Testimonial[] }>('/api/testimonials');
+  return response.data.testimonials ?? [];
+};
+
 export default api;
 

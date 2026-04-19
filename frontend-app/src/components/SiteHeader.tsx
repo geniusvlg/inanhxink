@@ -4,7 +4,7 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import './SiteHeader.css';
 
 interface SiteHeaderProps {
-  activePage?: 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh';
+  activePage?: 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia';
 }
 
 function SiteHeader({ activePage }: SiteHeaderProps) {
@@ -77,6 +77,7 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
         {flags.page_set_qua_tang      && <Link to="/set-qua-tang"      className={linkCls('set-qua-tang')} onClick={closeMobileMenu}>Set Quà Tặng</Link>}
         {flags.page_cac_san_pham_khac && <Link to="/cac-san-pham-khac" className={linkCls('cac-san-pham-khac')} onClick={closeMobileMenu}>Các Sản Phẩm Khác</Link>}
         {flags.page_in_anh            && <Link to="/in-anh"            className={linkCls('in-anh')} onClick={closeMobileMenu}>In Ảnh</Link>}
+        <Link to="/danh-gia" className={linkCls('danh-gia')} onClick={closeMobileMenu}>Feedback</Link>
       </nav>
     </header>
   );

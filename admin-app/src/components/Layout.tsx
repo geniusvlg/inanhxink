@@ -28,6 +28,7 @@ const NAV: { to: string; label: ReactNode }[] = [
   { to: '/categories',       label: '🏷️ Danh mục' },
   { to: '/orders',           label: '📋 Đơn hàng' },
   { to: '/vouchers',         label: '🎟️ Voucher' },
+  { to: '/testimonials',     label: '💬 Feedback' },
   { to: '/config',           label: '⚙️ Cấu hình' },
 ];
 

@@ -3,7 +3,9 @@
 ## Rules
 
 - At the start of every conversation, call `mcp__serena__check_onboarding_performed`; if onboarding has NOT been performed yet, immediately call `mcp__serena__onboarding` to onboard the project
-- Prefer Serena symbolic tools (`find_symbol`, `get_symbols_overview`, `search_for_pattern`, `replace_symbol_body`, `insert_after_symbol`) over full file reads
+- Before working on a feature, skim the `docs/` folder for relevant docs (e.g. `docs/admin-app.md`, `docs/feedback-feature.md`, `docs/claude-rules.md`); these are the source of truth for cross-cutting features and working conventions
+- When asked to "remember" something, persist it in **both** Serena memory **and** a relevant file in `docs/` (create one if no existing doc fits). Keep `docs/` in sync whenever a feature, schema, or architecture detail changes
+- Prefer Serena symbolic tools (`find_symbol`, `get_symbols_overview`, `search_for_pattern`, `replace_symbol_body`, `insert_after_symbol`) over full file reads. Only fall back to `Read`/`Edit` for files with no symbols (HTML, CSS, Markdown, plain text)
 - Whenever the user asks to check, visit, inspect, or test a website/URL, use MCP Playwright tools (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot`, `mcp__playwright__browser_take_screenshot`, etc.) to open and interact with it
 - Always write new code in TypeScript (`.ts` / `.tsx`); never create plain JavaScript files (`.js` / `.jsx`)
 

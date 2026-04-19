@@ -106,3 +106,23 @@ export async function pruneS3Folder(
     }
   }
 }
+
+/** Convert a public URL produced by `getPublicUrl` back to its S3 key.
+ *  Returns null if the URL doesn't belong to this bucket. */
+export function extractKeyFromUrl(url: string): string | null {
+  if (typeof url !== 'string') return null;
+  const prefix = `${ENDPOINT}/${BUCKET}/`;
+  if (!url.startsWith(prefix)) return null;
+  const key = url.slice(prefix.length);
+  return key.length > 0 ? key : null;
+}
+
+/** Delete a single S3 object by its public URL. Returns true if a delete
+ *  request was issued. Silently no-ops for URLs outside this bucket so the
+ *  caller can safely pass any image_url. */
+export async function deleteFromS3(url: string): Promise<boolean> {
+  const key = extractKeyFromUrl(url);
+  if (!key) return false;
+  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  return true;
+}

@@ -13,6 +13,7 @@ import KhacPage from './pages/KhacPage';
 import InAnhPage from './pages/InAnhPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import TestimonialsPage from './pages/TestimonialsPage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
@@ -58,6 +59,7 @@ function AppRoutes() {
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
       <Route path="/preview/:templateName" element={<TemplatePreviewPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />
+      <Route path="/danh-gia" element={<TestimonialsPage />} />
 
       <Route path="/qr-yeu-thuong"     element={<FlaggedRoute flag="page_qr_yeu_thuong"     element={<QrYeuThuongPage />} />} />
       <Route path="/thiep"             element={<FlaggedRoute flag="page_thiep"             element={<ThiepPage />} />} />

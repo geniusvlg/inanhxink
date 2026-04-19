@@ -46,6 +46,24 @@ export interface ProductCategory {
   type: string;
 }
 
+export type TestimonialPlatform =
+  | 'tiktok'
+  | 'zalo'
+  | 'instagram'
+  | 'other';
+
+export interface Testimonial {
+  id: number;
+  image_url: string;
+  platform: TestimonialPlatform;
+  reviewer_name: string | null;
+  caption: string | null;
+  is_featured: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: number;
   name: string;

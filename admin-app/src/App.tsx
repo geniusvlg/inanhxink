@@ -14,6 +14,7 @@ import KhacPage from './pages/KhacPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import InAnhPage from './pages/InAnhPage';
 import CategoriesPage from './pages/CategoriesPage';
+import TestimonialsPage from './pages/TestimonialsPage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="/categories"       element={<CategoriesPage />} />
               <Route path="/orders"           element={<OrdersPage />} />
               <Route path="/vouchers"         element={<VouchersPage />} />
+              <Route path="/testimonials"     element={<TestimonialsPage />} />
               <Route path="/config"           element={<ConfigPage />} />
             </Route>
           </Route>

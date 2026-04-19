@@ -85,4 +85,42 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+  testimonials: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=testimonials',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
+  /** Best-effort removal of S3 objects by their public URLs. Used to clean
+   *  up orphans from cancelled uploads. Never throws — caller can fire-and-forget. */
+  deleteMany: (urls: string[]) =>
+    api.delete<{ success: boolean; results: { url: string; deleted: boolean }[] }>(
+      '/api/admin/uploads',
+      { data: { urls } },
+    ).catch(err => {
+      console.warn('[uploadApi.deleteMany] failed:', err);
+      return null;
+    }),
+};
+
+export type TestimonialBulkItem = {
+  image_url:      string;
+  platform?:      string;
+  reviewer_name?: string | null;
+  caption?:       string | null;
+  is_featured?:   boolean;
+};
+
+export const testimonialsApi = {
+  list:    ()                    => api.get('/api/admin/testimonials'),
+  create:  (data: unknown)       => api.post('/api/admin/testimonials', data),
+  bulk:    (items: TestimonialBulkItem[]) =>
+    api.post<{ success: boolean; testimonials: unknown[] }>('/api/admin/testimonials/bulk', { items }),
+  update:  (id: number, data: unknown) => api.put(`/api/admin/testimonials/${id}`, data),
+  reorder: (items: { id: number; sort_order: number }[]) =>
+    api.patch('/api/admin/testimonials/reorder', { items }),
+  delete:  (id: number)          => api.delete(`/api/admin/testimonials/${id}`),
 };
