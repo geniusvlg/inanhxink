@@ -178,6 +178,8 @@ import paymentsRouter from './routes/payments';
 import musicRouter from './routes/music';
 import metadataRouter from './routes/metadata';
 import productsRouter from './routes/products';
+import testimonialsRouter from './routes/testimonials';
+import bannersRouter from './routes/banners';
 
 app.use('/api/templates', templatesRouter);
 app.use('/api/vouchers', vouchersRouter);
@@ -187,6 +189,8 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/music', musicRouter);
 app.use('/api/metadata', metadataRouter);
 app.use('/api/products', productsRouter);
+app.use('/api/testimonials', testimonialsRouter);
+app.use('/api/banners', bannersRouter);
 
 import categoriesRouter from './routes/categories';
 app.use('/api/categories', categoriesRouter);
@@ -207,8 +211,14 @@ app.use('/api/admin/metadata',           requireAdmin, adminMetadataRouter);
 
 import adminProductsRouter           from './routes/admin/products';
 import adminProductCategoriesRouter  from './routes/admin/product-categories';
+import adminTestimonialsRouter       from './routes/admin/testimonials';
+import adminBannersRouter            from './routes/admin/banners';
+import adminUploadsRouter            from './routes/admin/uploads';
 app.use('/api/admin/products',           requireAdmin, adminProductsRouter);
 app.use('/api/admin/product-categories', requireAdmin, adminProductCategoriesRouter);
+app.use('/api/admin/testimonials',       requireAdmin, adminTestimonialsRouter);
+app.use('/api/admin/banners',            requireAdmin, adminBannersRouter);
+app.use('/api/admin/uploads',            requireAdmin, adminUploadsRouter);
 
 // ── Template serving helpers ─────────────────────────────────────────────────
 const templatesRoot = path.join(__dirname, 'public', 'templates');

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The admin app (`admin-app/`) is a React SPA (Vite + TypeScript) for managing products, QR templates, categories, orders, and vouchers.
+The admin app (`admin-app/`) is a React SPA (Vite + TypeScript) for managing products, QR templates, categories, orders, vouchers, and customer feedback.
 
 ## Directory Structure
 
@@ -18,6 +18,8 @@ admin-app/src/
 │   ├── KhacPage.tsx           # type=khac
 │   ├── ProductsPage.tsx       # QR templates management
 │   ├── CategoriesPage.tsx     # Product categories
+│   ├── TestimonialsPage.tsx   # Customer feedback (screenshots from external platforms)
+│   ├── BannersPage.tsx        # Homepage hero banner slides
 │   └── LoginPage.tsx          # JWT auth
 ├── services/
 │   └── api.ts                 # Axios client + JWT interceptors
@@ -44,7 +46,15 @@ admin-app/src/
 | Set Qua Tang | `set-qua-tang` |
 | Khac | `khac` |
 
-All types share `ProductItemsPage.tsx` with a `type` prop.
+All types share `ProductItemsPage.tsx` with a `type` prop. The `products.type`
+column is `VARCHAR(20)` with no CHECK constraint, so adding a new product
+category only requires (1) a new admin wrapper page + sidebar entry, (2) a new
+public-facing page on the storefront, and (3) updating `ProductItemsPage`'s
+`type` union + `PAGE_TITLE` map.
+
+> Note: `/qr-yeu-thuong` on the storefront is **not** a product category. It
+> is the listing of QR-website templates (`templates` table — Galaxy, Love
+> Letter, etc.) and is managed under the `🔳 QR Templates` sidebar entry.
 
 ## Product Fields
 
@@ -100,7 +110,21 @@ All types share `ProductItemsPage.tsx` with a `type` prop.
 | GET | `/api/admin/product-categories?type=` | List categories |
 | POST | `/api/admin/product-categories` | Create category |
 | DELETE | `/api/admin/product-categories/:id` | Delete category |
+| GET | `/api/admin/testimonials` | List all testimonials |
+| POST | `/api/admin/testimonials` | Create testimonial (single) |
+| POST | `/api/admin/testimonials/bulk` | Create many from `image_urls[]` (used after bulk upload) |
+| PUT | `/api/admin/testimonials/:id` | Update testimonial |
+| PATCH | `/api/admin/testimonials/reorder` | Bulk update `sort_order` for `[{id, sort_order}]` |
+| DELETE | `/api/admin/testimonials/:id` | Delete testimonial (also removes the S3 image) |
+| GET | `/api/admin/banners` | List all banners (admin) |
+| POST | `/api/admin/banners` | Create banner (`image_url`, `link_url?`, `alt_text?`, `is_active?`) |
+| PUT | `/api/admin/banners/:id` | Update banner; replaced image is purged from S3 |
+| PATCH | `/api/admin/banners/reorder` | Bulk-update `sort_order` for `[{id, sort_order}]` |
+| DELETE | `/api/admin/banners/:id` | Delete banner (also removes the S3 image) |
+| DELETE | `/api/admin/uploads` | Body `{ urls: string[] }` — orphan-cleanup for cancelled/replaced uploads |
 | POST | `/api/upload?prefix=products/{folder}` | Upload images to S3 |
+| POST | `/api/upload?prefix=testimonials` | Upload testimonial screenshots to S3 |
+| POST | `/api/upload?prefix=banners` | Upload banner images to S3 |
 
 ## S3 Folder Structure (Products)
 
@@ -122,3 +146,25 @@ File naming: `{timestamp}-{randomString}.webp` (all images converted to WebP 90%
 - Optional watermark (`watermark=true` query param):
   - File: `backend/public/watermark.png`
   - Position: bottom-right, 30% of image width, 3% margin
+
+## Feedback (Testimonials)
+
+`TestimonialsPage.tsx` — manages customer review screenshots imported from external platforms (TikTok, Shopee, Facebook, Instagram, Lazada, Other).
+
+- **Bulk upload**: single button uploads multiple screenshots, creates one `testimonials` row per file with default metadata (`platform = 'other'`, sequential `sort_order`).
+- **Edit**: per-row modal — replace image, set platform, reviewer name, caption, featured flag.
+- **Reorder**: `↑ / ↓` buttons swap `sort_order` with neighbour; persisted via `PATCH /reorder`.
+- **Featured (`⭐`)**: surfaces the row first on the public `/danh-gia` page.
+- **Public side**: see `docs/feedback-feature.md` for the full feature (DB schema, public page, S3 layout).
+
+## Banners (homepage hero)
+
+`BannersPage.tsx` — admin-managed slides for the homepage carousel.
+
+- **Fields**: `image_url` (required), `link_url` (optional click-through, internal `/path` or external `https://…`), `alt_text` (optional), `is_active` (toggle), `sort_order`.
+- **Add**: modal with one-file upload (S3-first); image goes to `s3://…/banners/`. If the modal is dismissed without saving, the upload is purged via `DELETE /api/admin/uploads` (no orphans).
+- **Edit**: same modal — replacing the image purges the previous file server-side after the `PUT` succeeds.
+- **Reorder**: `↑ / ↓` arrows swap `sort_order` with the neighbour; persisted via `PATCH /reorder`.
+- **Toggle visibility**: `✅ / 🚫` button calls `PUT { is_active }` without opening the modal.
+- **Delete**: removes the row and the S3 image (best-effort).
+- **Public side**: `BannerCarousel.tsx` (auto-rotates every 5 s, pauses on hover, arrows + dots); see `docs/banner-feature.md`.

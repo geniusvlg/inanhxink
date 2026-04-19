@@ -155,10 +155,49 @@ export const getProductById = async (id: number): Promise<Product> => {
   return response.data.product;
 };
 
+/** Products that admins have flagged as featured-on-home, in their manual sort order. */
+export const getFeaturedProducts = async (): Promise<Product[]> => {
+  const response = await api.get<{ success: boolean; products: Product[] }>(
+    '/api/products/featured-on-home',
+  );
+  return response.data.products ?? [];
+};
+
 export const getCategories = async (type?: string): Promise<{ id: number; name: string }[]> => {
   const params = type ? { type } : {};
   const response = await api.get<{ success: boolean; categories: { id: number; name: string }[] }>('/api/categories', { params });
   return response.data.categories ?? [];
+};
+
+// Testimonials (customer review screenshots from external platforms)
+export type TestimonialPlatform =
+  | 'tiktok' | 'zalo' | 'instagram' | 'other';
+
+export interface Testimonial {
+  id: number;
+  image_url: string;
+  platform: TestimonialPlatform;
+  reviewer_name: string | null;
+  caption: string | null;
+  is_featured: boolean;
+}
+
+export const getTestimonials = async (): Promise<Testimonial[]> => {
+  const response = await api.get<{ success: boolean; testimonials: Testimonial[] }>('/api/testimonials');
+  return response.data.testimonials ?? [];
+};
+
+// Homepage banners (admin-managed hero slides)
+export interface Banner {
+  id: number;
+  image_url: string;
+  link_url: string | null;
+  alt_text: string | null;
+}
+
+export const getBanners = async (): Promise<Banner[]> => {
+  const response = await api.get<{ success: boolean; banners: Banner[] }>('/api/banners');
+  return response.data.banners ?? [];
 };
 
 export default api;

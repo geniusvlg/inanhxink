@@ -14,6 +14,9 @@ import KhacPage from './pages/KhacPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import InAnhPage from './pages/InAnhPage';
 import CategoriesPage from './pages/CategoriesPage';
+import TestimonialsPage from './pages/TestimonialsPage';
+import BannersPage from './pages/BannersPage';
+import FeaturedOnHomePage from './pages/FeaturedOnHomePage';
 
 export default function App() {
   return (
@@ -31,9 +34,12 @@ export default function App() {
               <Route path="/cac-san-pham-khac" element={<KhacPage />} />
               <Route path="/set-qua-tang"     element={<SetQuaTangPage />} />
               <Route path="/in-anh"          element={<InAnhPage />} />
+              <Route path="/featured-on-home" element={<FeaturedOnHomePage />} />
               <Route path="/categories"       element={<CategoriesPage />} />
               <Route path="/orders"           element={<OrdersPage />} />
               <Route path="/vouchers"         element={<VouchersPage />} />
+              <Route path="/testimonials"     element={<TestimonialsPage />} />
+              <Route path="/banners"          element={<BannersPage />} />
               <Route path="/config"           element={<ConfigPage />} />
             </Route>
           </Route>

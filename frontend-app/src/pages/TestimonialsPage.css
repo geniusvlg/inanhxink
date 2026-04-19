@@ -1,0 +1,207 @@
+.testimonials-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.testimonials-page-hero {
+  text-align: center;
+  padding: 3.5rem 2rem 2rem;
+  background: linear-gradient(180deg, #ffb3c1 0%, #fff 100%);
+}
+
+.testimonials-page-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 0.75rem;
+}
+
+.testimonials-page-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.testimonials-page-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.testimonials-page-error,
+.testimonials-page-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.testimonials-page-error {
+  color: #dc2626;
+}
+
+/* Masonry — pure CSS columns. Each card is `break-inside: avoid` so it
+   never splits across columns; images keep their natural aspect ratio. */
+.testimonials-masonry {
+  column-count: 4;
+  column-gap: 1rem;
+}
+
+.masonry-card {
+  display: block;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  transition: transform 0.2s;
+}
+
+.masonry-card:hover {
+  transform: translateY(-3px);
+}
+
+.masonry-card--featured .masonry-img-wrap {
+  box-shadow: 0 0 0 2px #fe2c56, 0 6px 18px rgba(254, 44, 86, 0.18);
+}
+
+.masonry-img-wrap {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.masonry-img-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.masonry-platform-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.platform-tiktok    { background: #000;     }
+.platform-zalo      { background: #0068ff; }
+.platform-instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.platform-other     { background: #6b7280; }
+
+.masonry-featured-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.masonry-meta {
+  padding: 0.5rem 0.25rem 0;
+}
+
+.masonry-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.2rem;
+}
+
+.masonry-caption {
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+/* Lightbox (re-used styling from earlier) */
+.testimonial-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+  animation: testimonial-fade-in 0.15s ease-out;
+}
+
+@keyframes testimonial-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.testimonial-lightbox img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  cursor: default;
+}
+
+.testimonial-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.testimonial-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 1100px) {
+  .testimonials-masonry { column-count: 3; }
+}
+
+@media (max-width: 740px) {
+  .testimonials-page-title    { font-size: 1.75rem; }
+  .testimonials-page-subtitle { font-size: 0.9rem; }
+  .testimonials-masonry       { column-count: 2; column-gap: 0.75rem; }
+  .masonry-card               { margin-bottom: 0.75rem; }
+}
+
+@media (max-width: 420px) {
+  .testimonials-masonry { column-count: 2; }
+}

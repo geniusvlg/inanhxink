@@ -77,6 +77,38 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/products/featured-on-home
+// Returns every active, non-draft product that admins have flagged for the
+// public homepage, ordered by manual `home_sort_order` (then by id for ties).
+//
+// MUST be declared before the `:id` route below — otherwise Express would
+// match "featured-on-home" as the `:id` param.
+router.get('/featured-on-home', async (_req: Request, res: Response) => {
+  try {
+    const result = await db.query(
+      `SELECT p.id, p.name, p.description, p.price, p.images, p.type,
+              p.is_best_seller, p.tiktok_url, p.instagram_url,
+              p.discount_price, p.discount_from, p.discount_to,
+              p.home_sort_order,
+              COALESCE(
+                json_agg(json_build_object('id', pc.id, 'name', pc.name))
+                FILTER (WHERE pc.id IS NOT NULL), '[]'
+              ) AS categories
+         FROM products p
+         LEFT JOIN product_category_map m  ON m.product_id  = p.id
+         LEFT JOIN product_categories   pc ON pc.id = m.category_id
+        WHERE p.is_active = TRUE
+          AND p.is_draft = FALSE
+          AND p.is_featured_on_home = TRUE
+        GROUP BY p.id
+        ORDER BY p.home_sort_order ASC, p.id ASC`
+    );
+    return res.json({ success: true, products: result.rows });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: (err as Error).message });
+  }
+});
+
 // GET /api/products/:id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
