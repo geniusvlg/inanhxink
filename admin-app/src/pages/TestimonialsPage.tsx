@@ -20,6 +20,7 @@ type EditForm = {
   reviewer_name: string;
   caption: string;
   is_featured: boolean;
+  is_featured_on_home: boolean;
 };
 
 const emptyForm = (): EditForm => ({
@@ -28,24 +29,27 @@ const emptyForm = (): EditForm => ({
   reviewer_name: '',
   caption: '',
   is_featured: false,
+  is_featured_on_home: false,
 });
 
 type PendingItem = {
-  tempId:        string;
-  image_url:     string;
-  platform:      TestimonialPlatform;
-  reviewer_name: string;
-  caption:       string;
-  is_featured:   boolean;
+  tempId:              string;
+  image_url:           string;
+  platform:            TestimonialPlatform;
+  reviewer_name:       string;
+  caption:             string;
+  is_featured:         boolean;
+  is_featured_on_home: boolean;
 };
 
 const makePending = (image_url: string): PendingItem => ({
-  tempId:        crypto.randomUUID(),
+  tempId:              crypto.randomUUID(),
   image_url,
-  platform:      'other',
-  reviewer_name: '',
-  caption:       '',
-  is_featured:   false,
+  platform:            'other',
+  reviewer_name:       '',
+  caption:             '',
+  is_featured:         false,
+  is_featured_on_home: false,
 });
 
 export default function TestimonialsPage() {
@@ -112,11 +116,12 @@ export default function TestimonialsPage() {
     setPendingSaving(true);
     try {
       const payload: TestimonialBulkItem[] = pending.map(p => ({
-        image_url:     p.image_url,
-        platform:      p.platform,
-        reviewer_name: p.reviewer_name.trim() || null,
-        caption:       p.caption.trim()       || null,
-        is_featured:   p.is_featured,
+        image_url:           p.image_url,
+        platform:            p.platform,
+        reviewer_name:       p.reviewer_name.trim() || null,
+        caption:             p.caption.trim()       || null,
+        is_featured:         p.is_featured,
+        is_featured_on_home: p.is_featured_on_home,
       }));
       await testimonialsApi.bulk(payload);
       setPending([]);
@@ -132,11 +137,12 @@ export default function TestimonialsPage() {
   const openEdit = (t: Testimonial) => {
     setEditing(t);
     setForm({
-      image_url:     t.image_url,
-      platform:      t.platform,
-      reviewer_name: t.reviewer_name ?? '',
-      caption:       t.caption ?? '',
-      is_featured:   t.is_featured,
+      image_url:           t.image_url,
+      platform:            t.platform,
+      reviewer_name:       t.reviewer_name ?? '',
+      caption:             t.caption ?? '',
+      is_featured:         t.is_featured,
+      is_featured_on_home: t.is_featured_on_home,
     });
   };
   /** Close the edit modal. When `discardUnsavedImage` is true (default — i.e.
@@ -162,11 +168,12 @@ export default function TestimonialsPage() {
     setSaving(true);
     try {
       await testimonialsApi.update(editing.id, {
-        image_url:     form.image_url,
-        platform:      form.platform,
-        reviewer_name: form.reviewer_name.trim() || null,
-        caption:       form.caption.trim() || null,
-        is_featured:   form.is_featured,
+        image_url:           form.image_url,
+        platform:            form.platform,
+        reviewer_name:       form.reviewer_name.trim() || null,
+        caption:             form.caption.trim() || null,
+        is_featured:         form.is_featured,
+        is_featured_on_home: form.is_featured_on_home,
       });
       // The image was replaced — purge the previous (now-unreferenced) file.
       if (form.image_url !== editing.image_url && editing.image_url) {
@@ -211,6 +218,17 @@ export default function TestimonialsPage() {
     setItems(prev => prev.map(x => x.id === t.id ? { ...x, is_featured: !t.is_featured } : x));
     try {
       await testimonialsApi.update(t.id, { is_featured: !t.is_featured });
+      load();
+    } catch {
+      alert('Lỗi khi cập nhật');
+      load();
+    }
+  };
+
+  const toggleHome = async (t: Testimonial) => {
+    setItems(prev => prev.map(x => x.id === t.id ? { ...x, is_featured_on_home: !t.is_featured_on_home } : x));
+    try {
+      await testimonialsApi.update(t.id, { is_featured_on_home: !t.is_featured_on_home });
       load();
     } catch {
       alert('Lỗi khi cập nhật');
@@ -284,6 +302,7 @@ export default function TestimonialsPage() {
               <th>Người đánh giá</th>
               <th>Caption</th>
               <th style={{ textAlign: 'center' }}>Nổi bật</th>
+              <th style={{ textAlign: 'center' }}>Trang chủ</th>
               <th style={{ width: '7rem' }}>Sắp xếp</th>
               <th style={{ width: '12rem' }}>Thao tác</th>
             </tr>
@@ -291,7 +310,7 @@ export default function TestimonialsPage() {
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
+                <td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
                   Chưa có đánh giá nào — bấm "Tải lên ảnh đánh giá" để bắt đầu
                 </td>
               </tr>
@@ -316,6 +335,17 @@ export default function TestimonialsPage() {
                     title={t.is_featured ? 'Bỏ nổi bật' : 'Đánh dấu nổi bật'}
                   >
                     {t.is_featured ? '⭐' : '☆'}
+                  </button>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    className="testimonial-star-btn"
+                    onClick={() => toggleHome(t)}
+                    title={t.is_featured_on_home ? 'Bỏ khỏi trang chủ' : 'Hiển thị trên trang chủ'}
+                    style={{ opacity: t.is_featured_on_home ? 1 : 0.35 }}
+                  >
+                    🏠
                   </button>
                 </td>
                 <td>
@@ -416,7 +446,19 @@ export default function TestimonialsPage() {
                   onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))}
                 />
                 <label htmlFor="t_featured" className="form-label" style={{ margin: 0 }}>
-                  ⭐ Nổi bật (hiển thị đầu tiên)
+                  ⭐ Nổi bật (hiển thị đầu tiên trang đánh giá)
+                </label>
+              </div>
+
+              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="t_home"
+                  checked={form.is_featured_on_home}
+                  onChange={e => setForm(f => ({ ...f, is_featured_on_home: e.target.checked }))}
+                />
+                <label htmlFor="t_home" className="form-label" style={{ margin: 0 }}>
+                  🏠 Hiển thị trên trang chủ
                 </label>
               </div>
 
@@ -490,6 +532,14 @@ export default function TestimonialsPage() {
                           onChange={e => updatePending(p.tempId, { is_featured: e.target.checked })}
                         />
                         ⭐ Nổi bật
+                      </label>
+                      <label className="pending-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={p.is_featured_on_home}
+                          onChange={e => updatePending(p.tempId, { is_featured_on_home: e.target.checked })}
+                        />
+                        🏠 Trang chủ
                       </label>
                       <button
                         type="button"

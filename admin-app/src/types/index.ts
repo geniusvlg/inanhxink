@@ -59,6 +59,7 @@ export interface Testimonial {
   reviewer_name: string | null;
   caption: string | null;
   is_featured: boolean;
+  is_featured_on_home: boolean;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -72,6 +73,15 @@ export interface Banner {
   is_active: boolean;
   sort_order: number;
   created_at: string;
+  updated_at: string;
+}
+
+/** A single hero polaroid slot (0, 1, or 2). Image and caption are
+ *  individually optional so admins can leave a slot blank during setup. */
+export interface HeroShot {
+  slot: 0 | 1 | 2;
+  image_url: string | null;
+  caption:   string | null;
   updated_at: string;
 }
 

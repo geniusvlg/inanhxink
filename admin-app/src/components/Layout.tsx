@@ -31,6 +31,7 @@ const NAV: { to: string; label: ReactNode }[] = [
   { to: '/vouchers',         label: '🎟️ Voucher' },
   { to: '/testimonials',     label: '💬 Feedback' },
   { to: '/banners',          label: '🖼️ Banner' },
+  { to: '/hero-shots',       label: '📸 Polaroid trang chủ' },
   { to: '/config',           label: '⚙️ Cấu hình' },
 ];
 

@@ -180,6 +180,7 @@ export interface Testimonial {
   reviewer_name: string | null;
   caption: string | null;
   is_featured: boolean;
+  is_featured_on_home: boolean;
 }
 
 export const getTestimonials = async (): Promise<Testimonial[]> => {
@@ -198,6 +199,17 @@ export interface Banner {
 export const getBanners = async (): Promise<Banner[]> => {
   const response = await api.get<{ success: boolean; banners: Banner[] }>('/api/banners');
   return response.data.banners ?? [];
+};
+
+export interface HeroShot {
+  slot: 0 | 1 | 2;
+  image_url: string | null;
+  caption:   string | null;
+}
+
+export const getHeroShots = async (): Promise<HeroShot[]> => {
+  const response = await api.get<{ success: boolean; hero_shots: HeroShot[] }>('/api/hero-shots');
+  return response.data.hero_shots ?? [];
 };
 
 export default api;

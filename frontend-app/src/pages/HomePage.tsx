@@ -4,7 +4,9 @@ import {
   getFeaturedProducts,
   getBanners,
   getTestimonials,
+  getHeroShots,
   type Banner,
+  type HeroShot,
   type Product,
   type Testimonial,
 } from '../services/api';
@@ -16,10 +18,6 @@ import FeaturedFeedback from '../components/FeaturedFeedback';
 import './HomePage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
-function formatPrice(price: number): string {
-  return Math.round(price).toLocaleString('en') + 'đ';
-}
 
 function imageSrc(url: string | null | undefined): string {
   if (!url) return '/placeholder.png';
@@ -35,23 +33,38 @@ function HomePage() {
   const [products, setProducts]         = useState<Product[]>([]);
   const [banners, setBanners]           = useState<Banner[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [heroShots, setHeroShots]       = useState<HeroShot[]>([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState('');
 
   useEffect(() => {
-    // Featured products failure is the only blocking error; banners + feedback
-    // simply render empty if their fetch fails.
+    // Featured products failure is the only blocking error; banners, hero
+    // shots, and feedback simply render empty / fall back if their fetch fails.
     Promise.all([
       getFeaturedProducts().then(setProducts),
       getBanners().then(setBanners).catch(() => setBanners([])),
       getTestimonials().then(setTestimonials).catch(() => setTestimonials([])),
+      getHeroShots().then(setHeroShots).catch(() => setHeroShots([])),
     ])
       .catch(() => setError('Không thể tải sản phẩm trang chủ'))
       .finally(() => setLoading(false));
   }, []);
 
-  // Hero polaroid collage uses the first 3 featured products as preview shots.
-  const heroShots = products.slice(0, 3);
+  // Hero polaroid collage prefers admin-managed hero_shots (slots 0–2).
+  // Empty slots fall back to a featured product image so the collage is
+  // never blank during initial setup.
+  const polaroids = [0, 1, 2].map(idx => {
+    const shot     = heroShots.find(s => s.slot === idx);
+    const fallback = products[idx];
+    if (shot?.image_url) {
+      return { image: shot.image_url, caption: shot.caption ?? '' };
+    }
+    if (fallback) {
+      return { image: fallback.images?.[0] ?? '', caption: fallback.name };
+    }
+    return null;
+  });
+  const hasAnyPolaroid = polaroids.some(p => p && p.image);
 
   return (
     <div className="homepage">
@@ -107,17 +120,17 @@ function HomePage() {
             </div>
 
             <div className="hero-collage" aria-hidden="true">
-              {heroShots.map((p, i) => (
+              {polaroids.map((p, i) => p?.image ? (
                 <div
-                  key={p.id}
+                  key={i}
                   className={`polaroid polaroid-${i}`}
                   style={{ ['--tilt' as string]: tiltFor(i) }}
                 >
-                  <img src={imageSrc(p.images?.[0])} alt="" />
-                  <div className="polaroid-cap">{p.name}</div>
+                  <img src={imageSrc(p.image)} alt="" />
+                  {p.caption && <div className="polaroid-cap">{p.caption}</div>}
                 </div>
-              ))}
-              {heroShots.length === 0 && (
+              ) : null)}
+              {!hasAnyPolaroid && (
                 <div className="polaroid polaroid-0" style={{ ['--tilt' as string]: '-2deg' }}>
                   <img src="/logo.jpeg" alt="" />
                   <div className="polaroid-cap">in ảnh xink ♥</div>
@@ -155,7 +168,6 @@ function HomePage() {
                 </div>
                 <div className="poly-card-cap">
                   <div className="poly-card-name">{p.name}</div>
-                  <div className="poly-card-price">{formatPrice(p.price)}</div>
                 </div>
               </Link>
             ))}
