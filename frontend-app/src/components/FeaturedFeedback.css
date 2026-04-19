@@ -1,0 +1,241 @@
+/* ── Featured Feedback section ─────────────────────────────────────────── */
+/* Brand accent for this section: #e60022 (rgb(230, 0, 34)) */
+
+.featured-feedback {
+  --ff-accent:      #e60022;
+  --ff-accent-tint: rgba(230, 0, 34, 0.16);
+  --ff-accent-deep: #b5001a;
+
+  /* No own background — the section sits transparently on top of the
+     homepage cream so the feedback grid feels like part of the same page,
+     not a separate band. Still full-bleed in width so the grid can spread
+     edge-to-edge as more cards are added. */
+  width: 100%;
+  margin: 2.5rem 0 2.5rem;
+  padding: 0 max(1rem, calc((100% - 1500px) / 2));
+  background: transparent;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.ff-header {
+  text-align: center;
+  margin-bottom: 1.1rem;
+}
+
+.ff-title {
+  font-family: 'Dancing Script', cursive;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--ff-accent);
+  margin: 0 0 0.15rem;
+  letter-spacing: 0;
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ff-title-mark {
+  display: inline-block;
+  font-size: 1.6rem;
+  color: var(--ff-accent);
+  animation: ff-heartbeat 1.6s ease-in-out infinite;
+}
+
+@keyframes ff-heartbeat {
+  0%, 100% { transform: scale(1); }
+  20%      { transform: scale(1.18); }
+  40%      { transform: scale(0.96); }
+  60%      { transform: scale(1.08); }
+}
+
+.ff-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+/* Card grid — auto-fills as more feedback is added, capping cards at a
+   readable size on ultra-wide displays. */
+.ff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.ff-card {
+  appearance: none;
+  background: #fff;
+  border: 1px solid var(--ff-accent-tint);
+  border-radius: 0.85rem;
+  padding: 0;
+  text-align: left;
+  cursor: zoom-in;
+  overflow: hidden;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.ff-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--ff-accent);
+  box-shadow: 0 8px 22px rgba(230, 0, 34, 0.14);
+}
+
+.ff-card:focus-visible {
+  outline: 2px solid var(--ff-accent);
+  outline-offset: 2px;
+}
+
+.ff-card-img-wrap {
+  position: relative;
+  background: #fafafa;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.ff-card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.ff-card:hover .ff-card-img-wrap img {
+  transform: scale(1.03);
+}
+
+.ff-platform {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.ff-platform-tiktok    { background: #000; }
+.ff-platform-zalo      { background: #0068ff; }
+.ff-platform-instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.ff-platform-other     { background: #6b7280; }
+
+.ff-card-meta {
+  padding: 0.7rem 0.85rem 0.85rem;
+  border-top: 1px solid var(--ff-accent-tint);
+}
+
+.ff-card-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.2rem;
+}
+
+.ff-card-caption {
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* CTA */
+.ff-cta-wrap {
+  text-align: center;
+  margin-top: 1.25rem;
+}
+
+.ff-cta {
+  display: inline-block;
+  padding: 0.55rem 1.3rem;
+  background: var(--ff-accent);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(230, 0, 34, 0.28);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.ff-cta:hover {
+  background: var(--ff-accent-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(230, 0, 34, 0.34);
+}
+
+/* Lightbox */
+.ff-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  cursor: zoom-out;
+}
+
+.ff-lightbox img {
+  max-width: 95vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  cursor: default;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.ff-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f2937;
+  border: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .featured-feedback {
+    margin: 1.5rem 0;
+    padding: 0 1rem;
+  }
+  .ff-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+}
+
+@media (max-width: 560px) {
+  .featured-feedback {
+    margin: 1rem 0;
+    padding: 0 0.75rem;
+  }
+  .ff-title    { font-size: 1.7rem; }
+  .ff-subtitle { font-size: 0.8rem; }
+  .ff-grid     { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .ff-card-img-wrap { aspect-ratio: 1 / 1; }
+  .ff-card-meta { padding: 0.5rem 0.55rem 0.6rem; }
+  .ff-card-name { font-size: 0.78rem; }
+  .ff-card-caption { font-size: 0.72rem; -webkit-line-clamp: 1; }
+  .ff-platform { font-size: 0.62rem; padding: 0.15rem 0.45rem; }
+}

@@ -40,8 +40,6 @@ function QrYeuThuongPage() {
       </section>
 
       <section className="qryt-products">
-        <h2 className="qryt-section-title">Sản phẩm</h2>
-
         {loading && <PageLoader />}
         {error && <div className="qryt-error">{error}</div>}
 

@@ -67,6 +67,10 @@ export const productsApi = {
   create:    (data: unknown)             => api.post('/api/admin/products', data),
   update:    (id: number, data: unknown) => api.put(`/api/admin/products/${id}`, data),
   delete:    (id: number)                => api.delete(`/api/admin/products/${id}`),
+  // Featured-on-home — admin-curated set displayed on the public /home page.
+  listFeaturedOnHome: () => api.get('/api/admin/products/featured-on-home'),
+  reorderFeaturedOnHome: (items: { id: number; sort_order: number }[]) =>
+    api.patch('/api/admin/products/featured-on-home/reorder', { items }),
 };
 
 export const productCategoriesApi = {
@@ -94,6 +98,15 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+  banners: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=banners',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
   /** Best-effort removal of S3 objects by their public URLs. Used to clean
    *  up orphans from cancelled uploads. Never throws — caller can fire-and-forget. */
   deleteMany: (urls: string[]) =>
@@ -112,6 +125,15 @@ export type TestimonialBulkItem = {
   reviewer_name?: string | null;
   caption?:       string | null;
   is_featured?:   boolean;
+};
+
+export const bannersApi = {
+  list:    ()                          => api.get('/api/admin/banners'),
+  create:  (data: unknown)             => api.post('/api/admin/banners', data),
+  update:  (id: number, data: unknown) => api.put(`/api/admin/banners/${id}`, data),
+  reorder: (items: { id: number; sort_order: number }[]) =>
+    api.patch('/api/admin/banners/reorder', { items }),
+  delete:  (id: number)                => api.delete(`/api/admin/banners/${id}`),
 };
 
 export const testimonialsApi = {

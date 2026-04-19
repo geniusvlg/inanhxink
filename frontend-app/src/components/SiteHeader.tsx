@@ -4,7 +4,7 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import './SiteHeader.css';
 
 interface SiteHeaderProps {
-  activePage?: 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia';
+  activePage?: 'home' | 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia';
 }
 
 function SiteHeader({ activePage }: SiteHeaderProps) {
@@ -27,7 +27,7 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
   return (
     <header className="site-header">
       <div className="site-header-top">
-        <Link to="/" className="site-logo" onClick={closeMobileMenu}>
+        <Link to="/home" className="site-logo" onClick={closeMobileMenu}>
           <img src="/logo.jpeg" alt="Inanhxink" className="site-logo-img" />
           <span className="site-logo-text">In Ảnh Xink</span>
         </Link>
@@ -66,10 +66,11 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
       />
 
       <nav className={`site-header-nav${mobileMenuOpen ? ' site-header-nav--open' : ''}`}>
-        <Link to="/" className="site-drawer-logo-wrap" onClick={closeMobileMenu}>
+        <Link to="/home" className="site-drawer-logo-wrap" onClick={closeMobileMenu}>
           <img src="/logo.jpeg" alt="Inanhxink" className="site-drawer-logo" />
           <span className="site-drawer-logo-text">In Ảnh Xink</span>
         </Link>
+        <Link to="/home" className={linkCls('home')} onClick={closeMobileMenu}>Trang chủ</Link>
         {flags.page_qr_yeu_thuong     && <Link to="/qr-yeu-thuong"     className={linkCls('qr-yeu-thuong')} onClick={closeMobileMenu}>QR Yêu Thương</Link>}
         {flags.page_thiep             && <Link to="/thiep"             className={linkCls('thiep')} onClick={closeMobileMenu}>Thiệp</Link>}
         {flags.page_khung_anh         && <Link to="/khung-anh"         className={linkCls('khung-anh')} onClick={closeMobileMenu}>Khung Ảnh</Link>}

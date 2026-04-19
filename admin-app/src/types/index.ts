@@ -64,6 +64,17 @@ export interface Testimonial {
   updated_at: string;
 }
 
+export interface Banner {
+  id: number;
+  image_url: string;
+  link_url: string | null;
+  alt_text: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -81,6 +92,8 @@ export interface Product {
   discount_price: number | null;
   discount_from: string | null;
   discount_to: string | null;
+  is_featured_on_home: boolean;
+  home_sort_order: number;
   created_at: string;
 }
 

@@ -5,7 +5,7 @@ function SiteFooter() {
     <footer className="homepage-footer">
       <div className="footer-content">
         <div className="footer-info">
-          <p>Inanhxink — Tạo mã QR cá nhân, truyền tải yêu thương</p>
+          <p>Inanhxink — Quà tặng cá nhân hóa, dành tặng người thương</p>
           <p>&copy; {new Date().getFullYear()} Inanhxink. All rights reserved.</p>
         </div>
 
@@ -17,6 +17,7 @@ function SiteFooter() {
               <div className="logo-badge"><img src="/assets/images/payment/mastercard.png" alt="Mastercard" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
               <div className="logo-badge"><img src="/assets/images/payment/banking.png" alt="Banking" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
               <div className="logo-badge"><img src="/assets/images/payment/cod.png" alt="COD" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
+              <div className="logo-badge"><img src="/assets/images/payment/momo.png" alt="MoMo" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
               <div className="logo-badge"><img src="/assets/images/payment/paypal.png" alt="PayPal" onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} /></div>
             </div>
           </div>

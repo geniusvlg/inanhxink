@@ -18,7 +18,7 @@ const PAGE_TITLE: Record<string, string> = {
   so_scrapbook:   '📒 Sổ Scrapbook',
   khac:           '📦 Các Sản Phẩm Khác',
   'set-qua-tang': '🎁 Set Quà Tặng',
-  in_anh:       '🖨️ In Ảnh',
+  in_anh:         '🖨️ In Ảnh',
 };
 
 
@@ -73,8 +73,9 @@ function getDiscountStatusUi(status: DiscountStatus): { label: string; style: Re
 
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
-  name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: false, tiktok_url: null, instagram_url: null, category_ids: [],
+  name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
   discount_price: null, discount_from: null, discount_to: null,
+  is_featured_on_home: false,
 });
 
 export default function ProductItemsPage({ type }: Props) {
@@ -200,6 +201,7 @@ export default function ProductItemsPage({ type }: Props) {
         type,
         images: imageEntries,
         is_active: form.is_active ?? true,
+        is_featured_on_home: form.is_featured_on_home ?? false,
       });
       closeModal();
       load();
@@ -308,9 +310,25 @@ export default function ProductItemsPage({ type }: Props) {
                   </div>
                 </td>
                 <td>
-                  <span className={`badge ${p.is_active ? 'badge-green' : 'badge-red'}`}>
-                    {p.is_active ? 'Đang bán' : 'Ẩn'}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                    <span className={`badge ${p.is_active ? 'badge-green' : 'badge-red'}`}>
+                      {p.is_active ? 'Đang bán' : 'Ẩn'}
+                    </span>
+                    {p.is_featured_on_home && (
+                      <span
+                        className="badge"
+                        title="Đang hiển thị trên trang chủ"
+                        style={{
+                          background: '#fdf2f8',
+                          color: '#be185d',
+                          border: '1px solid #fbcfe8',
+                          fontWeight: 600,
+                        }}
+                      >
+                        🏠 Trang chủ
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td style={{ display: 'flex', gap: '0.4rem' }}>
                   <button className="btn-edit"      onClick={() => openEdit(p)}>Sửa</button>
@@ -554,6 +572,24 @@ export default function ProductItemsPage({ type }: Props) {
               <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input type="checkbox" id="pi_best_seller" checked={form.is_best_seller ?? false} onChange={e => setForm(f => ({ ...f, is_best_seller: e.target.checked }))} />
                 <label htmlFor="pi_best_seller" className="form-label" style={{ margin: 0 }}>⭐ Best Seller</label>
+              </div>
+
+              {/* Featured on homepage */}
+              <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  id="pi_featured_home"
+                  checked={form.is_featured_on_home ?? false}
+                  onChange={e => setForm(f => ({ ...f, is_featured_on_home: e.target.checked }))}
+                  style={{ marginTop: '0.2rem' }}
+                />
+                <label htmlFor="pi_featured_home" className="form-label" style={{ margin: 0 }}>
+                  🏠 Hiện trên trang chủ
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 400, marginTop: '0.15rem' }}>
+                    Sản phẩm sẽ xuất hiện trong khu sản phẩm nổi bật ở trang chủ. Có thể sắp xếp thứ tự ở trang
+                    <strong style={{ color: '#64748b' }}> SP trang chủ</strong>.
+                  </div>
+                </label>
               </div>
 
               {/* Watermark */}

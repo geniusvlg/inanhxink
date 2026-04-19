@@ -25,10 +25,12 @@ const NAV: { to: string; label: ReactNode }[] = [
   { to: '/cac-san-pham-khac', label: '📦 Các Sản Phẩm Khác' },
   { to: '/set-qua-tang',     label: '🎁 Set Quà Tặng' },
   { to: '/in-anh',           label: '🖨️ In Ảnh' },
+  { to: '/featured-on-home', label: '🏠 SP trang chủ' },
   { to: '/categories',       label: '🏷️ Danh mục' },
   { to: '/orders',           label: '📋 Đơn hàng' },
   { to: '/vouchers',         label: '🎟️ Voucher' },
   { to: '/testimonials',     label: '💬 Feedback' },
+  { to: '/banners',          label: '🖼️ Banner' },
   { to: '/config',           label: '⚙️ Cấu hình' },
 ];
 

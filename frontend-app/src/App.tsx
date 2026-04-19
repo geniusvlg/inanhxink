@@ -14,10 +14,11 @@ import InAnhPage from './pages/InAnhPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import TestimonialsPage from './pages/TestimonialsPage';
+import HomePage from './pages/HomePage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
-// Ordered list of pages — homepage is the first enabled one
+// Ordered list of pages — `/` resolves to the first enabled one
 const NAV_PAGES: { flag: keyof FeatureFlags; path: string }[] = [
   { flag: 'page_qr_yeu_thuong',     path: '/qr-yeu-thuong' },
   { flag: 'page_thiep',             path: '/thiep' },
@@ -28,14 +29,14 @@ const NAV_PAGES: { flag: keyof FeatureFlags; path: string }[] = [
   { flag: 'page_in_anh',            path: '/in-anh' },
 ];
 
-// Redirects to the first enabled page in the nav
+// Redirects `/` to the first enabled category page (legacy behaviour).
 function HomeRedirect() {
   const flags = useFeatureFlags();
   const first = NAV_PAGES.find(p => flags[p.flag]);
-  return <Navigate to={first ? first.path : '/thiep'} replace />;
+  return <Navigate to={first ? first.path : '/home'} replace />;
 }
 
-// Redirects to homepage when the feature flag is disabled
+// Renders `element` when the flag is enabled, otherwise redirects to `/`.
 function FlaggedRoute({ flag, element }: { flag: keyof FeatureFlags; element: ReactElement }) {
   const flags = useFeatureFlags();
   return flags[flag] ? element : <HomeRedirect />;
@@ -54,6 +55,7 @@ function AppRoutes() {
       <ScrollToTop />
       <Routes>
       <Route path="/" element={<HomeRedirect />} />
+      <Route path="/home" element={<HomePage />} />
       <Route path="/order" element={<OrderPage />} />
       <Route path="/payment/:qrName" element={<PaymentPage />} />
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
