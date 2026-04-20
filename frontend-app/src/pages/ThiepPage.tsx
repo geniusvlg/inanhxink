@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
@@ -72,6 +73,7 @@ export default function ThiepPage() {
       <SiteHeader activePage="thiep" />
 
       <section className="thiep-hero">
+        <ProductPageBanner page="thiep" />
         <h1 className="thiep-hero-title">Thiệp <span>Của Bạn</span></h1>
         <p className="thiep-hero-desc">Tạo thiệp cá nhân độc đáo, gửi trao yêu thương đến người thân.</p>
       </section>

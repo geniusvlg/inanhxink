@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
@@ -69,6 +70,7 @@ export default function KhacPage() {
       <SiteHeader activePage="cac-san-pham-khac" />
 
       <section className="khac-hero">
+        <ProductPageBanner page="cac_san_pham_khac" />
         <h1 className="khac-hero-title">Các Sản Phẩm <span>Khác</span></h1>
         <p className="khac-hero-desc">Khám phá thêm nhiều sản phẩm độc đáo và ý nghĩa khác.</p>
       </section>

@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
@@ -69,6 +70,7 @@ export default function InAnhPage() {
       <SiteHeader activePage="in-anh" />
 
       <section className="in-anh-hero">
+        <ProductPageBanner page="in_anh" />
         <h1 className="in-anh-hero-title">In <span>Ảnh</span></h1>
         <p className="in-anh-hero-desc">Dịch vụ in ảnh theo yêu cầu — sắc nét, bền màu, lưu giữ kỷ niệm đẹp.</p>
       </section>

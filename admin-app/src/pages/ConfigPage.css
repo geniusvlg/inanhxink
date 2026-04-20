@@ -1,0 +1,171 @@
+/* ── Config page — extracted styles for the cards / banner editor ─────────── */
+
+.cfg-card {
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.cfg-card-head {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cfg-card-title {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: #0f172a;
+}
+
+.cfg-card-sub {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  margin-top: 0.2rem;
+  line-height: 1.45;
+}
+
+.cfg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.cfg-row:last-child {
+  border-bottom: none;
+}
+
+.cfg-row-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.cfg-row-sub {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* ── Per-page block ─────────────────────────────────────────────────────── */
+.cfg-page-block {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cfg-page-block:last-child {
+  border-bottom: none;
+}
+
+.cfg-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cfg-mode-radios {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.cfg-mode-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cfg-mode-radio input {
+  cursor: pointer;
+}
+
+/* ── Slides editor ───────────────────────────────────────────────────────── */
+.cfg-section {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.cfg-section-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #475569;
+  margin-bottom: 0.75rem;
+}
+
+.cfg-slides {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cfg-slides-empty {
+  padding: 0.85rem 1rem;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.cfg-slide-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.cfg-slide-thumb {
+  width: 9rem;
+  aspect-ratio: 16 / 4;
+  object-fit: cover;
+  border-radius: 0.4rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  display: block;
+}
+
+.cfg-slide-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.cfg-slide-fields .form-input {
+  margin-top: 0;
+}
+
+.cfg-slide-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .cfg-slide-row {
+    grid-template-columns: 1fr;
+  }
+  .cfg-slide-thumb {
+    width: 100%;
+    max-width: 22rem;
+    margin: 0 auto;
+  }
+  .cfg-slide-actions {
+    justify-content: flex-start;
+  }
+}
