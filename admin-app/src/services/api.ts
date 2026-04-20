@@ -117,6 +117,18 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+  /** Upload one or more product-page banner slides. Stored under
+   *  s3://.../product-banner/. The DB stores raw S3 URLs; the public
+   *  /api/metadata route rewrites them to CDN URLs at response time. */
+  productBanner: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=product-banner',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
   /** Best-effort removal of S3 objects by their public URLs. Used to clean
    *  up orphans from cancelled uploads. Never throws — caller can fire-and-forget. */
   deleteMany: (urls: string[]) =>

@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
@@ -69,6 +70,7 @@ export default function SetQuaTangPage() {
       <SiteHeader activePage="set-qua-tang" />
 
       <section className="set-qua-tang-hero">
+        <ProductPageBanner page="set_qua_tang" />
         <h1 className="set-qua-tang-hero-title">Set Quà <span>Tặng</span></h1>
         <p className="set-qua-tang-hero-desc">Những bộ quà tặng tinh tế, ý nghĩa — gói trọn yêu thương gửi đến người đặc biệt.</p>
       </section>

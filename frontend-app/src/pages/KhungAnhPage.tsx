@@ -4,6 +4,7 @@ import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/ProductFilter';
+import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
@@ -69,6 +70,7 @@ export default function KhungAnhPage() {
       <SiteHeader activePage="khung-anh" />
 
       <section className="khuganh-hero">
+        <ProductPageBanner page="khung_anh" />
         <h1 className="khuganh-hero-title">Khung Ảnh <span>Đẹp</span></h1>
         <p className="khuganh-hero-desc">Trang trí ảnh của bạn với những khung ảnh độc đáo và ý nghĩa.</p>
       </section>

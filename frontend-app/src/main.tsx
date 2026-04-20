@@ -14,6 +14,7 @@ Sentry.init({
   ignoreErrors: [
     // Injected by Zalo in-app browser (iOS WebView) — not our code
     /zaloJSV2/,
+    /isReCreate is not defined/,
   ],
 });
 

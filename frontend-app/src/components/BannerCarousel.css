@@ -133,7 +133,6 @@
 @media (max-width: 720px) {
   .banner-carousel {
     border-radius: 1rem;
-    aspect-ratio: 16 / 9;
     box-shadow:
       0 1px 2px rgba(40, 20, 30, 0.04),
       0 6px 16px rgba(40, 20, 30, 0.08);

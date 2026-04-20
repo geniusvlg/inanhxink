@@ -1,0 +1,97 @@
+/* ── Product-page banner — compact 16:4 carousel inside each hero ────────── */
+
+.ppb {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto 2rem;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.6);
+  aspect-ratio: 16 / 4;
+  box-shadow:
+    0 1px 2px rgba(40, 20, 30, 0.04),
+    0 10px 24px rgba(40, 20, 30, 0.08);
+}
+
+.ppb-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.ppb-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  display: block;
+}
+
+.ppb-slide-link {
+  display: block;
+  height: 100%;
+  cursor: pointer;
+}
+
+.ppb-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+
+/* Dots — clean, brand-pink active state. Identical look to the homepage
+ * carousel (intentional — feels like one design system). */
+.ppb-dots {
+  position: absolute;
+  bottom: 0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  background: transparent;
+}
+
+.ppb-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(40, 20, 30, 0.18);
+  transition: background 0.2s, width 0.25s ease, box-shadow 0.2s;
+}
+
+.ppb-dot:hover {
+  background: #fff;
+}
+
+.ppb-dot--active {
+  background: #fe2c56;
+  width: 1.4rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(254, 44, 86, 0.4);
+}
+
+.ppb-dot:focus-visible {
+  outline: 2px solid #fe2c56;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .ppb {
+    margin: 0 auto 1.25rem;
+    border-radius: 0.85rem;
+    box-shadow:
+      0 1px 2px rgba(40, 20, 30, 0.04),
+      0 6px 14px rgba(40, 20, 30, 0.08);
+  }
+  .ppb-dots { bottom: 0.45rem; gap: 0.3rem; }
+  .ppb-dot  { width: 0.42rem; height: 0.42rem; }
+  .ppb-dot--active { width: 1.15rem; }
+}
