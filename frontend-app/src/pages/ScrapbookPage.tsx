@@ -72,7 +72,6 @@ export default function ScrapbookPage() {
       <section className="scrapbook-hero">
         <ProductPageBanner page="so_scrapbook" />
         <h1 className="scrapbook-hero-title">Sổ &amp; Phụ Kiện <span>Scrapbook</span></h1>
-        <p className="scrapbook-hero-desc">Lưu giữ kỷ niệm đẹp với những cuốn sổ và phụ kiện scrapbook độc đáo.</p>
       </section>
 
       <div className="products-layout">

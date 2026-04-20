@@ -75,7 +75,6 @@ export default function ThiepPage() {
       <section className="thiep-hero">
         <ProductPageBanner page="thiep" />
         <h1 className="thiep-hero-title">Thiệp <span>Của Bạn</span></h1>
-        <p className="thiep-hero-desc">Tạo thiệp cá nhân độc đáo, gửi trao yêu thương đến người thân.</p>
       </section>
 
       <div className="products-layout">

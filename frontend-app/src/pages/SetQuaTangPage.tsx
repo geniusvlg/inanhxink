@@ -72,7 +72,6 @@ export default function SetQuaTangPage() {
       <section className="set-qua-tang-hero">
         <ProductPageBanner page="set_qua_tang" />
         <h1 className="set-qua-tang-hero-title">Set Quà <span>Tặng</span></h1>
-        <p className="set-qua-tang-hero-desc">Những bộ quà tặng tinh tế, ý nghĩa — gói trọn yêu thương gửi đến người đặc biệt.</p>
       </section>
 
       <div className="products-layout">

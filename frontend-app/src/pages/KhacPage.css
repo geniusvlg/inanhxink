@@ -10,7 +10,7 @@
 
 .khac-hero {
   text-align: center;
-  padding: 4rem 2rem 3rem;
+  padding: 2.5rem 2rem 1.5rem;
   background: linear-gradient(180deg, #ffedd5 0%, #fff 100%);
 }
 
@@ -18,7 +18,7 @@
   font-size: 2.75rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 .khac-hero-title span { color: #f97316; }
@@ -43,6 +43,7 @@
 }
 
 @media (max-width: 640px) {
+  .khac-hero { padding: 1.25rem 1rem 0.5rem; }
   .khac-hero-title { font-size: 2rem; }
   .khac-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
   .khac-grid .product-card--link .product-card-name {

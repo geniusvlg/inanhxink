@@ -84,11 +84,6 @@ function HomePage() {
       >
           <div className="hero-inner">
             <div className="hero-copy">
-              <img
-                src="/watermark.png"
-                alt="in ảnh xink"
-                className="hero-eyebrow-mark"
-              />
               <h1 className="hero-title">
                 Một món quà <span>nhỏ xinh,</span>
                 <br />

@@ -72,7 +72,6 @@ export default function InAnhPage() {
       <section className="in-anh-hero">
         <ProductPageBanner page="in_anh" />
         <h1 className="in-anh-hero-title">In <span>Ảnh</span></h1>
-        <p className="in-anh-hero-desc">Dịch vụ in ảnh theo yêu cầu — sắc nét, bền màu, lưu giữ kỷ niệm đẹp.</p>
       </section>
 
       <div className="products-layout">

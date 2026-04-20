@@ -10,7 +10,7 @@
 
 .set-qua-tang-hero {
   text-align: center;
-  padding: 4rem 2rem 3rem;
+  padding: 2.5rem 2rem 1.5rem;
   background: linear-gradient(180deg, #d4f0e0 0%, #fff 100%);
 }
 
@@ -18,7 +18,7 @@
   font-size: 2.75rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 .set-qua-tang-hero-title span { color: #16a34a; }
@@ -43,6 +43,7 @@
 }
 
 @media (max-width: 640px) {
+  .set-qua-tang-hero { padding: 1.25rem 1rem 0.5rem; }
   .set-qua-tang-hero-title { font-size: 2rem; }
   .set-qua-tang-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
   .set-qua-tang-grid .product-card--link .product-card-name {
