@@ -72,7 +72,6 @@ export default function KhungAnhPage() {
       <section className="khuganh-hero">
         <ProductPageBanner page="khung_anh" />
         <h1 className="khuganh-hero-title">Khung Ảnh <span>Đẹp</span></h1>
-        <p className="khuganh-hero-desc">Trang trí ảnh của bạn với những khung ảnh độc đáo và ý nghĩa.</p>
       </section>
 
       <div className="products-layout">

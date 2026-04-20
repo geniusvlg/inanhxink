@@ -72,7 +72,6 @@ export default function KhacPage() {
       <section className="khac-hero">
         <ProductPageBanner page="cac_san_pham_khac" />
         <h1 className="khac-hero-title">Các Sản Phẩm <span>Khác</span></h1>
-        <p className="khac-hero-desc">Khám phá thêm nhiều sản phẩm độc đáo và ý nghĩa khác.</p>
       </section>
 
       <div className="products-layout">

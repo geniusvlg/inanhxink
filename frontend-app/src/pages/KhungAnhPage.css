@@ -10,7 +10,7 @@
 
 .khuganh-hero {
   text-align: center;
-  padding: 4rem 2rem 3rem;
+  padding: 2.5rem 2rem 1.5rem;
   background: linear-gradient(180deg, #d6eaff 0%, #fff 100%);
 }
 
@@ -18,7 +18,7 @@
   font-size: 2.75rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 .khuganh-hero-title span { color: #2563eb; }
@@ -43,6 +43,7 @@
 }
 
 @media (max-width: 640px) {
+  .khuganh-hero { padding: 1.25rem 1rem 0.5rem; }
   .khuganh-hero-title { font-size: 2rem; }
   .khuganh-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
   .khuganh-grid .product-card--link .product-card-name {

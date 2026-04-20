@@ -364,7 +364,7 @@
 @media (max-width: 768px) {
   .products-layout {
     flex-direction: column;
-    padding: 1.25rem 1rem 3rem;
+    padding: 0.5rem 1rem 3rem;
     gap: 0;
   }
 
