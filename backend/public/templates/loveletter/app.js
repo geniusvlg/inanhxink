@@ -111,13 +111,21 @@ function renderLetter() {
   });
 }
 
-// ── Floating hearts (same trigger as OurMemories) ────────────────────────────
+// ── Floating hearts — infinite rising with staggered start ───────────────────
 function playHeartIntro() {
-  const durations = [1.5, 1.7, 1.6, 1.8, 1.9, 1.6];
+  const configs = [
+    { duration: 6.0, delay: 0.0 },
+    { duration: 8.0, delay: 1.5 },
+    { duration: 5.5, delay: 0.8 },
+    { duration: 7.0, delay: 2.5 },
+    { duration: 5.0, delay: 3.2 },
+    { duration: 6.5, delay: 1.2 },
+  ];
   document.querySelectorAll(".heart-float").forEach((el, i) => {
+    const { duration, delay } = configs[i];
     el.style.animation = "";
     void el.offsetWidth;
-    el.style.animation = `heartFloat${i + 1} ${durations[i]}s ease-out 800ms 1 forwards`;
+    el.style.animation = `heartRise${i + 1} ${duration}s ease-in-out ${delay}s infinite`;
   });
 }
 
