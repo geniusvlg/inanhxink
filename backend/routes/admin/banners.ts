@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 import { deleteFromS3 } from '../../config/s3';
 
@@ -13,7 +14,7 @@ router.get('/', async (_req: Request, res: Response) => {
     );
     return res.json({ success: true, banners: result.rows });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -49,7 +50,7 @@ router.post('/', async (req: Request, res: Response) => {
     );
     return res.status(201).json({ success: true, banner: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -95,7 +96,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     return res.json({ success: true, banner: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -120,7 +121,7 @@ router.patch('/reorder', async (req: Request, res: Response) => {
     return res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   } finally {
     client.release();
   }
@@ -142,7 +143,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     }
     return res.json({ success: true, message: 'Banner deleted' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

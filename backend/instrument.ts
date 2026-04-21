@@ -9,8 +9,10 @@ Sentry.init({
   tracesSampleRate: 1.0,
   environment: process.env.NODE_ENV || 'development',
   includeLocalVariables: true,
-  // Capture full request body in Sentry events
   integrations: [
+    // Required for Express request context (route, method, url) in Sentry events
+    Sentry.expressIntegration(),
+    // Capture full request body in Sentry events
     Sentry.requestDataIntegration({
       include: {
         data: true,

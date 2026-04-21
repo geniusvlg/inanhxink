@@ -150,9 +150,14 @@ export default function ProductItemsPage({ type }: Props) {
     try {
       const res = await uploadApi.images(files, `${type}/product-${productId}`, form.watermark_enabled ?? false);
       setImageEntries(prev => [...prev, ...res.data.urls]);
-    } catch (err) {
+    } catch (err: unknown) {
       Sentry.captureException(err);
-      alert('Lỗi khi tải ảnh lên');
+      const axiosErr = err as { response?: { status?: number; data?: { error?: string } } };
+      if (axiosErr.response?.status === 413) {
+        alert('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 50MB.');
+      } else {
+        alert('Lỗi khi tải ảnh lên');
+      }
     } finally {
       setUploadingImages(false);
     }
@@ -214,14 +219,24 @@ export default function ProductItemsPage({ type }: Props) {
   };
 
   const handleToggle = async (p: Product) => {
-    await productsApi.update(p.id, { is_active: !p.is_active });
-    load();
+    try {
+      await productsApi.update(p.id, { is_active: !p.is_active });
+      load();
+    } catch (err) {
+      Sentry.captureException(err);
+      alert('Lỗi khi cập nhật trạng thái sản phẩm');
+    }
   };
 
   const handleDelete = async (p: Product) => {
     if (!confirm(`Xoá sản phẩm "${p.name}"? Hành động này không thể hoàn tác.`)) return;
-    await productsApi.delete(p.id);
-    load();
+    try {
+      await productsApi.delete(p.id);
+      load();
+    } catch (err) {
+      Sentry.captureException(err);
+      alert('Lỗi khi xoá sản phẩm');
+    }
   };
 
   if (loading) return <div className="admin-loading">Đang tải...</div>;

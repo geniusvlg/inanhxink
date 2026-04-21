@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 
 const router = Router();
@@ -11,7 +12,7 @@ router.get('/', async (_req: Request, res: Response) => {
     for (const row of result.rows) config[row.key] = row.value;
     return res.json({ success: true, config });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -29,7 +30,7 @@ router.put('/', async (req: Request, res: Response) => {
     }
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

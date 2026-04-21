@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 
 const router = Router();
@@ -9,7 +10,7 @@ router.get('/', async (_req: Request, res: Response) => {
     const result = await db.query('SELECT * FROM templates ORDER BY id ASC');
     return res.json({ success: true, templates: result.rows });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -20,7 +21,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
     return res.json({ success: true, template: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -41,7 +42,7 @@ router.post('/', async (req: Request, res: Response) => {
     );
     return res.status(201).json({ success: true, template: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -68,7 +69,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
     return res.json({ success: true, template: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -82,7 +83,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
     return res.json({ success: true, message: 'Template deactivated' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

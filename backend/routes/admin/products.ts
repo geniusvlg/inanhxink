@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 
 const router = Router();
@@ -40,7 +41,7 @@ router.get('/', async (req: Request, res: Response) => {
     );
     return res.json({ success: true, products: result.rows, total, page, limit });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -67,7 +68,7 @@ router.get('/featured-on-home', async (_req: Request, res: Response) => {
     );
     return res.json({ success: true, products: result.rows });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -93,7 +94,7 @@ router.patch('/featured-on-home/reorder', async (req: Request, res: Response) =>
     return res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   } finally {
     client.release();
   }
@@ -118,7 +119,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
     return res.json({ success: true, product: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -138,7 +139,7 @@ router.post('/check-name', async (req: Request, res: Response) => {
     }
     return res.json({ success: true, available: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -161,7 +162,7 @@ router.post('/reserve', async (req: Request, res: Response) => {
     return res.status(201).json({ success: true, productId: insert.rows[0].id });
   } catch (err) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   } finally {
     client.release();
   }
@@ -213,7 +214,7 @@ router.post('/', async (req: Request, res: Response) => {
     return res.status(201).json({ success: true, product });
   } catch (err) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   } finally {
     client.release();
   }
@@ -296,7 +297,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     return res.json({ success: true, product: updated.rows[0] });
   } catch (err) {
     await client.query('ROLLBACK');
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   } finally {
     client.release();
   }
@@ -312,7 +313,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
     return res.json({ success: true, message: 'Product deleted' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../middleware/sendError';
 import db from '../config/database';
 import { rewriteRowImageFields } from '../config/cdn';
 
@@ -17,7 +18,7 @@ router.get('/', async (_req: Request, res: Response) => {
     const banners = result.rows.map(r => rewriteRowImageFields(r, { url: ['image_url'] }));
     return res.json({ success: true, banners });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

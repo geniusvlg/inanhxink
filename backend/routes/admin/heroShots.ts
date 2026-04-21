@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 import { deleteFromS3 } from '../../config/s3';
 
@@ -14,7 +15,7 @@ router.get('/', async (_req: Request, res: Response) => {
     );
     return res.json({ success: true, hero_shots: result.rows });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -67,7 +68,7 @@ router.put('/:slot', async (req: Request, res: Response) => {
 
     return res.json({ success: true, hero_shot: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
