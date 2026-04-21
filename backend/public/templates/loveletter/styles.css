@@ -87,17 +87,15 @@ body.env-open .background-title {
 
 .heart-float {
   position: absolute;
-  top: 50%;
-  left: 50%;
   opacity: 0;
 }
 
-@media (max-width: 480px) {
-  .heart-float svg {
-    width: 44px;
-    height: 44px;
-  }
-}
+.heart-float-1 { left: 10%; top: 72%; }
+.heart-float-2 { left: 24%; top: 78%; }
+.heart-float-3 { left: 44%; top: 70%; }
+.heart-float-4 { left: 63%; top: 75%; }
+.heart-float-5 { left: 79%; top: 71%; }
+.heart-float-6 { left: 89%; top: 74%; }
 
 /* ── Letter stage: centers the envelope on screen ── */
 .letter-stage {
@@ -491,81 +489,48 @@ body.env-open .background-title {
 }
 
 
-/* ── Heart float keyframes ── */
-@keyframes heartFloat1 {
-  0%       { transform: translate(-50%, -50%) scale(0) rotate(330deg); opacity: 0; }
-  25%, 80% { transform: translate(calc(-50% - 12rem), calc(-50% - 12rem)) scale(1.2) rotate(330deg); opacity: 1; }
-  95%      { transform: translate(calc(-50% - 12rem), calc(-50% - 12rem)) scale(1.5) rotate(330deg); opacity: 0.7; }
-  100%     { transform: translate(calc(-50% - 12rem), calc(-50% - 12rem)) scale(0.1) rotate(330deg); opacity: 0; }
+/* ── Heart float keyframes — continuous rise with gentle sway ── */
+@keyframes heartRise1 {
+  0%   { transform: translateY(0) translateX(0) scale(0.55) rotate(-15deg); opacity: 0; }
+  12%  { opacity: 1; }
+  50%  { transform: translateY(-45vh) translateX(2rem) scale(1.1) rotate(-10deg); opacity: 1; }
+  85%  { opacity: 0.65; }
+  100% { transform: translateY(-92vh) translateX(0.5rem) scale(0.9) rotate(-8deg); opacity: 0; }
 }
-@keyframes heartFloat2 {
-  0%       { transform: translate(-50%, -50%) scale(0) rotate(25deg); opacity: 0; }
-  25%, 80% { transform: translate(-50%, calc(-50% - 15rem)) scale(1.2) rotate(25deg); opacity: 1; }
-  95%      { transform: translate(-50%, calc(-50% - 15rem)) scale(1.5) rotate(25deg); opacity: 0.7; }
-  100%     { transform: translate(-50%, calc(-50% - 15rem)) scale(0.1) rotate(25deg); opacity: 0; }
+@keyframes heartRise2 {
+  0%   { transform: translateY(0) translateX(0) scale(0.45) rotate(20deg); opacity: 0; }
+  12%  { opacity: 0.9; }
+  50%  { transform: translateY(-52vh) translateX(-3rem) scale(1.05) rotate(14deg); opacity: 0.9; }
+  85%  { opacity: 0.55; }
+  100% { transform: translateY(-98vh) translateX(-1rem) scale(0.8) rotate(17deg); opacity: 0; }
 }
-@keyframes heartFloat3 {
-  0%       { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-  25%, 80% { transform: translate(calc(-50% + 14rem), calc(-50% - 12rem)) scale(1.2); opacity: 1; }
-  95%      { transform: translate(calc(-50% + 14rem), calc(-50% - 12rem)) scale(1.5); opacity: 0.7; }
-  100%     { transform: translate(calc(-50% + 14rem), calc(-50% - 12rem)) scale(0.1); opacity: 0; }
+@keyframes heartRise3 {
+  0%   { transform: translateY(0) translateX(0) scale(0.5) rotate(5deg); opacity: 0; }
+  12%  { opacity: 1; }
+  50%  { transform: translateY(-42vh) translateX(2.5rem) scale(1.05) rotate(9deg); opacity: 1; }
+  85%  { opacity: 0.7; }
+  100% { transform: translateY(-88vh) translateX(1rem) scale(0.85) rotate(6deg); opacity: 0; }
 }
-@keyframes heartFloat4 {
-  0%       { transform: translate(-50%, -50%) scale(0) rotate(20deg); opacity: 0; }
-  25%, 80% { transform: translate(calc(-50% - 12rem), calc(-50% + 14rem)) scale(1.2) rotate(20deg); opacity: 1; }
-  95%      { transform: translate(calc(-50% - 12rem), calc(-50% + 14rem)) scale(1.5) rotate(20deg); opacity: 0.7; }
-  100%     { transform: translate(calc(-50% - 12rem), calc(-50% + 14rem)) scale(0.1) rotate(20deg); opacity: 0; }
+@keyframes heartRise4 {
+  0%   { transform: translateY(0) translateX(0) scale(0.5) rotate(-10deg); opacity: 0; }
+  12%  { opacity: 0.95; }
+  50%  { transform: translateY(-55vh) translateX(-2rem) scale(1.15) rotate(-5deg); opacity: 0.95; }
+  85%  { opacity: 0.6; }
+  100% { transform: translateY(-100vh) translateX(-0.5rem) scale(0.9) rotate(-8deg); opacity: 0; }
 }
-@keyframes heartFloat5 {
-  0%       { transform: translate(-50%, -50%) scale(0) rotate(345deg); opacity: 0; }
-  25%, 80% { transform: translate(-50%, calc(-50% + 17rem)) scale(1.2) rotate(345deg); opacity: 1; }
-  95%      { transform: translate(-50%, calc(-50% + 17rem)) scale(1.5) rotate(345deg); opacity: 0.7; }
-  100%     { transform: translate(-50%, calc(-50% + 17rem)) scale(0.1) rotate(345deg); opacity: 0; }
+@keyframes heartRise5 {
+  0%   { transform: translateY(0) translateX(0) scale(0.5) rotate(25deg); opacity: 0; }
+  12%  { opacity: 1; }
+  50%  { transform: translateY(-44vh) translateX(1.5rem) scale(1.1) rotate(20deg); opacity: 1; }
+  85%  { opacity: 0.7; }
+  100% { transform: translateY(-90vh) translateX(0.5rem) scale(0.85) rotate(22deg); opacity: 0; }
 }
-@keyframes heartFloat6 {
-  0%       { transform: translate(-50%, -50%) scale(0) rotate(25deg); opacity: 0; }
-  25%, 80% { transform: translate(calc(-50% + 14rem), calc(-50% + 14rem)) scale(1.2) rotate(25deg); opacity: 1; }
-  95%      { transform: translate(calc(-50% + 14rem), calc(-50% + 14rem)) scale(1.5) rotate(25deg); opacity: 0.7; }
-  100%     { transform: translate(calc(-50% + 14rem), calc(-50% + 14rem)) scale(0.1) rotate(25deg); opacity: 0; }
-}
-
-@media (max-width: 600px) {
-  @keyframes heartFloat1 {
-    0%       { transform: translate(-50%, -50%) scale(0) rotate(330deg); opacity: 0; }
-    25%, 80% { transform: translate(calc(-50% - 6rem), calc(-50% - 6rem)) scale(1.2) rotate(330deg); opacity: 1; }
-    95%      { transform: translate(calc(-50% - 6rem), calc(-50% - 6rem)) scale(1.5) rotate(330deg); opacity: 0.7; }
-    100%     { transform: translate(calc(-50% - 6rem), calc(-50% - 6rem)) scale(0.1) rotate(330deg); opacity: 0; }
-  }
-  @keyframes heartFloat2 {
-    0%       { transform: translate(-50%, -50%) scale(0) rotate(25deg); opacity: 0; }
-    25%, 80% { transform: translate(-50%, calc(-50% - 8rem)) scale(1.2) rotate(25deg); opacity: 1; }
-    95%      { transform: translate(-50%, calc(-50% - 8rem)) scale(1.5) rotate(25deg); opacity: 0.7; }
-    100%     { transform: translate(-50%, calc(-50% - 8rem)) scale(0.1) rotate(25deg); opacity: 0; }
-  }
-  @keyframes heartFloat3 {
-    0%       { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-    25%, 80% { transform: translate(calc(-50% + 6rem), calc(-50% - 6rem)) scale(1.2); opacity: 1; }
-    95%      { transform: translate(calc(-50% + 6rem), calc(-50% - 6rem)) scale(1.5); opacity: 0.7; }
-    100%     { transform: translate(calc(-50% + 6rem), calc(-50% - 6rem)) scale(0.1); opacity: 0; }
-  }
-  @keyframes heartFloat4 {
-    0%       { transform: translate(-50%, -50%) scale(0) rotate(20deg); opacity: 0; }
-    25%, 80% { transform: translate(calc(-50% - 6rem), calc(-50% + 7.5rem)) scale(1.2) rotate(20deg); opacity: 1; }
-    95%      { transform: translate(calc(-50% - 6rem), calc(-50% + 7.5rem)) scale(1.5) rotate(20deg); opacity: 0.7; }
-    100%     { transform: translate(calc(-50% - 6rem), calc(-50% + 7.5rem)) scale(0.1) rotate(20deg); opacity: 0; }
-  }
-  @keyframes heartFloat5 {
-    0%       { transform: translate(-50%, -50%) scale(0) rotate(345deg); opacity: 0; }
-    25%, 80% { transform: translate(-50%, calc(-50% + 8.5rem)) scale(1.2) rotate(345deg); opacity: 1; }
-    95%      { transform: translate(-50%, calc(-50% + 8.5rem)) scale(1.5) rotate(345deg); opacity: 0.7; }
-    100%     { transform: translate(-50%, calc(-50% + 8.5rem)) scale(0.1) rotate(345deg); opacity: 0; }
-  }
-  @keyframes heartFloat6 {
-    0%       { transform: translate(-50%, -50%) scale(0) rotate(25deg); opacity: 0; }
-    25%, 80% { transform: translate(calc(-50% + 6rem), calc(-50% + 7.5rem)) scale(1.2) rotate(25deg); opacity: 1; }
-    95%      { transform: translate(calc(-50% + 6rem), calc(-50% + 7.5rem)) scale(1.5) rotate(25deg); opacity: 0.7; }
-    100%     { transform: translate(calc(-50% + 6rem), calc(-50% + 7.5rem)) scale(0.1) rotate(25deg); opacity: 0; }
-  }
+@keyframes heartRise6 {
+  0%   { transform: translateY(0) translateX(0) scale(0.5) rotate(-5deg); opacity: 0; }
+  12%  { opacity: 0.85; }
+  50%  { transform: translateY(-48vh) translateX(-2.5rem) scale(1.05) rotate(-9deg); opacity: 0.85; }
+  85%  { opacity: 0.55; }
+  100% { transform: translateY(-94vh) translateX(-1rem) scale(0.8) rotate(-6deg); opacity: 0; }
 }
 
 /* ── Polaroids ── */
