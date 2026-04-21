@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import { deleteFromS3 } from '../../config/s3';
 
 const router = Router();

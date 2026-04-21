@@ -69,7 +69,7 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 // Always use memoryStorage — S3 path streams from RAM; local fallback writes to disk
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('audio/')) {
       cb(null, true);
@@ -86,40 +86,48 @@ app.use('/static', express.static(path.join(__dirname, 'public')));
 app.use('/templates', express.static(path.join(__dirname, 'public', 'templates')));
 
 // ── File upload endpoint ─────────────────────────────────────────────────────
-app.post('/api/upload', upload.array('files', 20), async (req: Request, res: Response) => {
-  try {
-    const files = req.files as Express.Multer.File[];
-    if (!files || files.length === 0) {
-      return res.status(400).json({ success: false, error: 'No files uploaded' });
+app.post('/api/upload', (req: Request, res: Response, next: NextFunction) => {
+  upload.array('files', 20)(req, res, async (err) => {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      Sentry.captureException(err);
+      return res.status(413).json({ success: false, error: 'Ảnh quá lớn. Kích thước tối đa là 50MB mỗi ảnh.' });
     }
+    if (err) return next(err);
 
-    const qrName = ((req.query?.qrName as string) || '')
-      .toLowerCase()
-      .split('/')
-      .map(seg => seg.replace(/[^a-z0-9_-]/g, ''))
-      .filter(Boolean)
-      .join('/');
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ success: false, error: 'No files uploaded' });
+      }
 
-    // Admin product uploads pass ?prefix=products/... directly
-    // Customer QR uploads pass ?qrName=... which gets stored under qr/
-    const prefix = (req.query?.prefix as string) || '';
-    const watermark = req.query?.watermark === 'true';
-    const folder = prefix
-      ? prefix.toLowerCase().split('/').map(seg => seg.replace(/[^a-z0-9_-]/g, '')).filter(Boolean).join('/')
-      : qrName ? `uploads/${qrName}` : 'uploads';
-    const urls: string[] = [];
+      const qrName = ((req.query?.qrName as string) || '')
+        .toLowerCase()
+        .split('/')
+        .map(seg => seg.replace(/[^a-z0-9_-]/g, ''))
+        .filter(Boolean)
+        .join('/');
 
-    for (const file of files) {
-      const url = await uploadToS3(file.buffer, folder, file.originalname, file.mimetype, watermark);
-      urls.push(url);
+      // Admin product uploads pass ?prefix=products/... directly
+      // Customer QR uploads pass ?qrName=... which gets stored under qr/
+      const prefix = (req.query?.prefix as string) || '';
+      const watermark = req.query?.watermark === 'true';
+      const folder = prefix
+        ? prefix.toLowerCase().split('/').map(seg => seg.replace(/[^a-z0-9_-]/g, '')).filter(Boolean).join('/')
+        : qrName ? `uploads/${qrName}` : 'uploads';
+      const urls: string[] = [];
+
+      for (const file of files) {
+        const url = await uploadToS3(file.buffer, folder, file.originalname, file.mimetype, watermark);
+        urls.push(url);
+      }
+
+      return res.json({ success: true, urls });
+
+    } catch (uploadErr) {
+      const e = uploadErr as Error;
+      return res.status(500).json({ success: false, error: e.message });
     }
-
-    return res.json({ success: true, urls });
-
-  } catch (err) {
-    const e = err as Error;
-    return res.status(500).json({ success: false, error: e.message });
-  }
+  });
 });
 
 // ── Health / DB check ────────────────────────────────────────────────────────
@@ -301,6 +309,16 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 
 // ── Sentry error handler (must be before any other error middleware) ──────────
 Sentry.setupExpressErrorHandler(app);
+
+// ── Global JSON error handler ─────────────────────────────────────────────────
+// Catches any error passed via next(err) that wasn't already responded to.
+// Routes that catch their own errors and call next(err) land here.
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  if (!res.headersSent) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

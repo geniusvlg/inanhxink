@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../middleware/sendError';
 import db from '../config/database';
 import { cdnUrl } from '../config/cdn';
 
@@ -76,7 +77,7 @@ router.get('/', async (req: Request, res: Response) => {
       total_pages: totalPages,
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

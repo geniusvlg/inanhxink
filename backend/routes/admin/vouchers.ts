@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 
 const router = Router();
@@ -9,7 +10,7 @@ router.get('/', async (_req: Request, res: Response) => {
     const result = await db.query('SELECT * FROM vouchers ORDER BY created_at DESC');
     return res.json({ success: true, vouchers: result.rows });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -28,7 +29,7 @@ router.post('/', async (req: Request, res: Response) => {
     );
     return res.json({ success: true, voucher: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -49,7 +50,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     return res.json({ success: true, voucher: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -60,7 +61,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     await db.query('DELETE FROM vouchers WHERE id = $1', [id]);
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../middleware/sendError';
 import db from '../config/database';
 import { rewriteRowImageFields } from '../config/cdn';
 
@@ -79,7 +80,7 @@ router.get('/', async (req: Request, res: Response) => {
 
     return res.json({ success: true, products: result.rows.map(withCdn), total, page, limit });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -111,7 +112,7 @@ router.get('/featured-on-home', async (_req: Request, res: Response) => {
     );
     return res.json({ success: true, products: result.rows.map(withCdn) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -138,7 +139,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     }
     return res.json({ success: true, product: withCdn(result.rows[0]) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

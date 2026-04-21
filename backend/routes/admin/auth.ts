@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import db from '../../config/database';
@@ -29,7 +30,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '8h' });
     return res.json({ success: true, token, username: user.username });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 

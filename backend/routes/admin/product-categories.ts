@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
 
 const router = Router();
@@ -12,7 +13,7 @@ router.get('/', async (req: Request, res: Response) => {
       : await db.query('SELECT * FROM product_categories ORDER BY type, name');
     return res.json({ success: true, categories: result.rows });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -28,7 +29,7 @@ router.post('/', async (req: Request, res: Response) => {
     );
     return res.status(201).json({ success: true, category: result.rows[0] });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
@@ -41,7 +42,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
     return res.json({ success: true, message: 'Category deleted' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: (err as Error).message });
+    return sendError(res, err);
   }
 });
 
