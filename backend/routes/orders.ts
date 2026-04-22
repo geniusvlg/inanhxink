@@ -154,6 +154,8 @@ interface CreateOrderBody {
   musicUrl?: string;             // music file URL
   // Love Letter specific
   letterTitle?: string;
+  letterHint?: string;           // prompt shown on closed letter (e.g. "Em iu ấn vào lá thư đi nè ❤")
+  letterSignoff?: string;        // sign-off line above signature (e.g. "Thương em rất nhiều. 💗")
   letterSender?: string;
   letterReceiver?: string;
   // Love Days specific
@@ -205,6 +207,8 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       customerEmail,
       customerPhone,
       letterTitle,
+      letterHint,
+      letterSignoff,
       letterSender,
       letterReceiver,
       loveDaysDate,
@@ -263,6 +267,12 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       templateData.title    = letterTitle    || 'Love Letter';
       templateData.sender   = letterSender   || '';
       templateData.receiver = letterReceiver || '';
+      if (letterHint && letterHint.trim()) {
+        templateData.hint = letterHint.trim();
+      }
+      if (letterSignoff && letterSignoff.trim()) {
+        templateData.signoff = letterSignoff.trim();
+      }
     }
     if (templateType === 'lovedays') {
       templateData.date        = loveDaysDate       || '';

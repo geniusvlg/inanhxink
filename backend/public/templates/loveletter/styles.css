@@ -557,9 +557,8 @@ body.env-open .background-title {
 body.card-open .polaroid-group {
   top: auto;
   bottom: 16px;
-  left: 16px;
-  transform: scale(0.5);
-  transform-origin: bottom left;
+  transform: scale(0.7);
+  transform-origin: left;
   pointer-events: auto;
 }
 
@@ -713,23 +712,23 @@ body.card-open .polaroid-group {
   }
 
   /* Keep letter readable on phone without internal scrolling */
-  .tile-inner-top { padding: 14px 18px 0; }
-  .tile-inner-bottom { padding: 0 18px 14px; }
-  .tile-title { font-size: 1.25rem; margin-bottom: 4px; }
-  .tile-greeting { font-size: 0.98rem; margin-bottom: 4px; }
+  .tile-inner-top { padding: 16px 20px 0; }
+  .tile-inner-bottom { padding: 0 20px 16px; }
+  .tile-title { font-size: 1.45rem; margin-bottom: 6px; }
+  .tile-greeting { font-size: 1.15rem; margin-bottom: 6px; }
   .tile-body {
-    font-size: 0.92rem;
-    line-height: 1.28;
+    font-size: 1.1rem;
+    line-height: 1.35;
     overflow: hidden;
   }
-  .tile-body p { margin-bottom: 3px; }
-  .tile-signoff { font-size: 0.92rem; margin-top: 8px; }
-  .tile-signature { font-size: 0.98rem; margin-top: 4px; }
+  .tile-body p { margin-bottom: 5px; }
+  .tile-signoff { font-size: 1.1rem; margin-top: 10px; }
+  .tile-signature { font-size: 1.18rem; margin-top: 5px; }
   .tile-hint { font-size: 2rem; }
 
   /* On phone, place polaroids into the lower white area of the open letter */
   body.card-open .polaroid-group {
-    top: 72%;
+    top: 90%;
     left: 41%;
     bottom: auto;
     transform: translate(-50%, -50%) scale(0.5);
