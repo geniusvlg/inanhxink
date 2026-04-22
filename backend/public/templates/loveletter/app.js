@@ -3,8 +3,13 @@
  * window.siteData injected by index.html; falls back to sample data.
  */
 
+const DEFAULT_HINT = 'Em iu ấn vào lá thư đi nè ❤';
+const DEFAULT_SIGNOFF = 'Thương em rất nhiều. 💗';
+
 const _dataSource = (window.siteData) ? {
   title:    window.siteData.title    || 'Love Letter',
+  hint:     window.siteData.hint     || DEFAULT_HINT,
+  signoff:  window.siteData.signoff  || DEFAULT_SIGNOFF,
   sender:   window.siteData.sender   || '',
   receiver: window.siteData.receiver || '',
   text:     window.siteData.content  || '',
@@ -12,6 +17,8 @@ const _dataSource = (window.siteData) ? {
   images:   window.siteData.imageUrls || [],
 } : {
   title:    "Love Letter",
+  hint:     DEFAULT_HINT,
+  signoff:  DEFAULT_SIGNOFF,
   sender:   "Người gửi",
   receiver: "Người nhận",
   text:     "Nội dung thư sẽ hiển thị ở đây.",
@@ -43,7 +50,7 @@ function clearLetterTimers() {
 
 // ── Render letter content ─────────────────────────────────────────────────────
 function renderLetter() {
-  const hint     = _dataSource.hint     || 'Em iu ấn vào lá thư đi nè ❤';
+  const hint     = _dataSource.hint     || DEFAULT_HINT;
   const receiver = _dataSource.receiver || '';
   const sender   = _dataSource.sender   || '';
   const body     = _dataSource.text     || '';
@@ -52,7 +59,7 @@ function renderLetter() {
 
   setText('letterHint',          hint);
   setText('letterModalGreeting', receiver ? `Gửi ${receiver},` : '');
-  setText('letterNote',          sender   ? 'Thương em rất nhiều. 💗' : '');
+  setText('letterNote',          sender   ? (_dataSource.signoff || DEFAULT_SIGNOFF) : '');
   setText('letterModalSignature', sender  ? sender : '');
 
   const paragraphs = body.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);

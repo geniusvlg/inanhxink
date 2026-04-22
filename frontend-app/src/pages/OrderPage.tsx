@@ -40,6 +40,8 @@ function OrderPage() {
   const [customTipAmount, setCustomTipAmount] = useState(0);
   const [voucher, setVoucher] = useState<Voucher | null>(null);
   const [letterTitle, setLetterTitle] = useState('Love Letter');
+  const [letterHint, setLetterHint] = useState('');
+  const [letterSignoff, setLetterSignoff] = useState('');
   const [letterSender, setLetterSender] = useState('');
   const [letterReceiver, setLetterReceiver] = useState('');
   // Love Days fields
@@ -324,6 +326,8 @@ function OrderPage() {
         voucherCode: voucher?.code,
         ...(templateType === 'loveletter' && {
           letterTitle: letterTitle || 'Love Letter',
+          letterHint: letterHint.trim() || undefined,
+          letterSignoff: letterSignoff.trim() || undefined,
           letterSender,
           letterReceiver,
         }),
@@ -403,6 +407,32 @@ function OrderPage() {
               onChange={e => setLetterTitle(e.target.value)}
               placeholder="Love Letter"
               maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Lời mời mở thư <span style={{ fontWeight: 400, color: '#6b7280' }}>(hiện trên lá thư khi chưa mở)</span>
+            </label>
+            <input
+              type="text"
+              value={letterHint}
+              onChange={e => setLetterHint(e.target.value)}
+              placeholder="Em iu ấn vào lá thư đi nè ❤"
+              maxLength={80}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Lời kết <span style={{ fontWeight: 400, color: '#6b7280' }}>(hiện trên dòng ký tên)</span>
+            </label>
+            <input
+              type="text"
+              value={letterSignoff}
+              onChange={e => setLetterSignoff(e.target.value)}
+              placeholder="Thương em rất nhiều. 💗"
+              maxLength={80}
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
             />
           </div>
