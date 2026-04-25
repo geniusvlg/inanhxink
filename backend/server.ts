@@ -169,6 +169,8 @@ app.get('/api/site-data', async (req: Request, res: Response) => {
       const td = row.template_data;
       if (td.musicUrl)  td.musicUrl  = rewriteS3ToCdn(td.musicUrl);
       if (td.imageUrls) td.imageUrls = (td.imageUrls as unknown[]).map(rewriteS3ToCdn);
+      if (td.boyImage)  td.boyImage  = rewriteS3ToCdn(td.boyImage);
+      if (td.girlImage) td.girlImage = rewriteS3ToCdn(td.girlImage);
     }
 
     return res.json(row);
@@ -250,6 +252,8 @@ function injectScripts(
   if (data.imageUrls)   data.imageUrls   = (data.imageUrls as unknown[]).map(rewriteS3ToCdn);
   if (data.avatarFrom)  data.avatarFrom  = rewriteS3ToCdn(data.avatarFrom);
   if (data.avatarTo)    data.avatarTo    = rewriteS3ToCdn(data.avatarTo);
+  if (data.boyImage)    data.boyImage    = rewriteS3ToCdn(data.boyImage);
+  if (data.girlImage)   data.girlImage   = rewriteS3ToCdn(data.girlImage);
 
   const dataPayload = JSON.stringify({ template: templateType, data });
   const tag =

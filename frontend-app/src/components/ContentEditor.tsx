@@ -4,12 +4,18 @@ import './ContentEditor.css';
 interface ContentEditorProps {
   value: string;
   onChange: (value: string) => void;
+  label?: string;
+  placeholder?: string;
+  note?: string;
 }
 
-function ContentEditor({ value, onChange }: ContentEditorProps) {
+function ContentEditor({ value, onChange, label, placeholder, note }: ContentEditorProps) {
   const [content, setContent] = useState(value || '');
   const maxLines = 11;
   const maxCharsPerLine = 7;
+  const labelText = label || `Nội dung (tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ)`;
+  const placeholderText = placeholder || `Nhập mỗi dòng một câu (tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ)`;
+  const noteText = note || `Lưu ý: Tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ`;
 
   useEffect(() => {
     if (value !== undefined) {
@@ -30,17 +36,17 @@ function ContentEditor({ value, onChange }: ContentEditorProps) {
   return (
     <div className="content-editor">
       <label>
-        Nội dung (tối đa {maxLines} dòng, mỗi dòng tối đa {maxCharsPerLine} chữ)
+        {labelText}
       </label>
       <textarea
         value={content}
         onChange={handleChange}
-        placeholder={`Nhập mỗi dòng một câu (tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ)`}
+        placeholder={placeholderText}
         rows={4}
         className="content-textarea"
       />
       <p className="content-editor-note">
-        Lưu ý: Tối đa {maxLines} dòng, mỗi dòng tối đa {maxCharsPerLine} chữ
+        {noteText}
       </p>
     </div>
   );
