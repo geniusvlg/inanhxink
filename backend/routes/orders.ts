@@ -59,7 +59,7 @@ const router: Router = express.Router();
 const DOMAIN = process.env.DOMAIN || 'inanhxink.com';
 
 // Valid template types that we have cloned
-const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace', 'lovedays', 'birthday'] as const;
+const VALID_TEMPLATE_TYPES = ['galaxy', 'loveletter', 'letterinspace', 'lovedays', 'birthday', 'specialgift'] as const;
 type TemplateType = typeof VALID_TEMPLATE_TYPES[number];
 
 // Map the frontend template_type strings to the actual template folder names
@@ -69,6 +69,7 @@ const TEMPLATE_FOLDER_MAP: Record<string, string> = {
   galaxy: 'galaxy',
   lovedays: 'lovedays',
   birthday: 'birthday',
+  specialgift: 'specialgift',
 };
 
 interface OrderTotal {
@@ -147,7 +148,7 @@ interface CreateOrderBody {
   // Identification
   qrName: string;
   templateId: number | string;
-  templateType?: string;         // 'galaxy' | 'loveletter'
+  templateType?: string;         // e.g. 'galaxy' | 'loveletter' | 'specialgift'
   // Content varies by template type
   content?: string;              // letter text (loveletter)
   imageUrls?: string[];          // uploaded image URLs (galaxy / loveletter)
@@ -168,6 +169,15 @@ interface CreateOrderBody {
   loveDaysTheme?: 'soft' | 'sunset' | 'night' | 'polaroid';
   loveDaysGalleryImages?: string[];
   loveDaysTimeline?: Array<{ date?: string; text?: string }>;
+  // Special Gift specific
+  specialGiftDate?: string;      // ISO date string e.g. "2025-12-20"
+  specialGiftNameLeft?: string;
+  specialGiftNameRight?: string;
+  specialGiftDayLabel?: string;
+  specialGiftTitle?: string;
+  specialGiftAvatarLeft?: string;
+  specialGiftAvatarRight?: string;
+  specialGiftGalleryImages?: string[];
   // Birthday specific
   birthdayBackgroundText?: string;
   birthdayBackgroundColor?: string;
@@ -220,6 +230,14 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       loveDaysTheme,
       loveDaysGalleryImages = [],
       loveDaysTimeline = [],
+      specialGiftDate,
+      specialGiftNameLeft,
+      specialGiftNameRight,
+      specialGiftDayLabel,
+      specialGiftTitle,
+      specialGiftAvatarLeft,
+      specialGiftAvatarRight,
+      specialGiftGalleryImages = [],
       birthdayBackgroundText,
       birthdayBackgroundColor,
       birthdayTextColor,
@@ -260,7 +278,7 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
 
     // Build template_data JSON based on template type
     const templateData: Record<string, unknown> = { content };
-    if (templateType === 'letterinspace' || templateType === 'galaxy') {
+    if (templateType === 'letterinspace' || templateType === 'galaxy' || templateType === 'specialgift') {
       templateData.texts = content.split('\n').map(s => s.trim()).filter(Boolean);
     }
     if (templateType === 'loveletter') {
@@ -297,6 +315,17 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
         templateData.popupImages = imageUrls.slice(2);
       }
     }
+    if (templateType === 'specialgift') {
+      templateData.date = specialGiftDate || '';
+      templateData.startDate = specialGiftDate || '';
+      templateData.boyName = specialGiftNameLeft || '';
+      templateData.girlName = specialGiftNameRight || '';
+      templateData.dayLabel = specialGiftDayLabel || 'ngày yêu nhau';
+      templateData.titleMessage = specialGiftTitle || "Happy Valentine's Day 💘";
+      templateData.boyImage = specialGiftAvatarLeft || '';
+      templateData.girlImage = specialGiftAvatarRight || '';
+      templateData.imageUrls = Array.isArray(specialGiftGalleryImages) ? specialGiftGalleryImages : [];
+    }
     if (templateType === 'birthday') {
       templateData.backgroundText  = birthdayBackgroundText  || 'I LOVE YOU';
       templateData.backgroundColor = birthdayBackgroundColor || '#ffa3e0';
@@ -310,7 +339,7 @@ router.post('/', async (req: Request<object, object, CreateOrderBody>, res: Resp
       ];
       templateData.finalText       = birthdayFinalText || '';
     }
-    if (imageUrls.length > 0) templateData.imageUrls = imageUrls;
+    if (imageUrls.length > 0 && templateType !== 'specialgift') templateData.imageUrls = imageUrls;
 
     // Download music only for raw social URLs (TikTok/Instagram).
     // If client already extracted & uploaded music via /api/music/extract, keep that URL as-is.

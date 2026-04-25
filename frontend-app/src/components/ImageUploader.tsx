@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import './ImageUploader.css';
 
+const DEFAULT_MAX_IMAGES = 12;
+
 interface ImageUploaderProps {
   images: (File | null)[];
   onImagesChange: (images: (File | null)[]) => void;
@@ -19,7 +21,7 @@ interface ImageUploaderProps {
 function ImageUploader({
   images,
   onImagesChange,
-  maxImages = 9,
+  maxImages = DEFAULT_MAX_IMAGES,
   onImageSelected,
   initialPreviews,
   onPreviewsChange,

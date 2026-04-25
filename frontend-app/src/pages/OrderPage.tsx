@@ -14,6 +14,9 @@ import { createOrder, uploadFiles, getTemplate, getMetadata } from '../services/
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'galaxy']);
+const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday']);
+
 interface Voucher {
   code: string;
   discountType: 'percentage' | 'fixed';
@@ -50,6 +53,12 @@ function OrderPage() {
   const [loveDaysNameTo, setLoveDaysNameTo] = useState('');
   const [loveDaysMessage, setLoveDaysMessage] = useState('');
   const [loveDaysTimeline, setLoveDaysTimeline] = useState<LoveDaysTimelineRow[]>([{ date: '', text: '' }]);
+  // Special Gift fields
+  const [specialGiftDate, setSpecialGiftDate] = useState('');
+  const [specialGiftNameLeft, setSpecialGiftNameLeft] = useState('');
+  const [specialGiftNameRight, setSpecialGiftNameRight] = useState('');
+  const [specialGiftDayLabel, setSpecialGiftDayLabel] = useState('ngày yêu nhau');
+  const [specialGiftTitle, setSpecialGiftTitle] = useState("Happy Valentine's Day 💘");
   // Birthday fields
   const [birthdayTitle, setBirthdayTitle] = useState('Happy Birthday');
   const [birthdayName, setBirthdayName] = useState('');
@@ -74,7 +83,11 @@ function OrderPage() {
   const templateType = selectedTemplate?.template_type || '';
   const AVATAR_SLOTS = 2;
   const GALLERY_SLOTS = 10;
+  const QR_TEMPLATE_MAX_IMAGES = 12;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
+  const SPECIAL_GIFT_AVATAR_SLOTS = 2;
+  const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
+  const SPECIAL_GIFT_MAX_IMAGES = SPECIAL_GIFT_AVATAR_SLOTS + SPECIAL_GIFT_GALLERY_SLOTS;
 
   const preselectedTemplateId = searchParams.get('template');
 
@@ -103,6 +116,11 @@ function OrderPage() {
         if (d.selectedTip !== undefined) setSelectedTip(d.selectedTip);
         if (d.customTipAmount) setCustomTipAmount(d.customTipAmount);
         if (d.voucher) setVoucher(d.voucher);
+        if (d.specialGiftDate) setSpecialGiftDate(d.specialGiftDate);
+        if (d.specialGiftNameLeft) setSpecialGiftNameLeft(d.specialGiftNameLeft);
+        if (d.specialGiftNameRight) setSpecialGiftNameRight(d.specialGiftNameRight);
+        if (d.specialGiftDayLabel) setSpecialGiftDayLabel(d.specialGiftDayLabel);
+        if (d.specialGiftTitle) setSpecialGiftTitle(d.specialGiftTitle);
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
           // Convert base64 previews back to File objects
@@ -257,6 +275,11 @@ function OrderPage() {
       setLoveDaysNameTo('');
       setLoveDaysMessage('');
       setLoveDaysTimeline([{ date: '', text: '' }]);
+      setSpecialGiftDate('');
+      setSpecialGiftNameLeft('');
+      setSpecialGiftNameRight('');
+      setSpecialGiftDayLabel('ngày yêu nhau');
+      setSpecialGiftTitle("Happy Valentine's Day 💘");
       setBirthdayTitle('Happy Birthday');
       setBirthdayName('');
       setBirthdayAge('');
@@ -278,7 +301,11 @@ function OrderPage() {
 
     if (!selectedTemplate) { setError('Vui lòng chọn template'); return; }
     if (!qrName || !qrNameValid) { setError('Vui lòng nhập và kiểm tra tên QR hợp lệ'); return; }
-    if (templateType !== 'letterinspace' && templateType !== 'lovedays' && templateType !== 'birthday' && templateType !== 'galaxy' && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && !content.trim()) { setError('Vui lòng nhập nội dung'); return; }
+    if (templateType === 'specialgift' && !specialGiftDate) {
+      setError('Vui lòng chọn ngày bắt đầu');
+      return;
+    }
     if (templateType === 'birthday' && birthdayFinalText.length > 50) {
       setError('Lời chúc không được quá 50 ký tự'); return;
     }
@@ -341,6 +368,16 @@ function OrderPage() {
           loveDaysMessage,
           loveDaysTimeline: parsedTimeline,
         }),
+        ...(templateType === 'specialgift' && {
+          specialGiftDate,
+          specialGiftNameLeft: specialGiftNameLeft.trim(),
+          specialGiftNameRight: specialGiftNameRight.trim(),
+          specialGiftDayLabel: specialGiftDayLabel.trim(),
+          specialGiftTitle: specialGiftTitle.trim(),
+          specialGiftAvatarLeft: imageUrls[0] || '',
+          specialGiftAvatarRight: imageUrls[1] || '',
+          specialGiftGalleryImages: imageUrls.slice(SPECIAL_GIFT_AVATAR_SLOTS),
+        }),
         ...(templateType === 'birthday' && {
           birthdayTitle,
           birthdayName,
@@ -356,7 +393,9 @@ function OrderPage() {
           sessionStorage.setItem('orderFormDraft', JSON.stringify({
             selectedTemplate, qrName, qrNameValid, qrUrl, content,
             musicAdded, musicLink, keychainPurchased, selectedTip,
-            customTipAmount, voucher,
+            customTipAmount, voucher, specialGiftDate,
+            specialGiftNameLeft, specialGiftNameRight, specialGiftDayLabel,
+            specialGiftTitle,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -393,8 +432,80 @@ function OrderPage() {
         <LetterInSpaceForm value={content} onChange={setContent} />
       )}
 
-      {templateType !== 'letterinspace' && templateType !== 'lovedays' && templateType !== 'birthday' && templateType !== 'galaxy' && (
-        <ContentEditor value={content} onChange={setContent} />
+      {templateType === 'specialgift' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0 0.75rem' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày bắt đầu</label>
+            <input
+              type="date"
+              value={specialGiftDate}
+              onChange={e => setSpecialGiftDate(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+              Số ngày trên trái tim sẽ được tính từ ngày này đến hôm nay.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên bên trái</label>
+              <input
+                type="text"
+                value={specialGiftNameLeft}
+                onChange={e => setSpecialGiftNameLeft(e.target.value)}
+                placeholder="Anh iu"
+                maxLength={20}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên bên phải</label>
+              <input
+                type="text"
+                value={specialGiftNameRight}
+                onChange={e => setSpecialGiftNameRight(e.target.value)}
+                placeholder="Bé iu"
+                maxLength={20}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Dòng chữ dưới số ngày</label>
+            <input
+              type="text"
+              value={specialGiftDayLabel}
+              onChange={e => setSpecialGiftDayLabel(e.target.value)}
+              placeholder="ngày yêu nhau"
+              maxLength={30}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tiêu đề popup</label>
+            <input
+              type="text"
+              value={specialGiftTitle}
+              onChange={e => setSpecialGiftTitle(e.target.value)}
+              placeholder="Happy Valentine's Day 💘"
+              maxLength={50}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>
+            Viết nội dung bên dưới để hiển thị trong popup thư.
+          </p>
+        </div>
+      )}
+
+      {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (
+        <ContentEditor
+          value={content}
+          onChange={setContent}
+          label={templateType === 'specialgift' ? 'Nội dung thư' : undefined}
+          placeholder={templateType === 'specialgift' ? 'Nhập nội dung sẽ hiển thị trong popup thư...' : undefined}
+          note={templateType === 'specialgift' ? 'Không giới hạn số dòng hoặc số chữ.' : undefined}
+        />
       )}
 
       {templateType === 'loveletter' && (
@@ -687,7 +798,7 @@ function OrderPage() {
 
   const orderFormBottom = (
     <>
-      {templateType !== 'letterinspace' && templateType !== 'birthday' && (
+      {!HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES.has(templateType) && (
         <>
           {templateType === 'lovedays' ? (
             <>
@@ -727,11 +838,49 @@ function OrderPage() {
                 uploadStates={segmentStates(AVATAR_SLOTS, GALLERY_SLOTS)}
               />
             </>
+          ) : templateType === 'specialgift' ? (
+            <>
+              <p style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
+                Ảnh đại diện
+                <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                  (ảnh 1 = bên trái, ảnh 2 = bên phải)
+                </span>
+              </p>
+              <ImageUploader
+                images={uploadedImages.slice(0, SPECIAL_GIFT_AVATAR_SLOTS)}
+                onImagesChange={(segment) => updateImageSegment(0, SPECIAL_GIFT_AVATAR_SLOTS, segment)}
+                maxImages={SPECIAL_GIFT_AVATAR_SLOTS}
+                onImageSelected={() => {}}
+                initialPreviews={imagePreviews.slice(0, SPECIAL_GIFT_AVATAR_SLOTS)}
+                onPreviewsChange={(segment) => updatePreviewSegment(0, SPECIAL_GIFT_AVATAR_SLOTS, segment)}
+                onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index })))}
+                onFileRemoved={(index) => handleFileRemoved(index)}
+                uploadStates={segmentStates(0, SPECIAL_GIFT_AVATAR_SLOTS)}
+              />
+
+              <p style={{ fontWeight: 500, margin: '0.85rem 0 0.25rem' }}>
+                Ảnh kỷ niệm
+                <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                  (tối đa {SPECIAL_GIFT_GALLERY_SLOTS} ảnh)
+                </span>
+              </p>
+              <ImageUploader
+                images={uploadedImages.slice(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_MAX_IMAGES)}
+                onImagesChange={(segment) => updateImageSegment(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS, segment)}
+                maxImages={SPECIAL_GIFT_GALLERY_SLOTS}
+                onImageSelected={() => {}}
+                initialPreviews={imagePreviews.slice(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_MAX_IMAGES)}
+                onPreviewsChange={(segment) => updatePreviewSegment(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS, segment)}
+                onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index + SPECIAL_GIFT_AVATAR_SLOTS })))}
+                onFileRemoved={(index) => handleFileRemoved(index + SPECIAL_GIFT_AVATAR_SLOTS)}
+                uploadStates={segmentStates(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS)}
+              />
+            </>
           ) : (
             <ImageUploader
               images={uploadedImages}
               onImagesChange={setUploadedImages}
-              maxImages={9}
+              maxImages={QR_TEMPLATE_MAX_IMAGES}
               onImageSelected={() => {}}
               initialPreviews={imagePreviews}
               onPreviewsChange={setImagePreviews}
