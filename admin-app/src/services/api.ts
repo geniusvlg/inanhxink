@@ -129,6 +129,16 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+  qrTemplateThumbnail: (files: File[], templateType = 'template') => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    const folder = templateType.trim() || 'template';
+    return api.post<{ success: boolean; urls: string[] }>(
+      `/api/upload?prefix=templates/${encodeURIComponent(folder)}`,
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
   /** Best-effort removal of S3 objects by their public URLs. Used to clean
    *  up orphans from cancelled uploads. Never throws — caller can fire-and-forget. */
   deleteMany: (urls: string[]) =>

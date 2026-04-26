@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { type Template } from '../data/mockTemplates';
 import { getTemplates } from '../services/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import './TemplateSelector.css';
 
 interface TemplateSelectorProps {
@@ -33,7 +34,7 @@ function TemplateSelector({ selectedTemplate, onSelectTemplate, onClearAll }: Te
           >
             <div className="template-preview">
               <img
-                src={template.image_url || ''}
+                src={resolveAssetUrl(template.image_url, '')}
                 alt={template.name}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;

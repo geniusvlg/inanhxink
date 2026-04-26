@@ -5,9 +5,8 @@ import { type Template } from '../data/mockTemplates';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import './QrYeuThuongPage.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('en') + 'đ';
@@ -39,38 +38,48 @@ function QrYeuThuongPage() {
         </p>
       </section>
 
-      <section className="qryt-products">
+      <main className="qryt-products">
+        {!loading && !error && (
+          <div className="pf-result-bar">Đang hiển thị {templates.length} template</div>
+        )}
         {loading && <PageLoader />}
         {error && <div className="qryt-error">{error}</div>}
 
         {!loading && !error && (
           <div className="qryt-grid">
+            {templates.length === 0 && (
+              <div className="qryt-empty">Hiện chưa có template QR nào.</div>
+            )}
             {templates.map((t) => (
-              <div key={t.id} className="product-card">
-                <img
-                  className="product-card-img"
-                  src={t.image_url ? `${API_BASE_URL}${t.image_url}` : '/placeholder.png'}
-                  alt={t.name}
-                />
-                <div className="product-card-body">
-                  <div className="product-card-name">{t.name}</div>
-                  <div className="product-card-price">{formatPrice(t.price)}</div>
-                  <div className="product-card-actions">
-                    {t.demo_url && (
-                      <a href={t.demo_url} className="btn-detail" target="_blank" rel="noopener noreferrer">
-                        Demo
-                      </a>
-                    )}
-                    <Link to={`/order?template=${t.id}`} className="btn-buy">
-                      Mua Ngay
-                    </Link>
+              <article key={t.id} className="product-card product-card--link qryt-card">
+                <Link to={`/order?template=${t.id}`} className="qryt-card-main">
+                  <div className="product-card-img-wrap">
+                    <img
+                      className="product-card-img"
+                      src={resolveAssetUrl(t.image_url)}
+                      alt={t.name}
+                    />
                   </div>
+                  <div className="product-card-info">
+                    <div className="product-card-name">{t.name}</div>
+                    <div className="product-card-price">{formatPrice(t.price)}</div>
+                  </div>
+                </Link>
+                <div className="product-card-actions qryt-card-actions">
+                  {t.demo_url && (
+                    <a href={t.demo_url} className="btn-detail" target="_blank" rel="noopener noreferrer">
+                      Demo
+                    </a>
+                  )}
+                  <Link to={`/order?template=${t.id}`} className="btn-buy">
+                    Mua Ngay
+                  </Link>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
-      </section>
+      </main>
       <SiteFooter />
     </div>
   );

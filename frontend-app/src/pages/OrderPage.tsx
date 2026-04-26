@@ -11,8 +11,7 @@ import VoucherInput from '../components/VoucherInput';
 import ImageUploader from '../components/ImageUploader';
 import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, getTemplate, getMetadata } from '../services/api';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { resolveAssetUrl } from '../utils/assetUrl';
 
 const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'galaxy']);
 const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday']);
@@ -972,7 +971,7 @@ function OrderPage() {
                 <div className="order-detail-left">
                   <img
                     className="order-detail-img"
-                    src={selectedTemplate.image_url ? `${API_BASE_URL}${selectedTemplate.image_url}` : '/placeholder.png'}
+                    src={resolveAssetUrl(selectedTemplate.image_url)}
                     alt={selectedTemplate.name}
                   />
                 </div>
