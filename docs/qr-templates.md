@@ -19,6 +19,8 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 
 1. Add the static template folder under `backend/public/templates/`.
 2. Add or activate a `templates` table row with the matching `template_type`.
+   Upload the thumbnail from Admin → QR Templates; uploaded thumbnails are
+   stored in S3 under `templates/{template_type}/` and saved as raw S3 URLs.
 3. Add the type to `VALID_TEMPLATE_TYPES` and `TEMPLATE_FOLDER_MAP` in
    `backend/routes/orders.ts`.
 4. If the order form needs custom fields, add them in

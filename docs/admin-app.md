@@ -122,6 +122,7 @@ public-facing page on the storefront, and (3) updating `ProductItemsPage`'s
 | PATCH | `/api/admin/banners/reorder` | Bulk-update `sort_order` for `[{id, sort_order}]` |
 | DELETE | `/api/admin/banners/:id` | Delete banner (also removes the S3 image) |
 | DELETE | `/api/admin/uploads` | Body `{ urls: string[] }` — orphan-cleanup for cancelled/replaced uploads |
+| POST | `/api/upload?prefix=templates/{template_type}` | Upload QR template thumbnails to S3 |
 | POST | `/api/upload?prefix=products/{folder}` | Upload images to S3 |
 | POST | `/api/upload?prefix=testimonials` | Upload testimonial screenshots to S3 |
 | POST | `/api/upload?prefix=banners` | Upload banner images to S3 |

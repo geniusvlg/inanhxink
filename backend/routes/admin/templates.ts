@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { sendError } from '../../middleware/sendError';
 import db from '../../config/database';
+import { deleteFromS3 } from '../../config/s3';
 
 const router = Router();
 
@@ -51,6 +52,11 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const allowed = ['name', 'description', 'image_url', 'price', 'template_type', 'is_active', 'demo_url'];
     const fields = req.body as Record<string, unknown>;
+    let previousImage: string | null = null;
+    if ('image_url' in fields) {
+      const before = await db.query('SELECT image_url FROM templates WHERE id = $1', [req.params.id]);
+      previousImage = before.rows[0]?.image_url ?? null;
+    }
     const setClauses: string[] = [];
     const values: unknown[] = [];
     let i = 1;
@@ -67,6 +73,11 @@ router.put('/:id', async (req: Request, res: Response) => {
       values
     );
     if (!result.rows.length) return res.status(404).json({ success: false, error: 'Not found' });
+    const nextImage = result.rows[0].image_url as string | null;
+    if (previousImage && previousImage !== nextImage) {
+      try { await deleteFromS3(previousImage); }
+      catch (s3err) { console.warn('[templates] S3 cleanup failed:', (s3err as Error).message); }
+    }
     return res.json({ success: true, template: result.rows[0] });
   } catch (err) {
     return sendError(res, err);

@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react';
-import { templatesApi } from '../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { templatesApi, uploadApi } from '../services/api';
 import { type Template } from '../types';
 import '../components/Layout.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const resolveUrl = (url: string | null | undefined) => {
+  if (!url) return '';
+  return /^(https?:|data:|blob:)/i.test(url) ? url : `${API_BASE_URL}${url}`;
+};
 
 function QrIcon() {
   return (
@@ -45,6 +51,8 @@ export default function ProductsPage() {
   const [editing, setEditing]     = useState<Template | null>(null);
   const [form, setForm]           = useState<FormState>(emptyForm());
   const [saving, setSaving]       = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -77,8 +85,47 @@ export default function ProductsPage() {
   };
 
   const closeModal = () => {
+    const original = editing?.image_url ?? '';
+    if (form.image_url && form.image_url !== original) {
+      uploadApi.deleteMany([form.image_url]);
+    }
     setShowModal(false);
     setEditing(null);
+    setForm(emptyForm());
+    setUploadingImage(false);
+  };
+
+  const handleThumbnailPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh');
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const previous = form.image_url;
+      const original = editing?.image_url ?? '';
+      const folder = form.template_type.trim() || editing?.template_type || 'template';
+      const res = await uploadApi.qrTemplateThumbnail([file], folder);
+      const url = res.data.urls?.[0];
+      if (!url) throw new Error('Upload failed');
+      setForm(f => ({ ...f, image_url: url }));
+      if (previous && previous !== original) uploadApi.deleteMany([previous]);
+    } catch {
+      alert('Lỗi khi tải ảnh');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const clearThumbnail = () => {
+    const original = editing?.image_url ?? '';
+    if (form.image_url && form.image_url !== original) {
+      uploadApi.deleteMany([form.image_url]);
+    }
+    setForm(f => ({ ...f, image_url: '' }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -99,7 +146,9 @@ export default function ProductsPage() {
       } else {
         await templatesApi.create(payload);
       }
-      closeModal();
+      setShowModal(false);
+      setEditing(null);
+      setForm(emptyForm());
       load();
     } catch {
       alert('Lỗi khi lưu template');
@@ -131,6 +180,7 @@ export default function ProductsPage() {
             <tr>
               <th>ID</th>
               <th>Tên</th>
+              <th>Ảnh</th>
               <th>Loại template</th>
               <th>Giá</th>
               <th>Trạng thái</th>
@@ -144,6 +194,11 @@ export default function ProductsPage() {
                 <td>
                   <strong>{t.name}</strong>
                   {t.description && <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{t.description}</div>}
+                </td>
+                <td>
+                  {t.image_url
+                    ? <img src={resolveUrl(t.image_url)} alt={t.name} style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }} />
+                    : <div style={{ width: 56, height: 40, background: '#f1f5f9', borderRadius: 6 }} />}
                 </td>
                 <td>
                   <code style={{ background: '#f1f5f9', padding: '0.15rem 0.4rem', borderRadius: '0.25rem' }}>
@@ -221,13 +276,33 @@ export default function ProductsPage() {
                 required
               />
 
-              <label className="form-label">URL ảnh</label>
+              <label className="form-label">Ảnh thumbnail</label>
+              {form.image_url && (
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <img
+                    src={resolveUrl(form.image_url)}
+                    alt=""
+                    style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                  />
+                </div>
+              )}
               <input
-                className="form-input"
-                placeholder="/templates/loveletter/thumbnail.jpg"
-                value={form.image_url}
-                onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleThumbnailPick}
+                style={{ display: 'none' }}
               />
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()} disabled={uploadingImage}>
+                  {uploadingImage ? 'Đang tải...' : (form.image_url ? 'Thay ảnh' : 'Tải ảnh lên')}
+                </button>
+                {form.image_url && (
+                  <button type="button" className="btn-secondary" onClick={clearThumbnail} disabled={uploadingImage}>
+                    Xoá ảnh
+                  </button>
+                )}
+              </div>
 
               <label className="form-label">URL Demo <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(để trống nếu không có)</span></label>
               <input

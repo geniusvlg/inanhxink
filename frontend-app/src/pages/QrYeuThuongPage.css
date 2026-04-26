@@ -1,4 +1,5 @@
 @import './HomePage.css';
+@import '../components/ProductFilter.css';
 
 .qryt-page {
   min-height: 100vh;
@@ -9,15 +10,15 @@
 
 .qryt-hero {
   text-align: center;
-  padding: 4rem 2rem 3rem;
-  background: linear-gradient(180deg, #ffb3c1 0%, #fff 100%);
+  padding: 2.5rem 2rem 1.5rem;
+  background: linear-gradient(180deg, #ffd6e7 0%, #fff 100%);
 }
 
 .qryt-hero-title {
   font-size: 2.75rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin: 0 0 0.75rem;
 }
 
 .qryt-hero-title span {
@@ -33,10 +34,11 @@
 }
 
 .qryt-products {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 2rem 4rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .qryt-section-title {
@@ -50,27 +52,65 @@
 .qryt-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+.qryt-card {
+  cursor: default;
+}
+
+.qryt-card-main {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.qryt-card-actions {
+  padding: 0.75rem 0 0;
+}
+
+.qryt-card-actions .btn-detail,
+.qryt-card-actions .btn-buy {
+  border-radius: 999px;
+}
+
+.qryt-card-actions .btn-buy:only-child {
+  max-width: 220px;
+  margin: 0 auto;
 }
 
 .qryt-loading,
-.qryt-error {
+.qryt-error,
+.qryt-empty {
   text-align: center;
   padding: 4rem 2rem;
   color: #6b7280;
   font-size: 1.125rem;
+  grid-column: 1 / -1;
 }
 
 .qryt-error {
   color: #dc2626;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .qryt-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 560px) {
-  .qryt-grid { grid-template-columns: 1fr; }
+@media (max-width: 640px) {
+  .qryt-hero { padding: 1.25rem 1rem 0.5rem; }
   .qryt-hero-title { font-size: 2rem; }
-  .qryt-products { padding: 1.5rem 1rem; }
+  .qryt-hero-desc { font-size: 0.95rem; }
+  .qryt-products { padding: 1.5rem 1rem 3rem; }
+  .qryt-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .qryt-card-actions {
+    gap: 0.45rem;
+    padding-top: 0.55rem;
+  }
+  .qryt-card-actions .btn-detail,
+  .qryt-card-actions .btn-buy {
+    font-size: 0.75rem;
+    padding: 0.45rem 0;
+  }
 }
