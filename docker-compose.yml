@@ -58,7 +58,9 @@ services:
 
   backend:
     image: ghcr.io/geniusvlg/inanhxink/backend:${IMAGE_TAG:-latest}
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend-golang/Dockerfile
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3001
@@ -81,8 +83,6 @@ services:
       SENTRY_DSN: ${SENTRY_DSN}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme123}
-    volumes:
-      - ./uploads:/app/dist/public/uploads
     depends_on:
       postgres:
         condition: service_healthy

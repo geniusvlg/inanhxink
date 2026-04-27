@@ -20,7 +20,11 @@ Then build with CGO enabled (it's on by default, but make it explicit):
 CGO_ENABLED=1 go build -o bin/server ./cmd/server
 ```
 
-If you use a multi-stage Docker build, **libwebp-dev must be in the builder stage** and **libwebp (runtime lib) must be in the final stage**:
+The production Docker image is built by `backend-golang/Dockerfile` using the
+repository root as build context. It keeps the Compose service/image name
+`backend`, but runs the Go binary instead of the Node.js server.
+
+If you use or modify the multi-stage Docker build, **libwebp-dev must be in the builder stage** and **libwebp (runtime lib) must be in the final stage**:
 
 ```dockerfile
 # Builder
@@ -62,7 +66,13 @@ If `watermark=true` is passed to `/api/upload`, the server must be able to read
 `public/watermark.png`; otherwise the upload fails instead of silently saving an
 unwatermarked image.
 
-Make sure these are available at the expected path when the server starts. In Docker, copy them:
+Make sure these are available at the expected path when the server starts. The
+production Dockerfile copies:
+
+- `backend-golang/public/` → `/public/`
+- `backend/public/templates/` → `/public/templates/`
+
+For other Docker builds, copy them similarly:
 
 ```dockerfile
 COPY public/ /public/

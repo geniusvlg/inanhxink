@@ -1,0 +1,10 @@
+.git
+.cursor
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/coverage
+postgres_data
+uploads
+*.log
