@@ -18,8 +18,9 @@ import (
 )
 
 func main() {
-	// Load .env (same directory as the binary, or project root)
-	godotenv.Load("../../.env") //nolint — optional; env vars may be set externally
+	// Load .env from common launch locations. godotenv resolves paths from the
+	// current working directory, not the compiled binary location.
+	godotenv.Load(".env", "backend-golang/.env", "../../.env") //nolint — optional; env vars may be set externally
 
 	// Initialise shared resources
 	config.InitDB()

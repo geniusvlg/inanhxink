@@ -58,6 +58,10 @@ The Go server serves static files from a `public/` directory **relative to the w
 - `public/templates/` — HTML template pages (galaxy, loveletter, etc.)
 - `public/watermark.png` — watermark applied to product images
 
+If `watermark=true` is passed to `/api/upload`, the server must be able to read
+`public/watermark.png`; otherwise the upload fails instead of silently saving an
+unwatermarked image.
+
 Make sure these are available at the expected path when the server starts. In Docker, copy them:
 
 ```dockerfile
@@ -95,6 +99,13 @@ cd backend-golang
 cp .env.example .env   # fill in credentials
 CGO_ENABLED=1 go run ./cmd/server
 ```
+
+## QR payment ownership
+
+Customer uploads go to `uploads/{qrName}/` before payment. When a payment webhook
+marks an order as paid, the Go backend serializes activation for that QR name,
+cancels other unpaid orders with the same `qr_name`, and prunes the shared S3
+folder so only objects referenced by the paid order's `template_data` remain.
 
 ## Tech stack summary
 

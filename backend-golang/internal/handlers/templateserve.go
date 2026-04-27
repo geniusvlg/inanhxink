@@ -81,22 +81,7 @@ func injectScripts(html, subdomain, templateType string, templateData map[string
 		}
 	}
 	// Rewrite S3 → CDN URLs in template data before injection
-	if v, ok := data["musicUrl"].(string); ok {
-		data["musicUrl"] = config.CdnStr(v)
-	}
-	if arr, ok := data["imageUrls"].([]any); ok {
-		for i, item := range arr {
-			if s, ok := item.(string); ok {
-				arr[i] = config.CdnStr(s)
-			}
-		}
-	}
-	if v, ok := data["avatarFrom"].(string); ok {
-		data["avatarFrom"] = config.CdnStr(v)
-	}
-	if v, ok := data["avatarTo"].(string); ok {
-		data["avatarTo"] = config.CdnStr(v)
-	}
+	rewriteTemplateDataCDN(data)
 
 	dataPayload, _ := json.Marshal(map[string]any{"template": templateType, "data": data})
 	subdomainJSON, _ := json.Marshal(subdomain)

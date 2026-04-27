@@ -17,8 +17,8 @@ func InitDB() {
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "5432"),
 		getEnv("DB_USER", "postgres"),
-		getEnv("DB_PASSWORD", ""),
-		getEnv("DB_NAME", "mydb"),
+		getEnv("DB_PASSWORD", "postgres"),
+		getEnv("DB_NAME", "inanhxink"),
 	)
 
 	var err error

@@ -34,10 +34,23 @@ func SiteData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if templateData != nil {
-		if v, ok := templateData["musicUrl"].(string); ok {
-			templateData["musicUrl"] = config.CdnStr(v)
+		rewriteTemplateDataCDN(templateData)
+	}
+
+	OK(w, map[string]any{
+		"template_type": templateType,
+		"template_data": templateData,
+	})
+}
+
+func rewriteTemplateDataCDN(data map[string]any) {
+	for _, key := range []string{"musicUrl", "avatarFrom", "avatarTo", "boyImage", "girlImage"} {
+		if v, ok := data[key].(string); ok {
+			data[key] = config.CdnStr(v)
 		}
-		if arr, ok := templateData["imageUrls"].([]any); ok {
+	}
+	for _, key := range []string{"imageUrls", "popupImages"} {
+		if arr, ok := data[key].([]any); ok {
 			for i, item := range arr {
 				if s, ok := item.(string); ok {
 					arr[i] = config.CdnStr(s)
@@ -45,11 +58,6 @@ func SiteData(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
-	OK(w, map[string]any{
-		"template_type": templateType,
-		"template_data": templateData,
-	})
 }
 
 // getSubdomain extracts the subdomain from the request host or query param (dev mode).

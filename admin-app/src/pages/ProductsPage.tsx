@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { templatesApi, uploadApi } from '../services/api';
 import { type Template } from '../types';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import '../components/Layout.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const resolveUrl = (url: string | null | undefined) => {
-  if (!url) return '';
-  return /^(https?:|data:|blob:)/i.test(url) ? url : `${API_BASE_URL}${url}`;
-};
 
 function QrIcon() {
   return (
@@ -197,7 +192,7 @@ export default function ProductsPage() {
                 </td>
                 <td>
                   {t.image_url
-                    ? <img src={resolveUrl(t.image_url)} alt={t.name} style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }} />
+                    ? <img src={resolveAssetUrl(t.image_url)} alt={t.name} style={{ width: 56, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }} />
                     : <div style={{ width: 56, height: 40, background: '#f1f5f9', borderRadius: 6 }} />}
                 </td>
                 <td>
@@ -280,7 +275,7 @@ export default function ProductsPage() {
               {form.image_url && (
                 <div style={{ marginBottom: '0.5rem' }}>
                   <img
-                    src={resolveUrl(form.image_url)}
+                    src={resolveAssetUrl(form.image_url)}
                     alt=""
                     style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }}
                   />

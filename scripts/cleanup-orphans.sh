@@ -77,8 +77,9 @@ fi
 echo "[$(date -Iseconds)] ✔ Cleanup complete. Folders deleted: $DELETED_FOLDERS, skipped (empty): $SKIPPED"
 
 
-# Also remove orphan audio files that were pre-downloaded at "Kiểm tra" step
-# but never reached paid status (either no order created, or unpaid > 1 day).
+# Also remove unpaid upload folders after 1 day. QR-first image uploads and
+# pre-downloaded audio both land in uploads/<qrName>/ before payment; keep recent
+# prefixes so in-progress customers are not interrupted by cron.
 UPLOAD_PREFIXES=$(awscli s3api list-objects-v2 \
   --bucket "$S3_BUCKET" \
   --prefix "uploads/" \
@@ -88,8 +89,10 @@ UPLOAD_PREFIXES=$(awscli s3api list-objects-v2 \
   --query 'CommonPrefixes[].Prefix' \
   --output text || true)
 
-AUDIO_CLEANED=0
-AUDIO_SKIPPED=0
+ORPHAN_PREFIX_CLEANED=0
+ORPHAN_PREFIX_SKIPPED=0
+ORPHAN_PREFIX_EMPTY=0
+CUTOFF_EPOCH=$(date -d '1 day ago' +%s)
 
 for PREFIX_WITH_SLASH in $UPLOAD_PREFIXES; do
   QR_NAME=${PREFIX_WITH_SLASH#uploads/}
@@ -104,49 +107,48 @@ for PREFIX_WITH_SLASH in $UPLOAD_PREFIXES; do
   )
 
   if [ -n "$HAS_PAID" ]; then
-    AUDIO_SKIPPED=$((AUDIO_SKIPPED + 1))
+    ORPHAN_PREFIX_SKIPPED=$((ORPHAN_PREFIX_SKIPPED + 1))
     continue
   fi
 
-  HAS_ANY_ORDER=$(
-    cd "$PROJECT_DIR"
-    docker compose exec -T postgres \
-      psql -U "$DB_USER" "$DB_NAME" -t -A -v qr_name="$QR_NAME" \
-      -c "SELECT 1 FROM orders WHERE qr_name = :'qr_name' LIMIT 1;"
-  )
-
-  HAS_STALE_UNPAID=$(
-    cd "$PROJECT_DIR"
-    docker compose exec -T postgres \
-      psql -U "$DB_USER" "$DB_NAME" -t -A -v qr_name="$QR_NAME" \
-      -c "SELECT 1 FROM orders
-          WHERE qr_name = :'qr_name'
-            AND payment_status <> 'paid'
-            AND created_at < NOW() - INTERVAL '1 day'
-          LIMIT 1;"
-  )
-
-  if [ -z "$HAS_ANY_ORDER" ] || [ -n "$HAS_STALE_UNPAID" ]; then
-    awscli s3 rm "s3://$S3_BUCKET/uploads/$QR_NAME/" \
-      --recursive \
-      --exclude "*" \
-      --include "*.mp3" \
-      --include "*.m4a" \
-      --include "*.wav" \
-      --include "*.ogg" \
-      --include "*.opus" \
-      --include "*.webm" \
+  OBJECT_INFO=$(
+    awscli s3api list-objects-v2 \
+      --bucket "$S3_BUCKET" \
+      --prefix "uploads/$QR_NAME/" \
       --endpoint-url "$S3_ENDPOINT" \
-      --region "$S3_REGION"
+      --region "$S3_REGION" \
+      --query '[length(Contents || `[]`), max_by(Contents || `[]`, &LastModified).LastModified]' \
+      --output text || true
+  )
+  OBJECT_COUNT=$(echo "$OBJECT_INFO" | awk '{print $1}')
+  LATEST_MODIFIED=$(echo "$OBJECT_INFO" | awk '{print $2}')
 
-    echo "[$(date -Iseconds)] 🎵 Removed unpaid/orphan audio in uploads/$QR_NAME/"
-    AUDIO_CLEANED=$((AUDIO_CLEANED + 1))
-  else
-    AUDIO_SKIPPED=$((AUDIO_SKIPPED + 1))
+  if [ -z "$OBJECT_COUNT" ] || [ "$OBJECT_COUNT" = "None" ] || [ "$OBJECT_COUNT" -eq 0 ]; then
+    ORPHAN_PREFIX_EMPTY=$((ORPHAN_PREFIX_EMPTY + 1))
+    continue
   fi
+
+  if [ -z "$LATEST_MODIFIED" ] || [ "$LATEST_MODIFIED" = "None" ]; then
+    ORPHAN_PREFIX_EMPTY=$((ORPHAN_PREFIX_EMPTY + 1))
+    continue
+  fi
+
+  LATEST_EPOCH=$(date -d "$LATEST_MODIFIED" +%s)
+  if [ "$LATEST_EPOCH" -ge "$CUTOFF_EPOCH" ]; then
+    ORPHAN_PREFIX_SKIPPED=$((ORPHAN_PREFIX_SKIPPED + 1))
+    continue
+  fi
+
+  awscli s3 rm "s3://$S3_BUCKET/uploads/$QR_NAME/" \
+    --recursive \
+    --endpoint-url "$S3_ENDPOINT" \
+    --region "$S3_REGION"
+
+  echo "[$(date -Iseconds)] 🗑  Removed stale unpaid uploads/$QR_NAME/ ($OBJECT_COUNT objects, latest: $LATEST_MODIFIED)"
+  ORPHAN_PREFIX_CLEANED=$((ORPHAN_PREFIX_CLEANED + 1))
 done
 
-echo "[$(date -Iseconds)] ✔ Audio cleanup complete. Prefixes cleaned: $AUDIO_CLEANED, skipped: $AUDIO_SKIPPED"
+echo "[$(date -Iseconds)] ✔ Stale unpaid upload prefix cleanup complete. Prefixes cleaned: $ORPHAN_PREFIX_CLEANED, skipped recent/paid: $ORPHAN_PREFIX_SKIPPED, empty: $ORPHAN_PREFIX_EMPTY"
 
 
 # Remove orphan draft products (reserved but never finalised) older than 1 day,

@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -19,7 +20,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "specialgift": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -28,6 +29,7 @@ var templateFolderMap = map[string]string{
 	"galaxy":        "galaxy",
 	"lovedays":      "lovedays",
 	"birthday":      "birthday",
+	"specialgift":   "specialgift",
 }
 
 func domain() string {
@@ -81,9 +83,14 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	templateType, _ := body["templateType"].(string)
-	resolvedType := templateFolderMap[templateType]
+	resolvedType := ""
+	if validTemplateTypes[templateType] {
+		resolvedType = templateType
+	} else {
+		resolvedType = templateFolderMap[templateType]
+	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, lovedays, birthday"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, specialgift"))
 		return
 	}
 
@@ -109,19 +116,20 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Build template_data
 	templateData := map[string]any{"content": content}
+	if templateType == "letterinspace" || templateType == "galaxy" || templateType == "specialgift" {
+		templateData["texts"] = splitNonEmptyLines(content)
+	}
 	switch templateType {
-	case "letterinspace", "galaxy":
-		var texts []string
-		for _, line := range strings.Split(content, "\n") {
-			if t := strings.TrimSpace(line); t != "" {
-				texts = append(texts, t)
-			}
-		}
-		templateData["texts"] = texts
 	case "loveletter":
 		templateData["title"] = strOrDefault(body, "letterTitle", "Love Letter")
 		templateData["sender"] = strOrDefault(body, "letterSender", "")
 		templateData["receiver"] = strOrDefault(body, "letterReceiver", "")
+		if hint := strings.TrimSpace(strOrDefault(body, "letterHint", "")); hint != "" {
+			templateData["hint"] = hint
+		}
+		if signoff := strings.TrimSpace(strOrDefault(body, "letterSignoff", "")); signoff != "" {
+			templateData["signoff"] = signoff
+		}
 	case "lovedays":
 		templateData["date"] = strOrDefault(body, "loveDaysDate", "")
 		templateData["nameFrom"] = strOrDefault(body, "loveDaysNameFrom", "")
@@ -148,6 +156,23 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 			templateData["timeline"] = filtered
 		}
+		if popup, ok := templateData["popupImages"].([]any); ok && len(popup) == 0 && len(imageUrls) > 2 {
+			templateData["popupImages"] = imageUrls[2:]
+		}
+	case "specialgift":
+		templateData["date"] = strOrDefault(body, "specialGiftDate", "")
+		templateData["startDate"] = strOrDefault(body, "specialGiftDate", "")
+		templateData["boyName"] = strOrDefault(body, "specialGiftNameLeft", "")
+		templateData["girlName"] = strOrDefault(body, "specialGiftNameRight", "")
+		templateData["dayLabel"] = strOrDefault(body, "specialGiftDayLabel", "ngày yêu nhau")
+		templateData["titleMessage"] = strOrDefault(body, "specialGiftTitle", "Happy Valentine's Day 💘")
+		templateData["boyImage"] = strOrDefault(body, "specialGiftAvatarLeft", "")
+		templateData["girlImage"] = strOrDefault(body, "specialGiftAvatarRight", "")
+		if imgs, ok := body["specialGiftGalleryImages"].([]any); ok {
+			templateData["imageUrls"] = imgs
+		} else {
+			templateData["imageUrls"] = []any{}
+		}
 	case "birthday":
 		templateData["backgroundText"] = strOrDefault(body, "birthdayBackgroundText", "I LOVE YOU")
 		templateData["backgroundColor"] = strOrDefault(body, "birthdayBackgroundColor", "#ffa3e0")
@@ -165,11 +190,11 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			strOrDefault(body, "birthdayTitle", "Happy Birthday"),
 			strOrDefault(body, "birthdayName", ""),
 			strOrDefault(body, "birthdayAge", ""),
-			strOrDefault(body, "birthdayDate", ""),
+			birthdayDateMessage(body),
 		}
 		templateData["finalText"] = strOrDefault(body, "birthdayFinalText", "")
 	}
-	if len(imageUrls) > 0 {
+	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls
 	}
 
@@ -354,6 +379,25 @@ func strOrDefault(m map[string]any, key, def string) string {
 		return v
 	}
 	return def
+}
+
+func splitNonEmptyLines(content string) []string {
+	lines := strings.Split(content, "\n")
+	texts := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if t := strings.TrimSpace(line); t != "" {
+			texts = append(texts, t)
+		}
+	}
+	return texts
+}
+
+func birthdayDateMessage(m map[string]any) string {
+	date := strOrDefault(m, "birthdayDate", "")
+	if date == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s.%d", date, time.Now().Year())
 }
 
 func nullStr(s string) any {

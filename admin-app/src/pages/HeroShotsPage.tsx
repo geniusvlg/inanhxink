@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { heroShotsApi, uploadApi } from '../services/api';
 import { type HeroShot } from '../types';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import '../components/Layout.css';
 import './BannersPage.css';   // reuses .form-hint
 import './HeroShotsPage.css';
@@ -133,7 +134,7 @@ export default function HeroShotsPage() {
             </div>
 
             {s.image_url
-              ? <img src={s.image_url} alt={s.caption ?? ''} className="hero-shot-thumb" />
+              ? <img src={resolveAssetUrl(s.image_url)} alt={s.caption ?? ''} className="hero-shot-thumb" />
               : <div className="hero-shot-placeholder">Chưa có ảnh</div>}
 
             <div
@@ -158,7 +159,7 @@ export default function HeroShotsPage() {
                 <label className="form-label">Ảnh polaroid</label>
                 <div className="hero-shot-image-edit">
                   {form.image_url
-                    ? <img src={form.image_url} alt="" className="hero-shot-image-edit-preview" />
+                    ? <img src={resolveAssetUrl(form.image_url)} alt="" className="hero-shot-image-edit-preview" />
                     : <div className="hero-shot-image-edit-placeholder">Chưa có ảnh</div>}
                   <input
                     ref={fileInputRef}

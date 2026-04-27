@@ -52,6 +52,10 @@ category only requires (1) a new admin wrapper page + sidebar entry, (2) a new
 public-facing page on the storefront, and (3) updating `ProductItemsPage`'s
 `type` union + `PAGE_TITLE` map.
 
+Admin image previews use `admin-app/src/utils/assetUrl.ts` to render S3-backed
+assets through the CDN when configured. The underlying admin API values remain
+raw S3 URLs for edit/delete flows.
+
 > Note: `/qr-yeu-thuong` on the storefront is **not** a product category. It
 > is the listing of QR-website templates (`templates` table — Galaxy, Love
 > Letter, etc.) and is managed under the `🔳 QR Templates` sidebar entry.
@@ -145,7 +149,7 @@ File naming: `{timestamp}-{randomString}.webp` (all images converted to WebP 90%
 
 - All uploads converted to **WebP** (90% quality) via Sharp
 - Optional watermark (`watermark=true` query param):
-  - File: `backend/public/watermark.png`
+  - File: `backend/public/watermark.png` for Node.js backend and `backend-golang/public/watermark.png` for Go backend
   - Position: bottom-right, 30% of image width, 3% margin
 
 ## Feedback (Testimonials)

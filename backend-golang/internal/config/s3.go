@@ -5,11 +5,13 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -77,7 +79,7 @@ func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark boo
 		if watermark {
 			img, err = applyWatermark(img)
 			if err != nil {
-				log.Printf("[s3] watermark failed: %v", err)
+				return "", fmt.Errorf("apply watermark: %w", err)
 			}
 		}
 		var out bytes.Buffer
@@ -109,7 +111,10 @@ func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark boo
 }
 
 func applyWatermark(img image.Image) (image.Image, error) {
-	watermarkPath := "public/watermark.png"
+	watermarkPath, err := findWatermarkPath()
+	if err != nil {
+		return img, err
+	}
 	wm, err := imaging.Open(watermarkPath)
 	if err != nil {
 		return img, fmt.Errorf("open watermark: %w", err)
@@ -118,10 +123,78 @@ func applyWatermark(img image.Image) (image.Image, error) {
 	h := img.Bounds().Dy()
 	wmWidth := int(float64(w) * 0.3)
 	margin := int(float64(w) * 0.03)
+	wm = trimBackground(wm)
 	wm = imaging.Resize(wm, wmWidth, 0, imaging.Lanczos)
 	left := w - wm.Bounds().Dx() - margin
 	top := h - wm.Bounds().Dy() - margin
 	return imaging.Overlay(img, wm, image.Pt(left, top), 1.0), nil
+}
+
+func trimBackground(img image.Image) image.Image {
+	bounds := img.Bounds()
+	if bounds.Empty() {
+		return img
+	}
+
+	bg := color.NRGBAModel.Convert(img.At(bounds.Min.X, bounds.Min.Y)).(color.NRGBA)
+	const threshold = 12
+	isBackground := func(c color.Color) bool {
+		p := color.NRGBAModel.Convert(c).(color.NRGBA)
+		return absDiff(p.R, bg.R) <= threshold &&
+			absDiff(p.G, bg.G) <= threshold &&
+			absDiff(p.B, bg.B) <= threshold &&
+			absDiff(p.A, bg.A) <= threshold
+	}
+
+	minX, minY := bounds.Max.X, bounds.Max.Y
+	maxX, maxY := bounds.Min.X, bounds.Min.Y
+	found := false
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			if isBackground(img.At(x, y)) {
+				continue
+			}
+			if x < minX {
+				minX = x
+			}
+			if y < minY {
+				minY = y
+			}
+			if x+1 > maxX {
+				maxX = x + 1
+			}
+			if y+1 > maxY {
+				maxY = y + 1
+			}
+			found = true
+		}
+	}
+	if !found {
+		return img
+	}
+	return imaging.Crop(img, image.Rect(minX, minY, maxX, maxY))
+}
+
+func absDiff(a, b uint8) int {
+	if a > b {
+		return int(a - b)
+	}
+	return int(b - a)
+}
+
+func findWatermarkPath() (string, error) {
+	candidates := []string{
+		"public/watermark.png",
+		"backend-golang/public/watermark.png",
+		"backend/public/watermark.png",
+		"frontend-app/public/watermark.png",
+	}
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("watermark file not found")
 }
 
 // ExtractKeyFromURL converts a public S3 URL back to its object key.
@@ -182,4 +255,3 @@ func randStr(n int) string {
 	}
 	return string(b)
 }
-

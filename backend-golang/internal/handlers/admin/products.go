@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -35,7 +36,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 		conditions = append(conditions, fmt.Sprintf("p.type = $%d", idx))
 		idx++
 	}
-	where := "WHERE " + joinClauses(conditions)
+	where := "WHERE " + strings.Join(conditions, " AND ")
 
 	countRow := config.DB.QueryRow(context.Background(),
 		fmt.Sprintf("SELECT COUNT(DISTINCT p.id) AS total FROM products p %s", where), params...)

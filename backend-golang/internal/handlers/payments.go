@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -143,6 +144,41 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 
 	webhookJSON, _ := json.Marshal(payload)
 
+	var qrName, content, templateType string
+	var templateID int
+	var templateDataRaw []byte
+	orderRow := tx.QueryRow(context.Background(),
+		"SELECT qr_name, content, template_id, template_type, template_data FROM orders WHERE id = $1 FOR UPDATE", orderID)
+	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw); err != nil {
+		InternalError(w, err)
+		return
+	}
+
+	if _, err := tx.Exec(context.Background(), "SELECT pg_advisory_xact_lock(hashtext($1))", qrName); err != nil {
+		InternalError(w, err)
+		return
+	}
+
+	var existingPaidOrderID int
+	if err := tx.QueryRow(context.Background(), `
+		SELECT id FROM orders
+		WHERE qr_name = $1 AND payment_status = 'paid' AND id <> $2
+		LIMIT 1`, qrName, orderID).Scan(&existingPaidOrderID); err == nil {
+		tx.Exec(context.Background(), `
+			UPDATE transactions SET status = 'failed', sepay_transaction_id = $1,
+				updated_at = NOW(), webhook_payload = $2
+			WHERE id = $3`, payload.ID, string(webhookJSON), txID) //nolint
+		tx.Exec(context.Background(), `
+			UPDATE orders SET status = 'cancelled', payment_status = 'cancelled', updated_at = NOW()
+			WHERE id = $1`, orderID) //nolint
+		if err := tx.Commit(context.Background()); err != nil {
+			InternalError(w, err)
+			return
+		}
+		OK(w, map[string]any{"success": true, "message": "Ignored: QR name already activated by another paid order"})
+		return
+	}
+
 	if _, err := tx.Exec(context.Background(), `
 		UPDATE transactions SET status = 'paid', sepay_transaction_id = $1,
 			paid_at = NOW(), updated_at = NOW(), webhook_payload = $2
@@ -156,36 +192,81 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Activate QR code
-	var qrName, content, templateType string
-	var templateID int
-	var templateDataRaw []byte
-	orderRow := tx.QueryRow(context.Background(),
-		"SELECT qr_name, content, template_id, template_type, template_data FROM orders WHERE id = $1", orderID)
-	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw); err == nil {
-		fullUrl := qrName + "." + domain()
-		if templateType == "" {
-			templateType = "galaxy"
-		}
-		var qrID int
-		tx.QueryRow(context.Background(), `
-			INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
-			VALUES ($1,$2,$3,$4,$5,$6)
-			ON CONFLICT (qr_name) DO UPDATE
-				SET full_url=EXCLUDED.full_url, content=EXCLUDED.content,
-					template_id=EXCLUDED.template_id, template_type=EXCLUDED.template_type,
-					template_data=EXCLUDED.template_data, updated_at=NOW()
-			RETURNING id`,
-			qrName, fullUrl, content, templateID, templateType, string(templateDataRaw),
-		).Scan(&qrID) //nolint
-		tx.Exec(context.Background(), "UPDATE orders SET qr_code_id = $1 WHERE id = $2", qrID, orderID) //nolint
+	if _, err := tx.Exec(context.Background(), `
+		UPDATE orders SET status = 'cancelled', payment_status = 'cancelled', updated_at = NOW()
+		WHERE qr_name = $1 AND id <> $2 AND payment_status <> 'paid'`, qrName, orderID); err != nil {
+		InternalError(w, err)
+		return
 	}
+	if _, err := tx.Exec(context.Background(), `
+		UPDATE transactions SET status = 'failed', updated_at = NOW()
+		WHERE status = 'pending'
+		  AND order_id IN (
+			SELECT id FROM orders WHERE qr_name = $1 AND id <> $2 AND payment_status = 'cancelled'
+		  )`, qrName, orderID); err != nil {
+		InternalError(w, err)
+		return
+	}
+
+	fullUrl := qrName + "." + domain()
+	if templateType == "" {
+		templateType = "galaxy"
+	}
+	var qrID int
+	tx.QueryRow(context.Background(), `
+		INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
+		VALUES ($1,$2,$3,$4,$5,$6)
+		ON CONFLICT (qr_name) DO UPDATE
+			SET full_url=EXCLUDED.full_url, content=EXCLUDED.content,
+				template_id=EXCLUDED.template_id, template_type=EXCLUDED.template_type,
+				template_data=EXCLUDED.template_data, updated_at=NOW()
+		RETURNING id`,
+		qrName, fullUrl, content, templateID, templateType, string(templateDataRaw),
+	).Scan(&qrID) //nolint
+	tx.Exec(context.Background(), "UPDATE orders SET qr_code_id = $1 WHERE id = $2", qrID, orderID) //nolint
 
 	if err := tx.Commit(context.Background()); err != nil {
 		InternalError(w, err)
 		return
 	}
+	go prunePaidOrderUploads(qrName, templateDataRaw)
 	OK(w, map[string]any{"success": true, "message": "Payment confirmed"})
+}
+
+func prunePaidOrderUploads(qrName string, templateDataRaw []byte) {
+	keep := map[string]bool{}
+	collectS3KeysFromJSON(templateDataRaw, keep)
+	if err := config.PruneS3Folder("uploads/"+qrName, keep); err != nil {
+		log.Printf("[payments] prune uploads/%s failed: %v", qrName, err)
+	}
+}
+
+func collectS3KeysFromJSON(raw []byte, keep map[string]bool) {
+	if len(raw) == 0 {
+		return
+	}
+	var data any
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return
+	}
+	collectS3Keys(data, keep)
+}
+
+func collectS3Keys(value any, keep map[string]bool) {
+	switch v := value.(type) {
+	case string:
+		if key, ok := config.ExtractKeyFromURL(v); ok {
+			keep[key] = true
+		}
+	case []any:
+		for _, item := range v {
+			collectS3Keys(item, keep)
+		}
+	case map[string]any:
+		for _, item := range v {
+			collectS3Keys(item, keep)
+		}
+	}
 }
 
 // GET /api/payments/order/:orderId

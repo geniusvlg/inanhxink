@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { testimonialsApi, uploadApi, type TestimonialBulkItem } from '../services/api';
 import { type Testimonial } from '../types';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import '../components/Layout.css';
 import './TestimonialsPage.css';
 
@@ -308,7 +309,7 @@ export default function TestimonialsPage() {
               <tr key={t.id}>
                 <td>
                   <a href={t.image_url} target="_blank" rel="noopener noreferrer">
-                    <img src={t.image_url} alt="" className="testimonial-thumb" />
+                    <img src={resolveAssetUrl(t.image_url)} alt="" className="testimonial-thumb" />
                   </a>
                 </td>
                 <td>{t.reviewer_name || <span style={{ color: '#94a3b8' }}>—</span>}</td>
@@ -371,7 +372,7 @@ export default function TestimonialsPage() {
                 <label className="form-label">Ảnh</label>
                 <div className="testimonial-image-edit">
                   {form.image_url && (
-                    <img src={form.image_url} alt="" className="testimonial-image-preview" />
+                    <img src={resolveAssetUrl(form.image_url)} alt="" className="testimonial-image-preview" />
                   )}
                   <input
                     ref={replaceInputRef}
@@ -473,7 +474,7 @@ export default function TestimonialsPage() {
             <div className="pending-list">
               {pending.map(p => (
                 <div key={p.tempId} className="pending-row">
-                  <img src={p.image_url} alt="" className="pending-thumb" />
+                  <img src={resolveAssetUrl(p.image_url)} alt="" className="pending-thumb" />
                   <div className="pending-fields">
                     <div className="pending-field-row">
                       <label className="form-label">Người đánh giá</label>

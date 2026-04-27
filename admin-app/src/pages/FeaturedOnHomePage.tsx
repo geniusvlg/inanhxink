@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import * as Sentry from '@sentry/react';
 import { productsApi } from '../services/api';
 import { type Product } from '../types';
+import { resolveAssetUrl } from '../utils/assetUrl';
+import { captureException } from '../utils/sentry';
 import '../components/Layout.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const resolveUrl = (url: string) => (url.startsWith('http') ? url : `${API_BASE_URL}${url}`);
 
 const TYPE_LABEL: Record<string, string> = {
   thiep:          'Thiệp',
@@ -62,7 +60,7 @@ export default function FeaturedOnHomePage() {
       await productsApi.update(p.id, { is_featured_on_home: false });
       load();
     } catch (err) {
-      Sentry.captureException(err);
+      captureException(err);
       alert('Lỗi khi cập nhật');
     }
   };
@@ -75,7 +73,7 @@ export default function FeaturedOnHomePage() {
       await productsApi.reorderFeaturedOnHome(payload);
       setDirty(false);
     } catch (err) {
-      Sentry.captureException(err);
+      captureException(err);
       alert('Lỗi khi lưu thứ tự');
     } finally {
       setSaving(false);
@@ -135,7 +133,7 @@ export default function FeaturedOnHomePage() {
                   <td>
                     {p.images?.[0] ? (
                       <img
-                        src={resolveUrl(p.images[0])}
+                        src={resolveAssetUrl(p.images[0])}
                         alt=""
                         style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }}
                       />

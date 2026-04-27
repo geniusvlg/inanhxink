@@ -52,6 +52,11 @@ jobs:
         with:
           context: ./admin-app
           push: false
+          build-args: |
+            VITE_API_URL=https://inanhxink.com
+            VITE_CDN_URL=https://cdn.inanhxink.com/inanhxink-prod
+            VITE_S3_ENDPOINT=https://s3-north1.viettelidc.com.vn
+            VITE_S3_BUCKET=inanhxink-prod
           cache-from: type=gha,scope=admin
           cache-to: type=gha,mode=max,scope=admin
 

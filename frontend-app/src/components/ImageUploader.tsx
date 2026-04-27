@@ -16,6 +16,8 @@ interface ImageUploaderProps {
   onFileRemoved?: (index: number) => void;
   /** Per-slot upload state for showing progress indicators */
   uploadStates?: Record<number, 'uploading' | 'done' | 'error'>;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 function ImageUploader({
@@ -28,6 +30,8 @@ function ImageUploader({
   onNewFiles,
   onFileRemoved,
   uploadStates = {},
+  disabled = false,
+  disabledReason,
 }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>(initialPreviews || []);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -47,6 +51,7 @@ function ImageUploader({
   }, [images, onImageSelected]);
 
   const handleFileChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -109,6 +114,7 @@ function ImageUploader({
   };
 
   const handleBatchUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
@@ -157,10 +163,13 @@ function ImageUploader({
   };
 
   return (
-    <div className="image-uploader">
+    <div className={`image-uploader ${disabled ? 'is-disabled' : ''}`}>
       <div className="image-uploader-header">
         <span>Upload ảnh (tùy chọn):</span>
       </div>
+      {disabled && disabledReason && (
+        <p className="image-upload-disabled-hint">{disabledReason}</p>
+      )}
       <label className="batch-upload-label">
         <input
           type="file"
@@ -168,7 +177,7 @@ function ImageUploader({
           accept="image/*"
           onChange={handleBatchUpload}
           style={{ display: 'none' }}
-          disabled={images.filter(img => img !== null).length >= maxImages}
+          disabled={disabled || images.filter(img => img !== null).length >= maxImages}
         />
         <span className="batch-upload-button">
           Chọn tối đa {maxImages} ảnh một lần
@@ -183,6 +192,7 @@ function ImageUploader({
                 type="file"
                 accept="image/*"
                 onChange={(e) => handleFileChange(index, e)}
+                disabled={disabled}
                 ref={(el) => {
                   fileInputRefs.current[index] = el;
                 }}
@@ -207,6 +217,7 @@ function ImageUploader({
                   <button
                     type="button"
                     className="remove-image-button"
+                    disabled={disabled}
                     onClick={(e) => {
                       e.preventDefault();
                       handleRemoveImage(index);

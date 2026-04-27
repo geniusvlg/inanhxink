@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { metadataApi, uploadApi } from '../services/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import '../components/Layout.css';
 import './ConfigPage.css';
 
@@ -525,7 +526,7 @@ function SlideRow({ slide, index, total, onUpdate, onRemove, onMove }: SlideRowP
 
   return (
     <div className="cfg-slide-row">
-      <img src={slide.imageUrl} alt="" className="cfg-slide-thumb" />
+      <img src={resolveAssetUrl(slide.imageUrl)} alt="" className="cfg-slide-thumb" />
 
       <div className="cfg-slide-fields">
         <label className="form-label" style={{ fontSize: '0.78rem' }}>Link khi click (tuỳ chọn)</label>

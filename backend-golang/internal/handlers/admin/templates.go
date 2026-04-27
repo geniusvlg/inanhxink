@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -89,6 +90,14 @@ func UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allowed := []string{"name", "description", "image_url", "price", "template_type", "is_active", "demo_url"}
+	previousImage := ""
+	hadPreviousImage := false
+	if _, ok := fields["image_url"]; ok {
+		if err := config.DB.QueryRow(context.Background(),
+			"SELECT COALESCE(image_url, '') FROM templates WHERE id = $1", id).Scan(&previousImage); err == nil {
+			hadPreviousImage = previousImage != ""
+		}
+	}
 	setClauses := []string{}
 	values := []any{}
 	i := 1
@@ -117,6 +126,12 @@ func UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	if err != nil || row == nil {
 		handlers.NotFound(w)
 		return
+	}
+	nextImage, _ := row["image_url"].(string)
+	if hadPreviousImage && previousImage != nextImage {
+		if _, err := config.DeleteFromS3(previousImage); err != nil {
+			log.Printf("[templates] S3 cleanup failed: %v", err)
+		}
 	}
 	handlers.OK(w, map[string]any{"success": true, "template": row})
 }
