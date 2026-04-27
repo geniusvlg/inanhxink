@@ -66,5 +66,6 @@ jobs:
           context: .
           file: ./backend-golang/Dockerfile
           push: false
+          platforms: linux/amd64
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
