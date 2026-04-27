@@ -1,4 +1,4 @@
-import './instrument'; // Must be first — initialises Sentry before express is loaded
+import { isSentryEnabled } from './instrument'; // Must be first — initialises Sentry before express is loaded
 import * as Sentry from '@sentry/node';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
@@ -89,7 +89,7 @@ app.use('/templates', express.static(path.join(__dirname, 'public', 'templates')
 app.post('/api/upload', (req: Request, res: Response, next: NextFunction) => {
   upload.array('files', 20)(req, res, async (err) => {
     if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      Sentry.captureException(err);
+      if (isSentryEnabled) Sentry.captureException(err);
       return res.status(413).json({ success: false, error: 'Ảnh quá lớn. Kích thước tối đa là 50MB mỗi ảnh.' });
     }
     if (err) return next(err);
@@ -312,7 +312,9 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 
 
 // ── Sentry error handler (must be before any other error middleware) ──────────
-Sentry.setupExpressErrorHandler(app);
+if (isSentryEnabled) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // ── Global JSON error handler ─────────────────────────────────────────────────
 // Catches any error passed via next(err) that wasn't already responded to.

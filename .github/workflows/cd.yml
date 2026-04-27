@@ -56,13 +56,19 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/admin:latest
             ${{ env.IMAGE_PREFIX }}/admin:sha-${{ github.sha }}
+          build-args: |
+            VITE_API_URL=https://inanhxink.com
+            VITE_CDN_URL=https://cdn.inanhxink.com/inanhxink-prod
+            VITE_S3_ENDPOINT=https://s3-north1.viettelidc.com.vn
+            VITE_S3_BUCKET=inanhxink-prod
           cache-from: type=gha,scope=admin
           cache-to: type=gha,mode=max,scope=admin
 
       - name: Build & push backend
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: .
+          file: ./backend-golang/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |

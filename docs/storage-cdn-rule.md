@@ -7,7 +7,7 @@ static asset (images, audio, PDFs, etc.) stored in our object storage.
 
 1. **Database stores raw S3 URLs** — always.
 2. **Public APIs serve CDN URLs** — always.
-3. **Admin APIs serve raw S3 URLs** — always.
+3. **Admin APIs serve raw S3 URLs** — always. Admin UI previews may rewrite to CDN for display only, but must keep raw S3 URLs in state and API payloads.
 
 The rewrite happens **at response time** in public routes; it is never
 persisted, never reversed, never branched on.
@@ -18,7 +18,8 @@ persisted, never reversed, never branched on.
 | ---------------- | ------------------ | ------------------------------------------------------- |
 | DB (`*.image_url`) | Raw S3 URL         | Canonical pointer to the bucket object. Used by deletes (`deleteFromS3` parses the bucket key out of it) and verification tooling. |
 | Public client    | CDN URL            | Cheap bandwidth, edge caching, friendly domain.         |
-| Admin client     | Raw S3 URL         | Admins need to verify objects exist in the bucket and trigger deletes. |
+| Admin API/client state | Raw S3 URL         | Admins need to verify objects exist in the bucket and trigger deletes. |
+| Admin image previews | CDN URL when configured | Preview thumbnails can use cached CDN delivery without changing saved values. |
 
 If we stored CDN URLs we'd:
 
@@ -59,7 +60,9 @@ Server-level helpers (`backend/server.ts`):
   `template_data` JSONB before returning it.
 
 Admin routes (`backend/routes/admin/*.ts`): **DO NOT REWRITE**. Admin pages
-upload, list, edit, and delete using the raw S3 URLs.
+upload, list, edit, and delete using the raw S3 URLs. If an admin page needs an
+`<img>` preview, rewrite only the rendered `src` with the admin app's asset URL
+helper; do not mutate form values or persisted payloads.
 
 ## Adding a new public endpoint
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { bannersApi, uploadApi } from '../services/api';
 import { type Banner } from '../types';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import '../components/Layout.css';
 import './BannersPage.css';
 
@@ -205,7 +206,7 @@ export default function BannersPage() {
               <tr key={b.id}>
                 <td>
                   <a href={b.image_url} target="_blank" rel="noopener noreferrer">
-                    <img src={b.image_url} alt={b.alt_text ?? ''} className="banner-thumb" />
+                    <img src={resolveAssetUrl(b.image_url)} alt={b.alt_text ?? ''} className="banner-thumb" />
                   </a>
                 </td>
                 <td className="banner-link-cell">
@@ -249,7 +250,7 @@ export default function BannersPage() {
                 <label className="form-label">Ảnh banner *</label>
                 <div className="banner-image-edit">
                   {form.image_url
-                    ? <img src={form.image_url} alt="" className="banner-image-preview" />
+                    ? <img src={resolveAssetUrl(form.image_url)} alt="" className="banner-image-preview" />
                     : <div className="banner-image-placeholder">Chưa có ảnh</div>}
                   <input
                     ref={fileInputRef}

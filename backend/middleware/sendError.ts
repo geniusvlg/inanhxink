@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 import { Response } from 'express';
+import { isSentryEnabled } from '../instrument';
 
 /**
  * Capture an error to Sentry and respond with a JSON 500.
@@ -8,6 +9,6 @@ import { Response } from 'express';
  * reach Sentry regardless of whether they go through next(err).
  */
 export function sendError(res: Response, err: unknown): Response {
-  Sentry.captureException(err);
+  if (isSentryEnabled) Sentry.captureException(err);
   return res.status(500).json({ success: false, error: (err as Error).message });
 }

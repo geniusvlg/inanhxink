@@ -2,6 +2,10 @@
   margin-bottom: 1.5rem;
 }
 
+.image-uploader.is-disabled {
+  opacity: 0.68;
+}
+
 .image-uploader-header {
   margin-bottom: 0.5rem;
   font-weight: 500;
@@ -31,6 +35,7 @@
 
 .batch-upload-label input:disabled + .batch-upload-button {
   background: #d1d5db;
+  color: #6b7280;
   cursor: not-allowed;
 }
 
@@ -73,6 +78,27 @@
 .image-upload-placeholder:hover {
   border-color: #ffb3c1;
   background: #fdf2f8;
+}
+
+.image-uploader.is-disabled .image-upload-label {
+  cursor: not-allowed;
+}
+
+.image-uploader.is-disabled .image-upload-placeholder {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.image-uploader.is-disabled .image-upload-placeholder:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.image-upload-disabled-hint {
+  margin: 0 0 0.65rem;
+  color: #9a3412;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .image-number {
@@ -153,6 +179,11 @@
 
 .remove-image-button:hover {
   background: rgba(220, 38, 38, 0.9);
+}
+
+.remove-image-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .image-upload-note {

@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import * as Sentry from '@sentry/react';
 import { productsApi, productCategoriesApi, uploadApi } from '../services/api';
 import { type Product, type ProductCategory } from '../types';
 import LoadingGif from '../components/LoadingGif';
+import { resolveAssetUrl } from '../utils/assetUrl';
+import { captureException } from '../utils/sentry';
 import '../components/Layout.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const resolveUrl = (url: string) => url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
 
 interface Props {
   type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
@@ -151,7 +149,7 @@ export default function ProductItemsPage({ type }: Props) {
       const res = await uploadApi.images(files, `${type}/product-${productId}`, form.watermark_enabled ?? false);
       setImageEntries(prev => [...prev, ...res.data.urls]);
     } catch (err: unknown) {
-      Sentry.captureException(err);
+      captureException(err);
       const axiosErr = err as { response?: { status?: number; data?: { error?: string } } };
       if (axiosErr.response?.status === 413) {
         alert('Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 50MB.');
@@ -211,7 +209,7 @@ export default function ProductItemsPage({ type }: Props) {
       closeModal();
       load();
     } catch (err) {
-      Sentry.captureException(err);
+      captureException(err);
       alert('Lỗi khi lưu sản phẩm');
     } finally {
       setSaving(false);
@@ -223,7 +221,7 @@ export default function ProductItemsPage({ type }: Props) {
       await productsApi.update(p.id, { is_active: !p.is_active });
       load();
     } catch (err) {
-      Sentry.captureException(err);
+      captureException(err);
       alert('Lỗi khi cập nhật trạng thái sản phẩm');
     }
   };
@@ -234,7 +232,7 @@ export default function ProductItemsPage({ type }: Props) {
       await productsApi.delete(p.id);
       load();
     } catch (err) {
-      Sentry.captureException(err);
+      captureException(err);
       alert('Lỗi khi xoá sản phẩm');
     }
   };
@@ -270,7 +268,7 @@ export default function ProductItemsPage({ type }: Props) {
                 <td>{p.id}</td>
                 <td>
                   {p.images?.[0]
-                    ? <img src={resolveUrl(p.images[0])} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
+                    ? <img src={resolveAssetUrl(p.images[0])} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
                     : <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📷</div>
                   }
                 </td>
@@ -530,7 +528,7 @@ export default function ProductItemsPage({ type }: Props) {
                   {imageEntries.map(url => (
                     <div key={url} style={{ position: 'relative' }}>
                       <img
-                        src={resolveUrl(url)}
+                        src={resolveAssetUrl(url)}
                         alt=""
                         style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }}
                       />

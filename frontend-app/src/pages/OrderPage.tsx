@@ -76,10 +76,10 @@ function OrderPage() {
   // Background upload tracking: slot index → { promise, cancelled }
   const bgUploads = useRef<Map<number, { promise: Promise<string | null>; cancelled: boolean }>>(new Map());
   const [uploadStates, setUploadStates] = useState<Record<number, 'uploading' | 'done' | 'error'>>({});
-  // Files selected before qrName was valid — flushed once qrName is validated
-  const pendingFiles = useRef<{ index: number; file: File }[]>([]);
 
   const templateType = selectedTemplate?.template_type || '';
+  const canUploadImages = qrNameValid && Boolean(qrName);
+  const uploadDisabledReason = 'Vui lòng nhập và kiểm tra tên QR trước khi tải ảnh lên.';
   const AVATAR_SLOTS = 2;
   const GALLERY_SLOTS = 10;
   const QR_TEMPLATE_MAX_IMAGES = 12;
@@ -168,6 +168,23 @@ function OrderPage() {
     };
   };
 
+  const resetImageUploads = () => {
+    bgUploads.current.forEach(entry => { entry.cancelled = true; });
+    bgUploads.current.clear();
+    setUploadStates({});
+    setUploadedImages([]);
+    setImagePreviews([]);
+  };
+
+  const handleQrNameChange = (value: string) => {
+    if (value !== qrName && (qrNameValid || uploadedImages.some(Boolean) || bgUploads.current.size > 0)) {
+      resetImageUploads();
+    }
+    setQrName(value);
+    setQrNameValid(false);
+    setQrUrl('');
+  };
+
   const handleQrNameValidation = (isValid: boolean, fullUrl?: string) => {
     setQrNameValid(isValid);
     setQrUrl(fullUrl || '');
@@ -194,21 +211,12 @@ function OrderPage() {
   };
 
   const handleNewFiles = (files: { index: number; file: File }[]) => {
-    if (qrNameValid && qrName) {
-      files.forEach(({ index, file }) => startUpload(index, file, qrName));
-    } else {
-      // Queue until qrName is validated
-      pendingFiles.current.push(...files);
+    if (!canUploadImages) {
+      setError('Vui lòng kiểm tra tên QR trước khi tải ảnh lên');
+      return;
     }
+    files.forEach(({ index, file }) => startUpload(index, file, qrName));
   };
-
-  // Flush queued uploads once qrName becomes valid
-  useEffect(() => {
-    if (!qrNameValid || !qrName) return;
-    const queued = pendingFiles.current.splice(0);
-    queued.forEach(({ index, file }) => startUpload(index, file, qrName));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrNameValid, qrName]);
 
   const handleFileRemoved = (index: number) => {
     const entry = bgUploads.current.get(index);
@@ -216,7 +224,6 @@ function OrderPage() {
       entry.cancelled = true;
       bgUploads.current.delete(index);
     }
-    pendingFiles.current = pendingFiles.current.filter(f => f.index !== index);
     setUploadStates(prev => {
       const next = { ...prev };
       delete next[index];
@@ -288,10 +295,7 @@ function OrderPage() {
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
-      bgUploads.current.forEach(entry => { entry.cancelled = true; });
-      bgUploads.current.clear();
-      pendingFiles.current = [];
-      setUploadStates({});
+      resetImageUploads();
     }
   };
 
@@ -321,8 +325,8 @@ function OrderPage() {
             if (!file) return Promise.resolve(null);
             const entry = bgUploads.current.get(index);
             if (entry) return entry.promise;
-            // Fallback: file present but no bg upload entry (e.g. restored from draft)
-            return uploadFiles([file]).then(urls => urls[0]).catch(() => null);
+            // Fallback for restored drafts: still upload into the verified QR folder.
+            return uploadFiles([file], qrName).then(urls => urls[0]).catch(() => null);
           })
         );
         imageUrls = urlResults.filter((u): u is string => !!u);
@@ -417,7 +421,7 @@ function OrderPage() {
     <>
       <QrNameInput
         value={qrName}
-        onChange={setQrName}
+        onChange={handleQrNameChange}
         onValidation={handleQrNameValidation}
       />
 
@@ -817,6 +821,8 @@ function OrderPage() {
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index })))}
                 onFileRemoved={(index) => handleFileRemoved(index)}
                 uploadStates={segmentStates(0, AVATAR_SLOTS)}
+                disabled={!canUploadImages}
+                disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
               />
 
               <p style={{ fontWeight: 500, margin: '0.85rem 0 0.25rem' }}>
@@ -835,6 +841,8 @@ function OrderPage() {
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index + AVATAR_SLOTS })))}
                 onFileRemoved={(index) => handleFileRemoved(index + AVATAR_SLOTS)}
                 uploadStates={segmentStates(AVATAR_SLOTS, GALLERY_SLOTS)}
+                disabled={!canUploadImages}
+                disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
               />
             </>
           ) : templateType === 'specialgift' ? (
@@ -855,6 +863,8 @@ function OrderPage() {
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index })))}
                 onFileRemoved={(index) => handleFileRemoved(index)}
                 uploadStates={segmentStates(0, SPECIAL_GIFT_AVATAR_SLOTS)}
+                disabled={!canUploadImages}
+                disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
               />
 
               <p style={{ fontWeight: 500, margin: '0.85rem 0 0.25rem' }}>
@@ -873,6 +883,8 @@ function OrderPage() {
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index + SPECIAL_GIFT_AVATAR_SLOTS })))}
                 onFileRemoved={(index) => handleFileRemoved(index + SPECIAL_GIFT_AVATAR_SLOTS)}
                 uploadStates={segmentStates(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS)}
+                disabled={!canUploadImages}
+                disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
               />
             </>
           ) : (
@@ -886,6 +898,8 @@ function OrderPage() {
               onNewFiles={handleNewFiles}
               onFileRemoved={handleFileRemoved}
               uploadStates={uploadStates}
+              disabled={!canUploadImages}
+              disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
             />
           )}
         </>
