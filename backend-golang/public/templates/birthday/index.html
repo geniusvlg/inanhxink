@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Harumi Countdown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@700&family=Roboto:wght@900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Layer 1: Matrix rain background -->
+  <canvas id="matrixCanvas"></canvas>
+
+  <!-- Layer 2: Three.js particle countdown (renderer appends its own canvas) -->
+  <div id="particleContainer"></div>
+
+  <!-- Layer 3: Heart + final text (shown after countdown) -->
+  <canvas id="heartCanvas"></canvas>
+
+  <!-- Tap to start overlay -->
+  <div id="startOverlay">
+    <div id="startBtn">
+      <div class="gift-emoji">🎁</div>
+      <div class="gift-label">Chạm để mở quà</div>
+    </div>
+  </div>
+
+  <!-- Rotate notice: shown in portrait on phones -->
+  <div id="rotateNotice">
+    <div class="rotate-icon">📱</div>
+    <p>Vui lòng xoay ngang màn hình để xem đầy đủ</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

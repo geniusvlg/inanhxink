@@ -1,0 +1,122 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: 'Lexend', sans-serif;
+  font-weight: 100;
+}
+
+#threejs-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(at center bottom, rgb(27, 39, 53) 0%, rgb(9, 10, 15) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease-in-out;
+  overflow: hidden;
+}
+
+.loading-screen::before,
+.loading-screen::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: white;
+  box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
+  animation: twinkle 1s ease infinite;
+}
+.loading-screen::before { right: 40%; top: 40%; animation-delay: 0.4s; }
+.loading-screen::after  { left: 30%;  top: 60%; animation-delay: 0.6s; }
+
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle 1.5s ease infinite;
+}
+
+.heart-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transform-origin: center center;
+  animation: pulse 1.5s ease infinite;
+  transition: transform 0.5s;
+  position: relative;
+  z-index: 2;
+}
+.heart-button:hover { transform: scale(1.1) translateY(-10px); }
+.heart-button svg {
+  width: 100px;
+  height: 100px;
+  filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.7));
+}
+.heart-button path { fill: rgb(172, 44, 44); }
+.heart-button.clicked { animation: float-away 1.5s ease-in forwards; }
+
+@keyframes float-away {
+  0%   { transform: scale(1)   translateY(0px);    opacity: 1; }
+  50%  { transform: scale(1.2) translateY(-100px); opacity: 0.7; }
+  100% { transform: scale(1.5) translateY(-300px); opacity: 0; }
+}
+
+@keyframes pulse {
+  0%   { transform: scale(1);   }
+  50%  { transform: scale(1.1); }
+  100% { transform: scale(1);   }
+}
+
+.loading-text {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-family: 'Playpen Sans', cursive;
+  font-size: 1.2em;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.fade-out {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 1s ease-in-out;
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fade-in 2s ease-in 0.5s forwards;
+}
+
+@keyframes fade-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
