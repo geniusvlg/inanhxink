@@ -2,6 +2,7 @@
 
 ## Rules
 
+- **Never `git push` autonomously.** Always stop after committing locally. Let the user review and push themselves.
 - At the start of every conversation, call `mcp__serena__check_onboarding_performed`; if onboarding has NOT been performed yet, immediately call `mcp__serena__onboarding` to onboard the project
 - Before working on a feature, skim the `docs/` folder for relevant docs (e.g. `docs/admin-app.md`, `docs/feedback-feature.md`, `docs/claude-rules.md`); these are the source of truth for cross-cutting features and working conventions
 - When asked to "remember" something, persist it in **both** Serena memory **and** a relevant file in `docs/` (create one if no existing doc fits). Keep `docs/` in sync whenever a feature, schema, or architecture detail changes

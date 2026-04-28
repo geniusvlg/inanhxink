@@ -147,9 +147,10 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	var qrName, content, templateType string
 	var templateID int
 	var templateDataRaw []byte
+	var keychainPurchased bool
 	orderRow := tx.QueryRow(context.Background(),
-		"SELECT qr_name, content, template_id, template_type, template_data FROM orders WHERE id = $1 FOR UPDATE", orderID)
-	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw); err != nil {
+		"SELECT qr_name, content, template_id, template_type, template_data, keychain_purchased FROM orders WHERE id = $1 FOR UPDATE", orderID)
+	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw, &keychainPurchased); err != nil {
 		InternalError(w, err)
 		return
 	}
@@ -169,7 +170,7 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 				updated_at = NOW(), webhook_payload = $2
 			WHERE id = $3`, payload.ID, string(webhookJSON), txID) //nolint
 		tx.Exec(context.Background(), `
-			UPDATE orders SET status = 'cancelled', payment_status = 'cancelled', updated_at = NOW()
+			UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
 			WHERE id = $1`, orderID) //nolint
 		if err := tx.Commit(context.Background()); err != nil {
 			InternalError(w, err)
@@ -186,18 +187,27 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		InternalError(w, err)
 		return
 	}
+	keychainDeliveryStatus := (*string)(nil)
+	if keychainPurchased {
+		s := "processing"
+		keychainDeliveryStatus = &s
+	}
 	if _, err := tx.Exec(context.Background(),
-		"UPDATE orders SET payment_status = 'paid', updated_at = NOW() WHERE id = $1", orderID); err != nil {
+		"UPDATE orders SET payment_status = 'paid', keychain_delivery_status = $1, updated_at = NOW() WHERE id = $2",
+		keychainDeliveryStatus, orderID); err != nil {
 		InternalError(w, err)
 		return
 	}
 
 	if _, err := tx.Exec(context.Background(), `
-		UPDATE orders SET status = 'cancelled', payment_status = 'cancelled', updated_at = NOW()
+		UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
 		WHERE qr_name = $1 AND id <> $2 AND payment_status <> 'paid'`, qrName, orderID); err != nil {
 		InternalError(w, err)
 		return
 	}
+
+	// Release in-memory reservation so the name is not seen as "reserved" anymore.
+	releaseReservation(qrName)
 	if _, err := tx.Exec(context.Background(), `
 		UPDATE transactions SET status = 'failed', updated_at = NOW()
 		WHERE status = 'pending'

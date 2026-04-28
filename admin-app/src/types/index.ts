@@ -19,8 +19,10 @@ export interface Order {
   template_id: number;
   template_name?: string;
   template_type: string;
-  status: string;
   payment_status: string;
+  keychain_delivery_status: string | null;
+  keychain_purchased: boolean;
+  keychain_price: number;
   subtotal: number;
   total_amount: number;
   voucher_code: string | null;

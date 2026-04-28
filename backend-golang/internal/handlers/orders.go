@@ -53,12 +53,21 @@ func CheckQRName(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "QR name must be lowercase letters, numbers, dashes, or underscores only")
 		return
 	}
+
+	// Permanently taken (paid order exists)
 	row := config.DB.QueryRow(context.Background(), "SELECT id FROM qr_codes WHERE qr_name = $1", qrName)
 	var id int
 	if err := row.Scan(&id); err == nil {
 		OK(w, map[string]any{"success": false, "available": false, "message": "QR name already taken"})
 		return
 	}
+
+	// Locked by another user who just submitted an order (5-min window)
+	if isReserved(qrName) {
+		OK(w, map[string]any{"success": false, "available": false, "message": "QR name is temporarily locked, please try another name or try again in 5 minutes"})
+		return
+	}
+
 	OK(w, map[string]any{
 		"success":   true,
 		"available": true,
@@ -79,6 +88,15 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	templateID := body["templateId"]
 	if qrName == "" || templateID == nil {
 		BadRequest(w, "qrName and templateId are required")
+		return
+	}
+
+	qrNameLowerEarly := strings.ToLower(qrName)
+
+	// Try to acquire the in-memory lock. If another user submitted an order for
+	// this name first, reject immediately with a clear message.
+	if !acquireReservation(qrNameLowerEarly) {
+		JSON(w, 409, map[string]any{"success": false, "error": "Tên QR này vừa được đặt bởi người khác. Vui lòng chọn tên khác."})
 		return
 	}
 
@@ -289,7 +307,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	subtotal = math.Round(subtotal)
 	total = math.Round(total)
 
-	qrNameLower := strings.ToLower(qrName)
+	qrNameLower := qrNameLowerEarly
 	fullUrl := qrNameLower + "." + domain()
 
 	tdJSON, _ := json.Marshal(templateData)
@@ -300,14 +318,14 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			customer_name, customer_email, customer_phone,
 			template_id, template_type, template_data, qr_name, content, music_link, music_added,
 			keychain_purchased, keychain_price, tip_amount, voucher_code, voucher_discount,
-			subtotal, total_amount, status, payment_status
+			subtotal, total_amount, payment_status, keychain_delivery_status
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 		RETURNING id`,
 		nullStr(customerName), nullStr(customerEmail), nullStr(customerPhone),
 		templateID, resolvedType, string(tdJSON),
 		qrNameLower, content, nullStr(resolvedMusicUrl),
 		musicAdded, keychainPurchased, keychainPrice,
-		tipAmount, nullStr(voucherCode), discount, subtotal, total, "pending", "pending",
+		tipAmount, nullStr(voucherCode), discount, subtotal, total, "pending", keychainDelivery(keychainPurchased),
 	).Scan(&orderID)
 	if err != nil {
 		InternalError(w, err)
@@ -405,4 +423,12 @@ func nullStr(s string) any {
 		return nil
 	}
 	return s
+}
+
+// keychainDelivery returns "pending" if a keychain was purchased, nil otherwise.
+func keychainDelivery(purchased bool) any {
+	if purchased {
+		return "pending"
+	}
+	return nil
 }
