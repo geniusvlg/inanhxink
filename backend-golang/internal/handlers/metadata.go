@@ -59,6 +59,24 @@ func rewriteBannerSlides(cfg map[string]string) {
 		cfg["product_banner_slides"] = rewriteList(raw)
 	}
 
+	// Rewrite in-anh price image URL.
+	if raw, ok := cfg["in_anh_price_image_url"]; ok && raw != "" {
+		cfg["in_anh_price_image_url"] = config.CdnStr(raw)
+	}
+
+	// Rewrite in_anh_gallery (JSON array of URL strings).
+	if raw, ok := cfg["in_anh_gallery"]; ok && raw != "" && raw != "[]" {
+		var urls []string
+		if err := json.Unmarshal([]byte(raw), &urls); err == nil {
+			for i, u := range urls {
+				urls[i] = config.CdnStr(u)
+			}
+			if b, err := json.Marshal(urls); err == nil {
+				cfg["in_anh_gallery"] = string(b)
+			}
+		}
+	}
+
 	if raw, ok := cfg["product_banner_overrides"]; ok {
 		var obj map[string]any
 		if err := json.Unmarshal([]byte(raw), &obj); err == nil {

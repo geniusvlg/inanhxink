@@ -1,84 +1,165 @@
 @import './HomePage.css';
-@import '../components/ProductFilter.css';
 
-.in-anh-page {
+/* ── Page shell ── */
+.ia-page {
   min-height: 100vh;
   background: #fff;
   display: flex;
   flex-direction: column;
 }
 
-.in-anh-hero {
+/* ── Hero ── */
+.ia-hero {
   text-align: center;
-  padding: 2.5rem 2rem 1.5rem;
-  background: linear-gradient(180deg, #bae6fd 0%, #fff 100%);
+  padding: 2.5rem 1rem 1.5rem;
+  background: linear-gradient(180deg, #bae6fd 0%, #fce7f3 60%, #fff 100%);
 }
 
-.in-anh-hero-title {
+.ia-hero-title {
   font-size: 2.75rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #1f2937;
+  margin: 0 0 0.4rem;
+}
+
+.ia-hero-title span { color: #0ea5e9; }
+
+.ia-hero-sub {
+  font-size: 1.05rem;
+  color: #6b7280;
   margin: 0;
 }
 
-.in-anh-hero-title span { color: #0ea5e9; }
-
-.in-anh-hero-desc {
-  font-size: 1.125rem;
-  color: #6b7280;
-  max-width: 600px;
+/* ── Content wrapper ── */
+.ia-content {
+  flex: 1;
+  max-width: 1200px;
   margin: 0 auto;
-  line-height: 1.7;
+  padding: 2rem 1.25rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.in-anh-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem 1.5rem;
-  align-items: start;
+/* ── Price table ── */
+.ia-price-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2.5rem;
 }
 
-@media (max-width: 1024px) {
-  .in-anh-grid { grid-template-columns: repeat(2, 1fr); }
+.ia-price-card {
+  max-width: 480px;
+  width: 100%;
+  border-radius: 20px;
+  border: 3px solid #fce7f3;
+  box-shadow: 0 8px 32px rgba(249, 168, 212, 0.25);
+  overflow: hidden;
 }
 
-@media (max-width: 640px) {
-  .in-anh-hero { padding: 1.25rem 1rem 0.5rem; }
-  .in-anh-hero-title { font-size: 2rem; }
-  .in-anh-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-  .in-anh-grid .product-card--link .product-card-name {
-    -webkit-line-clamp: 1;
-  }
+.ia-price-img {
+  width: 100%;
+  display: block;
 }
 
-.in-anh-loading,
-.in-anh-error,
-.in-anh-empty {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
-  font-size: 1.125rem;
-  grid-column: 1 / -1;
+.ia-price-caption {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: #9ca3af;
 }
 
-.in-anh-error { color: #dc2626; }
+/* ── Gallery — masonry (mirrors TestimonialsPage) ── */
+.ia-gallery-section {
+  margin-top: 0.5rem;
+}
 
-.in-anh-reset-btn {
-  margin-top: 1rem;
-  padding: 0.6rem 1.5rem;
-  border: 1.5px solid #0ea5e9;
-  border-radius: 2rem;
-  background: #fff;
-  color: #0ea5e9;
-  font-size: 0.9rem;
-  font-weight: 600;
+.ia-masonry {
+  column-count: 4;
+  column-gap: 1rem;
+}
+
+.ia-masonry-card {
+  display: block;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  transition: transform 0.2s;
+}
+
+.ia-masonry-card:hover { transform: translateY(-3px); }
+
+.ia-masonry-img-wrap {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.ia-masonry-img-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ── Lightbox ── */
+.ia-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+  animation: ia-fade-in 0.15s ease-out;
+}
+
+@keyframes ia-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.ia-lightbox img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  cursor: default;
+}
+
+.ia-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.in-anh-reset-btn:hover { background: #f0f9ff; }
+.ia-lightbox-close:hover { background: rgba(255, 255, 255, 0.3); }
 
-.homepage-nav-link.active {
-  background: #f0f9ff;
-  color: #0ea5e9;
+/* ── Responsive ── */
+@media (max-width: 1100px) { .ia-masonry { column-count: 3; } }
+@media (max-width: 740px) {
+  .ia-masonry { column-count: 2; column-gap: 0.75rem; }
+  .ia-masonry-card { margin-bottom: 0.75rem; }
+  .ia-price-card { max-width: 100%; }
+  .ia-hero { padding: 1.5rem 1rem 1rem; }
+  .ia-hero-title { font-size: 2rem; }
+  .ia-content { padding: 1.5rem 0.875rem 2.5rem; }
 }
+@media (max-width: 420px) { .ia-masonry { column-count: 2; } }

@@ -129,6 +129,24 @@ export const uploadApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+  inAnhPriceImage: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=in-anh-price',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
+  inAnhGallery: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=in-anh-gallery',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
   qrTemplateThumbnail: (files: File[], templateType = 'template') => {
     const form = new FormData();
     files.forEach(f => form.append('files', f));
