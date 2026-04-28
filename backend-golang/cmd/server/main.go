@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
@@ -26,6 +27,13 @@ func main() {
 	config.InitDB()
 	config.InitS3()
 	config.InitCDN()
+
+	// Background cleanup: evict expired QR name reservations every 5 minutes.
+	go func() {
+		for range time.NewTicker(5 * time.Minute).C {
+			handlers.PruneExpiredReservations()
+		}
+	}()
 
 	r := chi.NewRouter()
 

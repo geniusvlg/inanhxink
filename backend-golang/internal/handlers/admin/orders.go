@@ -20,7 +20,7 @@ func adminDomain() string {
 	return "inanhxink.com"
 }
 
-// GET /api/admin/orders?page=&limit=&payment_status=&status=
+// GET /api/admin/orders?page=&limit=&payment_status=&keychain_delivery_status=
 func ListOrders(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	page := handlers.Clamp(handlers.IntParam(q.Get("page"), 1), 1, 1<<30)
@@ -36,8 +36,8 @@ func ListOrders(w http.ResponseWriter, r *http.Request) {
 		params = append(params, v)
 		idx++
 	}
-	if v := q.Get("status"); v != "" {
-		conditions = append(conditions, fmt.Sprintf("o.status = $%d", idx))
+	if v := q.Get("keychain_delivery_status"); v != "" {
+		conditions = append(conditions, fmt.Sprintf("o.keychain_delivery_status = $%d", idx))
 		params = append(params, v)
 		idx++
 	}
@@ -98,8 +98,8 @@ func GetOrder(w http.ResponseWriter, r *http.Request) {
 func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var body struct {
-		Status        string `json:"status"`
-		PaymentStatus string `json:"payment_status"`
+		PaymentStatus     string `json:"payment_status"`
+		KeychainDeliveryStatus string `json:"keychain_delivery_status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		handlers.BadRequest(w, "Invalid JSON")
@@ -109,18 +109,18 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	setClauses := []string{}
 	values := []any{}
 	i := 1
-	if body.Status != "" {
-		setClauses = append(setClauses, fmt.Sprintf("status = $%d", i))
-		values = append(values, body.Status)
-		i++
-	}
 	if body.PaymentStatus != "" {
 		setClauses = append(setClauses, fmt.Sprintf("payment_status = $%d", i))
 		values = append(values, body.PaymentStatus)
 		i++
 	}
+	if body.KeychainDeliveryStatus != "" {
+		setClauses = append(setClauses, fmt.Sprintf("keychain_delivery_status = $%d", i))
+		values = append(values, body.KeychainDeliveryStatus)
+		i++
+	}
 	if len(setClauses) == 0 {
-		handlers.BadRequest(w, "status or payment_status required")
+		handlers.BadRequest(w, "payment_status or keychain_delivery_status is required")
 		return
 	}
 	values = append(values, id)

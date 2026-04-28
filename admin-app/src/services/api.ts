@@ -44,7 +44,7 @@ export const templatesApi = {
 export const ordersApi = {
   list: (params?: Record<string, string | number>) => api.get('/api/admin/orders', { params }),
   get:  (id: number)  => api.get(`/api/admin/orders/${id}`),
-  updateStatus: (id: number, data: { status?: string; payment_status?: string }) =>
+  updateStatus: (id: number, data: { payment_status?: string; keychain_delivery_status?: string }) =>
     api.patch(`/api/admin/orders/${id}/status`, data),
 };
 
