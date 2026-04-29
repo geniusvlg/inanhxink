@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { useCart } from '../contexts/CartContext';
+import CartDrawer from './CartDrawer';
 import './SiteHeader.css';
 
 interface SiteHeaderProps {
@@ -10,8 +12,10 @@ interface SiteHeaderProps {
 function SiteHeader({ activePage }: SiteHeaderProps) {
   const [query, setQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const navigate = useNavigate();
   const flags = useFeatureFlags();
+  const { totalItems } = useCart();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +54,22 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
 
         <button
           type="button"
+          className="site-cart-btn"
+          aria-label="Giỏ hàng"
+          onClick={() => setCartOpen(true)}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1"/>
+            <circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/>
+          </svg>
+          {totalItems > 0 && (
+            <span className="site-cart-badge">{totalItems > 99 ? '99+' : totalItems}</span>
+          )}
+        </button>
+
+        <button
+          type="button"
           className={`site-menu-btn${mobileMenuOpen ? ' active' : ''}`}
           aria-label="Mở menu"
           aria-expanded={mobileMenuOpen}
@@ -80,6 +100,8 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
         {flags.page_in_anh            && <Link to="/in-anh"            className={linkCls('in-anh')} onClick={closeMobileMenu}>In Ảnh</Link>}
         <Link to="/danh-gia" className={linkCls('danh-gia')} onClick={closeMobileMenu}>Feedback</Link>
       </nav>
+
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </header>
   );
 }

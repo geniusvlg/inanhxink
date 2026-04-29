@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { FeatureFlagsProvider, useFeatureFlags, type FeatureFlags } from './contexts/FeatureFlagsContext';
+import { CartProvider } from './contexts/CartContext';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
 import QrGeneratePage from './pages/QrGeneratePage';
@@ -15,6 +16,8 @@ import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import HomePage from './pages/HomePage';
+import CheckoutPage from './pages/CheckoutPage';
+import CheckoutResultPage from './pages/CheckoutResultPage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
@@ -57,6 +60,8 @@ function AppRoutes() {
       <Route path="/set-qua-tang"      element={<FlaggedRoute flag="page_set_qua_tang"      element={<SetQuaTangPage />} />} />
       <Route path="/cac-san-pham-khac" element={<FlaggedRoute flag="page_cac_san_pham_khac" element={<KhacPage />} />} />
       <Route path="/in-anh"            element={<FlaggedRoute flag="page_in_anh"            element={<InAnhPage />} />} />
+      <Route path="/checkout"        element={<CheckoutPage />} />
+      <Route path="/checkout/result" element={<CheckoutResultPage />} />
     </Routes>
     </>
   );
@@ -65,8 +70,10 @@ function AppRoutes() {
 function App() {
   return (
     <FeatureFlagsProvider>
-      <AppRoutes />
-      <FloatingContact />
+      <CartProvider>
+        <AppRoutes />
+        <FloatingContact />
+      </CartProvider>
     </FeatureFlagsProvider>
   );
 }

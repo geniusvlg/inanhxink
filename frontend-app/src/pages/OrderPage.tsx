@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import '../App.css';
+import SiteHeader from '../components/SiteHeader';
 import TemplateSelector from '../components/TemplateSelector';
 import QrNameInput from '../components/QrNameInput';
 import ContentEditor from '../components/ContentEditor';
@@ -975,51 +976,57 @@ function OrderPage() {
   // Two-column product detail layout (preselected from homepage)
   if (preselectedTemplateId) {
     return (
-      <div className="app">
-        <div className="app-container app-container--wide">
-          <Link to="/" className="back-link">&larr; Quay lại</Link>
+      <>
+        <SiteHeader />
+        <div className="app">
+          <div className="app-container app-container--wide">
+            <Link to="/" className="back-link">&larr; Quay lại</Link>
 
-          {selectedTemplate && (
-            <>
-              <div className="order-detail-layout">
-                <div className="order-detail-left">
-                  <img
-                    className="order-detail-img"
-                    src={resolveAssetUrl(selectedTemplate.image_url)}
-                    alt={selectedTemplate.name}
-                  />
+            {selectedTemplate && (
+              <>
+                <div className="order-detail-layout">
+                  <div className="order-detail-left">
+                    <img
+                      className="order-detail-img"
+                      src={resolveAssetUrl(selectedTemplate.image_url)}
+                      alt={selectedTemplate.name}
+                    />
+                  </div>
+                  <div className="order-detail-right">
+                    <h1 className="order-detail-name">{selectedTemplate.name}</h1>
+                    <div className="order-detail-price">{Math.round(selectedTemplate.price).toLocaleString('en')}đ</div>
+                    {orderFormTop}
+                  </div>
                 </div>
-                <div className="order-detail-right">
-                  <h1 className="order-detail-name">{selectedTemplate.name}</h1>
-                  <div className="order-detail-price">{Math.round(selectedTemplate.price).toLocaleString('en')}đ</div>
-                  {orderFormTop}
-                </div>
-              </div>
-              {orderFormBottom}
-            </>
-          )}
+                {orderFormBottom}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Classic single-column layout (no preselection)
   return (
-    <div className="app">
-      <div className="app-container">
-        <Link to="/" className="back-link">&larr; Quay lại</Link>
-        <h1 className="app-title">Inanhxink</h1>
+    <>
+      <SiteHeader />
+      <div className="app">
+        <div className="app-container">
+          <Link to="/" className="back-link">&larr; Quay lại</Link>
+          <h1 className="app-title">Inanhxink</h1>
 
-        <TemplateSelector
-          selectedTemplate={selectedTemplate}
-          onSelectTemplate={setSelectedTemplate}
-          onClearAll={handleClearAll}
-        />
+          <TemplateSelector
+            selectedTemplate={selectedTemplate}
+            onSelectTemplate={setSelectedTemplate}
+            onClearAll={handleClearAll}
+          />
 
-        {orderFormTop}
-        {orderFormBottom}
+          {orderFormTop}
+          {orderFormBottom}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

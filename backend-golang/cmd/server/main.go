@@ -85,9 +85,17 @@ func main() {
 
 	r.Route("/api/payments", func(r chi.Router) {
 		r.Post("/", handlers.CreatePayment)
+		r.Post("/checkout", handlers.CreateCheckout)
+		r.Post("/product-checkout", handlers.CreateProductCheckout)
 		r.Post("/webhook", handlers.PaymentWebhook)
+		r.Post("/ipn", handlers.SepayIPN)
 		r.Get("/order/{orderId}", handlers.GetPaymentByOrder)
 		r.Get("/qr/{qrName}", handlers.GetPaymentByQR)
+	})
+
+	r.Route("/api/product-orders", func(r chi.Router) {
+		r.Post("/", handlers.CreateProductOrder)
+		r.Get("/{id}", handlers.GetProductOrder)
 	})
 
 	r.Route("/api/music", func(r chi.Router) {

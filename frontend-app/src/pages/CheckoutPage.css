@@ -1,0 +1,302 @@
+/* ── Page shell ──────────────────────────────────────────────────────────── */
+.co-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+}
+.co-main {
+  flex: 1;
+  padding: 2rem max(1rem, calc((100% - 1100px) / 2 + 1rem));
+}
+.co-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* ── Step indicator ──────────────────────────────────────────────────────── */
+.co-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2.5rem;
+}
+.co-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+.co-step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #9ca3af;
+  transition: background 0.2s, color 0.2s;
+}
+.co-step--active .co-step-dot {
+  background: #e05c99;
+  color: #fff;
+}
+.co-step--done .co-step-dot {
+  background: #22c55e;
+  color: #fff;
+}
+.co-step-label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+.co-step--active .co-step-label { color: #e05c99; font-weight: 600; }
+.co-step--done  .co-step-label  { color: #22c55e; font-weight: 600; }
+.co-step-line {
+  height: 2px;
+  width: 80px;
+  background: #e5e7eb;
+  margin: 0 0.5rem;
+  margin-bottom: 1.2rem;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.co-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .co-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Form column ─────────────────────────────────────────────────────────── */
+.co-form {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.75rem;
+  border: 1px solid #f3f4f6;
+}
+.co-form-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1.25rem;
+}
+.co-form-hint {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: -0.75rem 0 1.25rem;
+}
+.co-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+}
+.co-req  { color: #ef4444; font-weight: 700; }
+.co-optional { color: #9ca3af; font-weight: 400; }
+.co-input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  color: #1f2937;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  font-family: inherit;
+  background: #fff;
+}
+.co-input:focus { border-color: #e05c99; }
+.co-textarea { resize: vertical; }
+.co-note { margin-top: 0.5rem; }
+
+/* ── Per-item customisation cards ────────────────────────────────────────── */
+.co-item-custom {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.co-item-custom:last-child { border-bottom: none; }
+.co-item-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.co-item-custom-body { flex: 1; }
+.co-item-custom-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.6rem;
+}
+
+.co-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  background: #f3f4f6;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 0.5rem;
+}
+.co-upload-btn:hover { background: #e5e7eb; border-color: #9ca3af; }
+
+.co-preview-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+.co-preview-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* ── Button row ──────────────────────────────────────────────────────────── */
+.co-btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.co-back-btn {
+  padding: 0.7rem 1.5rem;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.co-back-btn:hover { background: #f3f4f6; }
+.co-next-btn,
+.co-pay-btn {
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #e05c99 0%, #c9408a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.co-next-btn:hover,
+.co-pay-btn:hover { opacity: 0.9; }
+.co-pay-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.co-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  text-align: right;
+}
+
+/* ── Order summary sidebar ───────────────────────────────────────────────── */
+.co-summary {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #f3f4f6;
+  position: sticky;
+  top: 80px;
+}
+.co-summary-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1rem;
+}
+.co-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.co-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.co-summary-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.co-summary-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.co-summary-item-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.3;
+}
+.co-summary-item-qty {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+.co-summary-item-price {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e05c99;
+  white-space: nowrap;
+}
+.co-summary-divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 1rem 0;
+}
+.co-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #374151;
+}
+.co-summary-total strong {
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+.co-summary-note {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+}

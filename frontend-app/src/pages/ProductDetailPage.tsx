@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getProductById, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
 import PriceTag, { getActiveDiscountPrice } from '../components/PriceTag';
+import { startBuyNowCheckout, useCart } from '../contexts/CartContext';
 import './ProductDetailPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -21,10 +22,13 @@ function formatPrice(price: number): string {
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeImg, setActiveImg] = useState(0);
+  const [added, setAdded] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     if (!id) return;
@@ -41,6 +45,32 @@ export default function ProductDetailPage() {
   const images = product?.images?.length
     ? product.images.map(resolveUrl)
     : ['/placeholder.png'];
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    const price = getActiveDiscountPrice(product) ?? product.price;
+    addItem({
+      product_id:   product.id,
+      product_name: product.name,
+      unit_price:   price,
+      thumbnail:    images[0],
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleBuyNow = () => {
+    if (!product) return;
+    const price = getActiveDiscountPrice(product) ?? product.price;
+    startBuyNowCheckout({
+      product_id:   product.id,
+      product_name: product.name,
+      unit_price:   price,
+      quantity:     1,
+      thumbnail:    images[0],
+    });
+    navigate('/checkout?mode=buy-now');
+  };
 
   if (loading) {
     return (
@@ -132,15 +162,47 @@ export default function ProductDetailPage() {
               <p className="pd-desc">{product.description}</p>
             )}
 
-            <a
-              className="pd-zalo-btn"
-              href="https://zalo.me/0582818580"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <img src="/zalo_icon.svg.webp" alt="Zalo" className="pd-zalo-icon" />
-              Liên hệ qua Zalo
-            </a>
+            <div className="pd-action-row">
+              <button
+                className="pd-buy-now-btn"
+                onClick={handleBuyNow}
+              >
+                Mua ngay
+              </button>
+
+              <button
+                className={`pd-add-to-cart-btn${added ? ' pd-add-to-cart-btn--added' : ''}`}
+                onClick={handleAddToCart}
+              >
+                {added ? (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Đã thêm!
+                  </>
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                      <line x1="3" y1="6" x2="21" y2="6"/>
+                      <path d="M16 10a4 4 0 01-8 0"/>
+                    </svg>
+                    Thêm vào giỏ hàng
+                  </>
+                )}
+              </button>
+
+              <a
+                className="pd-zalo-btn"
+                href="https://zalo.me/0582818580"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img src="/zalo_icon.svg.webp" alt="Zalo" className="pd-zalo-icon" />
+                Liên hệ Zalo
+              </a>
+            </div>
 
             {(product.tiktok_url || product.instagram_url) && (
               <div className="pd-social-links">
