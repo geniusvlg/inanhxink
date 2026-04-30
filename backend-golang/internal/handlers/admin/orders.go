@@ -184,3 +184,135 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	handlers.OK(w, map[string]any{"success": true, "order": order})
 }
+
+// GET /api/admin/orders/search?code=INXK...
+// Searches both product_orders (by invoice_number) and QR orders (by qr_name).
+func SearchOrder(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		handlers.BadRequest(w, "code is required")
+		return
+	}
+
+	// Try product order first (invoice_number)
+	productRows, err := config.DB.Query(context.Background(), `
+		SELECT id, invoice_number, customer_name, customer_phone, customer_address,
+		       items::text AS items, total_amount, payment_status, fulfillment_status,
+		       COALESCE(tracking_code, '') as tracking_code, created_at, updated_at
+		FROM product_orders
+		WHERE invoice_number ILIKE $1 AND payment_status = 'paid'
+		ORDER BY created_at DESC LIMIT 1`, "%"+code+"%")
+	if err == nil {
+		if row, err2 := handlers.CollectOne(productRows); err2 == nil && row != nil {
+			handlers.OK(w, map[string]any{"success": true, "type": "product", "order": row})
+			return
+		}
+	}
+
+	// Try QR order (qr_name or invoice content)
+	qrRows, err := config.DB.Query(context.Background(), `
+		SELECT o.id, o.qr_name, o.customer_name, o.customer_phone, o.customer_address,
+		       o.total_amount, o.payment_status, o.keychain_delivery_status as fulfillment_status,
+		       COALESCE(o.tracking_code, '') as tracking_code, o.created_at,
+		       q.template_data
+		FROM orders o
+		LEFT JOIN qr_codes q ON q.qr_name = o.qr_name
+		WHERE (o.qr_name ILIKE $1) AND o.payment_status = 'paid'
+		ORDER BY o.created_at DESC LIMIT 1`, "%"+code+"%")
+	if err == nil {
+		if row, err2 := handlers.CollectOne(qrRows); err2 == nil && row != nil {
+			handlers.OK(w, map[string]any{"success": true, "type": "qr", "order": row})
+			return
+		}
+	}
+
+	handlers.JSON(w, 404, map[string]any{"success": false, "error": "Không tìm thấy đơn hàng"})
+}
+
+// PATCH /api/admin/product-orders/:id/items — admin edits items (notes, images) and/or customer info.
+func UpdateProductOrderItems(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Items           json.RawMessage `json:"items"`
+		CustomerName    string          `json:"customer_name"`
+		CustomerPhone   string          `json:"customer_phone"`
+		CustomerAddress string          `json:"customer_address"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		handlers.BadRequest(w, "Invalid JSON")
+		return
+	}
+
+	setClauses := []string{"updated_at = NOW()"}
+	values := []any{}
+	idx := 1
+
+	if len(body.Items) > 0 {
+		setClauses = append([]string{fmt.Sprintf("items = $%d", idx)}, setClauses...)
+		values = append(values, string(body.Items))
+		idx++
+	}
+	if body.CustomerName != "" {
+		setClauses = append([]string{fmt.Sprintf("customer_name = $%d", idx)}, setClauses...)
+		values = append(values, body.CustomerName)
+		idx++
+	}
+	if body.CustomerPhone != "" {
+		setClauses = append([]string{fmt.Sprintf("customer_phone = $%d", idx)}, setClauses...)
+		values = append(values, body.CustomerPhone)
+		idx++
+	}
+	if body.CustomerAddress != "" {
+		setClauses = append([]string{fmt.Sprintf("customer_address = $%d", idx)}, setClauses...)
+		values = append(values, body.CustomerAddress)
+		idx++
+	}
+
+	values = append(values, id)
+	_, err := config.DB.Exec(context.Background(),
+		fmt.Sprintf("UPDATE product_orders SET %s WHERE id = $%d",
+			joinClauses(setClauses), idx),
+		values...)
+	if err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+	handlers.OK(w, map[string]any{"success": true})
+}
+
+// Advances the keychain fulfillment stage for a QR order. Mirrors UpdateFulfillmentStatus for product orders.
+func UpdateQRKeychainFulfillment(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var body struct {
+		FulfillmentStatus string `json:"fulfillment_status"`
+		TrackingCode      string `json:"tracking_code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		handlers.BadRequest(w, "Invalid JSON")
+		return
+	}
+	allowed := map[string]bool{"preparing": true, "packing": true, "shipped": true}
+	if !allowed[body.FulfillmentStatus] {
+		handlers.BadRequest(w, "fulfillment_status must be preparing, packing, or shipped")
+		return
+	}
+
+	rows, err := config.DB.Query(context.Background(), `
+		UPDATE orders
+		SET keychain_delivery_status = $1::varchar,
+		    tracking_code            = CASE WHEN $1::varchar = 'shipped' THEN $2 ELSE tracking_code END,
+		    updated_at               = NOW()
+		WHERE id = $3 AND payment_status = 'paid' AND keychain_purchased = true
+		RETURNING id, qr_name, customer_name, keychain_delivery_status, tracking_code`,
+		body.FulfillmentStatus, body.TrackingCode, id)
+	if err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+	order, err := handlers.CollectOne(rows)
+	if err != nil || order == nil {
+		handlers.NotFound(w)
+		return
+	}
+	handlers.OK(w, map[string]any{"success": true, "order": order})
+}

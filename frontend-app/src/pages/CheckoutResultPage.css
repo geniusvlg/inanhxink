@@ -145,6 +145,17 @@
 }
 .cr-cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
+.cr-track-link {
+  display: block;
+  text-align: center;
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: #7c3aed;
+  text-decoration: none;
+  font-weight: 600;
+}
+.cr-track-link:hover { text-decoration: underline; }
+
 /* ── Brand footer strip on the card ──────────────────────────────────────── */
 .cr-brand {
   margin-top: 1.75rem;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ordersApi } from '../services/api';
 import { type Order } from '../types';
 import '../components/Layout.css';
@@ -21,20 +21,6 @@ const PAYMENT_STYLE: Record<string, React.CSSProperties> = {
   cancelled: { background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' },
 };
 
-const KEYCHAIN_OPTIONS = ['pending', 'processing', 'shipped'];
-
-const KEYCHAIN_LABEL: Record<string, string> = {
-  pending:    'Chờ thanh toán',
-  processing: 'Đang làm',
-  shipped:    'Đã giao',
-};
-
-const KEYCHAIN_STYLE: Record<string, React.CSSProperties> = {
-  pending:    { background: '#fef3c7', color: '#92400e', border: '1px solid #fbbf24' },
-  processing: { background: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' },
-  shipped:    { background: '#dcfce7', color: '#166534', border: '1px solid #86efac' },
-};
-
 function Badge({ label, style }: { label: string; style: React.CSSProperties }) {
   return (
     <span style={{
@@ -54,54 +40,42 @@ function PaymentBadge({ status }: { status: string }) {
   return <Badge label={PAYMENT_LABEL[status] ?? status} style={PAYMENT_STYLE[status] ?? {}} />;
 }
 
-function KeychainBadge({ status }: { status: string | null }) {
-  if (!status) return <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>—</span>;
-  return <Badge label={KEYCHAIN_LABEL[status] ?? status} style={KEYCHAIN_STYLE[status] ?? {}} />;
-}
-
 export default function OrdersPage() {
-  const [orders, setOrders]                       = useState<Order[]>([]);
-  const [total, setTotal]                         = useState(0);
-  const [page, setPage]                           = useState(1);
-  const [loading, setLoading]                     = useState(true);
-  const [filterPayment, setFilterPayment]         = useState('');
-  const [filterKeychain, setFilterKeychain]       = useState('');
-  const [detail, setDetail]                       = useState<Order | null>(null);
-  const [editPayment, setEditPayment]             = useState('');
-  const [editKeychain, setEditKeychain]           = useState<string>('');
-  const [saving, setSaving]                       = useState(false);
+  const [orders, setOrders]           = useState<Order[]>([]);
+  const [total, setTotal]             = useState(0);
+  const [page, setPage]               = useState(1);
+  const [loading, setLoading]         = useState(true);
+  const [filterPayment, setFilterPayment] = useState('');
+  const [detail, setDetail]           = useState<Order | null>(null);
+  const [editPayment, setEditPayment] = useState('');
+  const [saving, setSaving]           = useState(false);
   const LIMIT = 20;
 
-  const load = (p = page) => {
+  const load = useCallback((p: number) => {
     setLoading(true);
     const params: Record<string, string | number> = { page: p, limit: LIMIT };
-    if (filterPayment)  params.payment_status          = filterPayment;
-    if (filterKeychain) params.keychain_delivery_status = filterKeychain;
+    if (filterPayment) params.payment_status = filterPayment;
     ordersApi.list(params)
       .then(r => { setOrders(r.data.orders ?? []); setTotal(r.data.total ?? 0); })
       .catch(() => { setOrders([]); setTotal(0); })
       .finally(() => setLoading(false));
-  };
+  }, [filterPayment]);
 
-  useEffect(() => { load(1); setPage(1); }, [filterPayment, filterKeychain]);
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(1); setPage(1); }, [filterPayment, load]);
+  useEffect(() => { load(page); }, [page, load]);
 
   const openDetail = (o: Order) => {
     setDetail(o);
     setEditPayment(o.payment_status);
-    setEditKeychain(o.keychain_delivery_status ?? '');
   };
 
   const handleSaveStatus = async () => {
     if (!detail) { setDetail(null); return; }
-    const data: { payment_status?: string; keychain_delivery_status?: string } = {};
-    if (editPayment !== detail.payment_status)                               data.payment_status          = editPayment;
-    if (editKeychain !== (detail.keychain_delivery_status ?? '')) data.keychain_delivery_status = editKeychain;
-    if (Object.keys(data).length === 0) { setDetail(null); return; }
+    if (editPayment === detail.payment_status) { setDetail(null); return; }
     setSaving(true);
     try {
-      await ordersApi.updateStatus(detail.id, data);
-      load();
+      await ordersApi.updateStatus(detail.id, { payment_status: editPayment });
+      load(page);
     } finally {
       setSaving(false);
       setDetail(null);
@@ -113,17 +87,11 @@ export default function OrdersPage() {
   return (
     <div>
       <div className="admin-page-header">
-        <h1 className="admin-page-title">📋 Đơn hàng</h1>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <select className="form-select" style={{ width: 'auto' }} value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
-            <option value="">Tất cả thanh toán</option>
-            {PAYMENT_OPTIONS.map(s => <option key={s} value={s}>{PAYMENT_LABEL[s]}</option>)}
-          </select>
-          <select className="form-select" style={{ width: 'auto' }} value={filterKeychain} onChange={e => setFilterKeychain(e.target.value)}>
-            <option value="">Tất cả móc khoá</option>
-            {KEYCHAIN_OPTIONS.map(s => <option key={s} value={s}>{KEYCHAIN_LABEL[s]}</option>)}
-          </select>
-        </div>
+        <h1 className="admin-page-title">🔳 Đơn QR</h1>
+        <select className="form-select" style={{ width: 'auto' }} value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
+          <option value="">Tất cả thanh toán</option>
+          {PAYMENT_OPTIONS.map(s => <option key={s} value={s}>{PAYMENT_LABEL[s]}</option>)}
+        </select>
       </div>
 
       {loading ? <div className="admin-loading">Đang tải...</div> : (
@@ -134,7 +102,7 @@ export default function OrdersPage() {
                 <tr>
                   <th>ID</th><th>QR Name</th><th>Khách hàng</th>
                   <th>Template</th><th>Tổng tiền</th>
-                  <th>Thanh toán</th><th>Móc khoá</th><th>Ngày tạo</th>
+                  <th>Thanh toán</th><th>Ngày tạo</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,7 +117,6 @@ export default function OrdersPage() {
                     <td>{o.template_name}</td>
                     <td>{o.total_amount?.toLocaleString('vi-VN')}đ</td>
                     <td><PaymentBadge status={o.payment_status} /></td>
-                    <td><KeychainBadge status={o.keychain_delivery_status} /></td>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
                   </tr>
                 ))}
@@ -170,7 +137,7 @@ export default function OrdersPage() {
       {detail && (
         <div className="modal-overlay" onClick={() => setDetail(null)}>
           <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-            <h2 className="modal-title">Chi tiết đơn #{detail.id}</h2>
+            <h2 className="modal-title">Chi tiết đơn QR #{detail.id}</h2>
             <table style={{ width: '100%', fontSize: '0.875rem', borderCollapse: 'collapse' }}>
               <tbody>
                 {([
@@ -206,27 +173,6 @@ export default function OrdersPage() {
                   </td>
                 </tr>
 
-                {/* Keychain delivery status — only editable when keychain was purchased */}
-                <tr>
-                  <td style={{ padding: '0.4rem 0.5rem', fontWeight: 600, color: '#475569', verticalAlign: 'middle' }}>Sản xuất móc</td>
-                  <td style={{ padding: '0.4rem 0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-                      <KeychainBadge status={detail.keychain_delivery_status} />
-                      {editKeychain !== (detail.keychain_delivery_status ?? '') && editKeychain && (
-                        <><span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>→</span><KeychainBadge status={editKeychain} /></>
-                      )}
-                    </div>
-                    {detail.keychain_purchased ? (
-                      <select className="form-select" style={{ width: '100%' }} value={editKeychain} onChange={e => setEditKeychain(e.target.value)}>
-                        {KEYCHAIN_OPTIONS.map(s => (
-                          <option key={s} value={s}>{KEYCHAIN_LABEL[s]}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Khách không mua móc khoá</div>
-                    )}
-                  </td>
-                </tr>
               </tbody>
             </table>
             <div className="modal-actions">

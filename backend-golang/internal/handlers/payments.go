@@ -22,9 +22,9 @@ import (
 	"inanhxink/backend-golang/internal/config"
 )
 
-func sepayAPIKey() string       { return os.Getenv("SEPAY_API_KEY") }
-func sepayAccountNo() string    { return os.Getenv("SEPAY_ACCOUNT_NO") }
-func sepayMerchantID() string   { return os.Getenv("SEPAY_MERCHANT_ID") }
+func sepayAPIKey() string     { return os.Getenv("SEPAY_API_KEY") }
+func sepayAccountNo() string  { return os.Getenv("SEPAY_ACCOUNT_NO") }
+func sepayMerchantID() string { return os.Getenv("SEPAY_MERCHANT_ID") }
 func sepayCheckoutSecret() string {
 	if v := os.Getenv("SEPAY_SECRET_KEY"); v != "" {
 		return v
@@ -104,7 +104,7 @@ func CreateProductCheckout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if invoiceNumber == "" {
-		invoiceNumber = fmt.Sprintf("SHOP%d", body.OrderID)
+		invoiceNumber = fmt.Sprintf("INXK%d%s", body.OrderID, randomInvoiceSuffix(5))
 	}
 
 	amount := int(math.Round(totalAmount))
@@ -138,8 +138,8 @@ func CreateProductCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	OK(w, map[string]any{
-		"success":       true,
-		"action_url":    sepayCheckoutURL(),
+		"success":        true,
+		"action_url":     sepayCheckoutURL(),
 		"ordered_fields": orderedFields,
 	})
 }
@@ -221,7 +221,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 	// Return existing pending payment if any
 	existRow := config.DB.QueryRow(context.Background(),
-		"SELECT id, payment_qr_url FROM transactions WHERE order_id = $1 AND status = 'pending'", orderID)
+		"SELECT id, payment_qr_url FROM qr_transaction WHERE order_id = $1 AND status = 'pending'", orderID)
 	var txID int
 	var txQRURL string
 	if err := existRow.Scan(&txID, &txQRURL); err == nil {
@@ -246,7 +246,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	var newTxID int
 	var newAmount float64
 	if err := config.DB.QueryRow(context.Background(), `
-		INSERT INTO transactions (order_id, amount, status, payment_qr_url)
+		INSERT INTO qr_transaction (order_id, amount, status, payment_qr_url)
 		VALUES ($1, $2, 'pending', $3) RETURNING id, amount`,
 		orderID, amount, qrURL).Scan(&newTxID, &newAmount); err != nil {
 		InternalError(w, err)
@@ -258,37 +258,41 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// POST /api/payments/webhook — Sepay payment confirmation webhook
-func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
+// webhookPayload is the common shape of a SePay bank-transfer notification.
+type webhookPayload struct {
+	ID             int     `json:"id"`
+	Content        string  `json:"content"`
+	TransferType   string  `json:"transferType"`
+	TransferAmount float64 `json:"transferAmount"`
+}
+
+func decodeWebhookPayload(w http.ResponseWriter, r *http.Request) (*webhookPayload, bool) {
 	authHeader := r.Header.Get("Authorization")
 	expectedKey := "Apikey " + sepayAPIKey()
 	if sepayAPIKey() == "" || authHeader != expectedKey {
 		JSON(w, 401, map[string]any{"success": false, "error": "Unauthorized"})
-		return
+		return nil, false
 	}
-
-	var payload struct {
-		ID             int     `json:"id"`
-		Content        string  `json:"content"`
-		TransferType   string  `json:"transferType"`
-		TransferAmount float64 `json:"transferAmount"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+	var p webhookPayload
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		BadRequest(w, "Invalid payload")
+		return nil, false
+	}
+	return &p, true
+}
+
+// POST /api/payments/webhook/qr — SePay notification for QR-template orders (INXK bank account).
+func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
+	payload, ok := decodeWebhookPayload(w, r)
+	if !ok {
 		return
 	}
-
 	if payload.TransferType != "in" {
 		OK(w, map[string]any{"success": true, "message": "Ignored: not an incoming transfer"})
 		return
 	}
 
-	// Check for product order (SHOP prefix) first.
-	shopRe := regexp.MustCompile(`(?i)SHOP(\d+)`)
-	if shopMatch := shopRe.FindStringSubmatch(payload.Content); shopMatch != nil {
-		handleProductOrderWebhook(w, shopMatch[1], payload.TransferAmount, payload.ID, string(func() []byte { b, _ := json.Marshal(payload); return b }()))
-		return
-	}
+	webhookRaw, _ := json.Marshal(payload)
 
 	re := regexp.MustCompile(`(?i)INXK(\d+)`)
 	match := re.FindStringSubmatch(payload.Content)
@@ -299,7 +303,7 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	orderID, _ := strconv.Atoi(match[1])
 
 	txRow := config.DB.QueryRow(context.Background(),
-		"SELECT id, amount FROM transactions WHERE order_id = $1 AND status = 'pending'", orderID)
+		"SELECT id, amount FROM qr_transaction WHERE order_id = $1 AND status = 'pending'", orderID)
 	var txID int
 	var requiredAmount float64
 	if err := txRow.Scan(&txID, &requiredAmount); err != nil {
@@ -317,8 +321,6 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback(context.Background()) //nolint
-
-	webhookJSON, _ := json.Marshal(payload)
 
 	var qrName, content, templateType string
 	var templateID int
@@ -342,9 +344,9 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		WHERE qr_name = $1 AND payment_status = 'paid' AND id <> $2
 		LIMIT 1`, qrName, orderID).Scan(&existingPaidOrderID); err == nil {
 		tx.Exec(context.Background(), `
-			UPDATE transactions SET status = 'failed', sepay_transaction_id = $1,
+			UPDATE qr_transaction SET status = 'failed', sepay_transaction_id = $1,
 				updated_at = NOW(), webhook_payload = $2
-			WHERE id = $3`, payload.ID, string(webhookJSON), txID) //nolint
+			WHERE id = $3`, payload.ID, string(webhookRaw), txID) //nolint
 		tx.Exec(context.Background(), `
 			UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
 			WHERE id = $1`, orderID) //nolint
@@ -357,9 +359,9 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := tx.Exec(context.Background(), `
-		UPDATE transactions SET status = 'paid', sepay_transaction_id = $1,
+		UPDATE qr_transaction SET status = 'paid', sepay_transaction_id = $1,
 			paid_at = NOW(), updated_at = NOW(), webhook_payload = $2
-		WHERE id = $3`, payload.ID, string(webhookJSON), txID); err != nil {
+		WHERE id = $3`, payload.ID, string(webhookRaw), txID); err != nil {
 		InternalError(w, err)
 		return
 	}
@@ -385,7 +387,7 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	// Release in-memory reservation so the name is not seen as "reserved" anymore.
 	releaseReservation(qrName)
 	if _, err := tx.Exec(context.Background(), `
-		UPDATE transactions SET status = 'failed', updated_at = NOW()
+		UPDATE qr_transaction SET status = 'failed', updated_at = NOW()
 		WHERE status = 'pending'
 		  AND order_id IN (
 			SELECT id FROM orders WHERE qr_name = $1 AND id <> $2 AND payment_status = 'cancelled'
@@ -415,8 +417,35 @@ func PaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		InternalError(w, err)
 		return
 	}
-	go prunePaidOrderUploads(qrName, templateDataRaw)
+	go migrateQRUploads(qrName, orderID, templateDataRaw)
 	OK(w, map[string]any{"success": true, "message": "Payment confirmed"})
+}
+
+// POST /api/payments/webhook/product — SePay notification for product orders (product bank account).
+func ProductPaymentWebhook(w http.ResponseWriter, r *http.Request) {
+	payload, ok := decodeWebhookPayload(w, r)
+	if !ok {
+		return
+	}
+	if payload.TransferType != "in" {
+		OK(w, map[string]any{"success": true, "message": "Ignored: not an incoming transfer"})
+		return
+	}
+
+	webhookRaw, _ := json.Marshal(payload)
+
+	var productOrderID int
+	if err := config.DB.QueryRow(context.Background(), `
+		SELECT id FROM product_orders
+		WHERE payment_status = 'pending'
+		  AND invoice_number IS NOT NULL
+		  AND $1 ILIKE '%' || invoice_number || '%'
+		LIMIT 1`, payload.Content).Scan(&productOrderID); err != nil {
+		OK(w, map[string]any{"success": true, "message": "No matching product order found"})
+		return
+	}
+
+	handleProductOrderWebhook(w, strconv.Itoa(productOrderID), payload.TransferAmount, payload.ID, string(webhookRaw))
 }
 
 // ── SePay Checkout IPN ────────────────────────────────────────────────────────
@@ -454,50 +483,106 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 		return
 	}
 
-	if _, err := config.DB.Exec(context.Background(),
+	// Prevent duplicate processing for the same SePay transaction ID.
+	var dupCheck int
+	if err := config.DB.QueryRow(context.Background(),
+		"SELECT id FROM product_transaction WHERE sepay_transaction_id = $1", sepayID).Scan(&dupCheck); err == nil {
+		OK(w, map[string]any{"success": true, "message": "Duplicate webhook ignored"})
+		return
+	}
+
+	dbtx, err := config.DB.Begin(context.Background())
+	if err != nil {
+		InternalError(w, err)
+		return
+	}
+	defer dbtx.Rollback(context.Background()) //nolint
+
+	if _, err := dbtx.Exec(context.Background(),
 		"UPDATE product_orders SET payment_status = 'paid', updated_at = NOW() WHERE id = $1 AND payment_status = 'pending'",
 		orderID); err != nil {
 		InternalError(w, err)
 		return
 	}
-	log.Printf("[product-orders] SHOP%d paid — sepay_id=%d amount=%.0f webhook=%s", orderID, sepayID, amount, webhookJSON)
+
+	// Upsert product_transaction: mark existing pending row as paid, or insert a new paid row.
+	if _, err := dbtx.Exec(context.Background(), `
+		INSERT INTO product_transaction (product_order_id, amount, status, sepay_transaction_id, webhook_payload, paid_at)
+		VALUES ($1, $2, 'paid', $3, $4, NOW())
+		ON CONFLICT (sepay_transaction_id) WHERE sepay_transaction_id IS NOT NULL DO NOTHING`,
+		orderID, amount, sepayID, webhookJSON); err != nil {
+		InternalError(w, err)
+		return
+	}
+	// Also update any existing pending row for this order.
+	dbtx.Exec(context.Background(), `
+		UPDATE product_transaction
+		SET status = 'paid', sepay_transaction_id = $1, webhook_payload = $2, paid_at = NOW(), updated_at = NOW()
+		WHERE product_order_id = $3 AND status = 'pending' AND sepay_transaction_id IS NULL`,
+		sepayID, webhookJSON, orderID) //nolint
+
+	if err := dbtx.Commit(context.Background()); err != nil {
+		InternalError(w, err)
+		return
+	}
+	log.Printf("[product-orders] order %d paid — sepay_id=%d amount=%.0f", orderID, sepayID, amount)
+
+	// Move temp S3 images → product-orders/paid/{orderID}/ now that payment is confirmed.
+	go func() {
+		// Fetch current items from DB (they may have been updated by admin).
+		var itemsJSON string
+		if err := config.DB.QueryRow(context.Background(),
+			"SELECT items::text FROM product_orders WHERE id = $1", orderID).Scan(&itemsJSON); err != nil {
+			log.Printf("[product-orders] moveTempImages fetch items order %d: %v", orderID, err)
+			return
+		}
+		var items []OrderItem
+		if err := json.Unmarshal([]byte(itemsJSON), &items); err != nil {
+			log.Printf("[product-orders] moveTempImages unmarshal order %d: %v", orderID, err)
+			return
+		}
+		movedItems := moveTempImages(items, orderID)
+		if movedJSON, err := json.Marshal(movedItems); err == nil {
+			config.DB.Exec(context.Background(), //nolint
+				"UPDATE product_orders SET items = $1 WHERE id = $2",
+				string(movedJSON), orderID)
+		}
+	}()
+
 	OK(w, map[string]any{"success": true, "message": "Product order payment confirmed"})
 }
 
-func prunePaidOrderUploads(qrName string, templateDataRaw []byte) {
-	keep := map[string]bool{}
-	collectS3KeysFromJSON(templateDataRaw, keep)
-	if err := config.PruneS3Folder("uploads/"+qrName, keep); err != nil {
-		log.Printf("[payments] prune uploads/%s failed: %v", qrName, err)
-	}
-}
-
-func collectS3KeysFromJSON(raw []byte, keep map[string]bool) {
-	if len(raw) == 0 {
+// migrateQRUploads moves confirmed images from uploads/temp/{qrName}/ to
+// uploads/{qrName}/, then updates both orders and qr_codes with permanent URLs.
+// Runs in a goroutine — errors are logged but never surface to the client.
+func migrateQRUploads(qrName string, orderID int, templateDataRaw []byte) {
+	rewritten, copiedKeys, err := config.RewriteTemplateDataURLs(
+		templateDataRaw,
+		"uploads/temp/"+qrName+"/",
+		"uploads/"+qrName,
+	)
+	if err != nil {
+		log.Printf("[payments] migrateQRUploads %s: rewrite error: %v", qrName, err)
 		return
 	}
-	var data any
-	if err := json.Unmarshal(raw, &data); err != nil {
+	if len(copiedKeys) == 0 {
 		return
 	}
-	collectS3Keys(data, keep)
-}
 
-func collectS3Keys(value any, keep map[string]bool) {
-	switch v := value.(type) {
-	case string:
-		if key, ok := config.ExtractKeyFromURL(v); ok {
-			keep[key] = true
-		}
-	case []any:
-		for _, item := range v {
-			collectS3Keys(item, keep)
-		}
-	case map[string]any:
-		for _, item := range v {
-			collectS3Keys(item, keep)
-		}
+	ctx := context.Background()
+	if _, err := config.DB.Exec(ctx,
+		"UPDATE orders SET template_data = $1 WHERE id = $2",
+		string(rewritten), orderID); err != nil {
+		log.Printf("[payments] migrateQRUploads %s: update orders failed: %v", qrName, err)
 	}
+	if _, err := config.DB.Exec(ctx,
+		"UPDATE qr_codes SET template_data = $1 WHERE qr_name = $2",
+		string(rewritten), qrName); err != nil {
+		log.Printf("[payments] migrateQRUploads %s: update qr_codes failed: %v", qrName, err)
+	}
+
+	config.DeleteS3Objects(copiedKeys)
+	log.Printf("[payments] migrateQRUploads %s: migrated %d object(s)", qrName, len(copiedKeys))
 }
 
 // GET /api/payments/order/:orderId
@@ -505,7 +590,7 @@ func GetPaymentByOrder(w http.ResponseWriter, r *http.Request) {
 	orderID := chi.URLParam(r, "orderId")
 	rows, err := config.DB.Query(context.Background(), `
 		SELECT id, order_id, amount, status, payment_qr_url, paid_at, created_at
-		FROM transactions WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`, orderID)
+		FROM qr_transaction WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`, orderID)
 	if err != nil {
 		InternalError(w, err)
 		return
@@ -537,7 +622,7 @@ func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 
 	txRows, err := config.DB.Query(context.Background(), `
 		SELECT id, amount, status, payment_qr_url, paid_at, created_at
-		FROM transactions WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`, orderID)
+		FROM qr_transaction WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`, orderID)
 	if err != nil {
 		InternalError(w, err)
 		return
@@ -562,5 +647,69 @@ func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 			"totalAmount": totalAmount, "paymentStatus": paymentStatus,
 		},
 		"payment": paymentResp,
+	})
+}
+
+// GET /api/payments/product/:orderId
+func GetProductPayment(w http.ResponseWriter, r *http.Request) {
+	orderID := chi.URLParam(r, "orderId")
+
+	row := config.DB.QueryRow(context.Background(), `
+		SELECT id, COALESCE(invoice_number, ''), total_amount, payment_status
+		FROM product_orders WHERE id = $1`, orderID)
+	var id int
+	var invoiceNumber, paymentStatus string
+	var totalAmount float64
+	if err := row.Scan(&id, &invoiceNumber, &totalAmount, &paymentStatus); err != nil {
+		JSON(w, 404, map[string]any{"success": false, "error": "Product order not found"})
+		return
+	}
+	if invoiceNumber == "" {
+		invoiceNumber = fmt.Sprintf("INXK%d%s", id, randomInvoiceSuffix(5))
+	}
+
+	amount := int(math.Round(totalAmount))
+	qrURL := fmt.Sprintf(
+		"https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
+		url.QueryEscape(sepayAccountNo()),
+		url.QueryEscape(sepayBank()),
+		amount,
+		url.QueryEscape(invoiceNumber),
+	)
+
+	// Upsert a pending product_transaction row so we can track when payment arrives.
+	if paymentStatus == "pending" {
+		_, _ = config.DB.Exec(context.Background(), `
+			INSERT INTO product_transaction (product_order_id, amount, status, payment_qr_url)
+			VALUES ($1, $2, 'pending', $3)
+			ON CONFLICT DO NOTHING`,
+			id, amount, qrURL)
+	}
+
+	// Return existing transaction status if present.
+	var txStatus string
+	_ = config.DB.QueryRow(context.Background(),
+		"SELECT status FROM product_transaction WHERE product_order_id = $1 ORDER BY created_at DESC LIMIT 1", id,
+	).Scan(&txStatus)
+	if txStatus == "" {
+		txStatus = paymentStatus
+	}
+
+	OK(w, map[string]any{
+		"success": true,
+		"order": map[string]any{
+			"id":            id,
+			"invoiceNumber": invoiceNumber,
+			"totalAmount":   totalAmount,
+			"paymentStatus": paymentStatus,
+		},
+		"payment": map[string]any{
+			"qrUrl":       qrURL,
+			"amount":      amount,
+			"paymentCode": invoiceNumber,
+			"status":      txStatus,
+			"accountNo":   sepayAccountNo(),
+			"bank":        sepayBank(),
+		},
 	})
 }

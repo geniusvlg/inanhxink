@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import { useCart, cartEntriesToApiItems, type CartEntry } from '../contexts/CartContext';
-import { createProductOrder, createProductCheckout, uploadProductImages } from '../services/api';
+
+const MAX_PRODUCT_IMAGES = 30;
+import { createProductOrder, uploadProductImages } from '../services/api';
 import './CheckoutPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -25,10 +27,21 @@ interface CustomerInfo {
   address: string;
 }
 
+interface UploadSlot {
+  id:          string;
+  file:        File;
+  previewUrl:  string;
+  uploadedUrl: string;
+  state:       'uploading' | 'done' | 'error';
+}
+
 interface ItemCustomisation {
-  note:       string;
-  files:      File[];
-  uploadedUrls: string[];
+  note:  string;
+  slots: UploadSlot[];
+}
+
+function slotId() {
+  return Math.random().toString(36).slice(2);
 }
 
 interface BuyNowDraft {
@@ -63,7 +76,7 @@ export default function CheckoutPage() {
   const [info, setInfo] = useState<CustomerInfo>({ name: '', phone: '', email: '', address: '' });
 
   const [customs, setCustoms] = useState<Record<number, ItemCustomisation>>(() =>
-    Object.fromEntries(items.map(it => [it.product_id, { note: '', files: [], uploadedUrls: [] }]))
+    Object.fromEntries(items.map(it => [it.product_id, { note: '', slots: [] }]))
   );
   const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
@@ -92,34 +105,121 @@ export default function CheckoutPage() {
     if (validateStep1()) setStep(2);
   };
 
-  const handleFileChange = (productId: number, files: FileList | null) => {
-    if (!files) return;
+  const handleFileAdd = useCallback(async (productId: number, fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const existingCount = customs[productId]?.slots.length ?? 0;
+    const remaining = MAX_PRODUCT_IMAGES - existingCount;
+    if (remaining <= 0) {
+      alert(`Mỗi sản phẩm chỉ được upload tối đa ${MAX_PRODUCT_IMAGES} ảnh.`);
+      return;
+    }
+    const newFiles = Array.from(fileList).slice(0, remaining);
+    if (Array.from(fileList).length > remaining) {
+      alert(`Chỉ còn ${remaining} chỗ trống. Đã thêm ${remaining} ảnh đầu tiên.`);
+    }
+    const newSlots: UploadSlot[] = newFiles.map(f => ({
+      id:          slotId(),
+      file:        f,
+      previewUrl:  URL.createObjectURL(f),
+      uploadedUrl: '',
+      state:       'uploading' as const,
+    }));
     setCustoms(prev => ({
       ...prev,
-      [productId]: { ...prev[productId], files: Array.from(files) },
+      [productId]: { ...prev[productId], slots: [...prev[productId].slots, ...newSlots] },
     }));
-  };
+    const tryUpload = async () => uploadProductImages(newFiles, sessionId);
+    let urls: string[];
+    try {
+      urls = await tryUpload();
+    } catch {
+      // Auto-retry once silently
+      try {
+        urls = await tryUpload();
+      } catch {
+        setCustoms(prev => {
+          const updated = prev[productId].slots.map(s =>
+            newSlots.some(ns => ns.id === s.id) ? { ...s, state: 'error' as const } : s
+          );
+          return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+        });
+        if (fileRefs.current[productId]) fileRefs.current[productId]!.value = '';
+        return;
+      }
+    }
+    setCustoms(prev => {
+      const updated = prev[productId].slots.map(s => {
+        const idx = newSlots.findIndex(ns => ns.id === s.id);
+        if (idx === -1) return s;
+        return { ...s, uploadedUrl: urls[idx] ?? '', state: 'done' as const };
+      });
+      return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+    });
+    if (fileRefs.current[productId]) fileRefs.current[productId]!.value = '';
+  }, [sessionId]);
+
+  const handleFileRemove = useCallback((productId: number, id: string) => {
+    setCustoms(prev => {
+      const slot = prev[productId].slots.find(s => s.id === id);
+      if (slot) URL.revokeObjectURL(slot.previewUrl);
+      return {
+        ...prev,
+        [productId]: { ...prev[productId], slots: prev[productId].slots.filter(s => s.id !== id) },
+      };
+    });
+  }, []);
+
+  const handleFileRetry = useCallback(async (productId: number, id: string) => {
+    let fileToRetry: File | null = null;
+    setCustoms(prev => {
+      const slot = prev[productId].slots.find(s => s.id === id);
+      if (!slot) return prev;
+      fileToRetry = slot.file;
+      const updated = prev[productId].slots.map(s =>
+        s.id === id ? { ...s, state: 'uploading' as const } : s
+      );
+      return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+    });
+    if (!fileToRetry) return;
+    const tryUpload = async () => uploadProductImages([fileToRetry!], sessionId);
+    let urls: string[];
+    try {
+      urls = await tryUpload();
+    } catch {
+      try {
+        urls = await tryUpload();
+      } catch {
+        setCustoms(prev => {
+          const updated = prev[productId].slots.map(s =>
+            s.id === id ? { ...s, state: 'error' as const } : s
+          );
+          return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+        });
+        return;
+      }
+    }
+    setCustoms(prev => {
+      const updated = prev[productId].slots.map(s =>
+        s.id === id ? { ...s, uploadedUrl: urls[0] ?? '', state: 'done' as const } : s
+      );
+      return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+    });
+  }, [sessionId]);
 
   const handleNoteChange = (productId: number, note: string) => {
     setCustoms(prev => ({ ...prev, [productId]: { ...prev[productId], note } }));
   };
 
+  const isUploading = Object.values(customs).some(c => c.slots.some(s => s.state === 'uploading'));
+
   const handleSubmit = async () => {
     setBusy(true);
     setErrMsg('');
     try {
-      // Upload images for each item
       const uploadedCustoms: Record<number, { image_urls: string[]; note: string }> = {};
       for (const it of items) {
         const c = customs[it.product_id];
-        let urls = c?.uploadedUrls ?? [];
-        if (c?.files.length) {
-          urls = await uploadProductImages(c.files, sessionId);
-          setCustoms(prev => ({
-            ...prev,
-            [it.product_id]: { ...prev[it.product_id], uploadedUrls: urls, files: [] },
-          }));
-        }
+        const urls = (c?.slots ?? []).filter(s => s.state === 'done').map(s => s.uploadedUrl);
         uploadedCustoms[it.product_id] = { image_urls: urls, note: c?.note ?? '' };
       }
 
@@ -134,25 +234,22 @@ export default function CheckoutPage() {
         items:            apiItems,
       });
 
-      const checkoutResult = await createProductCheckout(orderResult.order_id);
+      if (orderResult.already_paid) {
+        // Order was already paid — clear cart, rotate session, redirect to payment page
+        // which will detect paid status and redirect to result.
+        if (isBuyNow) localStorage.removeItem('buy_now_checkout');
+        else cart.resetSession();
+        setErrMsg('Đơn hàng này đã được thanh toán. Đang chuyển hướng...');
+        setTimeout(() => navigate(`/checkout/payment/${orderResult.order_id}`), 1500);
+        return;
+      }
 
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = checkoutResult.action_url;
-      checkoutResult.ordered_fields.forEach(({ name, value }) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      });
-      document.body.appendChild(form);
       if (isBuyNow) {
         localStorage.removeItem('buy_now_checkout');
-      } else {
-        cart.clearCart();
       }
-      form.submit();
+      // Do NOT clear the cart here — user may want to go back and edit before paying.
+      // Session is reset on the payment result page after confirmed payment.
+      navigate(`/checkout/payment/${orderResult.order_id}`);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Có lỗi xảy ra. Vui lòng thử lại.';
       setErrMsg(msg);
@@ -188,7 +285,9 @@ export default function CheckoutPage() {
                 customs={customs}
                 fileRefs={fileRefs}
                 resolveUrl={resolveUrl}
-                onFileChange={handleFileChange}
+                onFileAdd={handleFileAdd}
+                onFileRemove={handleFileRemove}
+                onFileRetry={handleFileRetry}
                 onNoteChange={handleNoteChange}
               />
             )}
@@ -207,8 +306,8 @@ export default function CheckoutPage() {
                 </button>
               )}
               {step === 2 && (
-                <button className="co-pay-btn" onClick={handleSubmit} disabled={busy}>
-                  {busy ? 'Đang xử lý...' : 'Thanh toán ngay'}
+                <button className="co-pay-btn" onClick={handleSubmit} disabled={busy || isUploading}>
+                  {isUploading ? 'Đang tải ảnh...' : busy ? 'Đang xử lý...' : 'Thanh toán ngay'}
                 </button>
               )}
             </div>
@@ -253,6 +352,12 @@ function Step1Form({ info, onChange }: {
 
       <label className="co-label">
         Địa chỉ giao hàng <span className="co-req">*</span>
+        <span className="co-field-hint">
+          <span className="co-field-hint-icon">📍</span>
+          <span>
+            <strong>Nhập địa chỉ cũ trước sát nhập để tụi mình gửi chính xác hơn nha</strong>
+          </span>
+        </span>
         <textarea
           className="co-input co-textarea"
           placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố"
@@ -265,12 +370,14 @@ function Step1Form({ info, onChange }: {
   );
 }
 
-function Step2Form({ items, customs, fileRefs, resolveUrl, onFileChange, onNoteChange }: {
+function Step2Form({ items, customs, fileRefs, resolveUrl, onFileAdd, onFileRemove, onFileRetry, onNoteChange }: {
   items: CartEntry[];
   customs: Record<number, ItemCustomisation>;
   fileRefs: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
   resolveUrl: (url: string) => string;
-  onFileChange: (id: number, files: FileList | null) => void;
+  onFileAdd: (id: number, files: FileList | null) => void;
+  onFileRemove: (id: number, slotId: string) => void;
+  onFileRetry: (id: number, slotId: string) => void;
   onNoteChange: (id: number, note: string) => void;
 }) {
   return (
@@ -279,7 +386,7 @@ function Step2Form({ items, customs, fileRefs, resolveUrl, onFileChange, onNoteC
       <p className="co-form-hint">Tải ảnh (nếu có) và thêm ghi chú cá nhân cho từng sản phẩm.</p>
 
       {items.map(it => {
-        const c = customs[it.product_id] ?? { note: '', files: [], uploadedUrls: [] };
+        const c = customs[it.product_id] ?? { note: '', slots: [] };
         return (
           <div key={it.product_id} className="co-item-custom">
             {it.thumbnail && (
@@ -292,12 +399,13 @@ function Step2Form({ items, customs, fileRefs, resolveUrl, onFileChange, onNoteC
                 type="button"
                 className="co-upload-btn"
                 onClick={() => fileRefs.current[it.product_id]?.click()}
+                disabled={c.slots.length >= MAX_PRODUCT_IMAGES}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
                   <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
                 </svg>
-                {c.files.length > 0 ? `${c.files.length} ảnh đã chọn` : 'Tải ảnh lên'}
+                {c.slots.length >= MAX_PRODUCT_IMAGES ? `Đã đủ ${MAX_PRODUCT_IMAGES} ảnh` : 'Thêm ảnh'}
               </button>
               <input
                 type="file"
@@ -305,15 +413,44 @@ function Step2Form({ items, customs, fileRefs, resolveUrl, onFileChange, onNoteC
                 multiple
                 style={{ display: 'none' }}
                 ref={el => { fileRefs.current[it.product_id] = el; }}
-                onChange={e => onFileChange(it.product_id, e.target.files)}
+                onChange={e => onFileAdd(it.product_id, e.target.files)}
               />
 
-              {c.files.length > 0 && (
+              {c.slots.length > 0 && (
                 <div className="co-preview-strip">
-                  {c.files.map((f, i) => (
-                    <img key={i} src={URL.createObjectURL(f)} alt="" className="co-preview-img" />
+                  {c.slots.map(slot => (
+                    <div key={slot.id} className={`co-preview-slot${slot.state === 'uploading' ? ' co-preview-slot--uploading' : ''}`}>
+                      <img src={slot.previewUrl} alt="" className="co-preview-img" />
+                      {slot.state === 'uploading' && (
+                        <div className="co-preview-spinner" aria-label="Đang tải">
+                          <span className="co-preview-spinner-ring" />
+                        </div>
+                      )}
+                      {slot.state === 'done' && (
+                        <div className="co-preview-done" aria-label="Đã tải lên">✓</div>
+                      )}
+                      {slot.state === 'error' && (
+                        <div className="co-preview-error" title="Tải lên thất bại">
+                          <button
+                            type="button"
+                            className="co-preview-retry"
+                            onClick={() => onFileRetry(it.product_id, slot.id)}
+                            aria-label="Thử lại"
+                          >↺</button>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="co-preview-remove"
+                        onClick={() => onFileRemove(it.product_id, slot.id)}
+                        aria-label="Xoá ảnh"
+                      >×</button>
+                    </div>
                   ))}
                 </div>
+              )}
+              {c.slots.some(s => s.state === 'uploading') && (
+                <p className="co-upload-status">Đang tải {c.slots.filter(s => s.state === 'uploading').length} ảnh lên...</p>
               )}
 
               <textarea

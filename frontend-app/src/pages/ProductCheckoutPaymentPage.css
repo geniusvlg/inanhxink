@@ -1,0 +1,215 @@
+.pcp-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #fff1f6 0%, #fff 42%, #f9fafb 100%);
+}
+
+.pcp-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.pcp-card {
+  width: min(100%, 520px);
+  align-self: flex-start;
+  background: #fff;
+  border: 1px solid #fce7f3;
+  border-radius: 24px;
+  padding: 1.4rem;
+  text-align: center;
+  box-shadow: 0 14px 42px rgba(224, 92, 153, 0.12);
+}
+
+.pcp-back-button {
+  border: 1px solid #fbcfe8;
+  background: #fff;
+  color: #be185d;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.pcp-title {
+  margin: 0 0 0.45rem;
+  color: #1f2937;
+  font-size: 1.65rem;
+  font-weight: 800;
+}
+
+.pcp-desc {
+  margin: 0 auto 1.4rem;
+  color: #6b7280;
+  line-height: 1.55;
+  max-width: 360px;
+}
+
+.pcp-error {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  color: #991b1b;
+  background: #fee2e2;
+  font-weight: 600;
+}
+
+.pcp-qr-container {
+  width: fit-content;
+  margin: 0 auto 1.25rem;
+  padding: 0.8rem;
+  background: #fff;
+  border: 1px solid #f3f4f6;
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.pcp-qr-container img {
+  display: block;
+  width: min(280px, 72vw);
+  height: auto;
+}
+
+.pcp-bank-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #fbcfe8;
+  border-radius: 18px;
+  padding: 0.4rem 1rem;
+  margin-bottom: 1rem;
+  background: #fffafd;
+}
+
+.pcp-bank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #fce7f3;
+}
+
+.pcp-bank-row:last-child {
+  border-bottom: none;
+}
+
+.pcp-bank-label {
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.pcp-bank-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  color: #1f2937;
+  text-align: right;
+  word-break: break-word;
+}
+
+.pcp-amount {
+  color: #e05c99;
+  font-size: 1.2rem;
+}
+
+.pcp-copy-button {
+  border: none;
+  background: #fdf2f8;
+  color: #be185d;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pcp-countdown {
+  color: #4b5563;
+  font-size: 0.95rem;
+  margin-bottom: 0.45rem;
+}
+
+.pcp-countdown span {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcp-countdown-urgent {
+  color: #dc2626;
+}
+
+.pcp-status {
+  padding: 0.85rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pcp-status--pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.pcp-expired {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  background: #f0f9ff;
+  border: 1.5px solid #bae6fd;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.pcp-expired-text {
+  font-size: 0.9rem;
+  color: #0369a1;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.pcp-retry-button {
+  padding: 0.55rem 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: #0ea5e9;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pcp-retry-button:hover { background: #0284c7; }
+
+@media (max-width: 560px) {
+  .pcp-main {
+    padding: 1rem 0.85rem;
+  }
+
+  .pcp-card {
+    border-radius: 20px;
+    padding: 1rem;
+  }
+
+  .pcp-title {
+    font-size: 1.35rem;
+  }
+
+  .pcp-bank-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .pcp-bank-value {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}

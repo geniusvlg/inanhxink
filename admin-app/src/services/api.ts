@@ -48,6 +48,28 @@ export const ordersApi = {
     api.patch(`/api/admin/orders/${id}/status`, data),
 };
 
+export const productOrdersApi = {
+  list: (params?: Record<string, string | number>) => api.get('/api/admin/product-orders', { params }),
+  get:  (id: number)  => api.get(`/api/admin/product-orders/${id}`),
+  updateStatus: (id: number, data: { payment_status: string }) =>
+    api.patch(`/api/admin/product-orders/${id}/status`, data),
+  listFulfillment: (fulfillment_status?: string) =>
+    api.get('/api/admin/product-orders/fulfillment', { params: fulfillment_status ? { fulfillment_status } : {} }),
+  updateFulfillment: (id: number, fulfillment_status: string, tracking_code?: string) =>
+    api.patch(`/api/admin/product-orders/${id}/fulfillment`, { fulfillment_status, tracking_code }),
+  updateQRKeychainFulfillment: (id: number, fulfillment_status: string, tracking_code?: string) =>
+    api.patch(`/api/admin/orders/${id}/fulfillment`, { fulfillment_status, tracking_code }),
+  searchOrder: (code: string) =>
+    api.get('/api/admin/orders/search', { params: { code } }),
+  updateProductOrderItems: (id: number, items: unknown[], customer?: { name?: string; phone?: string; address?: string }) =>
+    api.patch(`/api/admin/product-orders/${id}/items`, {
+      items,
+      ...(customer?.name    && { customer_name:    customer.name }),
+      ...(customer?.phone   && { customer_phone:   customer.phone }),
+      ...(customer?.address && { customer_address: customer.address }),
+    }),
+};
+
 export const vouchersApi = {
   list:   ()                      => api.get('/api/admin/vouchers'),
   create: (data: unknown)         => api.post('/api/admin/vouchers', data),

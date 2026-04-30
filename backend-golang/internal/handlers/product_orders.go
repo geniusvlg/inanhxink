@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -12,6 +14,16 @@ import (
 
 	"inanhxink/backend-golang/internal/config"
 )
+
+const invoiceAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ" // no I/O to avoid confusion
+
+func randomInvoiceSuffix(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = invoiceAlphabet[rand.Intn(len(invoiceAlphabet))]
+	}
+	return string(b)
+}
 
 // OrderItem represents one line in the cart.
 type OrderItem struct {
@@ -81,6 +93,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Upsert: if same cart_session_id is submitted twice, update and return existing row.
+	// Guard: only update if still pending (do not overwrite a paid order).
 	row := config.DB.QueryRow(context.Background(), `
 		INSERT INTO product_orders
 			(cart_session_id, customer_name, customer_phone, customer_email,
@@ -95,6 +108,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 			subtotal         = EXCLUDED.subtotal,
 			total_amount     = EXCLUDED.total_amount,
 			updated_at       = NOW()
+		WHERE product_orders.payment_status = 'pending'
 		RETURNING id`,
 		body.CartSessionID, body.CustomerName, body.CustomerPhone,
 		nullStr(body.CustomerEmail), body.CustomerAddress,
@@ -102,21 +116,34 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 	)
 	var orderID int
 	if err := row.Scan(&orderID); err != nil {
-		InternalError(w, err)
+		// If scan fails, the order is already paid — fetch its id and return it as-is.
+		fetchRow := config.DB.QueryRow(context.Background(),
+			"SELECT id FROM product_orders WHERE cart_session_id = $1",
+			body.CartSessionID)
+		if err2 := fetchRow.Scan(&orderID); err2 != nil {
+			InternalError(w, err)
+			return
+		}
+		// Return existing paid order without further processing.
+		Created(w, map[string]any{
+			"success":     true,
+			"order_id":    orderID,
+			"already_paid": true,
+		})
 		return
 	}
 
-	// Set invoice_number now that we have the ID.
-	invoiceNumber := fmt.Sprintf("SHOP%d", orderID)
+	// Set invoice_number: INXK{id}{5-char random suffix}.
+	invoiceNumber := fmt.Sprintf("INXK%d%s", orderID, randomInvoiceSuffix(5))
 	config.DB.Exec(context.Background(), //nolint
 		"UPDATE product_orders SET invoice_number = $1 WHERE id = $2 AND invoice_number IS NULL",
 		invoiceNumber, orderID)
 
 	Created(w, map[string]any{
-		"success":       true,
-		"order_id":      orderID,
+		"success":        true,
+		"order_id":       orderID,
 		"invoice_number": invoiceNumber,
-		"total_amount":  total,
+		"total_amount":   total,
 	})
 }
 
@@ -135,4 +162,25 @@ func GetProductOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	OK(w, map[string]any{"success": true, "order": row})
+}
+
+// moveTempImages moves all temp S3 images in items to the permanent paid/ prefix.
+// Individual move errors are logged and the original URL is kept — order creation is never blocked.
+func moveTempImages(items []OrderItem, orderID int) []OrderItem {
+	result := make([]OrderItem, len(items))
+	for i, it := range items {
+		moved := make([]string, len(it.ImageURLs))
+		for j, url := range it.ImageURLs {
+			newURL, err := config.MoveTempS3Image(url, orderID)
+			if err != nil {
+				log.Printf("warn: moveTempImages order %d: %v", orderID, err)
+				moved[j] = url
+			} else {
+				moved[j] = newURL
+			}
+		}
+		result[i] = it
+		result[i].ImageURLs = moved
+	}
+	return result
 }

@@ -30,6 +30,31 @@ export interface Order {
   updated_at: string;
 }
 
+export interface ProductOrderItem {
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  image_urls: string[];
+  note: string;
+}
+
+export interface ProductOrder {
+  id: number;
+  cart_session_id: string;
+  invoice_number: string | null;
+  payment_status: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  customer_address: string;
+  items: ProductOrderItem[];
+  subtotal: number;
+  total_amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Voucher {
   id: number;
   code: string;

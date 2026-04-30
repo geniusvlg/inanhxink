@@ -136,7 +136,7 @@ export default function SetQuaTangPage() {
                           setAddedIds(prev => new Set(prev).add(p.id));
                           setTimeout(() => setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n; }), 2000);
                         }}
-                      >{addedIds.has(p.id) ? 'Đã thêm' : 'Thêm giỏ'}</button>
+                      >{addedIds.has(p.id) ? 'Đã thêm' : 'Thêm vào giỏ hàng'}</button>
                     </div>
                   </div>
                   <div className="product-card-info">

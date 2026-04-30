@@ -62,7 +62,7 @@ export const getQrCodeByName = async (qrName: string) => {
 export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
-  const url = qrName ? `/api/upload?qrName=${encodeURIComponent(qrName)}` : '/api/upload';
+  const url = qrName ? `/api/upload?prefix=${encodeURIComponent('uploads/temp/' + qrName)}` : '/api/upload';
   const response = await api.post(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -253,10 +253,11 @@ export interface CreateProductOrderPayload {
 }
 
 export interface ProductOrderResult {
-  success:        boolean;
-  order_id:       number;
-  invoice_number: string;
-  total_amount:   number;
+  success:      boolean;
+  order_id:     number;
+  invoice_number?: string;
+  total_amount?:   number;
+  already_paid?:   boolean;
 }
 
 export const createProductOrder = async (
@@ -282,15 +283,58 @@ export const createProductCheckout = async (orderId: number): Promise<ProductChe
   return response.data;
 };
 
+export interface ProductPaymentResponse {
+  success: boolean;
+  order: {
+    id:            number;
+    invoiceNumber: string;
+    totalAmount:   number;
+    paymentStatus: string;
+  };
+  payment: {
+    qrUrl:       string;
+    amount:      number;
+    paymentCode: string;
+    status:      string;
+    accountNo:   string;
+    bank:        string;
+  };
+}
+
+export const getProductPayment = async (orderId: number): Promise<ProductPaymentResponse> => {
+  const response = await api.get<ProductPaymentResponse>(`/api/payments/product/${orderId}`);
+  return response.data;
+};
+
 export const uploadProductImages = async (files: File[], sessionId: string): Promise<string[]> => {
   const formData = new FormData();
   files.forEach(f => formData.append('files', f));
   const response = await api.post(
-    `/api/upload?prefix=product-orders/${sessionId}`,
+    `/api/upload?prefix=product-orders/temp/${sessionId}`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } },
   );
   return response.data.urls as string[];
+};
+
+export interface TrackOrderResult {
+  success: boolean;
+  type: 'product' | 'qr';
+  order: {
+    invoice_number: string;
+    customer_name: string;
+    payment_status: string;
+    fulfillment_status: string;
+    fulfillment_label: string;
+    tracking_code: string;
+    total_amount: number;
+    created_at: string;
+  };
+}
+
+export const trackOrder = async (code: string): Promise<TrackOrderResult> => {
+  const response = await api.get('/api/orders/track', { params: { code } });
+  return response.data as TrackOrderResult;
 };
 
 export default api;

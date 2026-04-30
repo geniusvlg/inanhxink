@@ -77,6 +77,7 @@ func main() {
 		r.Post("/check-qr-name", handlers.CheckQRName)
 		r.Post("/", handlers.CreateOrder)
 		r.Get("/{id}", handlers.GetOrder)
+		r.Get("/track", handlers.TrackOrder)
 	})
 
 	r.Route("/api/qrcodes", func(r chi.Router) {
@@ -87,9 +88,11 @@ func main() {
 		r.Post("/", handlers.CreatePayment)
 		r.Post("/checkout", handlers.CreateCheckout)
 		r.Post("/product-checkout", handlers.CreateProductCheckout)
-		r.Post("/webhook", handlers.PaymentWebhook)
+		r.Post("/webhook/qr", handlers.QRPaymentWebhook)
+		r.Post("/webhook/product", handlers.ProductPaymentWebhook)
 		r.Post("/ipn", handlers.SepayIPN)
 		r.Get("/order/{orderId}", handlers.GetPaymentByOrder)
+		r.Get("/product/{orderId}", handlers.GetProductPayment)
 		r.Get("/qr/{qrName}", handlers.GetPaymentByQR)
 	})
 
@@ -148,8 +151,19 @@ func main() {
 
 			r.Route("/orders", func(r chi.Router) {
 				r.Get("/", adminHandlers.ListOrders)
+				r.Get("/search", adminHandlers.SearchOrder)
 				r.Get("/{id}", adminHandlers.GetOrder)
 				r.Patch("/{id}/status", adminHandlers.UpdateOrderStatus)
+				r.Patch("/{id}/fulfillment", adminHandlers.UpdateQRKeychainFulfillment)
+			})
+
+			r.Route("/product-orders", func(r chi.Router) {
+				r.Get("/", adminHandlers.ListProductOrders)
+				r.Get("/fulfillment", adminHandlers.ListFulfillmentOrders)
+				r.Get("/{id}", adminHandlers.GetProductOrder)
+				r.Patch("/{id}/status", adminHandlers.UpdateProductOrderStatus)
+				r.Patch("/{id}/fulfillment", adminHandlers.UpdateFulfillmentStatus)
+				r.Patch("/{id}/items", adminHandlers.UpdateProductOrderItems)
 			})
 
 			r.Route("/vouchers", func(r chi.Router) {

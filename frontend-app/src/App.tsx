@@ -17,7 +17,9 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import HomePage from './pages/HomePage';
 import CheckoutPage from './pages/CheckoutPage';
+import ProductCheckoutPaymentPage from './pages/ProductCheckoutPaymentPage';
 import CheckoutResultPage from './pages/CheckoutResultPage';
+import TrackOrderPage from './pages/TrackOrderPage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
@@ -60,8 +62,10 @@ function AppRoutes() {
       <Route path="/set-qua-tang"      element={<FlaggedRoute flag="page_set_qua_tang"      element={<SetQuaTangPage />} />} />
       <Route path="/cac-san-pham-khac" element={<FlaggedRoute flag="page_cac_san_pham_khac" element={<KhacPage />} />} />
       <Route path="/in-anh"            element={<FlaggedRoute flag="page_in_anh"            element={<InAnhPage />} />} />
-      <Route path="/checkout"        element={<CheckoutPage />} />
-      <Route path="/checkout/result" element={<CheckoutResultPage />} />
+      <Route path="/checkout"                  element={<CheckoutPage />} />
+      <Route path="/checkout/payment/:orderId" element={<ProductCheckoutPaymentPage />} />
+      <Route path="/checkout/result"           element={<CheckoutResultPage />} />
+      <Route path="/theo-doi-don-hang"         element={<TrackOrderPage />} />
     </Routes>
     </>
   );

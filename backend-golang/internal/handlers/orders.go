@@ -432,3 +432,80 @@ func keychainDelivery(purchased bool) any {
 	}
 	return nil
 }
+
+// GET /api/orders/track?code=INXK... — public customer order tracking.
+func TrackOrder(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		BadRequest(w, "code is required")
+		return
+	}
+
+	// Try product order by invoice_number
+	row := config.DB.QueryRow(context.Background(), `
+		SELECT invoice_number, customer_name, payment_status, fulfillment_status,
+		       COALESCE(tracking_code, '') as tracking_code, total_amount, created_at
+		FROM product_orders
+		WHERE invoice_number ILIKE $1`, "%"+strings.TrimSpace(code)+"%")
+	var invoiceNumber, customerName, paymentStatus, fulfillmentStatus, trackingCode string
+	var totalAmount float64
+	var createdAt any
+	if err := row.Scan(&invoiceNumber, &customerName, &paymentStatus, &fulfillmentStatus, &trackingCode, &totalAmount, &createdAt); err == nil {
+		stageLabel := map[string]string{
+			"new":      "Chờ xử lý",
+			"preparing": "Đang chuẩn bị",
+			"packing":  "Đóng gói",
+			"shipped":  "Đã giao vận chuyển",
+		}
+		OK(w, map[string]any{
+			"success": true,
+			"type":    "product",
+			"order": map[string]any{
+				"invoice_number":    invoiceNumber,
+				"customer_name":    customerName,
+				"payment_status":   paymentStatus,
+				"fulfillment_status": fulfillmentStatus,
+				"fulfillment_label": stageLabel[fulfillmentStatus],
+				"tracking_code":    trackingCode,
+				"total_amount":     totalAmount,
+				"created_at":       createdAt,
+			},
+		})
+		return
+	}
+
+	// Try QR order by qr_name
+	qrRow := config.DB.QueryRow(context.Background(), `
+		SELECT qr_name, customer_name, payment_status,
+		       COALESCE(keychain_delivery_status, '') as fulfillment_status,
+		       COALESCE(tracking_code, '') as tracking_code, total_amount, created_at
+		FROM orders
+		WHERE qr_name ILIKE $1
+		ORDER BY created_at DESC LIMIT 1`, "%"+strings.TrimSpace(code)+"%")
+	var qrName string
+	if err := qrRow.Scan(&qrName, &customerName, &paymentStatus, &fulfillmentStatus, &trackingCode, &totalAmount, &createdAt); err == nil {
+		stageLabel := map[string]string{
+			"pending":  "Chờ xử lý",
+			"preparing": "Đang chuẩn bị",
+			"packing":  "Đóng gói",
+			"shipped":  "Đã giao vận chuyển",
+		}
+		OK(w, map[string]any{
+			"success": true,
+			"type":    "qr",
+			"order": map[string]any{
+				"invoice_number":    qrName,
+				"customer_name":    customerName,
+				"payment_status":   paymentStatus,
+				"fulfillment_status": fulfillmentStatus,
+				"fulfillment_label": stageLabel[fulfillmentStatus],
+				"tracking_code":    trackingCode,
+				"total_amount":     totalAmount,
+				"created_at":       createdAt,
+			},
+		})
+		return
+	}
+
+	JSON(w, 404, map[string]any{"success": false, "error": "Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hàng."})
+}

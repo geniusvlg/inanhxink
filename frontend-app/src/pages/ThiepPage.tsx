@@ -155,7 +155,7 @@ export default function ThiepPage() {
                           setTimeout(() => setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n; }), 2000);
                         }}
                       >
-                        {addedIds.has(p.id) ? 'Đã thêm' : 'Thêm giỏ'}
+                        {addedIds.has(p.id) ? 'Đã thêm' : 'Thêm vào giỏ hàng'}
                       </button>
                     </div>
                   </div>

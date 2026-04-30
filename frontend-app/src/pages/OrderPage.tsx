@@ -198,7 +198,9 @@ function OrderPage() {
   const startUpload = (index: number, file: File, name: string) => {
     setUploadStates(prev => ({ ...prev, [index]: 'uploading' }));
     const entry: { promise: Promise<string | null>; cancelled: boolean } = { promise: null!, cancelled: false };
-    entry.promise = uploadFiles([file], name)
+    const tryUpload = () => uploadFiles([file], name);
+    entry.promise = tryUpload()
+      .catch(() => tryUpload()) // auto-retry once silently
       .then(urls => {
         if (entry.cancelled) return null;
         setUploadStates(prev => ({ ...prev, [index]: 'done' }));
@@ -210,6 +212,12 @@ function OrderPage() {
       });
     bgUploads.current.set(index, entry);
   };
+
+  const handleRetry = (index: number) => {
+    const file = uploadedImages[index];
+    if (!file || !qrName) return;
+    startUpload(index, file, qrName);
+  };;
 
   const handleNewFiles = (files: { index: number; file: File }[]) => {
     if (!canUploadImages) {
@@ -821,6 +829,7 @@ function OrderPage() {
                 onPreviewsChange={(segment) => updatePreviewSegment(0, AVATAR_SLOTS, segment)}
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index })))}
                 onFileRemoved={(index) => handleFileRemoved(index)}
+                onRetry={(index) => handleRetry(index)}
                 uploadStates={segmentStates(0, AVATAR_SLOTS)}
                 disabled={!canUploadImages}
                 disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
@@ -841,6 +850,7 @@ function OrderPage() {
                 onPreviewsChange={(segment) => updatePreviewSegment(AVATAR_SLOTS, GALLERY_SLOTS, segment)}
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index + AVATAR_SLOTS })))}
                 onFileRemoved={(index) => handleFileRemoved(index + AVATAR_SLOTS)}
+                onRetry={(index) => handleRetry(index + AVATAR_SLOTS)}
                 uploadStates={segmentStates(AVATAR_SLOTS, GALLERY_SLOTS)}
                 disabled={!canUploadImages}
                 disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
@@ -863,6 +873,7 @@ function OrderPage() {
                 onPreviewsChange={(segment) => updatePreviewSegment(0, SPECIAL_GIFT_AVATAR_SLOTS, segment)}
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index })))}
                 onFileRemoved={(index) => handleFileRemoved(index)}
+                onRetry={(index) => handleRetry(index)}
                 uploadStates={segmentStates(0, SPECIAL_GIFT_AVATAR_SLOTS)}
                 disabled={!canUploadImages}
                 disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
@@ -883,6 +894,7 @@ function OrderPage() {
                 onPreviewsChange={(segment) => updatePreviewSegment(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS, segment)}
                 onNewFiles={(files) => handleNewFiles(files.map(f => ({ ...f, index: f.index + SPECIAL_GIFT_AVATAR_SLOTS })))}
                 onFileRemoved={(index) => handleFileRemoved(index + SPECIAL_GIFT_AVATAR_SLOTS)}
+                onRetry={(index) => handleRetry(index + SPECIAL_GIFT_AVATAR_SLOTS)}
                 uploadStates={segmentStates(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS)}
                 disabled={!canUploadImages}
                 disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
@@ -898,6 +910,7 @@ function OrderPage() {
               onPreviewsChange={setImagePreviews}
               onNewFiles={handleNewFiles}
               onFileRemoved={handleFileRemoved}
+              onRetry={handleRetry}
               uploadStates={uploadStates}
               disabled={!canUploadImages}
               disabledReason={!canUploadImages ? uploadDisabledReason : undefined}

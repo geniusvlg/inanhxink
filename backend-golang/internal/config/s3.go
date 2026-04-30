@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
@@ -64,31 +65,39 @@ func GetPublicURL(key string) string {
 }
 
 // UploadToS3 uploads buf to S3 under folder/filename and returns the raw S3 URL.
-// Images are converted to WebP (quality 90) via github.com/chai2010/webp (CGO/libwebp).
+// Images are converted to WebP (quality 90) unless noConvert=true (use for print-quality originals).
 // Audio files are passed through unchanged.
-func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark bool) (string, error) {
+func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark, noConvert bool) (string, error) {
 	uploadBuf := buf
 	ext := strings.ToLower(filepath.Ext(originalname))
 	contentType := mimetype
 
 	if imageMimes[mimetype] {
-		img, _, err := image.Decode(bytes.NewReader(buf))
-		if err != nil {
-			return "", fmt.Errorf("decode image: %w", err)
-		}
-		if watermark {
-			img, err = applyWatermark(img)
-			if err != nil {
-				return "", fmt.Errorf("apply watermark: %w", err)
+		if noConvert {
+			// Keep original bytes and format — needed for high-quality print files.
+			// Still decode to validate the image is readable.
+			if _, _, err := image.Decode(bytes.NewReader(buf)); err != nil {
+				return "", fmt.Errorf("decode image: %w", err)
 			}
+		} else {
+			img, _, err := image.Decode(bytes.NewReader(buf))
+			if err != nil {
+				return "", fmt.Errorf("decode image: %w", err)
+			}
+			if watermark {
+				img, err = applyWatermark(img)
+				if err != nil {
+					return "", fmt.Errorf("apply watermark: %w", err)
+				}
+			}
+			var out bytes.Buffer
+			if err := webp.Encode(&out, img, &webp.Options{Lossless: false, Quality: 90}); err != nil {
+				return "", fmt.Errorf("encode image to webp: %w", err)
+			}
+			uploadBuf = out.Bytes()
+			ext = ".webp"
+			contentType = "image/webp"
 		}
-		var out bytes.Buffer
-		if err := webp.Encode(&out, img, &webp.Options{Lossless: false, Quality: 90}); err != nil {
-			return "", fmt.Errorf("encode image to webp: %w", err)
-		}
-		uploadBuf = out.Bytes()
-		ext = ".webp"
-		contentType = "image/webp"
 	}
 
 	filename := fmt.Sprintf("%d-%s%s", time.Now().UnixMilli(), randStr(8), ext)
@@ -108,6 +117,129 @@ func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark boo
 		return "", fmt.Errorf("S3 upload: %w", err)
 	}
 	return GetPublicURL(key), nil
+}
+
+// MoveTempS3Image moves a temp product-orders image to the permanent paid/ prefix.
+// If the URL is not a temp upload (or belongs to a different origin), it is returned unchanged.
+// On copy success the original is deleted (best-effort). Errors are non-fatal so callers
+// can log and keep the temp URL rather than blocking order creation.
+func MoveTempS3Image(rawURL string, orderID int) (string, error) {
+	origin := S3Endpoint + "/" + S3Bucket + "/"
+	if !strings.HasPrefix(rawURL, origin) {
+		return rawURL, nil
+	}
+	key := rawURL[len(origin):]
+	const tempPrefix = "product-orders/temp/"
+	if !strings.HasPrefix(key, tempPrefix) {
+		return rawURL, nil
+	}
+
+	parts := strings.Split(key, "/")
+	filename := parts[len(parts)-1]
+	dstKey := fmt.Sprintf("product-orders/paid/%d/%s", orderID, filename)
+
+	_, err := S3Client.CopyObject(context.Background(), &s3.CopyObjectInput{
+		Bucket:     aws.String(S3Bucket),
+		CopySource: aws.String(S3Bucket + "/" + key),
+		Key:        aws.String(dstKey),
+		ACL:        s3types.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		return rawURL, fmt.Errorf("S3 copy %s: %w", key, err)
+	}
+
+	// Best-effort delete of the original temp object
+	S3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{ //nolint
+		Bucket: aws.String(S3Bucket),
+		Key:    aws.String(key),
+	})
+
+	return GetPublicURL(dstKey), nil
+}
+
+// RewriteTemplateDataURLs walks a JSON blob and moves every S3 object whose key
+// starts with srcKeyPrefix to dstFolder/{filename}. It returns the rewritten JSON
+// and the list of original S3 keys that were successfully copied so the caller can
+// delete them after the DB update. Individual copy failures are logged and the
+// original URL is kept in the output — the overall operation is never aborted.
+func RewriteTemplateDataURLs(raw []byte, srcKeyPrefix, dstFolder string) (rewritten []byte, copiedSrcKeys []string, err error) {
+	if len(raw) == 0 {
+		return raw, nil, nil
+	}
+	var data any
+	if jsonErr := json.Unmarshal(raw, &data); jsonErr != nil {
+		return raw, nil, fmt.Errorf("unmarshal template_data: %w", jsonErr)
+	}
+	origin := S3Endpoint + "/" + S3Bucket + "/"
+	rewriteJSONValue(data, origin, srcKeyPrefix, dstFolder, &copiedSrcKeys)
+	out, jsonErr := json.Marshal(data)
+	if jsonErr != nil {
+		return raw, nil, fmt.Errorf("marshal template_data: %w", jsonErr)
+	}
+	return out, copiedSrcKeys, nil
+}
+
+func rewriteJSONValue(v any, origin, srcKeyPrefix, dstFolder string, copied *[]string) {
+	switch val := v.(type) {
+	case map[string]any:
+		for k, item := range val {
+			if s, ok := item.(string); ok {
+				if newURL, srcKey, moved := moveS3TempURL(s, origin, srcKeyPrefix, dstFolder); moved {
+					val[k] = newURL
+					*copied = append(*copied, srcKey)
+				}
+			} else {
+				rewriteJSONValue(item, origin, srcKeyPrefix, dstFolder, copied)
+			}
+		}
+	case []any:
+		for i, item := range val {
+			if s, ok := item.(string); ok {
+				if newURL, srcKey, moved := moveS3TempURL(s, origin, srcKeyPrefix, dstFolder); moved {
+					val[i] = newURL
+					*copied = append(*copied, srcKey)
+				}
+			} else {
+				rewriteJSONValue(item, origin, srcKeyPrefix, dstFolder, copied)
+			}
+		}
+	}
+}
+
+func moveS3TempURL(rawURL, origin, srcKeyPrefix, dstFolder string) (newURL, srcKey string, moved bool) {
+	if !strings.HasPrefix(rawURL, origin) {
+		return rawURL, "", false
+	}
+	key := rawURL[len(origin):]
+	if !strings.HasPrefix(key, srcKeyPrefix) {
+		return rawURL, "", false
+	}
+	parts := strings.Split(key, "/")
+	filename := parts[len(parts)-1]
+	dstKey := dstFolder + "/" + filename
+	_, err := S3Client.CopyObject(context.Background(), &s3.CopyObjectInput{
+		Bucket:     aws.String(S3Bucket),
+		CopySource: aws.String(S3Bucket + "/" + key),
+		Key:        aws.String(dstKey),
+		ACL:        s3types.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		log.Printf("warn: moveS3TempURL: CopyObject %s → %s: %v", key, dstKey, err)
+		return rawURL, "", false
+	}
+	return GetPublicURL(dstKey), key, true
+}
+
+// DeleteS3Objects deletes a list of S3 keys best-effort (errors are logged, not returned).
+func DeleteS3Objects(keys []string) {
+	for _, key := range keys {
+		if _, err := S3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+			Bucket: aws.String(S3Bucket),
+			Key:    aws.String(key),
+		}); err != nil {
+			log.Printf("warn: DeleteS3Objects: DeleteObject %s: %v", key, err)
+		}
+	}
 }
 
 func applyWatermark(img image.Image) (image.Image, error) {
@@ -223,28 +355,6 @@ func DeleteFromS3(url string) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-// PruneS3Folder deletes all objects under prefix except the provided keep set.
-func PruneS3Folder(prefix string, keep map[string]bool) error {
-	out, err := S3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
-		Bucket: aws.String(S3Bucket),
-		Prefix: aws.String(prefix + "/"),
-	})
-	if err != nil {
-		return err
-	}
-	for _, obj := range out.Contents {
-		if obj.Key != nil && !keep[*obj.Key] {
-			if _, err := S3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
-				Bucket: aws.String(S3Bucket),
-				Key:    obj.Key,
-			}); err != nil {
-				log.Printf("[s3] prune delete failed for %s: %v", *obj.Key, err)
-			}
-		}
-	}
-	return nil
 }
 
 func randStr(n int) string {

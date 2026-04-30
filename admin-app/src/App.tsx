@@ -4,7 +4,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import ProductsPage from './pages/ProductsPage';
-import OrdersPage from './pages/OrdersPage';
+import QrOrdersPage from './pages/QrOrdersPage';
+import ProductOrdersPage from './pages/ProductOrdersPage';
 import VouchersPage from './pages/VouchersPage';
 import ConfigPage from './pages/ConfigPage';
 import ThiepPage from './pages/ThiepPage';
@@ -18,6 +19,7 @@ import TestimonialsPage from './pages/TestimonialsPage';
 import BannersPage from './pages/BannersPage';
 import HeroShotsPage from './pages/HeroShotsPage';
 import FeaturedOnHomePage from './pages/FeaturedOnHomePage';
+import FulfillmentPage from './pages/FulfillmentPage';
 
 export default function App() {
   return (
@@ -37,7 +39,9 @@ export default function App() {
               <Route path="/in-anh"          element={<InAnhPage />} />
               <Route path="/featured-on-home" element={<FeaturedOnHomePage />} />
               <Route path="/categories"       element={<CategoriesPage />} />
-              <Route path="/orders"           element={<OrdersPage />} />
+              <Route path="/orders"           element={<ProductOrdersPage />} />
+              <Route path="/qr-orders"        element={<QrOrdersPage />} />
+              <Route path="/fulfillment"      element={<FulfillmentPage />} />
               <Route path="/vouchers"         element={<VouchersPage />} />
               <Route path="/testimonials"     element={<TestimonialsPage />} />
               <Route path="/banners"          element={<BannersPage />} />
