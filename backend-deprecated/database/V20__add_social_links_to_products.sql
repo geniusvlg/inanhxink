@@ -1,3 +1,0 @@
-ALTER TABLE products
-  ADD COLUMN IF NOT EXISTS tiktok_url    VARCHAR(500),
-  ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500);

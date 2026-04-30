@@ -64,6 +64,22 @@ upload, list, edit, and delete using the raw S3 URLs. If an admin page needs an
 `<img>` preview, rewrite only the rendered `src` with the admin app's asset URL
 helper; do not mutate form values or persisted payloads.
 
+## Product-order image prefixes
+
+Product order uploads are used for printing and handcrafted fulfillment:
+
+| Prefix | Meaning | Lifecycle |
+|--------|---------|-----------|
+| `product-orders/temp/{cart_session_id}/` | Customer uploaded images before payment | expire after 1 day |
+| `product-orders/paid/{order_id}/` | Images moved after payment confirmation | expire after 7 days |
+
+Unlike product catalog images, product-order customer uploads keep their original
+file bytes and format. They are not converted to WebP.
+
+The database still stores raw S3 URLs. Public/admin previews may rewrite URLs to
+CDN only for rendering. Admin fulfillment can download images from CDN-resolved
+URLs while keeping DB state as raw S3 URLs.
+
 ## Adding a new public endpoint
 
 When you add a public route that returns image fields:
