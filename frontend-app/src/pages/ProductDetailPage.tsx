@@ -53,6 +53,7 @@ export default function ProductDetailPage() {
       product_id:   product.id,
       product_name: product.name,
       unit_price:   price,
+      max_upload_images: product.max_upload_images ?? 15,
       thumbnail:    images[0],
     });
     setAdded(true);
@@ -67,6 +68,7 @@ export default function ProductDetailPage() {
       product_name: product.name,
       unit_price:   price,
       quantity:     1,
+      max_upload_images: product.max_upload_images ?? 15,
       thumbnail:    images[0],
     });
     navigate('/checkout?mode=buy-now');

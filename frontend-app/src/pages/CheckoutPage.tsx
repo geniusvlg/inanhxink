@@ -1,11 +1,11 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import { useCart, cartEntriesToApiItems, type CartEntry } from '../contexts/CartContext';
 
-const MAX_PRODUCT_IMAGES = 30;
-import { createProductOrder, uploadProductImages } from '../services/api';
+const DEFAULT_PRODUCT_IMAGE_LIMIT = 15;
+import { createProductOrder, getProductById, uploadProductImages } from '../services/api';
 import './CheckoutPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -44,6 +44,11 @@ function slotId() {
   return Math.random().toString(36).slice(2);
 }
 
+function imageLimitFor(item?: Pick<CartEntry, 'max_upload_images'>): number {
+  const limit = item?.max_upload_images ?? DEFAULT_PRODUCT_IMAGE_LIMIT;
+  return Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_PRODUCT_IMAGE_LIMIT;
+}
+
 interface BuyNowDraft {
   sessionId: string;
   items:     CartEntry[];
@@ -68,6 +73,7 @@ export default function CheckoutPage() {
   const items = isBuyNow ? (buyNowDraft?.items ?? []) : cart.items;
   const sessionId = isBuyNow ? (buyNowDraft?.sessionId ?? '') : cart.sessionId;
   const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
+  const [productImageLimits, setProductImageLimits] = useState<Record<number, number>>({});
 
   const [step,    setStep]    = useState<1 | 2>(1);
   const [busy,    setBusy]    = useState(false);
@@ -79,6 +85,23 @@ export default function CheckoutPage() {
     Object.fromEntries(items.map(it => [it.product_id, { note: '', slots: [] }]))
   );
   const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLimits = async () => {
+      const entries = await Promise.all(items.map(async it => {
+        try {
+          const product = await getProductById(it.product_id);
+          return [it.product_id, imageLimitFor(product)] as const;
+        } catch {
+          return [it.product_id, imageLimitFor(it)] as const;
+        }
+      }));
+      if (!cancelled) setProductImageLimits(Object.fromEntries(entries));
+    };
+    loadLimits();
+    return () => { cancelled = true; };
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -107,10 +130,11 @@ export default function CheckoutPage() {
 
   const handleFileAdd = useCallback(async (productId: number, fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
+    const limit = productImageLimits[productId] ?? imageLimitFor(items.find(it => it.product_id === productId));
     const existingCount = customs[productId]?.slots.length ?? 0;
-    const remaining = MAX_PRODUCT_IMAGES - existingCount;
+    const remaining = limit - existingCount;
     if (remaining <= 0) {
-      alert(`Mỗi sản phẩm chỉ được upload tối đa ${MAX_PRODUCT_IMAGES} ảnh.`);
+      alert(`Sản phẩm này chỉ được upload tối đa ${limit} ảnh.`);
       return;
     }
     const newFiles = Array.from(fileList).slice(0, remaining);
@@ -156,7 +180,7 @@ export default function CheckoutPage() {
       return { ...prev, [productId]: { ...prev[productId], slots: updated } };
     });
     if (fileRefs.current[productId]) fileRefs.current[productId]!.value = '';
-  }, [sessionId]);
+  }, [customs, items, productImageLimits, sessionId]);
 
   const handleFileRemove = useCallback((productId: number, id: string) => {
     setCustoms(prev => {
@@ -282,6 +306,7 @@ export default function CheckoutPage() {
             {step === 2 && (
               <Step2Form
                 items={items}
+                productImageLimits={productImageLimits}
                 customs={customs}
                 fileRefs={fileRefs}
                 resolveUrl={resolveUrl}
@@ -370,8 +395,9 @@ function Step1Form({ info, onChange }: {
   );
 }
 
-function Step2Form({ items, customs, fileRefs, resolveUrl, onFileAdd, onFileRemove, onFileRetry, onNoteChange }: {
+function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, onFileAdd, onFileRemove, onFileRetry, onNoteChange }: {
   items: CartEntry[];
+  productImageLimits: Record<number, number>;
   customs: Record<number, ItemCustomisation>;
   fileRefs: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
   resolveUrl: (url: string) => string;
@@ -387,26 +413,33 @@ function Step2Form({ items, customs, fileRefs, resolveUrl, onFileAdd, onFileRemo
 
       {items.map(it => {
         const c = customs[it.product_id] ?? { note: '', slots: [] };
+        const limit = productImageLimits[it.product_id] ?? imageLimitFor(it);
         return (
           <div key={it.product_id} className="co-item-custom">
             {it.thumbnail && (
               <img src={resolveUrl(it.thumbnail)} alt={it.product_name} className="co-item-thumb" />
             )}
             <div className="co-item-custom-body">
-              <p className="co-item-custom-name">{it.product_name} × {it.quantity}</p>
+              <div className="co-item-custom-title">
+                <p className="co-item-custom-name">{it.product_name}</p>
+                <p className="co-item-custom-qty">Số lượng: {it.quantity}</p>
+              </div>
 
               <button
                 type="button"
                 className="co-upload-btn"
                 onClick={() => fileRefs.current[it.product_id]?.click()}
-                disabled={c.slots.length >= MAX_PRODUCT_IMAGES}
+                disabled={c.slots.length >= limit}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
                   <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
                 </svg>
-                {c.slots.length >= MAX_PRODUCT_IMAGES ? `Đã đủ ${MAX_PRODUCT_IMAGES} ảnh` : 'Thêm ảnh'}
+                {c.slots.length >= limit ? `Đã đủ ${limit} ảnh` : `Thêm ảnh (${c.slots.length}/${limit})`}
               </button>
+              <div className="co-upload-limit-note">
+                Tối đa {limit} ảnh cho sản phẩm này.
+              </div>
               <input
                 type="file"
                 accept="image/*"

@@ -26,6 +26,7 @@ export interface CartEntry {
   product_name: string;
   unit_price:   number;
   quantity:     number;
+  max_upload_images?: number;
   /** Thumbnail to show in drawer — NOT sent to backend (that's image_urls set in Step 2). */
   thumbnail?:   string;
 }

@@ -73,6 +73,7 @@ function getDiscountStatusUi(status: DiscountStatus): { label: string; style: Re
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
   name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
   discount_price: null, discount_from: null, discount_to: null,
+  max_upload_images: 15,
   is_featured_on_home: false,
 });
 
@@ -83,6 +84,7 @@ export default function ProductItemsPage({ type }: Props) {
   const [showModal, setShowModal]   = useState(false);
   const [editing, setEditing]       = useState<Product | null>(null);
   const [form, setForm]             = useState<Partial<Product> & { category_ids: number[] }>(emptyForm());
+  const [maxUploadImagesInput, setMaxUploadImagesInput] = useState('15');
   const [imageEntries, setImageEntries] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [reservedProductId, setReservedProductId] = useState<number | null>(null);
@@ -113,6 +115,7 @@ export default function ProductItemsPage({ type }: Props) {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm());
+    setMaxUploadImagesInput('15');
     setImageEntries([]);
     setReservedProductId(null);
     setNameCheckState('idle');
@@ -122,6 +125,7 @@ export default function ProductItemsPage({ type }: Props) {
   const openEdit = (p: Product) => {
     setEditing(p);
     setForm({ ...p, category_ids: p.categories.map(c => c.id) });
+    setMaxUploadImagesInput(String(p.max_upload_images ?? 15));
     setImageEntries(p.images);
     setReservedProductId(null);
     setNameCheckState('available');
@@ -203,6 +207,7 @@ export default function ProductItemsPage({ type }: Props) {
         ...form,
         type,
         images: imageEntries,
+        max_upload_images: Number(maxUploadImagesInput) > 0 ? Number(maxUploadImagesInput) : 15,
         is_active: form.is_active ?? true,
         is_featured_on_home: form.is_featured_on_home ?? false,
       });
@@ -485,6 +490,27 @@ export default function ProductItemsPage({ type }: Props) {
                   </div>
                 </div>
               )}
+
+              {/* Customer upload limit */}
+              <div className="form-group">
+                <label className="form-label">Số ảnh khách được upload <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem' }}>— mặc định 15</span></label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={maxUploadImagesInput}
+                  onChange={e => setMaxUploadImagesInput(e.target.value)}
+                  onBlur={() => {
+                    if (!maxUploadImagesInput.trim() || Number(maxUploadImagesInput) < 1) {
+                      setMaxUploadImagesInput('15');
+                    }
+                  }}
+                />
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.35rem 0 0' }}>
+                  Áp dụng cho từng sản phẩm ở bước checkout "Ảnh & ghi chú".
+                </p>
+              </div>
 
               {/* Categories */}
               <div className="form-group">

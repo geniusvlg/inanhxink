@@ -78,6 +78,7 @@ raw S3 URLs for edit/delete flows.
   discount_price?: number;
   discount_from?: string;     // ISO timestamp
   discount_to?: string;       // ISO timestamp
+  max_upload_images: number;  // per-product customer upload limit, default 15
 }
 ```
 

@@ -219,16 +219,20 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	isBestSeller, _ := body["is_best_seller"].(bool)
 	watermarkEnabled, _ := body["watermark_enabled"].(bool)
+	maxUploadImages := 15
+	if v, ok := body["max_upload_images"].(float64); ok && v >= 1 {
+		maxUploadImages = int(v)
+	}
 
 	rows, err := tx.Query(context.Background(), `
 		INSERT INTO products (name, description, price, images, type, is_active, is_best_seller,
 			watermark_enabled, tiktok_url, instagram_url, discount_price, discount_from, discount_to,
-			is_featured_on_home, home_sort_order)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+			is_featured_on_home, home_sort_order, max_upload_images)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
 		name, body["description"], price, images, productType, isActive, isBestSeller,
 		watermarkEnabled, body["tiktok_url"], body["instagram_url"],
 		body["discount_price"], body["discount_from"], body["discount_to"],
-		isFeaturedOnHome, homeSortOrder)
+		isFeaturedOnHome, homeSortOrder, maxUploadImages)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
@@ -270,6 +274,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		"is_active": true, "is_best_seller": true, "watermark_enabled": true,
 		"tiktok_url": true, "instagram_url": true,
 		"discount_price": true, "discount_from": true, "discount_to": true,
+		"max_upload_images": true,
 	}
 
 	setClauses := []string{}
@@ -283,6 +288,15 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 				if imgs, ok := v.([]any); ok {
 					if b, err := json.Marshal(imgs); err == nil {
 						val = string(b)
+					}
+				}
+			}
+			if k == "max_upload_images" {
+				if n, ok := v.(float64); ok {
+					if n < 1 {
+						val = 15
+					} else {
+						val = int(n)
 					}
 				}
 			}

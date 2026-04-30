@@ -78,6 +78,23 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	for _, it := range body.Items {
+		var maxUploadImages int
+		err := config.DB.QueryRow(context.Background(),
+			"SELECT COALESCE(max_upload_images, 15) FROM products WHERE id = $1",
+			it.ProductID).Scan(&maxUploadImages)
+		if err != nil {
+			BadRequest(w, fmt.Sprintf("product %d not found", it.ProductID))
+			return
+		}
+		if maxUploadImages < 1 {
+			maxUploadImages = 15
+		}
+		if len(it.ImageURLs) > maxUploadImages {
+			BadRequest(w, fmt.Sprintf("%s chỉ được upload tối đa %d ảnh", it.ProductName, maxUploadImages))
+			return
+		}
+	}
 
 	var subtotal float64
 	for _, it := range body.Items {

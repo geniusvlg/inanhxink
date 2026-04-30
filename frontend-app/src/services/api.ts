@@ -112,6 +112,7 @@ export interface Product {
   discount_price: number | null;
   discount_from: string | null;
   discount_to: string | null;
+  max_upload_images: number;
   created_at: string;
 }
 
