@@ -90,7 +90,7 @@ func main() {
 		r.Post("/product-checkout", handlers.CreateProductCheckout)
 		r.Post("/webhook/qr", handlers.QRPaymentWebhook)
 		r.Post("/webhook/product", handlers.ProductPaymentWebhook)
-		r.Post("/ipn", handlers.SepayIPN)
+		r.Post("/webhook/pay2s", handlers.Pay2SWebhookLogger)
 		r.Get("/order/{orderId}", handlers.GetPaymentByOrder)
 		r.Get("/product/{orderId}", handlers.GetProductPayment)
 		r.Get("/qr/{qrName}", handlers.GetPaymentByQR)

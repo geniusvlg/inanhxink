@@ -17,6 +17,9 @@ interface PaymentData {
   amount: number;
   paymentCode: string;
   status: string;
+  accountNo?: string;
+  accountName?: string;
+  bank?: string;
 }
 
 function PaymentPage() {
@@ -200,17 +203,31 @@ function PaymentPage() {
             </div>
 
             <div className="payment-bank-info">
+              {payment.bank && (
+                <div className="payment-bank-row">
+                  <span className="payment-bank-label">Ngân hàng:</span>
+                  <span className="payment-bank-value">{payment.bank}</span>
+                </div>
+              )}
+              {payment.accountName && (
+                <div className="payment-bank-row">
+                  <span className="payment-bank-label">Tên tài khoản:</span>
+                  <span className="payment-bank-value">{payment.accountName}</span>
+                </div>
+              )}
               <div className="payment-bank-row">
                 <span className="payment-bank-label">Số tài khoản:</span>
                 <span className="payment-bank-value">
-                  249550889
-                  <button
-                    className="payment-copy-button"
-                    onClick={() => handleCopy('77741116868', 'account')}
-                    title="Sao chép"
-                  >
-                    {copied === 'account' ? '✓' : '📋'}
-                  </button>
+                  {payment.accountNo || 'Đang cập nhật'}
+                  {payment.accountNo && (
+                    <button
+                      className="payment-copy-button"
+                      onClick={() => handleCopy(payment.accountNo!, 'account')}
+                      title="Sao chép"
+                    >
+                      {copied === 'account' ? '✓' : '📋'}
+                    </button>
+                  )}
                 </span>
               </div>
               <div className="payment-bank-row">

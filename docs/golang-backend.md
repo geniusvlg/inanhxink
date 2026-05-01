@@ -127,6 +127,13 @@ marks an order as paid, the Go backend serializes activation for that QR name,
 cancels other unpaid orders with the same `qr_name`, and prunes the shared S3
 folder so only objects referenced by the paid order's `template_data` remain.
 
+## Pay2S webhook discovery
+
+`POST /api/payments/webhook/pay2s` is a temporary discovery endpoint for the
+Pay2S migration. It logs the incoming method, path, remote address, query string,
+headers, and raw body, then returns `{ "success": true }`. Do not use it for
+payment fulfillment until the provider payload and verification scheme are known.
+
 ## Product order images
 
 Product checkout uploads customer images to
@@ -134,9 +141,16 @@ Product checkout uploads customer images to
 these files to `paid/`; unpaid orders should remain in temp and expire by S3
 lifecycle.
 
+Product-order VietQR payment details use `SEPAY_PRODUCT_ACCOUNT_NO`,
+`SEPAY_PRODUCT_ACCOUNT_NAME`, and `SEPAY_PRODUCT_BANK`, falling back to the
+generic `SEPAY_ACCOUNT_NO`, `SEPAY_ACCOUNT_NAME`, and `SEPAY_BANK` values if the
+product-specific variables are not set.
+
 When `ProductPaymentWebhook` confirms payment, the backend marks the order paid,
-then moves referenced images to `product-orders/paid/{order_id}/` and rewrites
-`product_orders.items`.
+stores the provider `referenceCode` on `product_transaction`, then moves
+referenced images to `product-orders/paid/{order_id}/` and rewrites
+`product_orders.items`. QR-template payment webhooks store the same
+`referenceCode` on `qr_transaction`.
 
 For print quality, uploads under `product-orders/` bypass WebP conversion and
 store the original image bytes/extension.

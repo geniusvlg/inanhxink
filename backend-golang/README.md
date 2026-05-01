@@ -59,7 +59,7 @@ Every endpoint from the original Node.js backend is implemented:
 - `POST /api/upload`
 - `GET /api/site-data`
 - `GET/POST /api/orders`, `POST /api/orders/check-qr-name`
-- `POST /api/payments`, `POST /api/payments/webhook`, `GET /api/payments/order/:id`, `GET /api/payments/qr/:name`
+- `POST /api/payments`, `POST /api/payments/webhook/qr`, `POST /api/payments/webhook/product`, `POST /api/payments/webhook/pay2s`, `GET /api/payments/order/:id`, `GET /api/payments/qr/:name`
 - `POST /api/vouchers/validate`
 - `GET /api/templates`, `GET /api/templates/:id`
 - `GET /api/products`, `GET /api/products/featured-on-home`, `GET /api/products/:id`

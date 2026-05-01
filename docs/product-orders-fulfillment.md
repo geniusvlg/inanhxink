@@ -22,11 +22,18 @@ uploads still use the normal WebP conversion path unless explicitly changed.
 Unpaid product-order images remain in `product-orders/temp/{cart_session_id}/`.
 They must not be moved to `paid/` at order creation time.
 
+Product-order VietQR payment details are generated with the product-specific
+SePay account settings: `SEPAY_PRODUCT_ACCOUNT_NO`,
+`SEPAY_PRODUCT_ACCOUNT_NAME`, and `SEPAY_PRODUCT_BANK`. If those are not
+configured, the backend falls back to `SEPAY_ACCOUNT_NO`, `SEPAY_ACCOUNT_NAME`,
+and `SEPAY_BANK`.
+
 When the SePay product payment webhook confirms payment:
 
 1. The product order is marked `payment_status = 'paid'`.
-2. The latest `items` JSON is fetched from `product_orders`.
-3. Image URLs in those items are moved from:
+2. The provider `referenceCode` is stored on `product_transaction`.
+3. The latest `items` JSON is fetched from `product_orders`.
+4. Image URLs in those items are moved from:
 
    ```text
    product-orders/temp/{cart_session_id}/
@@ -38,7 +45,7 @@ When the SePay product payment webhook confirms payment:
    product-orders/paid/{order_id}/
    ```
 
-4. The `product_orders.items` JSON is rewritten with the paid URLs.
+5. The `product_orders.items` JSON is rewritten with the paid URLs.
 
 This lets unpaid orders expire naturally while paid orders become available for
 fulfillment and admin download.

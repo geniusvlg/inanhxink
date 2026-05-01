@@ -298,6 +298,7 @@ export interface ProductPaymentResponse {
     paymentCode: string;
     status:      string;
     accountNo:   string;
+    accountName: string;
     bank:        string;
   };
 }

@@ -18,12 +18,16 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 
 	"inanhxink/backend-golang/internal/config"
 )
 
-func sepayAPIKey() string     { return os.Getenv("SEPAY_API_KEY") }
-func sepayAccountNo() string  { return os.Getenv("SEPAY_ACCOUNT_NO") }
+func sepayAPIKey() string    { return os.Getenv("SEPAY_API_KEY") }
+func sepayAccountNo() string { return os.Getenv("SEPAY_ACCOUNT_NO") }
+func sepayAccountName() string {
+	return os.Getenv("SEPAY_ACCOUNT_NAME")
+}
 func sepayMerchantID() string { return os.Getenv("SEPAY_MERCHANT_ID") }
 func sepayCheckoutSecret() string {
 	if v := os.Getenv("SEPAY_SECRET_KEY"); v != "" {
@@ -36,6 +40,27 @@ func sepayBank() string {
 		return b
 	}
 	return "MBBank"
+}
+
+func sepayProductAccountNo() string {
+	if acc := os.Getenv("SEPAY_PRODUCT_ACCOUNT_NO"); acc != "" {
+		return acc
+	}
+	return sepayAccountNo()
+}
+
+func sepayProductAccountName() string {
+	if name := os.Getenv("SEPAY_PRODUCT_ACCOUNT_NAME"); name != "" {
+		return name
+	}
+	return sepayAccountName()
+}
+
+func sepayProductBank() string {
+	if b := os.Getenv("SEPAY_PRODUCT_BANK"); b != "" {
+		return b
+	}
+	return sepayBank()
 }
 
 func sepayCheckoutURL() string {
@@ -228,7 +253,15 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		paymentCode := fmt.Sprintf("INXK%d%s", orderID, qrName)
 		OK(w, map[string]any{
 			"success": true,
-			"payment": map[string]any{"id": txID, "qrUrl": txQRURL, "amount": totalAmount, "paymentCode": paymentCode},
+			"payment": map[string]any{
+				"id":          txID,
+				"qrUrl":       txQRURL,
+				"amount":      totalAmount,
+				"paymentCode": paymentCode,
+				"accountNo":   sepayAccountNo(),
+				"accountName": sepayAccountName(),
+				"bank":        sepayBank(),
+			},
 		})
 		return
 	}
@@ -254,7 +287,15 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	}
 	OK(w, map[string]any{
 		"success": true,
-		"payment": map[string]any{"id": newTxID, "qrUrl": qrURL, "amount": newAmount, "paymentCode": paymentCode},
+		"payment": map[string]any{
+			"id":          newTxID,
+			"qrUrl":       qrURL,
+			"amount":      newAmount,
+			"paymentCode": paymentCode,
+			"accountNo":   sepayAccountNo(),
+			"accountName": sepayAccountName(),
+			"bank":        sepayBank(),
+		},
 	})
 }
 
@@ -264,6 +305,7 @@ type webhookPayload struct {
 	Content        string  `json:"content"`
 	TransferType   string  `json:"transferType"`
 	TransferAmount float64 `json:"transferAmount"`
+	ReferenceCode  string  `json:"referenceCode"`
 }
 
 func decodeWebhookPayload(w http.ResponseWriter, r *http.Request) (*webhookPayload, bool) {
@@ -345,8 +387,8 @@ func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		LIMIT 1`, qrName, orderID).Scan(&existingPaidOrderID); err == nil {
 		tx.Exec(context.Background(), `
 			UPDATE qr_transaction SET status = 'failed', sepay_transaction_id = $1,
-				updated_at = NOW(), webhook_payload = $2
-			WHERE id = $3`, payload.ID, string(webhookRaw), txID) //nolint
+				updated_at = NOW(), webhook_payload = $2, reference_code = $3
+			WHERE id = $4`, payload.ID, string(webhookRaw), payload.ReferenceCode, txID) //nolint
 		tx.Exec(context.Background(), `
 			UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
 			WHERE id = $1`, orderID) //nolint
@@ -360,8 +402,8 @@ func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := tx.Exec(context.Background(), `
 		UPDATE qr_transaction SET status = 'paid', sepay_transaction_id = $1,
-			paid_at = NOW(), updated_at = NOW(), webhook_payload = $2
-		WHERE id = $3`, payload.ID, string(webhookRaw), txID); err != nil {
+			paid_at = NOW(), updated_at = NOW(), webhook_payload = $2, reference_code = $3
+		WHERE id = $4`, payload.ID, string(webhookRaw), payload.ReferenceCode, txID); err != nil {
 		InternalError(w, err)
 		return
 	}
@@ -427,6 +469,7 @@ func ProductPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	log.Printf("[product-webhook] received sepay_id=%d amount=%.0f transfer_type=%s content=%q", payload.ID, payload.TransferAmount, payload.TransferType, payload.Content)
 	if payload.TransferType != "in" {
 		OK(w, map[string]any{"success": true, "message": "Ignored: not an incoming transfer"})
 		return
@@ -441,30 +484,31 @@ func ProductPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		  AND invoice_number IS NOT NULL
 		  AND $1 ILIKE '%' || invoice_number || '%'
 		LIMIT 1`, payload.Content).Scan(&productOrderID); err != nil {
+		log.Printf("[product-webhook] no matching pending product order: sepay_id=%d content=%q err=%v", payload.ID, payload.Content, err)
 		OK(w, map[string]any{"success": true, "message": "No matching product order found"})
 		return
 	}
+	log.Printf("[product-webhook] matched product_order_id=%d sepay_id=%d", productOrderID, payload.ID)
 
-	handleProductOrderWebhook(w, strconv.Itoa(productOrderID), payload.TransferAmount, payload.ID, string(webhookRaw))
+	handleProductOrderWebhook(w, strconv.Itoa(productOrderID), payload.TransferAmount, payload.ID, payload.ReferenceCode, string(webhookRaw))
 }
 
-// ── SePay Checkout IPN ────────────────────────────────────────────────────────
-
-// POST /api/payments/ipn
-// Receives ORDER_PAID notifications from SePay Checkout.
-// Currently logs the full raw payload for inspection; processing TBD.
-func SepayIPN(w http.ResponseWriter, r *http.Request) {
+// POST /api/payments/webhook/pay2s — temporary Pay2S callback logger for payload discovery.
+func Pay2SWebhookLogger(w http.ResponseWriter, r *http.Request) {
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		InternalError(w, err)
 		return
 	}
-	log.Printf("[ipn] headers: %v", r.Header)
-	log.Printf("[ipn] body: %s", string(raw))
+
+	log.Printf("[pay2s-webhook] method=%s path=%s remote=%s", r.Method, r.URL.Path, r.RemoteAddr)
+	log.Printf("[pay2s-webhook] query=%s", r.URL.RawQuery)
+	log.Printf("[pay2s-webhook] headers=%v", r.Header)
+	log.Printf("[pay2s-webhook] body=%s", string(raw))
 	OK(w, map[string]any{"success": true})
 }
 
-func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount float64, sepayID int, webhookJSON string) {
+func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount float64, sepayID int, referenceCode string, webhookJSON string) {
 	orderID, _ := strconv.Atoi(orderIDStr)
 	if orderID == 0 {
 		OK(w, map[string]any{"success": true, "message": "Invalid SHOP order id"})
@@ -475,10 +519,12 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	if err := config.DB.QueryRow(context.Background(),
 		"SELECT total_amount FROM product_orders WHERE id = $1 AND payment_status = 'pending'",
 		orderID).Scan(&requiredAmount); err != nil {
+		log.Printf("[product-webhook] no pending product order: order_id=%d sepay_id=%d amount=%.0f err=%v", orderID, sepayID, amount, err)
 		OK(w, map[string]any{"success": true, "message": "No pending product order found"})
 		return
 	}
 	if amount < requiredAmount {
+		log.Printf("[product-webhook] underpayment ignored: order_id=%d sepay_id=%d paid=%.0f required=%.0f", orderID, sepayID, amount, requiredAmount)
 		OK(w, map[string]any{"success": true, "message": "Underpayment ignored"})
 		return
 	}
@@ -487,13 +533,15 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	var dupCheck int
 	if err := config.DB.QueryRow(context.Background(),
 		"SELECT id FROM product_transaction WHERE sepay_transaction_id = $1", sepayID).Scan(&dupCheck); err == nil {
+		log.Printf("[product-webhook] duplicate webhook ignored: order_id=%d sepay_id=%d existing_transaction_id=%d", orderID, sepayID, dupCheck)
 		OK(w, map[string]any{"success": true, "message": "Duplicate webhook ignored"})
 		return
 	}
 
 	dbtx, err := config.DB.Begin(context.Background())
 	if err != nil {
-		InternalError(w, err)
+		log.Printf("[product-webhook] begin tx failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
+		InternalError(w, fmt.Errorf("begin product webhook transaction: %w", err))
 		return
 	}
 	defer dbtx.Rollback(context.Background()) //nolint
@@ -501,28 +549,40 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	if _, err := dbtx.Exec(context.Background(),
 		"UPDATE product_orders SET payment_status = 'paid', updated_at = NOW() WHERE id = $1 AND payment_status = 'pending'",
 		orderID); err != nil {
-		InternalError(w, err)
+		log.Printf("[product-webhook] update product_orders failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
+		InternalError(w, fmt.Errorf("mark product order paid: %w", err))
 		return
 	}
 
-	// Upsert product_transaction: mark existing pending row as paid, or insert a new paid row.
-	if _, err := dbtx.Exec(context.Background(), `
-		INSERT INTO product_transaction (product_order_id, amount, status, sepay_transaction_id, webhook_payload, paid_at)
-		VALUES ($1, $2, 'paid', $3, $4, NOW())
-		ON CONFLICT (sepay_transaction_id) WHERE sepay_transaction_id IS NOT NULL DO NOTHING`,
-		orderID, amount, sepayID, webhookJSON); err != nil {
-		InternalError(w, err)
+	// Normal checkout flow creates a pending transaction when the QR is shown.
+	// Update that row first; only insert a paid row if no pending row exists.
+	updateTag, err := dbtx.Exec(context.Background(), `
+		UPDATE product_transaction
+		SET status = 'paid', sepay_transaction_id = $1, webhook_payload = $2,
+			reference_code = $3, paid_at = NOW(), updated_at = NOW()
+		WHERE product_order_id = $4 AND status = 'pending' AND sepay_transaction_id IS NULL`,
+		sepayID, webhookJSON, referenceCode, orderID)
+	if err != nil {
+		log.Printf("[product-webhook] update pending product_transaction failed: order_id=%d sepay_id=%d err=%v payload=%s", orderID, sepayID, err, webhookJSON)
+		InternalError(w, fmt.Errorf("update pending product transaction: %w", err))
 		return
 	}
-	// Also update any existing pending row for this order.
-	dbtx.Exec(context.Background(), `
-		UPDATE product_transaction
-		SET status = 'paid', sepay_transaction_id = $1, webhook_payload = $2, paid_at = NOW(), updated_at = NOW()
-		WHERE product_order_id = $3 AND status = 'pending' AND sepay_transaction_id IS NULL`,
-		sepayID, webhookJSON, orderID) //nolint
+	if updateTag.RowsAffected() == 0 {
+		log.Printf("[product-webhook] no pending product_transaction row; inserting paid fallback: order_id=%d sepay_id=%d", orderID, sepayID)
+		if _, err := dbtx.Exec(context.Background(), `
+			INSERT INTO product_transaction (product_order_id, amount, status, sepay_transaction_id, reference_code, webhook_payload, paid_at)
+			VALUES ($1, $2, 'paid', $3, $4, $5, NOW())
+			ON CONFLICT (sepay_transaction_id) WHERE sepay_transaction_id IS NOT NULL DO NOTHING`,
+			orderID, amount, sepayID, referenceCode, webhookJSON); err != nil {
+			log.Printf("[product-webhook] insert product_transaction failed: order_id=%d sepay_id=%d amount=%.0f err=%v payload=%s", orderID, sepayID, amount, err, webhookJSON)
+			InternalError(w, fmt.Errorf("insert paid product transaction: %w", err))
+			return
+		}
+	}
 
 	if err := dbtx.Commit(context.Background()); err != nil {
-		InternalError(w, err)
+		log.Printf("[product-webhook] commit failed: order_id=%d sepay_id=%d amount=%.0f required=%.0f err=%v payload=%s", orderID, sepayID, amount, requiredAmount, err, webhookJSON)
+		InternalError(w, fmt.Errorf("commit product webhook transaction: %w", err))
 		return
 	}
 	log.Printf("[product-orders] order %d paid — sepay_id=%d amount=%.0f", orderID, sepayID, amount)
@@ -637,6 +697,9 @@ func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 			"amount":      tx["amount"],
 			"paymentCode": paymentCode,
 			"status":      tx["status"],
+			"accountNo":   sepayAccountNo(),
+			"accountName": sepayAccountName(),
+			"bank":        sepayBank(),
 		}
 	}
 
@@ -671,28 +734,53 @@ func GetProductPayment(w http.ResponseWriter, r *http.Request) {
 	amount := int(math.Round(totalAmount))
 	qrURL := fmt.Sprintf(
 		"https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
-		url.QueryEscape(sepayAccountNo()),
-		url.QueryEscape(sepayBank()),
+		url.QueryEscape(sepayProductAccountNo()),
+		url.QueryEscape(sepayProductBank()),
 		amount,
 		url.QueryEscape(invoiceNumber),
 	)
 
-	// Upsert a pending product_transaction row so we can track when payment arrives.
+	txStatus := paymentStatus
+
+	// Reuse an existing pending product_transaction row so polling this GET
+	// endpoint does not create duplicate pending rows for the same order.
 	if paymentStatus == "pending" {
-		_, _ = config.DB.Exec(context.Background(), `
-			INSERT INTO product_transaction (product_order_id, amount, status, payment_qr_url)
-			VALUES ($1, $2, 'pending', $3)
-			ON CONFLICT DO NOTHING`,
-			id, amount, qrURL)
+		var existingQRURL string
+		err := config.DB.QueryRow(context.Background(), `
+			SELECT COALESCE(payment_qr_url, '')
+			FROM product_transaction
+			WHERE product_order_id = $1 AND status = 'pending'
+			ORDER BY created_at DESC
+			LIMIT 1`,
+			id).Scan(&existingQRURL)
+		if err == nil {
+			txStatus = "pending"
+			if existingQRURL != "" {
+				qrURL = existingQRURL
+			}
+		} else if err == pgx.ErrNoRows {
+			if _, err := config.DB.Exec(context.Background(), `
+				INSERT INTO product_transaction (product_order_id, amount, status, payment_qr_url)
+				VALUES ($1, $2, 'pending', $3)`,
+				id, amount, qrURL); err != nil {
+				InternalError(w, fmt.Errorf("create pending product transaction: %w", err))
+				return
+			}
+			txStatus = "pending"
+		} else {
+			InternalError(w, fmt.Errorf("find pending product transaction: %w", err))
+			return
+		}
 	}
 
 	// Return existing transaction status if present.
-	var txStatus string
-	_ = config.DB.QueryRow(context.Background(),
-		"SELECT status FROM product_transaction WHERE product_order_id = $1 ORDER BY created_at DESC LIMIT 1", id,
-	).Scan(&txStatus)
-	if txStatus == "" {
-		txStatus = paymentStatus
+	if txStatus != "pending" {
+		_ = config.DB.QueryRow(context.Background(),
+			"SELECT status FROM product_transaction WHERE product_order_id = $1 ORDER BY created_at DESC LIMIT 1", id,
+		).Scan(&txStatus)
+		if txStatus == "" {
+			txStatus = paymentStatus
+		}
 	}
 
 	OK(w, map[string]any{
@@ -708,8 +796,9 @@ func GetProductPayment(w http.ResponseWriter, r *http.Request) {
 			"amount":      amount,
 			"paymentCode": invoiceNumber,
 			"status":      txStatus,
-			"accountNo":   sepayAccountNo(),
-			"bank":        sepayBank(),
+			"accountNo":   sepayProductAccountNo(),
+			"accountName": sepayProductAccountName(),
+			"bank":        sepayProductBank(),
 		},
 	})
 }

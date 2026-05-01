@@ -149,6 +149,10 @@ export default function ProductCheckoutPaymentPage() {
                   <strong className="pcp-bank-value">{data.payment.bank}</strong>
                 </div>
                 <div className="pcp-bank-row">
+                  <span className="pcp-bank-label">Tên tài khoản</span>
+                  <strong className="pcp-bank-value">{data.payment.accountName}</strong>
+                </div>
+                <div className="pcp-bank-row">
                   <span className="pcp-bank-label">Số tài khoản</span>
                   <strong className="pcp-bank-value">
                     {data.payment.accountNo}
