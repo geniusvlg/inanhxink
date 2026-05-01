@@ -138,7 +138,7 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | POST | `/api/upload?prefix=banners` | Upload banner images to S3 |
 | GET | `/api/admin/product-orders/fulfillment?fulfillment_status=` | Paid product + QR keychain fulfillment board |
 | PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
-| GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code |
+| GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
 
 ## S3 Folder Structure (Products)
 

@@ -219,7 +219,9 @@ function OrderDetailModal({
         <div className="ff-modal-header">
           <div>
             <div className="ff-modal-invoice">{order.invoice_number}</div>
-            <div className="ff-modal-customer">{order.customer_name}</div>
+            <div className="ff-modal-customer">
+              <span className="ff-card-label">Tên khách hàng:</span> {order.customer_name}
+            </div>
           </div>
           <button className="ff-modal-close" onClick={onClose}>✕</button>
         </div>
@@ -543,7 +545,7 @@ export default function FulfillmentPage() {
       const res = await productOrdersApi.searchOrder(searchCode.trim());
       setSearchResult(res.data as SearchResult);
     } catch {
-      setSearchError('Không tìm thấy đơn hàng với mã: ' + searchCode.trim());
+      setSearchError('Không tìm thấy đơn hàng với mã, tên hoặc số điện thoại: ' + searchCode.trim());
     } finally {
       setSearching(false);
     }
@@ -601,7 +603,7 @@ export default function FulfillmentPage() {
           ref={searchRef}
           className="ff-search-input"
           type="text"
-          placeholder="Tìm đơn hàng theo mã (VD: INXK29..., tên QR...)"
+          placeholder="Tìm đơn hàng theo mã, tên hoặc SĐT (VD: INXK29..., Huy, 09...)"
           value={searchCode}
           onChange={e => { setSearchCode(e.target.value); setSearchError(''); setSearchResult(null); }}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
@@ -618,7 +620,7 @@ export default function FulfillmentPage() {
           <div className="ff-search-result-info">
             <strong>{searchResult.order.invoice_number}</strong>
             {' — '}
-            {searchResult.order.customer_name}
+            <span><span className="ff-card-label">Tên khách hàng:</span> {searchResult.order.customer_name}</span>
             {' — '}
             {formatMoney(Number(searchResult.order.total_amount))}
             <span className={`ff-modal-payment ff-modal-payment--${searchResult.order.payment_status ?? 'pending'}`}>

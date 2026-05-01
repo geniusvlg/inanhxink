@@ -98,7 +98,7 @@ func GetOrder(w http.ResponseWriter, r *http.Request) {
 func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var body struct {
-		PaymentStatus     string `json:"payment_status"`
+		PaymentStatus          string `json:"payment_status"`
 		KeychainDeliveryStatus string `json:"keychain_delivery_status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -186,7 +186,7 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET /api/admin/orders/search?code=INXK...
-// Searches both product_orders (by invoice_number) and QR orders (by qr_name).
+// Searches both product_orders and QR orders by code, customer name, or phone.
 func SearchOrder(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	if code == "" {
@@ -194,13 +194,13 @@ func SearchOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Try product order first (invoice_number)
+	// Try product order first (invoice_number, customer_name, or customer_phone).
 	productRows, err := config.DB.Query(context.Background(), `
 		SELECT id, invoice_number, customer_name, customer_phone, customer_address,
 		       items::text AS items, total_amount, payment_status, fulfillment_status,
 		       COALESCE(tracking_code, '') as tracking_code, created_at, updated_at
 		FROM product_orders
-		WHERE invoice_number ILIKE $1 AND payment_status = 'paid'
+		WHERE (invoice_number ILIKE $1 OR customer_name ILIKE $1 OR customer_phone ILIKE $1) AND payment_status = 'paid'
 		ORDER BY created_at DESC LIMIT 1`, "%"+code+"%")
 	if err == nil {
 		if row, err2 := handlers.CollectOne(productRows); err2 == nil && row != nil {
@@ -209,7 +209,7 @@ func SearchOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Try QR order (qr_name or invoice content)
+	// Try QR order (qr_name, customer_name, or customer_phone).
 	qrRows, err := config.DB.Query(context.Background(), `
 		SELECT o.id, o.qr_name, o.customer_name, o.customer_phone, o.customer_address,
 		       o.total_amount, o.payment_status, o.keychain_delivery_status as fulfillment_status,
@@ -217,7 +217,7 @@ func SearchOrder(w http.ResponseWriter, r *http.Request) {
 		       q.template_data
 		FROM orders o
 		LEFT JOIN qr_codes q ON q.qr_name = o.qr_name
-		WHERE (o.qr_name ILIKE $1) AND o.payment_status = 'paid'
+		WHERE (o.qr_name ILIKE $1 OR o.customer_name ILIKE $1 OR o.customer_phone ILIKE $1) AND o.payment_status = 'paid'
 		ORDER BY o.created_at DESC LIMIT 1`, "%"+code+"%")
 	if err == nil {
 		if row, err2 := handlers.CollectOne(qrRows); err2 == nil && row != nil {
