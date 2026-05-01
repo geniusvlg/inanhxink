@@ -329,8 +329,10 @@ export interface TrackOrderResult {
     fulfillment_status: string;
     fulfillment_label: string;
     tracking_code: string;
+    shipping_carrier: string;
     total_amount: number;
     created_at: string;
+    items: CartItem[];
   };
 }
 

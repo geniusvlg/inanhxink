@@ -45,6 +45,10 @@ function paymentLabel(status: string) {
   return status;
 }
 
+function itemSubtotal(item: { quantity: number; unit_price: number }) {
+  return Number(item.quantity || 0) * Number(item.unit_price || 0);
+}
+
 export default function TrackOrderPage() {
   const [searchParams] = useSearchParams();
   const [code, setCode] = useState(searchParams.get('code') ?? '');
@@ -166,12 +170,53 @@ export default function TrackOrderPage() {
                   <span className="to-info-value to-tracking-code">🚚 {order.tracking_code}</span>
                 </div>
               )}
+              {order.shipping_carrier && (
+                <div className="to-info-row">
+                  <span className="to-info-label">Đơn vị vận chuyển</span>
+                  <span className="to-info-value">{order.shipping_carrier}</span>
+                </div>
+              )}
             </div>
 
             {order.tracking_code && (
               <div className="to-tracking-note">
-                Bạn có thể dùng mã vận đơn <strong>{order.tracking_code}</strong> để theo dõi
-                lộ trình giao hàng trên trang của đơn vị vận chuyển.
+                Bạn có thể dùng mã vận đơn <strong>{order.tracking_code}</strong>
+                {order.shipping_carrier ? <> của <strong>{order.shipping_carrier}</strong></> : null}
+                {' '}để theo dõi lộ trình giao hàng.
+              </div>
+            )}
+
+            {order.items?.length > 0 && (
+              <div className="to-items-section">
+                <h2 className="to-section-title">Chi tiết đơn hàng</h2>
+                <div className="to-items-list">
+                  {order.items.map((item, index) => (
+                    <div className="to-item-card" key={`${item.product_id}-${index}`}>
+                      <div className="to-item-main">
+                        {item.image_urls?.[0] ? (
+                          <img className="to-item-img" src={item.image_urls[0]} alt={item.product_name} />
+                        ) : (
+                          <div className="to-item-img to-item-img--empty">📦</div>
+                        )}
+                        <div className="to-item-info">
+                          <div className="to-item-name">{item.product_name}</div>
+                          <div className="to-item-meta">
+                            SL: {item.quantity} × {formatMoney(Number(item.unit_price))}
+                          </div>
+                          {item.note && <div className="to-item-note">Ghi chú: {item.note}</div>}
+                        </div>
+                        <div className="to-item-price">{formatMoney(itemSubtotal(item))}</div>
+                      </div>
+                      {(item.image_urls?.length ?? 0) > 1 && (
+                        <div className="to-item-thumbs">
+                          {item.image_urls.slice(1).map((url, imgIndex) => (
+                            <img key={`${url}-${imgIndex}`} src={url} alt="" className="to-item-thumb" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

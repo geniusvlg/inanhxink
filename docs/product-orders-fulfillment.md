@@ -29,6 +29,12 @@ number** (`product_orders.invoice_number`, e.g. `INXK37PRMDZ`):
 The same API also matches paid QR keychain orders by `qr_name` when the code
 does not match a product invoice.
 
+When admin moves an order to `shipped`, both `tracking_code` and
+`shipping_carrier` are required and are shown on the customer tracking page.
+The tracking response also returns the read-only order `items` array so
+customers can review what they ordered; product image URLs are rewritten through
+the CDN at response time.
+
 ## Payment and S3 Movement
 
 Unpaid product-order images remain in `product-orders/temp/{cart_session_id}/`.

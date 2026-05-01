@@ -17,6 +17,7 @@ interface FulfillmentOrder {
   total_amount: number;
   fulfillment_stage: string;
   tracking_code: string;
+  shipping_carrier: string;
   created_at: string;
 }
 
@@ -64,6 +65,7 @@ interface SearchResult {
     fulfillment_status?: string;
     fulfillment_label?: string;
     tracking_code?: string;
+    shipping_carrier?: string;
     items?: string | OrderItem[];
   };
 }
@@ -252,7 +254,8 @@ function OrderDetailModal({
               {stageLabel[order.fulfillment_status] ?? order.fulfillment_status}
             </span>
           )}
-          {order.tracking_code && <span>🚚 {order.tracking_code}</span>}
+          {order.shipping_carrier && <span>🚚 {order.shipping_carrier}</span>}
+          {order.tracking_code && <span>📦 {order.tracking_code}</span>}
         </div>
 
         <div className="ff-modal-items">
@@ -379,13 +382,14 @@ function OrderCard({
   order: FulfillmentOrder;
   next?: FulfillmentStatus;
   nextLabel?: string;
-  onAdvance: (id: number, type: OrderType, status: FulfillmentStatus, trackingCode?: string) => void;
+  onAdvance: (id: number, type: OrderType, status: FulfillmentStatus, trackingCode?: string, shippingCarrier?: string) => void;
   onViewDetail: (order: FulfillmentOrder) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
+  const [shippingCarrier, setShippingCarrier] = useState('');
   const items = parseItems(order.items_json);
   const firstImg = items[0]?.image_urls?.[0];
   const isKeychain = order.order_type === 'qr_keychain';
@@ -399,10 +403,11 @@ function OrderCard({
     setShowConfirm(false);
   };
   const handleConfirmShipped = () => {
-    if (!trackingCode.trim()) return;
-    if (next) onAdvance(order.id, order.order_type, next, trackingCode.trim());
+    if (!trackingCode.trim() || !shippingCarrier.trim()) return;
+    if (next) onAdvance(order.id, order.order_type, next, trackingCode.trim(), shippingCarrier.trim());
     setShowTracking(false);
     setTrackingCode('');
+    setShippingCarrier('');
   };
 
   return (
@@ -438,6 +443,9 @@ function OrderCard({
           )}
           {order.tracking_code && (
             <div className="ff-detail-row"><span>Mã vận đơn:</span><span>{order.tracking_code}</span></div>
+          )}
+          {order.shipping_carrier && (
+            <div className="ff-detail-row"><span>Đơn vị vận chuyển:</span><span>{order.shipping_carrier}</span></div>
           )}
           <div className="ff-items">
             {items.map((item, i) => (
@@ -476,6 +484,15 @@ function OrderCard({
       )}
       {showTracking && (
         <div className="ff-tracking-input">
+          <label className="ff-tracking-label">Đơn vị vận chuyển (bắt buộc)</label>
+          <input
+            className="ff-tracking-field"
+            type="text"
+            placeholder="Ví dụ: GHN, Viettel Post, SPX..."
+            value={shippingCarrier}
+            onChange={e => setShippingCarrier(e.target.value)}
+            autoFocus
+          />
           <label className="ff-tracking-label">Mã vận đơn (bắt buộc)</label>
           <input
             className="ff-tracking-field"
@@ -483,12 +500,11 @@ function OrderCard({
             placeholder="Nhập mã vận đơn..."
             value={trackingCode}
             onChange={e => setTrackingCode(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && trackingCode.trim() && handleConfirmShipped()}
-            autoFocus
+            onKeyDown={e => e.key === 'Enter' && trackingCode.trim() && shippingCarrier.trim() && handleConfirmShipped()}
           />
           <div className="ff-tracking-actions">
-            <button className="ff-tracking-cancel" onClick={() => { setShowTracking(false); setTrackingCode(''); }}>Huỷ</button>
-            <button className="ff-tracking-confirm" onClick={handleConfirmShipped} disabled={!trackingCode.trim()}>
+            <button className="ff-tracking-cancel" onClick={() => { setShowTracking(false); setTrackingCode(''); setShippingCarrier(''); }}>Huỷ</button>
+            <button className="ff-tracking-confirm" onClick={handleConfirmShipped} disabled={!trackingCode.trim() || !shippingCarrier.trim()}>
               🚚 Xác nhận giao
             </button>
           </div>
@@ -551,14 +567,14 @@ export default function FulfillmentPage() {
     }
   };
 
-  const handleAdvance = async (id: number, type: OrderType, nextStatus: FulfillmentStatus, trackingCode?: string) => {
+  const handleAdvance = async (id: number, type: OrderType, nextStatus: FulfillmentStatus, trackingCode?: string, shippingCarrier?: string) => {
     const apiStatus = STATUS_TO_API[nextStatus];
     if (!apiStatus) return;
     try {
       if (type === 'qr_keychain') {
-        await productOrdersApi.updateQRKeychainFulfillment(id, apiStatus, trackingCode);
+        await productOrdersApi.updateQRKeychainFulfillment(id, apiStatus, trackingCode, shippingCarrier);
       } else {
-        await productOrdersApi.updateFulfillment(id, apiStatus, trackingCode);
+        await productOrdersApi.updateFulfillment(id, apiStatus, trackingCode, shippingCarrier);
       }
       load();
     } catch (err) {
@@ -581,6 +597,7 @@ export default function FulfillmentPage() {
           payment_status: 'paid',
           fulfillment_status: order.fulfillment_stage,
           tracking_code: order.tracking_code,
+          shipping_carrier: order.shipping_carrier,
           items: JSON.stringify(items),
         },
       },
@@ -631,8 +648,11 @@ export default function FulfillmentPage() {
                 {searchResult.order.fulfillment_label}
               </span>
             )}
+            {searchResult.order.shipping_carrier && (
+              <span>🚚 {searchResult.order.shipping_carrier}</span>
+            )}
             {searchResult.order.tracking_code && (
-              <span>🚚 {searchResult.order.tracking_code}</span>
+              <span>📦 {searchResult.order.tracking_code}</span>
             )}
           </div>
           <button

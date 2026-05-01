@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -124,7 +125,7 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 	// orders (keychain): keychain_delivery_status 'processing' → 'new', otherwise use value.
 	query := `
 		SELECT order_type, id, reference, customer_name, customer_phone,
-		       customer_address, items_json, total_amount, fulfillment_stage, tracking_code, created_at
+		       customer_address, items_json, total_amount, fulfillment_stage, tracking_code, shipping_carrier, created_at
 		FROM (
 			SELECT
 				'product'                                          AS order_type,
@@ -137,6 +138,7 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 				total_amount,
 				COALESCE(fulfillment_status, 'new')                AS fulfillment_stage,
 				COALESCE(tracking_code, '')                        AS tracking_code,
+				COALESCE(shipping_carrier, '')                     AS shipping_carrier,
 				created_at
 			FROM product_orders
 			WHERE payment_status = 'paid'
@@ -158,6 +160,7 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 					ELSE COALESCE(keychain_delivery_status, 'new')
 				END                                                AS fulfillment_stage,
 				COALESCE(tracking_code, '')                        AS tracking_code,
+				COALESCE(shipping_carrier, '')                     AS shipping_carrier,
 				created_at
 			FROM orders
 			WHERE payment_status = 'paid' AND keychain_purchased = true
@@ -184,6 +187,7 @@ func UpdateFulfillmentStatus(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		FulfillmentStatus string `json:"fulfillment_status"`
 		TrackingCode      string `json:"tracking_code"`
+		ShippingCarrier   string `json:"shipping_carrier"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		handlers.BadRequest(w, "Invalid JSON")
@@ -194,16 +198,21 @@ func UpdateFulfillmentStatus(w http.ResponseWriter, r *http.Request) {
 		handlers.BadRequest(w, "fulfillment_status must be preparing, packing, or shipped")
 		return
 	}
+	if body.FulfillmentStatus == "shipped" && (strings.TrimSpace(body.TrackingCode) == "" || strings.TrimSpace(body.ShippingCarrier) == "") {
+		handlers.BadRequest(w, "tracking_code and shipping_carrier are required when shipped")
+		return
+	}
 
 	// Always write tracking_code; it will only be non-empty for "shipped".
 	rows, err := config.DB.Query(context.Background(), `
 		UPDATE product_orders
 		SET fulfillment_status = $1::varchar,
 		    tracking_code      = CASE WHEN $1::varchar = 'shipped' THEN $2 ELSE tracking_code END,
+		    shipping_carrier   = CASE WHEN $1::varchar = 'shipped' THEN $3 ELSE shipping_carrier END,
 		    updated_at         = NOW()
-		WHERE id = $3 AND payment_status = 'paid'
+		WHERE id = $4 AND payment_status = 'paid'
 		RETURNING *`,
-		body.FulfillmentStatus, body.TrackingCode, id)
+		body.FulfillmentStatus, body.TrackingCode, body.ShippingCarrier, id)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return

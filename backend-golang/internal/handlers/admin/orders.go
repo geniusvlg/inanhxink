@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -198,7 +199,8 @@ func SearchOrder(w http.ResponseWriter, r *http.Request) {
 	productRows, err := config.DB.Query(context.Background(), `
 		SELECT id, invoice_number, customer_name, customer_phone, customer_address,
 		       items::text AS items, total_amount, payment_status, fulfillment_status,
-		       COALESCE(tracking_code, '') as tracking_code, created_at, updated_at
+		       COALESCE(tracking_code, '') as tracking_code,
+		       COALESCE(shipping_carrier, '') as shipping_carrier, created_at, updated_at
 		FROM product_orders
 		WHERE (invoice_number ILIKE $1 OR customer_name ILIKE $1 OR customer_phone ILIKE $1) AND payment_status = 'paid'
 		ORDER BY created_at DESC LIMIT 1`, "%"+code+"%")
@@ -213,7 +215,8 @@ func SearchOrder(w http.ResponseWriter, r *http.Request) {
 	qrRows, err := config.DB.Query(context.Background(), `
 		SELECT o.id, o.qr_name, o.customer_name, o.customer_phone, o.customer_address,
 		       o.total_amount, o.payment_status, o.keychain_delivery_status as fulfillment_status,
-		       COALESCE(o.tracking_code, '') as tracking_code, o.created_at,
+		       COALESCE(o.tracking_code, '') as tracking_code,
+		       COALESCE(o.shipping_carrier, '') as shipping_carrier, o.created_at,
 		       q.template_data
 		FROM orders o
 		LEFT JOIN qr_codes q ON q.qr_name = o.qr_name
@@ -286,6 +289,7 @@ func UpdateQRKeychainFulfillment(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		FulfillmentStatus string `json:"fulfillment_status"`
 		TrackingCode      string `json:"tracking_code"`
+		ShippingCarrier   string `json:"shipping_carrier"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		handlers.BadRequest(w, "Invalid JSON")
@@ -296,15 +300,20 @@ func UpdateQRKeychainFulfillment(w http.ResponseWriter, r *http.Request) {
 		handlers.BadRequest(w, "fulfillment_status must be preparing, packing, or shipped")
 		return
 	}
+	if body.FulfillmentStatus == "shipped" && (strings.TrimSpace(body.TrackingCode) == "" || strings.TrimSpace(body.ShippingCarrier) == "") {
+		handlers.BadRequest(w, "tracking_code and shipping_carrier are required when shipped")
+		return
+	}
 
 	rows, err := config.DB.Query(context.Background(), `
 		UPDATE orders
 		SET keychain_delivery_status = $1::varchar,
 		    tracking_code            = CASE WHEN $1::varchar = 'shipped' THEN $2 ELSE tracking_code END,
+		    shipping_carrier         = CASE WHEN $1::varchar = 'shipped' THEN $3 ELSE shipping_carrier END,
 		    updated_at               = NOW()
-		WHERE id = $3 AND payment_status = 'paid' AND keychain_purchased = true
-		RETURNING id, qr_name, customer_name, keychain_delivery_status, tracking_code`,
-		body.FulfillmentStatus, body.TrackingCode, id)
+		WHERE id = $4 AND payment_status = 'paid' AND keychain_purchased = true
+		RETURNING id, qr_name, customer_name, keychain_delivery_status, tracking_code, shipping_carrier`,
+		body.FulfillmentStatus, body.TrackingCode, body.ShippingCarrier, id)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
