@@ -6,8 +6,20 @@ import CartDrawer from './CartDrawer';
 import './SiteHeader.css';
 
 interface SiteHeaderProps {
-  activePage?: 'home' | 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia';
+  activePage?: 'home' | 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia' | 'tra-cuu-don-hang';
 }
+
+const NAV_PAGES = [
+  { flag: 'page_qr_yeu_thuong', path: '/qr-yeu-thuong', active: 'qr-yeu-thuong', label: 'QR Yêu Thương' },
+  { flag: 'page_thiep', path: '/thiep', active: 'thiep', label: 'Thiệp' },
+  { flag: 'page_khung_anh', path: '/khung-anh', active: 'khung-anh', label: 'Khung Ảnh' },
+  { flag: 'page_so_scrapbook', path: '/so-scrapbook', active: 'so-scrapbook', label: 'Sổ & Scrapbook' },
+  { flag: 'page_set_qua_tang', path: '/set-qua-tang', active: 'set-qua-tang', label: 'Set Quà Tặng' },
+  { flag: 'page_cac_san_pham_khac', path: '/cac-san-pham-khac', active: 'cac-san-pham-khac', label: 'Các Sản Phẩm Khác' },
+  { flag: 'page_in_anh', path: '/in-anh', active: 'in-anh', label: 'In Ảnh' },
+  { flag: 'page_order_tracking', path: '/tra-cuu-don-hang', active: 'tra-cuu-don-hang', label: 'Tra cứu đơn hàng' },
+  { flag: 'page_danh_gia', path: '/danh-gia', active: 'danh-gia', label: 'Feedback' },
+] as const;
 
 function SiteHeader({ activePage }: SiteHeaderProps) {
   const [query, setQuery] = useState('');
@@ -27,6 +39,11 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
 
   const linkCls = (key: SiteHeaderProps['activePage']) => `site-nav-link${activePage === key ? ' active' : ''}`;
   const closeMobileMenu = () => setMobileMenuOpen(false);
+  const orderedPages = [...NAV_PAGES].sort((a, b) => {
+    const aIdx = flags.page_order.indexOf(a.flag);
+    const bIdx = flags.page_order.indexOf(b.flag);
+    return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+  });
 
   return (
     <header className="site-header">
@@ -91,14 +108,13 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
           <span className="site-drawer-logo-text">In Ảnh Xink</span>
         </Link>
         <Link to="/home" className={linkCls('home')} onClick={closeMobileMenu}>Trang chủ</Link>
-        {flags.page_qr_yeu_thuong     && <Link to="/qr-yeu-thuong"     className={linkCls('qr-yeu-thuong')} onClick={closeMobileMenu}>QR Yêu Thương</Link>}
-        {flags.page_thiep             && <Link to="/thiep"             className={linkCls('thiep')} onClick={closeMobileMenu}>Thiệp</Link>}
-        {flags.page_khung_anh         && <Link to="/khung-anh"         className={linkCls('khung-anh')} onClick={closeMobileMenu}>Khung Ảnh</Link>}
-        {flags.page_so_scrapbook      && <Link to="/so-scrapbook"      className={linkCls('so-scrapbook')} onClick={closeMobileMenu}>Sổ &amp; Scrapbook</Link>}
-        {flags.page_set_qua_tang      && <Link to="/set-qua-tang"      className={linkCls('set-qua-tang')} onClick={closeMobileMenu}>Set Quà Tặng</Link>}
-        {flags.page_cac_san_pham_khac && <Link to="/cac-san-pham-khac" className={linkCls('cac-san-pham-khac')} onClick={closeMobileMenu}>Các Sản Phẩm Khác</Link>}
-        {flags.page_in_anh            && <Link to="/in-anh"            className={linkCls('in-anh')} onClick={closeMobileMenu}>In Ảnh</Link>}
-        <Link to="/danh-gia" className={linkCls('danh-gia')} onClick={closeMobileMenu}>Feedback</Link>
+        {orderedPages.map(page => (
+          flags[page.flag] && (
+            <Link key={page.flag} to={page.path} className={linkCls(page.active)} onClick={closeMobileMenu}>
+              {page.label}
+            </Link>
+          )
+        ))}
       </nav>
 
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />

@@ -53,7 +53,7 @@ function AppRoutes() {
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
       <Route path="/preview/:templateName" element={<TemplatePreviewPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />
-      <Route path="/danh-gia" element={<TestimonialsPage />} />
+      <Route path="/danh-gia" element={<FlaggedRoute flag="page_danh_gia" element={<TestimonialsPage />} />} />
 
       <Route path="/qr-yeu-thuong"     element={<FlaggedRoute flag="page_qr_yeu_thuong"     element={<QrYeuThuongPage />} />} />
       <Route path="/thiep"             element={<FlaggedRoute flag="page_thiep"             element={<ThiepPage />} />} />
@@ -65,7 +65,8 @@ function AppRoutes() {
       <Route path="/checkout"                  element={<CheckoutPage />} />
       <Route path="/checkout/payment/:orderId" element={<ProductCheckoutPaymentPage />} />
       <Route path="/checkout/result"           element={<CheckoutResultPage />} />
-      <Route path="/theo-doi-don-hang"         element={<TrackOrderPage />} />
+      <Route path="/theo-doi-don-hang"         element={<FlaggedRoute flag="page_order_tracking" element={<TrackOrderPage />} />} />
+      <Route path="/tra-cuu-don-hang"          element={<FlaggedRoute flag="page_order_tracking" element={<TrackOrderPage />} />} />
     </Routes>
     </>
   );

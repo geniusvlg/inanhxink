@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { trackOrder, TrackOrderResult } from '../services/api';
+import SiteHeader from '../components/SiteHeader';
+import SiteFooter from '../components/SiteFooter';
 import './TrackOrderPage.css';
 
 const STAGE_INFO: Record<string, { label: string; icon: string; pct: number }> = {
@@ -9,6 +11,7 @@ const STAGE_INFO: Record<string, { label: string; icon: string; pct: number }> =
   packing:   { label: 'Đóng gói',            icon: '📦', pct: 70 },
   shipped:   { label: 'Đã giao vận chuyển', icon: '🚚', pct: 100 },
   pending:   { label: 'Chờ xử lý',          icon: '🕐', pct: 10 },
+  processing: { label: 'Chờ xử lý',         icon: '🕐', pct: 10 },
   '':        { label: 'Chờ xử lý',          icon: '🕐', pct: 10 },
 };
 
@@ -30,8 +33,16 @@ function formatDate(s: string) {
 }
 
 function stepIndex(status: string) {
-  const map: Record<string, number> = { new: 0, pending: 0, '': 0, preparing: 1, packing: 2, shipped: 3 };
+  const map: Record<string, number> = {
+    new: 0, pending: 0, processing: 0, '': 0, preparing: 1, packing: 2, shipped: 3,
+  };
   return map[status] ?? 0;
+}
+
+function paymentLabel(status: string) {
+  if (status === 'paid') return 'Đã thanh toán';
+  if (status === 'pending') return 'Chưa thanh toán';
+  return status;
 }
 
 export default function TrackOrderPage() {
@@ -71,12 +82,16 @@ export default function TrackOrderPage() {
   const curStep = stepIndex(order?.fulfillment_status ?? '');
 
   return (
-    <div className="to-page">
-      <div className="to-container">
+    <div className="to-layout">
+      <SiteHeader activePage="tra-cuu-don-hang" />
+      <div className="to-page">
+        <div className="to-container">
         <div className="to-hero">
           <div className="to-hero-icon">📦</div>
-          <h1 className="to-title">Theo dõi đơn hàng</h1>
-          <p className="to-subtitle">Nhập mã đơn hàng để xem trạng thái xử lý</p>
+          <h1 className="to-title">Tra cứu đơn hàng</h1>
+          <p className="to-subtitle">
+            Nhập mã đơn hàng (invoice) bạn nhận sau khi đặt hàng — thường có dạng <strong>INXK…</strong>
+          </p>
         </div>
 
         <div className="to-search">
@@ -86,7 +101,7 @@ export default function TrackOrderPage() {
             value={code}
             onChange={e => { setCode(e.target.value); setError(''); setResult(null); }}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="Ví dụ: INXK29DVBDZ"
+            placeholder="Ví dụ: INXK37PRMDZ"
             autoFocus
           />
           <button
@@ -126,12 +141,16 @@ export default function TrackOrderPage() {
             {/* Order info */}
             <div className="to-info-grid">
               <div className="to-info-row">
-                <span className="to-info-label">Mã đơn hàng</span>
+                <span className="to-info-label">Mã đơn hàng (invoice)</span>
                 <span className="to-info-value to-info-code">{order.invoice_number}</span>
               </div>
               <div className="to-info-row">
-                <span className="to-info-label">Khách hàng</span>
+                <span className="to-info-label">Tên khách hàng</span>
                 <span className="to-info-value">{order.customer_name}</span>
+              </div>
+              <div className="to-info-row">
+                <span className="to-info-label">Thanh toán</span>
+                <span className="to-info-value">{paymentLabel(order.payment_status)}</span>
               </div>
               <div className="to-info-row">
                 <span className="to-info-label">Tổng tiền</span>
@@ -157,7 +176,9 @@ export default function TrackOrderPage() {
             )}
           </div>
         )}
+        </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }

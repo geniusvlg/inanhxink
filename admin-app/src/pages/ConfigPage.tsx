@@ -8,9 +8,15 @@ const PAGE_FLAGS: { key: string; label: string; description: string }[] = [
   { key: 'page_thiep',             label: 'Thiệp',              description: 'Trang sản phẩm thiệp' },
   { key: 'page_khung_anh',         label: 'Khung Ảnh',          description: 'Trang sản phẩm khung ảnh' },
   { key: 'page_so_scrapbook',      label: 'Sổ & Scrapbook',     description: 'Trang sản phẩm sổ và phụ kiện scrapbook' },
+  { key: 'page_set_qua_tang',      label: 'Set Quà Tặng',       description: 'Trang sản phẩm set quà tặng' },
   { key: 'page_cac_san_pham_khac', label: 'Các Sản Phẩm Khác', description: 'Trang các sản phẩm khác' },
   { key: 'page_in_anh',            label: 'In Ảnh',            description: 'Trang dịch vụ in ảnh' },
+  { key: 'page_order_tracking',    label: 'Tra cứu đơn hàng',   description: 'Trang khách hàng tra cứu đơn theo mã invoice' },
+  { key: 'page_danh_gia',          label: 'Feedback',           description: 'Trang đánh giá / phản hồi khách hàng' },
 ];
+
+const PAGE_ORDER_KEY = 'page_order';
+const DEFAULT_PAGE_ORDER = PAGE_FLAGS.map(f => f.key);
 
 // Keys managed by other pages — exclude from "other config" and don't
 // overwrite them when ConfigPage saves.
@@ -42,6 +48,33 @@ export default function ConfigPage() {
   const handleChange = (key: string, value: string) =>
     setConfig(c => ({ ...c, [key]: value }));
 
+  const normalizePageOrder = (raw?: string) => {
+    if (!raw) return DEFAULT_PAGE_ORDER;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return DEFAULT_PAGE_ORDER;
+      const known = new Set(DEFAULT_PAGE_ORDER);
+      const ordered = parsed.filter((v): v is string => typeof v === 'string' && known.has(v));
+      for (const key of DEFAULT_PAGE_ORDER) {
+        if (!ordered.includes(key)) ordered.push(key);
+      }
+      return ordered;
+    } catch {
+      return DEFAULT_PAGE_ORDER;
+    }
+  };
+
+  const orderedPageFlags = normalizePageOrder(config[PAGE_ORDER_KEY]);
+
+  const movePage = (key: string, direction: -1 | 1) => {
+    const order = [...orderedPageFlags];
+    const index = order.indexOf(key);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= order.length) return;
+    [order[index], order[nextIndex]] = [order[nextIndex], order[index]];
+    setConfig(c => ({ ...c, [PAGE_ORDER_KEY]: JSON.stringify(order) }));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -49,6 +82,7 @@ export default function ConfigPage() {
       // Only send keys that ConfigPage manages — never overwrite banner / in-anh keys.
       const payload: Record<string, string> = { ...config };
       for (const k of MANAGED_ELSEWHERE) delete payload[k];
+      payload[PAGE_ORDER_KEY] = JSON.stringify(orderedPageFlags);
       await metadataApi.update(payload);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -61,7 +95,7 @@ export default function ConfigPage() {
 
   const pageFlagKeys = new Set(PAGE_FLAGS.map(f => f.key));
   const otherEntries = useMemo(
-    () => Object.entries(config).filter(([k]) => !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)),
+    () => Object.entries(config).filter(([k]) => k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -81,7 +115,10 @@ export default function ConfigPage() {
             <div className="cfg-card-title">🚦 Hiển thị trang</div>
             <div className="cfg-card-sub">Bật/tắt để ẩn trang với người dùng</div>
           </div>
-          {PAGE_FLAGS.map(({ key, label, description }) => {
+          {orderedPageFlags.map((key, index) => {
+            const page = PAGE_FLAGS.find(f => f.key === key);
+            if (!page) return null;
+            const { label, description } = page;
             const enabled = config[key] !== 'false';
             return (
               <div key={key} className="cfg-row">
@@ -89,14 +126,22 @@ export default function ConfigPage() {
                   <div className="cfg-row-title">{label}</div>
                   <div className="cfg-row-sub">{description}</div>
                 </div>
-                <label className="cfg-toggle">
-                  <input
-                    type="checkbox"
-                    checked={enabled}
-                    onChange={e => handleToggle(key, e.target.checked)}
-                  />
-                  <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
-                </label>
+                <div className="cfg-row-actions">
+                  <button type="button" className="cfg-order-btn" disabled={index === 0} onClick={() => movePage(key, -1)}>
+                    ↑
+                  </button>
+                  <button type="button" className="cfg-order-btn" disabled={index === orderedPageFlags.length - 1} onClick={() => movePage(key, 1)}>
+                    ↓
+                  </button>
+                  <label className="cfg-toggle">
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={e => handleToggle(key, e.target.checked)}
+                    />
+                    <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
+                  </label>
+                </div>
               </div>
             );
           })}

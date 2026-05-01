@@ -17,6 +17,18 @@ backend keeps the customer's original image bytes and file format for any upload
 under `product-orders/`. These images are not converted to WebP. Other image
 uploads still use the normal WebP conversion path unless explicitly changed.
 
+## Customer order tracking (invoice)
+
+Customers can look up order status on the storefront using their **invoice
+number** (`product_orders.invoice_number`, e.g. `INXK37PRMDZ`):
+
+- Page: `/tra-cuu-don-hang` (alias: `/theo-doi-don-hang`)
+- API: `GET /api/orders/track?code={invoice_or_qr_name}` (Go backend)
+- Feature flag: `page_order_tracking`
+
+The same API also matches paid QR keychain orders by `qr_name` when the code
+does not match a product invoice.
+
 ## Payment and S3 Movement
 
 Unpaid product-order images remain in `product-orders/temp/{cart_session_id}/`.

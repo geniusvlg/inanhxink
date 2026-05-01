@@ -140,6 +140,16 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
 | GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
 
+## Page Visibility And Order
+
+`ConfigPage.tsx` manages storefront page visibility and menu ordering through
+metadata keys:
+
+- `page_order_tracking`: toggles the customer order lookup page.
+- `page_danh_gia`: toggles the storefront feedback/reviews page.
+- `page_order`: JSON array of page flag keys that controls storefront nav order
+  after `Trang chủ`.
+
 ## S3 Folder Structure (Products)
 
 ```

@@ -1,10 +1,16 @@
-.to-page {
+.to-layout {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(160deg, #fdf4ff 0%, #fff5f7 60%, #fff 100%);
+}
+
+.to-page {
+  flex: 1;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 2.5rem 1rem 4rem;
+  padding: 1.5rem 1rem 3rem;
 }
 
 .to-container {

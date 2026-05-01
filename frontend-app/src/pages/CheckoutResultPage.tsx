@@ -69,7 +69,7 @@ export default function CheckoutResultPage() {
           <Link to="/home" className="cr-cta-btn">Tiếp tục mua sắm</Link>
 
           {invoiceNumber && (
-            <Link to={`/theo-doi-don-hang?code=${invoiceNumber}`} className="cr-track-link">
+            <Link to={`/tra-cuu-don-hang?code=${encodeURIComponent(invoiceNumber)}`} className="cr-track-link">
               📦 Theo dõi đơn hàng #{invoiceNumber}
             </Link>
           )}

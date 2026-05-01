@@ -47,6 +47,9 @@ export interface FeatureFlags {
   page_cac_san_pham_khac:  boolean;
   page_set_qua_tang:       boolean;
   page_in_anh:             boolean;
+  page_order_tracking:     boolean;
+  page_danh_gia:           boolean;
+  page_order:              string[];
   products_page_size:      number;
   testimonials_page_size:  number;
   product_banner:          ProductBannerConfig;
@@ -75,6 +78,19 @@ const DEFAULTS: FeatureFlags = {
   page_cac_san_pham_khac:  true,
   page_set_qua_tang:       true,
   page_in_anh:             true,
+  page_order_tracking:     true,
+  page_danh_gia:           true,
+  page_order: [
+    'page_qr_yeu_thuong',
+    'page_thiep',
+    'page_khung_anh',
+    'page_so_scrapbook',
+    'page_cac_san_pham_khac',
+    'page_set_qua_tang',
+    'page_in_anh',
+    'page_order_tracking',
+    'page_danh_gia',
+  ],
   products_page_size:      12,
   testimonials_page_size:  12,
   product_banner:          DEFAULT_BANNER,
@@ -123,6 +139,23 @@ function parseOverrides(raw: string | undefined): ProductBannerOverrides {
   return result;
 }
 
+function parsePageOrder(raw: string | undefined): string[] {
+  const fallback = DEFAULTS.page_order;
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return fallback;
+    const known = new Set(fallback);
+    const ordered = parsed.filter((v): v is string => typeof v === 'string' && known.has(v));
+    for (const key of fallback) {
+      if (!ordered.includes(key)) ordered.push(key);
+    }
+    return ordered;
+  } catch {
+    return fallback;
+  }
+}
+
 /** Resolve the slide list to render for a given product page (or null when
  *  the banner should be hidden on that page). */
 export function resolveProductBanner(
@@ -158,6 +191,9 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           page_cac_san_pham_khac: c.page_cac_san_pham_khac !== 'false',
           page_set_qua_tang:      c.page_set_qua_tang      !== 'false',
           page_in_anh:            c.page_in_anh            !== 'false',
+          page_order_tracking:    c.page_order_tracking    !== 'false',
+          page_danh_gia:          c.page_danh_gia          !== 'false',
+          page_order:             parsePageOrder(c.page_order),
           products_page_size:     Math.max(1, parseInt(c.products_page_size) || 12),
           testimonials_page_size: Math.max(1, parseInt(c.testimonials_page_size) || 12),
           product_banner: {
