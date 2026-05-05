@@ -257,6 +257,7 @@ export interface ProductOrderResult {
   success:      boolean;
   order_id:     number;
   invoice_number?: string;
+  shipping_fee?:   number;
   total_amount?:   number;
   already_paid?:   boolean;
 }
@@ -330,6 +331,7 @@ export interface TrackOrderResult {
     fulfillment_label: string;
     tracking_code: string;
     shipping_carrier: string;
+    shipping_fee?: number;
     total_amount: number;
     created_at: string;
     items: CartItem[];

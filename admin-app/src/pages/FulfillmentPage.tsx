@@ -517,13 +517,19 @@ function OrderCard({
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function FulfillmentPage() {
+  const SHIPPED_PAGE_SIZE = 30;
+
   const [columns, setColumns] = useState<Record<FulfillmentStatus, FulfillmentOrder[]>>({
     new: [], preparing: [], packing: [], shipped: [],
   });
   const [loading, setLoading] = useState(true);
-  const [searchCode, setSearchCode] = useState('');
+  const [shippedHasMore, setShippedHasMore] = useState(false);
+  const [shippedLoadingMore, setShippedLoadingMore] = useState(false);
+  const [searchInvoice, setSearchInvoice] = useState('');
+  const [searchName, setSearchName] = useState('');
+  const [searchPhone, setSearchPhone] = useState('');
   const [searching, setSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchError, setSearchError] = useState('');
   const [detailOrder, setDetailOrder] = useState<{ result: SearchResult } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -535,7 +541,7 @@ export default function FulfillmentPage() {
         productOrdersApi.listFulfillment(),
         productOrdersApi.listFulfillment('preparing'),
         productOrdersApi.listFulfillment('packing'),
-        productOrdersApi.listFulfillment('shipped'),
+        productOrdersApi.listFulfillment('shipped', SHIPPED_PAGE_SIZE, 0),
       ]);
       setColumns({
         new:       newRes.data.orders ?? [],
@@ -543,6 +549,7 @@ export default function FulfillmentPage() {
         packing:   packingRes.data.orders ?? [],
         shipped:   shippedRes.data.orders ?? [],
       });
+      setShippedHasMore(shippedRes.data.has_more ?? false);
     } catch (err) {
       console.error(err);
     } finally {
@@ -550,18 +557,46 @@ export default function FulfillmentPage() {
     }
   }, []);
 
+  const loadMoreShipped = async () => {
+    setShippedLoadingMore(true);
+    try {
+      const res = await productOrdersApi.listFulfillment(
+        'shipped', SHIPPED_PAGE_SIZE, columns.shipped.length,
+      );
+      setColumns(prev => ({ ...prev, shipped: [...prev.shipped, ...(res.data.orders ?? [])] }));
+      setShippedHasMore(res.data.has_more ?? false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setShippedLoadingMore(false);
+    }
+  };
+
   useEffect(() => { load(); }, [load]);
 
+  const clearSearch = () => {
+    setSearchInvoice('');
+    setSearchName('');
+    setSearchPhone('');
+    setSearchError('');
+    setSearchResults([]);
+  };
+
   const handleSearch = async () => {
-    if (!searchCode.trim()) return;
+    const params = {
+      ...(searchInvoice.trim() ? { invoice: searchInvoice.trim() } : {}),
+      ...(searchName.trim()    ? { name:    searchName.trim()    } : {}),
+      ...(searchPhone.trim()   ? { phone:   searchPhone.trim()   } : {}),
+    };
+    if (Object.keys(params).length === 0) return;
     setSearching(true);
     setSearchError('');
-    setSearchResult(null);
+    setSearchResults([]);
     try {
-      const res = await productOrdersApi.searchOrder(searchCode.trim());
-      setSearchResult(res.data as SearchResult);
+      const res = await productOrdersApi.searchOrder(params);
+      setSearchResults(res.data.results ?? []);
     } catch {
-      setSearchError('Không tìm thấy đơn hàng với mã, tên hoặc số điện thoại: ' + searchCode.trim());
+      setSearchError('Không tìm thấy đơn hàng phù hợp.');
     } finally {
       setSearching(false);
     }
@@ -615,52 +650,100 @@ export default function FulfillmentPage() {
       </div>
 
       {/* Search bar */}
-      <div className="ff-search-bar">
-        <input
-          ref={searchRef}
-          className="ff-search-input"
-          type="text"
-          placeholder="Tìm đơn hàng theo mã, tên hoặc SĐT (VD: INXK29..., Huy, 09...)"
-          value={searchCode}
-          onChange={e => { setSearchCode(e.target.value); setSearchError(''); setSearchResult(null); }}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()}
-        />
-        <button className="ff-search-btn" onClick={handleSearch} disabled={searching || !searchCode.trim()}>
-          {searching ? '...' : '🔍 Tìm'}
-        </button>
+      <div className="ff-search-panel">
+        <div className="ff-search-fields">
+          <div className="ff-search-field">
+            <label className="ff-search-label">Mã đơn hàng</label>
+            <input
+              ref={searchRef}
+              className="ff-search-input"
+              type="text"
+              placeholder="INXK29..."
+              value={searchInvoice}
+              onChange={e => { setSearchInvoice(e.target.value); setSearchError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className="ff-search-field">
+            <label className="ff-search-label">Tên khách hàng</label>
+            <input
+              className="ff-search-input"
+              type="text"
+              placeholder="Nguyễn Văn A..."
+              value={searchName}
+              onChange={e => { setSearchName(e.target.value); setSearchError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className="ff-search-field">
+            <label className="ff-search-label">Số điện thoại</label>
+            <input
+              className="ff-search-input"
+              type="text"
+              placeholder="09..."
+              value={searchPhone}
+              onChange={e => { setSearchPhone(e.target.value); setSearchError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+        </div>
+        <div className="ff-search-actions">
+          <button
+            className="ff-search-btn"
+            onClick={handleSearch}
+            disabled={searching || (!searchInvoice.trim() && !searchName.trim() && !searchPhone.trim())}
+          >
+            {searching ? '...' : '🔍 Tìm'}
+          </button>
+          {(searchInvoice || searchName || searchPhone || searchResults.length > 0) && (
+            <button className="ff-search-clear-btn" onClick={clearSearch}>✕ Xóa</button>
+          )}
+        </div>
       </div>
 
       {searchError && <div className="ff-search-error">{searchError}</div>}
 
-      {searchResult && (
-        <div className="ff-search-result">
-          <div className="ff-search-result-info">
-            <strong>{searchResult.order.invoice_number}</strong>
-            {' — '}
-            <span><span className="ff-card-label">Tên khách hàng:</span> {searchResult.order.customer_name}</span>
-            {' — '}
-            {formatMoney(Number(searchResult.order.total_amount))}
-            <span className={`ff-modal-payment ff-modal-payment--${searchResult.order.payment_status ?? 'pending'}`}>
-              {searchResult.order.payment_status === 'paid' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
-            </span>
-            {searchResult.order.fulfillment_status && searchResult.order.payment_status === 'paid' && (
-              <span className={`ff-modal-stage ff-modal-stage--${searchResult.order.fulfillment_status}`}>
-                {searchResult.order.fulfillment_label}
-              </span>
-            )}
-            {searchResult.order.shipping_carrier && (
-              <span>🚚 {searchResult.order.shipping_carrier}</span>
-            )}
-            {searchResult.order.tracking_code && (
-              <span>📦 {searchResult.order.tracking_code}</span>
-            )}
+      {searchResults.length > 0 && (
+        <div className="ff-search-results">
+          <div className="ff-results-table">
+            <div className="ff-results-head">
+              <span>Mã đơn</span>
+              <span>Khách hàng</span>
+              <span>Tổng tiền</span>
+              <span>Trạng thái</span>
+              <span>Vận chuyển</span>
+              <span></span>
+            </div>
+            {searchResults.map((result, idx) => (
+              <div key={idx} className={`ff-results-row ff-results-row--${result.order.fulfillment_status ?? 'new'}`}>
+                <span className="ff-results-invoice">{result.order.invoice_number}</span>
+                <span className="ff-results-customer">
+                  <span className="ff-results-name">{result.order.customer_name}</span>
+                  {result.order.customer_phone && (
+                    <span className="ff-results-phone">{result.order.customer_phone}</span>
+                  )}
+                </span>
+                <span className="ff-results-amount">{formatMoney(Number(result.order.total_amount))}</span>
+                <span>
+                  <span className={`ff-modal-stage ff-modal-stage--${result.order.fulfillment_status ?? 'new'}`}>
+                    {result.order.fulfillment_label ?? 'Chờ xử lý'}
+                  </span>
+                </span>
+                <span className="ff-results-tracking">
+                  {result.order.shipping_carrier && <span>🚚 {result.order.shipping_carrier}</span>}
+                  {result.order.tracking_code && <span>📦 {result.order.tracking_code}</span>}
+                </span>
+                <span>
+                  <button
+                    className="ff-search-open-btn"
+                    onClick={() => setDetailOrder({ result })}
+                  >
+                    Xem & sửa →
+                  </button>
+                </span>
+              </div>
+            ))}
           </div>
-          <button
-            className="ff-search-open-btn"
-            onClick={() => setDetailOrder({ result: searchResult })}
-          >
-            Xem & sửa chi tiết →
-          </button>
         </div>
       )}
 
@@ -668,11 +751,12 @@ export default function FulfillmentPage() {
       <div className="ff-board">
         {COLUMNS.map(col => {
           const orders = columns[col.key];
+          const isShipped = col.key === 'shipped';
           return (
             <div key={col.key} className={`ff-column ff-column--${col.key}`}>
               <div className="ff-column-header">
                 <span>{col.icon} {col.label}</span>
-                <span className="ff-column-count">{orders.length}</span>
+                <span className="ff-column-count">{orders.length}{isShipped && shippedHasMore ? '+' : ''}</span>
               </div>
               <div className="ff-column-body">
                 {orders.length === 0 && <div className="ff-empty">Không có đơn nào</div>}
@@ -686,6 +770,15 @@ export default function FulfillmentPage() {
                     onViewDetail={openDetailFromCard}
                   />
                 ))}
+                {isShipped && shippedHasMore && (
+                  <button
+                    className="ff-load-more-btn"
+                    onClick={loadMoreShipped}
+                    disabled={shippedLoadingMore}
+                  >
+                    {shippedLoadingMore ? 'Đang tải...' : `Xem thêm`}
+                  </button>
+                )}
               </div>
             </div>
           );

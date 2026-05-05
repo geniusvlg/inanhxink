@@ -50,6 +50,7 @@ export interface ProductOrder {
   customer_address: string;
   items: ProductOrderItem[];
   subtotal: number;
+  shipping_fee: number;
   total_amount: number;
   created_at: string;
   updated_at: string;

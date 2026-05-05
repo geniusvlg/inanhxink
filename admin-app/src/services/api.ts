@@ -53,14 +53,20 @@ export const productOrdersApi = {
   get:  (id: number)  => api.get(`/api/admin/product-orders/${id}`),
   updateStatus: (id: number, data: { payment_status: string }) =>
     api.patch(`/api/admin/product-orders/${id}/status`, data),
-  listFulfillment: (fulfillment_status?: string) =>
-    api.get('/api/admin/product-orders/fulfillment', { params: fulfillment_status ? { fulfillment_status } : {} }),
+  listFulfillment: (fulfillment_status?: string, limit?: number, offset?: number) =>
+    api.get('/api/admin/product-orders/fulfillment', {
+      params: {
+        ...(fulfillment_status ? { fulfillment_status } : {}),
+        ...(limit !== undefined ? { limit } : {}),
+        ...(offset !== undefined ? { offset } : {}),
+      },
+    }),
   updateFulfillment: (id: number, fulfillment_status: string, tracking_code?: string, shipping_carrier?: string) =>
     api.patch(`/api/admin/product-orders/${id}/fulfillment`, { fulfillment_status, tracking_code, shipping_carrier }),
   updateQRKeychainFulfillment: (id: number, fulfillment_status: string, tracking_code?: string, shipping_carrier?: string) =>
     api.patch(`/api/admin/orders/${id}/fulfillment`, { fulfillment_status, tracking_code, shipping_carrier }),
-  searchOrder: (code: string) =>
-    api.get('/api/admin/orders/search', { params: { code } }),
+  searchOrder: (params: { invoice?: string; name?: string; phone?: string }) =>
+    api.get('/api/admin/orders/search', { params }),
   updateProductOrderItems: (id: number, items: unknown[], customer?: { name?: string; phone?: string; address?: string }) =>
     api.patch(`/api/admin/product-orders/${id}/items`, {
       items,

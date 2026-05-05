@@ -129,6 +129,22 @@ Backend behavior:
   the current product `max_upload_images`.
 - This protects against users bypassing the frontend.
 
+## Global Shipping Fee
+
+Product orders have `shipping_fee DECIMAL(12,2) NOT NULL DEFAULT 0`.
+
+Admin configures one global rule in `ConfigPage.tsx` through metadata:
+
+- `product_shipping_fee_threshold`: subtotal required for free shipping.
+- `product_shipping_fee_below_threshold`: shipping fee when subtotal is below
+  the threshold.
+
+Both default to `0`, so no shipping fee is applied until admin sets the rule.
+Checkout shows `Phí ship` based on the same metadata, and `CreateProductOrder`
+refreshes each product's active price from the database, recalculates the fee
+server-side from the trusted order subtotal, stores it on
+`product_orders.shipping_fee`, and adds it to `total_amount`.
+
 ## Admin Fulfillment
 
 `/admin/fulfillment` shows only paid fulfillment orders.

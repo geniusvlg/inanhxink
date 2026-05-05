@@ -601,7 +601,7 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 			log.Printf("[product-orders] moveTempImages unmarshal order %d: %v", orderID, err)
 			return
 		}
-		movedItems := moveTempImages(items, orderID)
+		movedItems := MoveTempImages(items, orderID)
 		if movedJSON, err := json.Marshal(movedItems); err == nil {
 			config.DB.Exec(context.Background(), //nolint
 				"UPDATE product_orders SET items = $1 WHERE id = $2",

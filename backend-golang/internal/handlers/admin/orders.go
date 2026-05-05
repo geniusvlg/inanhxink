@@ -186,50 +186,126 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	handlers.OK(w, map[string]any{"success": true, "order": order})
 }
 
-// GET /api/admin/orders/search?code=INXK...
-// Searches both product_orders and QR orders by code, customer name, or phone.
+// GET /api/admin/orders/search?invoice=&name=&phone=
+// Searches both product_orders and QR orders. At least one param required.
+// Returns up to 20 matches per table across ALL fulfillment stages, newest first.
 func SearchOrder(w http.ResponseWriter, r *http.Request) {
-	code := r.URL.Query().Get("code")
-	if code == "" {
-		handlers.BadRequest(w, "code is required")
+	q := r.URL.Query()
+	invoice := strings.TrimSpace(q.Get("invoice"))
+	name := strings.TrimSpace(q.Get("name"))
+	phone := strings.TrimSpace(q.Get("phone"))
+
+	if invoice == "" && name == "" && phone == "" {
+		handlers.BadRequest(w, "at least one of invoice, name, phone is required")
 		return
 	}
 
-	// Try product order first (invoice_number, customer_name, or customer_phone).
-	productRows, err := config.DB.Query(context.Background(), `
-		SELECT id, invoice_number, customer_name, customer_phone, customer_address,
-		       items::text AS items, total_amount, payment_status, fulfillment_status,
-		       COALESCE(tracking_code, '') as tracking_code,
-		       COALESCE(shipping_carrier, '') as shipping_carrier, created_at, updated_at
-		FROM product_orders
-		WHERE (invoice_number ILIKE $1 OR customer_name ILIKE $1 OR customer_phone ILIKE $1) AND payment_status = 'paid'
-		ORDER BY created_at DESC LIMIT 1`, "%"+code+"%")
-	if err == nil {
-		if row, err2 := handlers.CollectOne(productRows); err2 == nil && row != nil {
-			handlers.OK(w, map[string]any{"success": true, "type": "product", "order": row})
-			return
+	fulfillmentLabel := func(stage string) string {
+		switch stage {
+		case "preparing":
+			return "Đang chuẩn bị"
+		case "packing":
+			return "Đóng gói"
+		case "shipped":
+			return "Đã giao vận chuyển"
+		default:
+			return "Chờ xử lý"
 		}
 	}
 
-	// Try QR order (qr_name, customer_name, or customer_phone).
-	qrRows, err := config.DB.Query(context.Background(), `
-		SELECT o.id, o.qr_name, o.customer_name, o.customer_phone, o.customer_address,
-		       o.total_amount, o.payment_status, o.keychain_delivery_status as fulfillment_status,
+	type result struct {
+		Type  string         `json:"type"`
+		Order map[string]any `json:"order"`
+	}
+	var results []result
+
+	// Build dynamic WHERE for product_orders.
+	pConds := []string{"payment_status = 'paid'"}
+	pArgs := []any{}
+	i := 1
+	if invoice != "" {
+		pConds = append(pConds, fmt.Sprintf("invoice_number ILIKE $%d", i))
+		pArgs = append(pArgs, "%"+invoice+"%")
+		i++
+	}
+	if name != "" {
+		pConds = append(pConds, fmt.Sprintf("customer_name ILIKE $%d", i))
+		pArgs = append(pArgs, "%"+name+"%")
+		i++
+	}
+	if phone != "" {
+		pConds = append(pConds, fmt.Sprintf("customer_phone ILIKE $%d", i))
+		pArgs = append(pArgs, "%"+phone+"%")
+		i++
+	}
+	productWhere := strings.Join(pConds, " AND ")
+
+	productRows, err := config.DB.Query(context.Background(),
+		fmt.Sprintf(`SELECT id, invoice_number, customer_name, customer_phone, customer_address,
+		       items::text AS items, total_amount, payment_status,
+		       COALESCE(fulfillment_status, 'new') as fulfillment_status,
+		       COALESCE(tracking_code, '') as tracking_code,
+		       COALESCE(shipping_carrier, '') as shipping_carrier, created_at, updated_at
+		FROM product_orders
+		WHERE %s
+		ORDER BY created_at DESC LIMIT 20`, productWhere), pArgs...)
+	if err == nil {
+		rows, _ := handlers.CollectRows(productRows)
+		for _, row := range rows {
+			if stage, ok := row["fulfillment_status"].(string); ok {
+				row["fulfillment_label"] = fulfillmentLabel(stage)
+			}
+			results = append(results, result{Type: "product", Order: row})
+		}
+	}
+
+	// Build dynamic WHERE for QR orders.
+	qConds := []string{"o.payment_status = 'paid'"}
+	qArgs := []any{}
+	j := 1
+	if invoice != "" {
+		qConds = append(qConds, fmt.Sprintf("o.qr_name ILIKE $%d", j))
+		qArgs = append(qArgs, "%"+invoice+"%")
+		j++
+	}
+	if name != "" {
+		qConds = append(qConds, fmt.Sprintf("o.customer_name ILIKE $%d", j))
+		qArgs = append(qArgs, "%"+name+"%")
+		j++
+	}
+	if phone != "" {
+		qConds = append(qConds, fmt.Sprintf("o.customer_phone ILIKE $%d", j))
+		qArgs = append(qArgs, "%"+phone+"%")
+		j++
+	}
+	qrWhere := strings.Join(qConds, " AND ")
+
+	qrRows, err := config.DB.Query(context.Background(),
+		fmt.Sprintf(`SELECT o.id, o.qr_name, o.customer_name, o.customer_phone, o.customer_address,
+		       o.total_amount, o.payment_status,
+		       COALESCE(o.keychain_delivery_status, 'new') as fulfillment_status,
 		       COALESCE(o.tracking_code, '') as tracking_code,
 		       COALESCE(o.shipping_carrier, '') as shipping_carrier, o.created_at,
 		       q.template_data
 		FROM orders o
 		LEFT JOIN qr_codes q ON q.qr_name = o.qr_name
-		WHERE (o.qr_name ILIKE $1 OR o.customer_name ILIKE $1 OR o.customer_phone ILIKE $1) AND o.payment_status = 'paid'
-		ORDER BY o.created_at DESC LIMIT 1`, "%"+code+"%")
+		WHERE %s
+		ORDER BY o.created_at DESC LIMIT 20`, qrWhere), qArgs...)
 	if err == nil {
-		if row, err2 := handlers.CollectOne(qrRows); err2 == nil && row != nil {
-			handlers.OK(w, map[string]any{"success": true, "type": "qr", "order": row})
-			return
+		rows, _ := handlers.CollectRows(qrRows)
+		for _, row := range rows {
+			if stage, ok := row["fulfillment_status"].(string); ok {
+				row["fulfillment_label"] = fulfillmentLabel(stage)
+			}
+			results = append(results, result{Type: "qr", Order: row})
 		}
 	}
 
-	handlers.JSON(w, 404, map[string]any{"success": false, "error": "Không tìm thấy đơn hàng"})
+	if len(results) == 0 {
+		handlers.JSON(w, 404, map[string]any{"success": false, "error": "Không tìm thấy đơn hàng"})
+		return
+	}
+	handlers.OK(w, map[string]any{"success": true, "results": results})
 }
 
 // PATCH /api/admin/product-orders/:id/items — admin edits items (notes, images) and/or customer info.

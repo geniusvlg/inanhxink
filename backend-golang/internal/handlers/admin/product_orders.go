@@ -109,16 +109,53 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 		handlers.NotFound(w)
 		return
 	}
+
+	// When admin manually marks an order as paid, move temp images to the paid
+	// prefix — same as the payment webhook does.
+	if body.PaymentStatus == "paid" {
+		orderIDInt := handlers.IntParam(id, 0)
+		if orderIDInt > 0 {
+			go func() {
+				var itemsJSON string
+				if err := config.DB.QueryRow(context.Background(),
+					"SELECT items::text FROM product_orders WHERE id = $1", orderIDInt).Scan(&itemsJSON); err != nil {
+					return
+				}
+				var items []handlers.OrderItem
+				if err := json.Unmarshal([]byte(itemsJSON), &items); err != nil {
+					return
+				}
+				movedItems := handlers.MoveTempImages(items, orderIDInt)
+				if movedJSON, err := json.Marshal(movedItems); err == nil {
+					config.DB.Exec(context.Background(), //nolint
+						"UPDATE product_orders SET items = $1 WHERE id = $2",
+						string(movedJSON), orderIDInt)
+				}
+			}()
+		}
+	}
+
 	handlers.OK(w, map[string]any{"success": true, "product_order": order})
 }
 
-// GET /api/admin/product-orders/fulfillment?fulfillment_status=
+// GET /api/admin/product-orders/fulfillment?fulfillment_status=&limit=&offset=
 // Returns all PAID product orders AND paid QR orders with keychain, filtered by fulfillment stage.
 // fulfillment_status="" (omitted) means "new" = not yet started.
+// limit/offset are applied only for the "shipped" stage (default limit 30).
 func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
-	stage := r.URL.Query().Get("fulfillment_status")
+	q := r.URL.Query()
+	stage := q.Get("fulfillment_status")
 	if stage == "" {
 		stage = "new"
+	}
+
+	limit := handlers.IntParam(q.Get("limit"), 30)
+	offset := handlers.IntParam(q.Get("offset"), 0)
+	if limit < 1 || limit > 200 {
+		limit = 30
+	}
+	if offset < 0 {
+		offset = 0
 	}
 
 	// product_orders: fulfillment_status IS NULL → 'new', otherwise use the value.
@@ -168,17 +205,37 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 		WHERE fulfillment_stage = $1
 		ORDER BY created_at ASC`
 
-	rows, err := config.DB.Query(context.Background(), query, stage)
+	if stage == "shipped" {
+		// Fetch one extra row to detect whether more pages exist.
+		shippedRows, err := config.DB.Query(context.Background(), query+" LIMIT $2 OFFSET $3", stage, limit+1, offset)
+		if err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+		all, err := handlers.CollectRows(shippedRows)
+		if err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+		hasMore := len(all) > limit
+		if hasMore {
+			all = all[:limit]
+		}
+		handlers.OK(w, map[string]any{"success": true, "orders": all, "has_more": hasMore, "offset": offset, "limit": limit})
+		return
+	}
+
+	plainRows, err := config.DB.Query(context.Background(), query, stage)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
 	}
-	orders, err := handlers.CollectRows(rows)
+	orders, err := handlers.CollectRows(plainRows)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
 	}
-	handlers.OK(w, map[string]any{"success": true, "orders": orders})
+	handlers.OK(w, map[string]any{"success": true, "orders": orders, "has_more": false})
 }
 
 // PATCH /api/admin/product-orders/:id/fulfillment

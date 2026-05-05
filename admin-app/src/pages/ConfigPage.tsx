@@ -17,6 +17,9 @@ const PAGE_FLAGS: { key: string; label: string; description: string }[] = [
 
 const PAGE_ORDER_KEY = 'page_order';
 const DEFAULT_PAGE_ORDER = PAGE_FLAGS.map(f => f.key);
+const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
+const SHIPPING_BELOW_THRESHOLD_FEE_KEY = 'product_shipping_fee_below_threshold';
+const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_THRESHOLD_KEY, SHIPPING_BELOW_THRESHOLD_FEE_KEY]);
 
 // Keys managed by other pages — exclude from "other config" and don't
 // overwrite them when ConfigPage saves.
@@ -47,6 +50,22 @@ export default function ConfigPage() {
 
   const handleChange = (key: string, value: string) =>
     setConfig(c => ({ ...c, [key]: value }));
+
+  const moneyValue = (key: string) => {
+    const raw = config[key] ?? '';
+    const num = Number(raw.replace(/,/g, ''));
+    return Number.isFinite(num) && num > 0 ? num.toLocaleString('en') : '';
+  };
+
+  const handleMoneyChange = (key: string, value: string) => {
+    const raw = value.replace(/,/g, '').trim();
+    if (raw === '') {
+      handleChange(key, '0');
+      return;
+    }
+    const num = Number(raw);
+    if (!Number.isNaN(num) && num >= 0) handleChange(key, String(num));
+  };
 
   const normalizePageOrder = (raw?: string) => {
     if (!raw) return DEFAULT_PAGE_ORDER;
@@ -83,6 +102,8 @@ export default function ConfigPage() {
       const payload: Record<string, string> = { ...config };
       for (const k of MANAGED_ELSEWHERE) delete payload[k];
       payload[PAGE_ORDER_KEY] = JSON.stringify(orderedPageFlags);
+      payload[SHIPPING_THRESHOLD_KEY] = config[SHIPPING_THRESHOLD_KEY] ?? '0';
+      payload[SHIPPING_BELOW_THRESHOLD_FEE_KEY] = config[SHIPPING_BELOW_THRESHOLD_FEE_KEY] ?? '0';
       await metadataApi.update(payload);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -95,7 +116,9 @@ export default function ConfigPage() {
 
   const pageFlagKeys = new Set(PAGE_FLAGS.map(f => f.key));
   const otherEntries = useMemo(
-    () => Object.entries(config).filter(([k]) => k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)),
+    () => Object.entries(config).filter(([k]) =>
+      k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k) && !SHIPPING_CONFIG_KEYS.has(k),
+    ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
@@ -145,6 +168,44 @@ export default function ConfigPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* ── Shipping fee ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">🚚 Phí ship</div>
+            <div className="cfg-card-sub">
+              Cấu hình một rule chung cho toàn bộ sản phẩm. Ví dụ: tạm tính dưới 149,000đ thì phí ship 20,000đ; từ 149,000đ trở lên miễn phí ship.
+            </div>
+          </div>
+          <div className="cfg-section">
+            <div className="cfg-money-grid">
+              <div className="form-group">
+                <label className="form-label">Ngưỡng miễn phí ship (đ)</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="149,000"
+                  value={moneyValue(SHIPPING_THRESHOLD_KEY)}
+                  onChange={e => handleMoneyChange(SHIPPING_THRESHOLD_KEY, e.target.value)}
+                />
+                <p className="cfg-field-note">Tạm tính đạt từ mức này trở lên sẽ có phí ship = 0đ.</p>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phí ship dưới ngưỡng (đ)</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="20,000"
+                  value={moneyValue(SHIPPING_BELOW_THRESHOLD_FEE_KEY)}
+                  onChange={e => handleMoneyChange(SHIPPING_BELOW_THRESHOLD_FEE_KEY, e.target.value)}
+                />
+                <p className="cfg-field-note">Để trống hoặc nhập 0 nếu chưa muốn tính phí ship.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Other config keys ── */}

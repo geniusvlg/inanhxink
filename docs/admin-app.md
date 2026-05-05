@@ -153,6 +153,15 @@ metadata keys:
 - `page_order`: JSON array of page flag keys that controls storefront nav order
   after `Trang chủ`.
 
+`ConfigPage.tsx` also manages the global product checkout shipping rule:
+
+- `product_shipping_fee_threshold`: order subtotal required for free shipping.
+- `product_shipping_fee_below_threshold`: shipping fee when subtotal is below
+  the threshold.
+
+Both default to `0`, which means no shipping fee is applied until admin sets the
+rule.
+
 ## S3 Folder Structure (Products)
 
 ```

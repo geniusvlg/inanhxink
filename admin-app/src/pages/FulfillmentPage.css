@@ -312,13 +312,34 @@
 .ff-advance-btn:hover { background: #dcfce7; }
 
 /* ── Search bar ──────────────────────────────────────────────────────────── */
-.ff-search-bar {
+.ff-search-panel {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  align-items: flex-end;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.ff-search-fields {
+  display: flex;
+  gap: 0.6rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.ff-search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 140px;
+}
+.ff-search-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 .ff-search-input {
-  flex: 1;
   padding: 0.6rem 1rem;
   border: 1.5px solid #d1d5db;
   border-radius: 10px;
@@ -328,6 +349,12 @@
   transition: border-color 0.15s;
 }
 .ff-search-input:focus { border-color: #6366f1; }
+.ff-search-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-bottom: 1px;
+}
 .ff-search-btn {
   padding: 0.6rem 1.2rem;
   background: #6366f1;
@@ -340,6 +367,18 @@
   white-space: nowrap;
 }
 .ff-search-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.ff-search-clear-btn {
+  padding: 0.6rem 0.9rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ff-search-clear-btn:hover { background: #e5e7eb; }
 .ff-search-error {
   color: #ef4444;
   font-size: 0.85rem;
@@ -348,17 +387,91 @@
   background: #fef2f2;
   border-radius: 8px;
 }
-.ff-search-result {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background: #f0fdf4;
-  border: 1.5px solid #86efac;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+.ff-search-results {
   margin-bottom: 1.25rem;
-  flex-wrap: wrap;
+}
+
+.ff-results-table {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ff-results-head {
+  display: grid;
+  grid-template-columns: 9rem 1fr 7rem 9rem 10rem 7rem;
+  gap: 0;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border-bottom: 1.5px solid #e5e7eb;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ff-results-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr 7rem 9rem 10rem 7rem;
+  gap: 0;
+  padding: 0.65rem 1rem;
+  align-items: center;
+  border-bottom: 1px solid #f3f4f6;
+  border-left: 4px solid transparent;
+  transition: background 0.1s;
+}
+.ff-results-row:last-child { border-bottom: none; }
+.ff-results-row:hover { background: #f9fafb; }
+
+.ff-results-row--new,
+.ff-results-row--pending    { border-left-color: #d1d5db; }
+.ff-results-row--preparing  { border-left-color: #93c5fd; }
+.ff-results-row--packing    { border-left-color: #a78bfa; }
+.ff-results-row--shipped    { border-left-color: #6ee7b7; }
+
+.ff-results-invoice {
+  font-size: 0.78rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: #374151;
+}
+.ff-results-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.ff-results-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #111827;
+}
+.ff-results-phone {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.ff-results-amount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d9468b;
+}
+.ff-results-tracking {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+@media (max-width: 900px) {
+  .ff-results-head { display: none; }
+  .ff-results-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0.4rem 1rem;
+    padding: 0.75rem 1rem 0.75rem 1.25rem;
+  }
 }
 .ff-search-result-info {
   display: flex;
@@ -775,3 +888,25 @@
   cursor: not-allowed;
 }
 
+.ff-load-more-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+.ff-load-more-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+.ff-load-more-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
