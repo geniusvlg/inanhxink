@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { type ReactNode, useState, useEffect } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { type ReactNode, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './Layout.css';
 
@@ -27,7 +27,9 @@ const NAV: { to: string; label: ReactNode }[] = [
   { to: '/in-anh',           label: '🖨️ In Ảnh' },
   { to: '/featured-on-home', label: '🏠 SP trang chủ' },
   { to: '/categories',       label: '🏷️ Danh mục' },
-  { to: '/orders',           label: '📋 Đơn hàng' },
+  { to: '/orders',           label: '📦 Đơn sản phẩm' },
+  { to: '/fulfillment',      label: '⚙️ Xử lý đơn hàng' },
+  { to: '/qr-orders',        label: '🔳 Đơn QR' },
   { to: '/vouchers',         label: '🎟️ Voucher' },
   { to: '/testimonials',     label: '💬 Feedback' },
   { to: '/banners',          label: '🖼️ Banner' },
@@ -38,13 +40,7 @@ const NAV: { to: string; label: ReactNode }[] = [
 export default function Layout() {
   const { username, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Close sidebar on route change (mobile nav)
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -71,6 +67,7 @@ export default function Layout() {
               className={({ isActive }) =>
                 `admin-nav-link${isActive ? ' active' : ''}`
               }
+              onClick={() => setSidebarOpen(false)}
             >
               {label}
             </NavLink>

@@ -10,6 +10,7 @@ The admin app (`admin-app/`) is a React SPA (Vite + TypeScript) for managing pro
 admin-app/src/
 ├── pages/
 │   ├── ProductItemsPage.tsx   # Product CRUD (shared by all product types)
+│   ├── FulfillmentPage.tsx    # Paid product + QR keychain fulfillment workflow
 │   ├── ThiepPage.tsx          # type=thiep
 │   ├── KhungAnhPage.tsx       # type=khung_anh
 │   ├── InAnhPage.tsx          # type=in_anh
@@ -78,8 +79,13 @@ raw S3 URLs for edit/delete flows.
   discount_price?: number;
   discount_from?: string;     // ISO timestamp
   discount_to?: string;       // ISO timestamp
+  max_upload_images: number;  // per-product customer upload limit, default 15
 }
 ```
+
+`max_upload_images` controls how many customer images can be uploaded for that
+product during checkout. The admin product form defaults it to `15`; checkout
+also refreshes product metadata by ID so existing cart items pick up changes.
 
 ## Image Upload Flow
 
@@ -130,6 +136,31 @@ raw S3 URLs for edit/delete flows.
 | POST | `/api/upload?prefix=products/{folder}` | Upload images to S3 |
 | POST | `/api/upload?prefix=testimonials` | Upload testimonial screenshots to S3 |
 | POST | `/api/upload?prefix=banners` | Upload banner images to S3 |
+| GET | `/api/admin/product-orders/fulfillment?fulfillment_status=` | Paid product + QR keychain fulfillment board |
+| PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
+| GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
+
+Fulfillment shipping step requires both `tracking_code` and `shipping_carrier`
+when moving product or QR-keychain orders to `shipped`.
+
+## Page Visibility And Order
+
+`ConfigPage.tsx` manages storefront page visibility and menu ordering through
+metadata keys:
+
+- `page_order_tracking`: toggles the customer order lookup page.
+- `page_danh_gia`: toggles the storefront feedback/reviews page.
+- `page_order`: JSON array of page flag keys that controls storefront nav order
+  after `Trang chủ`.
+
+`ConfigPage.tsx` also manages the global product checkout shipping rule:
+
+- `product_shipping_fee_threshold`: order subtotal required for free shipping.
+- `product_shipping_fee_below_threshold`: shipping fee when subtotal is below
+  the threshold.
+
+Both default to `0`, which means no shipping fee is applied until admin sets the
+rule.
 
 ## S3 Folder Structure (Products)
 
@@ -143,11 +174,17 @@ s3://inanhxink-prod/products/
 └── set-qua-tang/product-{id}/
 ```
 
-File naming: `{timestamp}-{randomString}.webp` (all images converted to WebP 90%)
+Product catalog image naming: `{timestamp}-{randomString}.webp` (converted to WebP 90%).
+
+Product-order customer uploads are different: files under `product-orders/` keep
+the original format and bytes for print quality. See
+`docs/product-orders-fulfillment.md`.
 
 ## Image Processing
 
-- All uploads converted to **WebP** (90% quality) via Sharp
+- Product catalog uploads are converted to **WebP** (90% quality)
+- Product-order customer uploads under `product-orders/` keep the original file
+  bytes and format for printing
 - Optional watermark (`watermark=true` query param):
   - File: `backend/public/watermark.png` for Node.js backend and `backend-golang/public/watermark.png` for Go backend
   - Position: bottom-right, 30% of image width, 3% margin

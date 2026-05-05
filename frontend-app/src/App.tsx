@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { FeatureFlagsProvider, useFeatureFlags, type FeatureFlags } from './contexts/FeatureFlagsContext';
+import { CartProvider } from './contexts/CartContext';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
 import QrGeneratePage from './pages/QrGeneratePage';
@@ -15,6 +16,10 @@ import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import HomePage from './pages/HomePage';
+import CheckoutPage from './pages/CheckoutPage';
+import ProductCheckoutPaymentPage from './pages/ProductCheckoutPaymentPage';
+import CheckoutResultPage from './pages/CheckoutResultPage';
+import TrackOrderPage from './pages/TrackOrderPage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
@@ -48,7 +53,7 @@ function AppRoutes() {
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
       <Route path="/preview/:templateName" element={<TemplatePreviewPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />
-      <Route path="/danh-gia" element={<TestimonialsPage />} />
+      <Route path="/danh-gia" element={<FlaggedRoute flag="page_danh_gia" element={<TestimonialsPage />} />} />
 
       <Route path="/qr-yeu-thuong"     element={<FlaggedRoute flag="page_qr_yeu_thuong"     element={<QrYeuThuongPage />} />} />
       <Route path="/thiep"             element={<FlaggedRoute flag="page_thiep"             element={<ThiepPage />} />} />
@@ -57,6 +62,11 @@ function AppRoutes() {
       <Route path="/set-qua-tang"      element={<FlaggedRoute flag="page_set_qua_tang"      element={<SetQuaTangPage />} />} />
       <Route path="/cac-san-pham-khac" element={<FlaggedRoute flag="page_cac_san_pham_khac" element={<KhacPage />} />} />
       <Route path="/in-anh"            element={<FlaggedRoute flag="page_in_anh"            element={<InAnhPage />} />} />
+      <Route path="/checkout"                  element={<CheckoutPage />} />
+      <Route path="/checkout/payment/:orderId" element={<ProductCheckoutPaymentPage />} />
+      <Route path="/checkout/result"           element={<CheckoutResultPage />} />
+      <Route path="/theo-doi-don-hang"         element={<FlaggedRoute flag="page_order_tracking" element={<TrackOrderPage />} />} />
+      <Route path="/tra-cuu-don-hang"          element={<FlaggedRoute flag="page_order_tracking" element={<TrackOrderPage />} />} />
     </Routes>
     </>
   );
@@ -65,8 +75,10 @@ function AppRoutes() {
 function App() {
   return (
     <FeatureFlagsProvider>
-      <AppRoutes />
-      <FloatingContact />
+      <CartProvider>
+        <AppRoutes />
+        <FloatingContact />
+      </CartProvider>
     </FeatureFlagsProvider>
   );
 }

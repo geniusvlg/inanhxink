@@ -14,6 +14,8 @@ interface ImageUploaderProps {
   onNewFiles?: (files: { index: number; file: File }[]) => void;
   /** Called when a slot is cleared so the parent can cancel any pending upload */
   onFileRemoved?: (index: number) => void;
+  /** Called when the user taps retry on a failed slot */
+  onRetry?: (index: number) => void;
   /** Per-slot upload state for showing progress indicators */
   uploadStates?: Record<number, 'uploading' | 'done' | 'error'>;
   disabled?: boolean;
@@ -29,6 +31,7 @@ function ImageUploader({
   onPreviewsChange,
   onNewFiles,
   onFileRemoved,
+  onRetry,
   uploadStates = {},
   disabled = false,
   disabledReason,
@@ -199,20 +202,29 @@ function ImageUploader({
                 style={{ display: 'none' }}
               />
               {images[index] ? (
-                <div className="image-preview-container">
+                <div className={`image-preview-container${uploadStates[index] === 'uploading' ? ' is-uploading' : ''}`}>
                   <img
                     src={previews[index] || (images[index] ? URL.createObjectURL(images[index]) : '')}
                     alt={`Ảnh ${index + 1}`}
                     className="image-preview"
                   />
                   {uploadStates[index] === 'uploading' && (
-                    <div className="image-upload-status uploading">⏳</div>
+                    <div className="image-upload-overlay uploading" aria-label="Đang tải">
+                      <span className="image-upload-spinner-ring" />
+                    </div>
                   )}
                   {uploadStates[index] === 'done' && (
                     <div className="image-upload-status done">✓</div>
                   )}
                   {uploadStates[index] === 'error' && (
-                    <div className="image-upload-status error">!</div>
+                    <div className="image-upload-overlay error" title="Tải lên thất bại">
+                      <button
+                        type="button"
+                        className="image-upload-retry-btn"
+                        onClick={(e) => { e.preventDefault(); onRetry?.(index); }}
+                        aria-label="Thử lại"
+                      >↺</button>
+                    </div>
                   )}
                   <button
                     type="button"

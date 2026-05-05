@@ -77,7 +77,7 @@ func downloadAndUploadMusic(url, qrName string) (string, error) {
 	ext := strings.ToLower(filepath.Ext(musicFile))
 	mimetype := audioMimeFor(ext)
 
-	return config.UploadToS3(buf, "uploads/"+safeName, filepath.Base(musicFile), mimetype, false)
+	return config.UploadToS3(buf, "uploads/"+safeName, filepath.Base(musicFile), mimetype, false, false)
 }
 
 func audioMimeFor(ext string) string {

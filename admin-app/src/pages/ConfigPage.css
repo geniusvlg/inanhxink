@@ -49,6 +49,34 @@
   color: #94a3b8;
 }
 
+.cfg-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cfg-order-btn {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cfg-order-btn:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.cfg-order-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 /* ── Per-page block ─────────────────────────────────────────────────────── */
 .cfg-page-block {
   padding: 1rem 1.5rem;
@@ -98,6 +126,19 @@
   font-size: 0.85rem;
   color: #475569;
   margin-bottom: 0.75rem;
+}
+
+.cfg-money-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cfg-field-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.45;
 }
 
 .cfg-slides {
@@ -157,6 +198,9 @@
 }
 
 @media (max-width: 720px) {
+  .cfg-money-grid {
+    grid-template-columns: 1fr;
+  }
   .cfg-slide-row {
     grid-template-columns: 1fr;
   }

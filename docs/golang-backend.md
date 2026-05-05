@@ -2,9 +2,16 @@
 
 ## ⚠️ Deployment checklist — read before deploying
 
+The Go backend still uses WebP support for product catalog images and other
+standard uploads. Product-order customer images under `product-orders/` are an
+exception: they keep the original file bytes and extension for print quality.
+
 ### 1. Install libwebp on the server
 
-The Go backend encodes all uploaded images as WebP using `github.com/chai2010/webp`, which is a CGO wrapper around **libwebp**. The library must be present on the machine (or Docker image) that **builds** the binary.
+The Go backend encodes standard uploaded images as WebP using
+`github.com/chai2010/webp`, which is a CGO wrapper around **libwebp**. The
+library must be present on the machine (or Docker image) that **builds** the
+binary.
 
 ```bash
 # Debian / Ubuntu (production server / Docker)
@@ -81,9 +88,12 @@ WORKDIR /
 
 Or mount them as a volume in `docker-compose.yml`.
 
-### 4. No database migrations
+### 4. Database migrations
 
-The Go backend connects to the **same PostgreSQL database** as the Node.js backend — no schema changes needed. Run migrations only from the Node.js side (`npm run db:init`).
+The Go backend connects to the **same PostgreSQL database** as the Node.js
+backend. Schema changes live in `backend-golang/database/` during the Go
+migration work. Apply new SQL migrations before deploying features that depend on
+them, for example `V41__product_max_upload_images.sql`.
 
 ### 5. Port
 
@@ -116,6 +126,36 @@ Customer uploads go to `uploads/{qrName}/` before payment. When a payment webhoo
 marks an order as paid, the Go backend serializes activation for that QR name,
 cancels other unpaid orders with the same `qr_name`, and prunes the shared S3
 folder so only objects referenced by the paid order's `template_data` remain.
+
+## Pay2S webhook discovery
+
+`POST /api/payments/webhook/pay2s` is a temporary discovery endpoint for the
+Pay2S migration. It logs the incoming method, path, remote address, query string,
+headers, and raw body, then returns `{ "success": true }`. Do not use it for
+payment fulfillment until the provider payload and verification scheme are known.
+
+## Product order images
+
+Product checkout uploads customer images to
+`product-orders/temp/{cart_session_id}/`. `CreateProductOrder` must not move
+these files to `paid/`; unpaid orders should remain in temp and expire by S3
+lifecycle.
+
+Product-order VietQR payment details use `SEPAY_PRODUCT_ACCOUNT_NO`,
+`SEPAY_PRODUCT_ACCOUNT_NAME`, and `SEPAY_PRODUCT_BANK`, falling back to the
+generic `SEPAY_ACCOUNT_NO`, `SEPAY_ACCOUNT_NAME`, and `SEPAY_BANK` values if the
+product-specific variables are not set.
+
+When `ProductPaymentWebhook` confirms payment, the backend marks the order paid,
+stores the provider `referenceCode` on `product_transaction`, then moves
+referenced images to `product-orders/paid/{order_id}/` and rewrites
+`product_orders.items`. QR-template payment webhooks store the same
+`referenceCode` on `qr_transaction`.
+
+For print quality, uploads under `product-orders/` bypass WebP conversion and
+store the original image bytes/extension.
+
+See `docs/product-orders-fulfillment.md` for the full flow and lifecycle rules.
 
 ## Tech stack summary
 

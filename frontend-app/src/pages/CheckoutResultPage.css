@@ -1,0 +1,173 @@
+.cr-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+}
+
+.cr-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
+.cr-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 2.75rem 2rem 2.25rem;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* ── Status icon ──────────────────────────────────────────────────────────── */
+.cr-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+.cr-icon--success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35);
+}
+.cr-icon--error {
+  background: linear-gradient(135deg, #f87171, #dc2626);
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+}
+.cr-icon--cancel {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  box-shadow: 0 8px 24px rgba(107, 114, 128, 0.25);
+}
+
+/* ── GIF icon (replaces SVG when file is present) ────────────────────────── */
+.cr-gif-icon {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin-bottom: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Text ─────────────────────────────────────────────────────────────────── */
+.cr-heading {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 0.6rem;
+  line-height: 1.25;
+}
+.cr-body {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  line-height: 1.65;
+  margin: 0 0 1.5rem;
+  max-width: 320px;
+}
+
+/* ── Order summary ────────────────────────────────────────────────────────── */
+.cr-order-summary {
+  width: 100%;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.cr-order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.cr-order-row span { color: #6b7280; }
+.cr-order-row strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.cr-zalo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #0068ff;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border-radius: 50px;
+  text-decoration: none;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.65rem;
+  transition: opacity 0.15s;
+}
+.cr-zalo-btn:hover { opacity: 0.88; }
+.cr-zalo-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.cr-cta-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 2rem;
+  background: linear-gradient(135deg, #f472b6 0%, #e05c99 40%, #a855f7 100%);
+  color: #fff;
+  border-radius: 50px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.3);
+  transition: opacity 0.15s, transform 0.12s;
+}
+.cr-cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.cr-track-link {
+  display: block;
+  text-align: center;
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: #7c3aed;
+  text-decoration: none;
+  font-weight: 600;
+}
+.cr-track-link:hover { text-decoration: underline; }
+
+/* ── Brand footer strip on the card ──────────────────────────────────────── */
+.cr-brand {
+  margin-top: 1.75rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cr-brand img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}

@@ -62,7 +62,7 @@ export const getQrCodeByName = async (qrName: string) => {
 export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
-  const url = qrName ? `/api/upload?qrName=${encodeURIComponent(qrName)}` : '/api/upload';
+  const url = qrName ? `/api/upload?prefix=${encodeURIComponent('uploads/temp/' + qrName)}` : '/api/upload';
   const response = await api.post(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -112,6 +112,7 @@ export interface Product {
   discount_price: number | null;
   discount_from: string | null;
   discount_to: string | null;
+  max_upload_images: number;
   created_at: string;
 }
 
@@ -155,7 +156,6 @@ export const getProductById = async (id: number): Promise<Product> => {
   return response.data.product;
 };
 
-/** Products that admins have flagged as featured-on-home, in their manual sort order. */
 export const getFeaturedProducts = async (): Promise<Product[]> => {
   const response = await api.get<{ success: boolean; products: Product[] }>(
     '/api/products/featured-on-home',
@@ -169,7 +169,6 @@ export const getCategories = async (type?: string): Promise<{ id: number; name: 
   return response.data.categories ?? [];
 };
 
-// Testimonials (customer review screenshots)
 export interface Testimonial {
   id: number;
   image_url: string;
@@ -184,8 +183,6 @@ export const getTestimonials = async (): Promise<Testimonial[]> => {
   return response.data.testimonials ?? [];
 };
 
-// Paginated fetch for the public /danh-gia masonry. Page size is admin-tunable
-// via the `testimonials_page_size` metadata key (exposed through useFeatureFlags).
 export interface TestimonialsPage {
   testimonials: Testimonial[];
   total:        number;
@@ -214,7 +211,6 @@ export const getTestimonialsPaginated = async (
   };
 };
 
-// Homepage banners (admin-managed hero slides)
 export interface Banner {
   id: number;
   image_url: string;
@@ -236,6 +232,115 @@ export interface HeroShot {
 export const getHeroShots = async (): Promise<HeroShot[]> => {
   const response = await api.get<{ success: boolean; hero_shots: HeroShot[] }>('/api/hero-shots');
   return response.data.hero_shots ?? [];
+};
+
+
+export interface CartItem {
+  product_id:   number;
+  product_name: string;
+  quantity:     number;
+  unit_price:   number;
+  image_urls:   string[];
+  note:         string;
+}
+
+export interface CreateProductOrderPayload {
+  cart_session_id:  string;
+  customer_name:    string;
+  customer_phone:   string;
+  customer_email?:  string;
+  customer_address: string;
+  items:            CartItem[];
+}
+
+export interface ProductOrderResult {
+  success:      boolean;
+  order_id:     number;
+  invoice_number?: string;
+  shipping_fee?:   number;
+  total_amount?:   number;
+  already_paid?:   boolean;
+}
+
+export const createProductOrder = async (
+  payload: CreateProductOrderPayload,
+): Promise<ProductOrderResult> => {
+  const response = await api.post<ProductOrderResult>('/api/product-orders', payload);
+  return response.data;
+};
+
+export const getProductOrder = async (id: number) => {
+  const response = await api.get(`/api/product-orders/${id}`);
+  return response.data;
+};
+
+export interface ProductCheckoutFields {
+  success:        boolean;
+  action_url:     string;
+  ordered_fields: { name: string; value: string }[];
+}
+
+export const createProductCheckout = async (orderId: number): Promise<ProductCheckoutFields> => {
+  const response = await api.post<ProductCheckoutFields>('/api/payments/product-checkout', { orderId });
+  return response.data;
+};
+
+export interface ProductPaymentResponse {
+  success: boolean;
+  order: {
+    id:            number;
+    invoiceNumber: string;
+    totalAmount:   number;
+    paymentStatus: string;
+  };
+  payment: {
+    qrUrl:       string;
+    amount:      number;
+    paymentCode: string;
+    status:      string;
+    accountNo:   string;
+    accountName: string;
+    bank:        string;
+  };
+}
+
+export const getProductPayment = async (orderId: number): Promise<ProductPaymentResponse> => {
+  const response = await api.get<ProductPaymentResponse>(`/api/payments/product/${orderId}`);
+  return response.data;
+};
+
+export const uploadProductImages = async (files: File[], sessionId: string): Promise<string[]> => {
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f));
+  const response = await api.post(
+    `/api/upload?prefix=product-orders/temp/${sessionId}`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  return response.data.urls as string[];
+};
+
+export interface TrackOrderResult {
+  success: boolean;
+  type: 'product' | 'qr';
+  order: {
+    invoice_number: string;
+    customer_name: string;
+    payment_status: string;
+    fulfillment_status: string;
+    fulfillment_label: string;
+    tracking_code: string;
+    shipping_carrier: string;
+    shipping_fee?: number;
+    total_amount: number;
+    created_at: string;
+    items: CartItem[];
+  };
+}
+
+export const trackOrder = async (code: string): Promise<TrackOrderResult> => {
+  const response = await api.get('/api/orders/track', { params: { code } });
+  return response.data as TrackOrderResult;
 };
 
 export default api;

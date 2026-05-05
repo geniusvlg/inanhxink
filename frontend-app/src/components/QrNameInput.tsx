@@ -32,7 +32,7 @@ function QrNameInput({ value, onChange, onValidation }: QrNameInputProps) {
       const data = await checkQrName(value);
       if (data.available) {
         setIsValid(true);
-        setMessage('Tên QR có sẵn!');
+        setMessage('Tên QR có thể sử dụng!');
         onValidation(true, `${value}.inanhxink.com`);
       } else {
         setIsValid(false);

@@ -1,0 +1,5 @@
+ALTER TABLE product_orders
+ADD COLUMN IF NOT EXISTS shipping_carrier VARCHAR(100);
+
+ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS shipping_carrier VARCHAR(100);

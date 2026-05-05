@@ -84,7 +84,9 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		url, err := config.UploadToS3(buf, folder, fh.Filename, mimetype, watermark)
+		// Product-order images are for print — keep original format, do not convert to WebP.
+		noConvert := strings.HasPrefix(folder, "product-orders/")
+		url, err := config.UploadToS3(buf, folder, fh.Filename, mimetype, watermark, noConvert)
 		if err != nil {
 			InternalError(w, err)
 			return
