@@ -101,30 +101,60 @@
   font-weight: 700;
 }
 
+/* ── Zalo hint block ──────────────────────────────────────────────────────── */
+.cr-zalo-hint {
+  width: 100%;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 16px;
+  padding: 1rem 1.25rem 1.1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+.cr-zalo-hint-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1e40af;
+  line-height: 1.6;
+  text-align: center;
+}
+.cr-zalo-hint-code {
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: #1d4ed8;
+}
+.cr-zalo-hint-sub {
+  font-size: 0.8rem;
+  color: #3b82f6;
+}
+
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
 .cr-zalo-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.7rem 1.5rem;
   background: #0068ff;
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.9375rem;
   border-radius: 50px;
   text-decoration: none;
   width: 100%;
   box-sizing: border-box;
-  margin-bottom: 0.65rem;
-  transition: opacity 0.15s;
+  box-shadow: 0 4px 14px rgba(0, 104, 255, 0.3);
+  transition: opacity 0.15s, transform 0.12s;
 }
-.cr-zalo-btn:hover { opacity: 0.88; }
-.cr-zalo-icon {
+.cr-zalo-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.cr-zalo-svg {
   width: 22px;
   height: 22px;
-  object-fit: contain;
   flex-shrink: 0;
+  border-radius: 5px;
 }
 
 .cr-cta-btn {
