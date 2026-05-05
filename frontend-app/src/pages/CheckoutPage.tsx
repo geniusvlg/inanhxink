@@ -324,7 +324,7 @@ export default function CheckoutPage() {
           <div className="co-step-line" />
           <div className={`co-step${step === 2 ? ' co-step--active' : ''}`}>
             <span className="co-step-dot">2</span>
-            <span className="co-step-label">Ảnh &amp; ghi chú</span>
+            <span className="co-step-label">Ghi chú</span>
           </div>
         </div>
 
@@ -437,8 +437,8 @@ function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, o
 }) {
   return (
     <div className="co-form">
-      <h2 className="co-form-title">Ảnh &amp; ghi chú cho từng sản phẩm</h2>
-      <p className="co-form-hint">Tải ảnh (nếu có) và thêm ghi chú cá nhân cho từng sản phẩm.</p>
+      <h2 className="co-form-title">Ghi chú cho từng sản phẩm</h2>
+      <p className="co-form-hint">Thêm ghi chú cá nhân. Ảnh sản phẩm vui lòng gửi qua Zalo sau khi đặt hàng.</p>
 
       {items.map(it => {
         const c = customs[it.product_id] ?? { note: '', slots: [] };
@@ -454,66 +454,13 @@ function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, o
                 <p className="co-item-custom-qty">Số lượng: {it.quantity}</p>
               </div>
 
-              <button
-                type="button"
-                className="co-upload-btn"
-                onClick={() => fileRefs.current[it.product_id]?.click()}
-                disabled={c.slots.length >= limit}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
-                  <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
-                </svg>
-                {c.slots.length >= limit ? `Đã đủ ${limit} ảnh` : `Thêm ảnh (${c.slots.length}/${limit})`}
-              </button>
-              <div className="co-upload-limit-note">
-                Tối đa {limit} ảnh cho sản phẩm này.
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                style={{ display: 'none' }}
-                ref={el => { fileRefs.current[it.product_id] = el; }}
-                onChange={e => onFileAdd(it.product_id, e.target.files)}
-              />
-
-              {c.slots.length > 0 && (
-                <div className="co-preview-strip">
-                  {c.slots.map(slot => (
-                    <div key={slot.id} className={`co-preview-slot${slot.state === 'uploading' ? ' co-preview-slot--uploading' : ''}`}>
-                      <img src={slot.previewUrl} alt="" className="co-preview-img" />
-                      {slot.state === 'uploading' && (
-                        <div className="co-preview-spinner" aria-label="Đang tải">
-                          <span className="co-preview-spinner-ring" />
-                        </div>
-                      )}
-                      {slot.state === 'done' && (
-                        <div className="co-preview-done" aria-label="Đã tải lên">✓</div>
-                      )}
-                      {slot.state === 'error' && (
-                        <div className="co-preview-error" title="Tải lên thất bại">
-                          <button
-                            type="button"
-                            className="co-preview-retry"
-                            onClick={() => onFileRetry(it.product_id, slot.id)}
-                            aria-label="Thử lại"
-                          >↺</button>
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        className="co-preview-remove"
-                        onClick={() => onFileRemove(it.product_id, slot.id)}
-                        aria-label="Xoá ảnh"
-                      >×</button>
-                    </div>
-                  ))}
+              <div className="co-zalo-notice">
+                <span className="co-zalo-notice-icon">📸</span>
+                <div className="co-zalo-notice-text">
+                  <strong>Gửi ảnh qua Zalo sau khi đặt hàng.</strong>
+                  <span> Tối đa {limit} ảnh — nhắn kèm <em>mã đơn hàng</em> để shop xử lý đúng đơn.</span>
                 </div>
-              )}
-              {c.slots.some(s => s.state === 'uploading') && (
-                <p className="co-upload-status">Đang tải {c.slots.filter(s => s.state === 'uploading').length} ảnh lên...</p>
-              )}
+              </div>
 
               <textarea
                 className="co-input co-textarea co-note"

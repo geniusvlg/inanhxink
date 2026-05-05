@@ -46,7 +46,7 @@ export default function CheckoutResultPage() {
 
           <h1 className="cr-heading">Đặt hàng thành công!</h1>
           <p className="cr-body">
-            Cảm ơn bạn đã tin tưởng In Ảnh Xink. Chúng mình sẽ liên hệ xác nhận và chuẩn bị đơn hàng sớm nhất có thể.
+            Cảm ơn bạn đã tin tưởng In Ảnh Xink! Vui lòng gửi ảnh qua Zalo kèm mã đơn hàng để shop xử lý đúng đơn nhé 🥰
           </p>
 
           {(amount || invoiceNumber) && (
@@ -63,6 +63,30 @@ export default function CheckoutResultPage() {
                   <strong>{fmt(amount)}</strong>
                 </div>
               )}
+            </div>
+          )}
+
+          {invoiceNumber && (
+            <div className="cr-zalo-hint">
+              <p className="cr-zalo-hint-text">
+                Nhắn Zalo cho shop, gửi ảnh kèm mã&nbsp;
+                <strong className="cr-zalo-hint-code">{invoiceNumber}</strong>
+                <br />
+                <span className="cr-zalo-hint-sub">Tối đa 20 ảnh mỗi sản phẩm.</span>
+              </p>
+              <a
+                href="https://zalo.me/0_REPLACE_WITH_ZALO_OA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cr-zalo-btn"
+              >
+                <svg className="cr-zalo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="48" height="48" rx="10" fill="#0068FF"/>
+                  <path d="M24 8C15.163 8 8 14.716 8 23c0 4.685 2.3 8.874 5.902 11.698L12.5 40l5.62-2.953A17.2 17.2 0 0024 38c8.837 0 16-6.716 16-15S32.837 8 24 8Z" fill="white"/>
+                  <path d="M16 22h6M16 26h4M28 22l-4 4h4" stroke="#0068FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Nhắn Zalo cho shop
+              </a>
             </div>
           )}
 
