@@ -54,8 +54,8 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	if v := strings.TrimSpace(q.Get("q")); v != "" {
 		params = append(params, "%"+strings.ToLower(v)+"%")
 		conditions = append(conditions, fmt.Sprintf(
-			"(LOWER(p.name) LIKE $%d OR LOWER(p.description) LIKE $%d)",
-			len(params), len(params),
+			"LOWER(p.name) LIKE $%d",
+			len(params),
 		))
 	}
 

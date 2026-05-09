@@ -1,0 +1,58 @@
+@import './ThiepPage.css';
+
+.ps-page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.ps-main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ps-main--empty {
+  text-align: center;
+  padding: 4rem 1.5rem;
+  color: #6b7280;
+}
+
+.ps-back {
+  margin-top: 1rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 2rem;
+  border: 1.5px solid #fe2c56;
+  background: #fff;
+  color: #fe2c56;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ps-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 1.25rem;
+  line-height: 1.35;
+}
+
+.ps-count {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.ps-error {
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.ps-empty {
+  color: #6b7280;
+  margin: 0;
+}
