@@ -158,7 +158,7 @@
   white-space: pre-wrap;
 }
 
-/* ── Action row (Add-to-cart + Zalo) ── */
+/* ── Action row (Buy now + Add to cart) ── */
 .pd-action-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -206,48 +206,59 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(224,92,153,.45);
 }
-.pd-add-to-cart-btn--added {
-  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-  box-shadow: 0 4px 14px rgba(34,197,94,.3);
-}
-
-/* ── Zalo CTA button ── */
-.pd-zalo-btn {
-  display: inline-flex;
+/* Shopee-style toast after add-to-cart */
+.pd-cart-toast-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1.5rem;
-  background: transparent;
-  color: #0068ff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  border-radius: 50px;
-  border: 1.5px solid #0068ff;
-  width: 100%;
-  grid-column: 1 / -1;
-  box-sizing: border-box;
-  transition: background 0.15s, color 0.15s;
+  padding: 1rem;
+  pointer-events: none;
 }
-.pd-zalo-btn:hover {
-  background: #0068ff;
+.pd-cart-toast {
+  max-width: min(86vw, 300px);
+  padding: 1.35rem 1.35rem 1.15rem;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  animation: pd-cart-toast-in 0.24s ease-out;
+}
+@keyframes pd-cart-toast-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.pd-cart-toast-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 0.9rem;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pd-cart-toast-text {
+  margin: 0;
   color: #fff;
-}
-.pd-zalo-icon {
-  width: 26px;
-  height: 26px;
-  object-fit: contain;
-  flex-shrink: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 @media (max-width: 520px) {
   .pd-action-row {
     grid-template-columns: 1fr;
-  }
-
-  .pd-zalo-btn {
-    grid-column: auto;
   }
 }
 
@@ -359,4 +370,73 @@
   .pd-badges {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ── Phân loại (Variants) ───────────────────────────────────────────────── */
+
+.pd-variants {
+  margin: 1rem 0 0.5rem;
+}
+
+.pd-variants-label {
+  font-size: 0.9rem;
+  color: #374151;
+  margin: 0 0 0.6rem;
+}
+
+.pd-variants-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pd-variant-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 72px;
+  max-width: 100px;
+  text-align: center;
+}
+
+.pd-variant-btn:hover {
+  border-color: #fe2c56;
+  box-shadow: 0 0 0 2px rgba(254, 44, 86, 0.12);
+}
+
+.pd-variant-btn--selected {
+  border-color: #fe2c56;
+  box-shadow: 0 0 0 3px rgba(254, 44, 86, 0.2);
+  background: #fff5f7;
+}
+
+.pd-variant-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
+.pd-variant-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 88px;
+}
+
+.pd-buy-now-btn:disabled,
+.pd-add-to-cart-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

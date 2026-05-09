@@ -274,7 +274,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		"is_active": true, "is_best_seller": true, "watermark_enabled": true,
 		"tiktok_url": true, "instagram_url": true,
 		"discount_price": true, "discount_from": true, "discount_to": true,
-		"max_upload_images": true,
+		"max_upload_images": true, "sold_count": true,
 	}
 
 	setClauses := []string{}
@@ -295,6 +295,15 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 				if n, ok := v.(float64); ok {
 					if n < 1 {
 						val = 15
+					} else {
+						val = int(n)
+					}
+				}
+			}
+			if k == "sold_count" {
+				if n, ok := v.(float64); ok {
+					if n < 0 {
+						val = 0
 					} else {
 						val = int(n)
 					}

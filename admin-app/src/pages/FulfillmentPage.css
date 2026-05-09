@@ -214,6 +214,11 @@
   color: #111827;
 }
 
+.ff-item-variant {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
 .ff-item-qty {
   font-size: 0.75rem;
   color: #6b7280;
@@ -699,6 +704,10 @@
 .ff-modal-img-wrap {
   position: relative;
 }
+.ff-modal-img-wrap--catalog .ff-modal-img {
+  box-shadow: inset 0 0 0 2px #93c5fd;
+  border-radius: 9px;
+}
 .ff-modal-img-wrap .ff-modal-img {
   display: block;
 }
@@ -724,30 +733,6 @@
 .ff-modal-img-wrap:hover .ff-modal-img-remove { opacity: 1; }
 .ff-modal-img-remove:hover { background: #ef4444; }
 
-.ff-modal-img-add {
-  aspect-ratio: 1;
-  border: 2px dashed #d1d5db;
-  border-radius: 9px;
-  background: #f9fafb;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  cursor: pointer;
-  color: #9ca3af;
-  transition: border-color 0.15s, background 0.15s;
-  padding: 0;
-}
-.ff-modal-img-add:hover:not(:disabled) {
-  border-color: #6366f1;
-  background: #eff6ff;
-  color: #6366f1;
-}
-.ff-modal-img-add:disabled { cursor: not-allowed; opacity: 0.6; }
-.ff-modal-add-icon { font-size: 1.4rem; line-height: 1; font-weight: 300; }
-.ff-modal-add-label { font-size: 0.65rem; font-weight: 600; }
-.ff-modal-uploading { font-size: 1.1rem; }
 .ff-modal-note-row {
   display: flex;
   flex-direction: column;

@@ -32,10 +32,14 @@ func randomInvoiceSuffix(n int) string {
 type OrderItem struct {
 	ProductID   int      `json:"product_id"`
 	ProductName string   `json:"product_name"`
+	VariantID   *int     `json:"variant_id,omitempty"`
+	VariantName string   `json:"variant_name,omitempty"`
 	Quantity    int      `json:"quantity"`
 	UnitPrice   float64  `json:"unit_price"`
 	ImageURLs   []string `json:"image_urls"`
 	Note        string   `json:"note"`
+	// CatalogImageURL is set server-side: variant image or first product gallery image (raw S3). Admin UI uses it when image_urls is empty.
+	CatalogImageURL string `json:"catalog_image,omitempty"`
 }
 
 // POST /api/product-orders
@@ -119,6 +123,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		var maxUploadImages int
 		var productName string
 		var unitPrice float64
+		var imagesJSON []byte
 		err := config.DB.QueryRow(context.Background(),
 			`SELECT name,
 				CASE
@@ -128,14 +133,57 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 					THEN discount_price
 					ELSE price
 				END AS unit_price,
-				COALESCE(max_upload_images, 15)
+				COALESCE(max_upload_images, 15),
+				COALESCE(images, '[]'::jsonb)
 			FROM products
 			WHERE id = $1 AND is_active = TRUE AND is_draft = FALSE`,
-			it.ProductID).Scan(&productName, &unitPrice, &maxUploadImages)
+			it.ProductID).Scan(&productName, &unitPrice, &maxUploadImages, &imagesJSON)
 		if err != nil {
 			BadRequest(w, fmt.Sprintf("product %d not found", it.ProductID))
 			return
 		}
+
+		var productImageURLs []string
+		if json.Unmarshal(imagesJSON, &productImageURLs) != nil {
+			productImageURLs = nil
+		}
+		firstProductImg := ""
+		if len(productImageURLs) > 0 {
+			firstProductImg = strings.TrimSpace(productImageURLs[0])
+		}
+
+		// If a variant is specified, validate it and use its effective price (discount if active).
+		if it.VariantID != nil {
+			var variantName string
+			var variantPrice float64
+			var variantImage *string
+			variantErr := config.DB.QueryRow(context.Background(),
+				`SELECT name,
+					CASE
+						WHEN discount_price IS NOT NULL
+							AND (discount_from IS NULL OR discount_from <= NOW())
+							AND (discount_to   IS NULL OR discount_to   >= NOW())
+						THEN discount_price
+						ELSE price
+					END AS effective_price,
+					image
+				FROM product_variants WHERE id = $1 AND product_id = $2`,
+				*it.VariantID, it.ProductID).Scan(&variantName, &variantPrice, &variantImage)
+			if variantErr != nil {
+				BadRequest(w, fmt.Sprintf("variant %d not found for product %d", *it.VariantID, it.ProductID))
+				return
+			}
+			unitPrice = variantPrice
+			body.Items[idx].VariantName = variantName
+			if variantImage != nil && strings.TrimSpace(*variantImage) != "" {
+				body.Items[idx].CatalogImageURL = strings.TrimSpace(*variantImage)
+			} else {
+				body.Items[idx].CatalogImageURL = firstProductImg
+			}
+		} else {
+			body.Items[idx].CatalogImageURL = firstProductImg
+		}
+
 		if unitPrice < 0 {
 			unitPrice = 0
 		}

@@ -1,0 +1,30 @@
+/* Default — matches storefront accent */
+.price-tag-current {
+  font-weight: 700;
+  color: #fe2c56;
+}
+
+/* Listing cards: same gradient as .product-card-buy-now */
+.product-card--link .product-card-price .price-tag-current {
+  background: linear-gradient(135deg, #fe2c56 0%, #e05c99 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.price-tag-was {
+  color: #9ca3af;
+  font-weight: 400;
+  text-decoration: line-through;
+  font-size: 0.875em;
+}
+
+.price-tag-off-badge {
+  color: #fe2c56;
+  font-weight: 700;
+  font-size: 0.75em;
+  background: #ffe5ea;
+  padding: 0.1em 0.4em;
+  border-radius: 0.25em;
+  line-height: 1.4;
+}

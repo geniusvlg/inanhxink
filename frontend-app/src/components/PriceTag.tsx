@@ -1,4 +1,5 @@
 import { type Product } from '../services/api';
+import './PriceTag.css';
 
 function fmt(price: number): string {
   return Math.round(price).toLocaleString('vi-VN') + 'đ';
@@ -26,7 +27,7 @@ export default function PriceTag({ product, className }: Props) {
   const salePrice = getActiveDiscountPrice(product);
 
   if (salePrice === null) {
-    return <span className={className}>{fmt(product.price)}</span>;
+    return <span className={`price-tag-current ${className ?? ''}`.trim()}>{fmt(product.price)}</span>;
   }
 
   const percentOff =
@@ -34,22 +35,10 @@ export default function PriceTag({ product, className }: Props) {
 
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em', flexWrap: 'wrap' }}>
-      <span style={{ color: '#fe2c56', fontWeight: 700 }}>{fmt(salePrice)}</span>
-      <span style={{ color: '#9ca3af', fontWeight: 400, textDecoration: 'line-through', fontSize: '0.875em' }}>{fmt(product.price)}</span>
+      <span className="price-tag-current">{fmt(salePrice)}</span>
+      <span className="price-tag-was">{fmt(product.price)}</span>
       {percentOff > 0 && (
-        <span
-          style={{
-            color: '#fe2c56',
-            fontWeight: 700,
-            fontSize: '0.75em',
-            background: '#ffe5ea',
-            padding: '0.1em 0.4em',
-            borderRadius: '0.25em',
-            lineHeight: 1.4,
-          }}
-        >
-          -{percentOff}%
-        </span>
+        <span className="price-tag-off-badge">-{percentOff}%</span>
       )}
     </span>
   );

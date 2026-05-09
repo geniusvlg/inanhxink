@@ -84,7 +84,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	rows, err := config.DB.Query(
 		context.Background(),
 		fmt.Sprintf(`SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_best_seller,
-			p.max_upload_images,
+			p.max_upload_images, p.sold_count,
 			p.tiktok_url, p.instagram_url, p.discount_price, p.discount_from, p.discount_to,
 			COALESCE(json_agg(json_build_object('id', pc.id, 'name', pc.name)) FILTER (WHERE pc.id IS NOT NULL), '[]') AS categories
 		FROM products p
@@ -113,7 +113,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	rows, err := config.DB.Query(context.Background(), `
 		SELECT p.id, p.name, p.description, p.price, p.images, p.type,
-			p.max_upload_images,
+			p.max_upload_images, p.sold_count,
 			p.is_best_seller, p.tiktok_url, p.instagram_url,
 			p.discount_price, p.discount_from, p.discount_to, p.home_sort_order,
 			COALESCE(json_agg(json_build_object('id', pc.id, 'name', pc.name)) FILTER (WHERE pc.id IS NOT NULL), '[]') AS categories
@@ -142,7 +142,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	rows, err := config.DB.Query(context.Background(), `
 		SELECT p.id, p.name, p.description, p.price, p.images, p.type, p.is_active,
-			p.max_upload_images,
+			p.max_upload_images, p.sold_count,
 			p.is_best_seller, p.tiktok_url, p.instagram_url, p.created_at,
 			p.discount_price, p.discount_from, p.discount_to,
 			COALESCE(json_agg(json_build_object('id', pc.id, 'name', pc.name)) FILTER (WHERE pc.id IS NOT NULL), '[]') AS categories
@@ -161,6 +161,32 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rewriteProductCDN(row)
+
+	// Fetch variants (CDN-rewritten images)
+	variantRows, err := config.DB.Query(context.Background(), `
+		SELECT id, name, price, discount_price, discount_from, discount_to, image, sort_order
+		FROM product_variants
+		WHERE product_id = $1
+		ORDER BY sort_order ASC, id ASC`, id)
+	if err != nil {
+		InternalError(w, err)
+		return
+	}
+	variants, err := CollectRows(variantRows)
+	if err != nil {
+		InternalError(w, err)
+		return
+	}
+	if variants == nil {
+		variants = []map[string]any{}
+	}
+	for _, v := range variants {
+		if img, ok := v["image"].(string); ok && img != "" {
+			v["image"] = config.CdnStr(img)
+		}
+	}
+	row["variants"] = variants
+
 	OK(w, map[string]any{"success": true, "product": row})
 }
 

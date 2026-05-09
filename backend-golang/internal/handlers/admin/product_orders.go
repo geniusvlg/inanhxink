@@ -97,7 +97,24 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := config.DB.Query(context.Background(), `
+	ctx := context.Background()
+	tx, err := config.DB.Begin(ctx)
+	if err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+	defer tx.Rollback(context.Background()) //nolint
+
+	var prevPayment string
+	var itemsJSON string
+	if err := tx.QueryRow(ctx,
+		`SELECT payment_status, items::text FROM product_orders WHERE id = $1 FOR UPDATE`,
+		id).Scan(&prevPayment, &itemsJSON); err != nil {
+		handlers.NotFound(w)
+		return
+	}
+
+	rows, err := tx.Query(ctx, `
 		UPDATE product_orders SET payment_status = $1, updated_at = NOW()
 		WHERE id = $2 RETURNING *`, body.PaymentStatus, id)
 	if err != nil {
@@ -107,6 +124,23 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 	order, err := handlers.CollectOne(rows)
 	if err != nil || order == nil {
 		handlers.NotFound(w)
+		return
+	}
+
+	if body.PaymentStatus == "paid" && prevPayment != "paid" {
+		var items []handlers.OrderItem
+		if err := json.Unmarshal([]byte(itemsJSON), &items); err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+		if err := handlers.IncrementProductSoldCounts(ctx, tx, items); err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		handlers.InternalError(w, err)
 		return
 	}
 

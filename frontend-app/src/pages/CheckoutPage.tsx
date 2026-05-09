@@ -96,10 +96,14 @@ export default function CheckoutPage() {
 
   const [info, setInfo] = useState<CustomerInfo>({ name: '', phone: '', email: '', address: '' });
 
-  const [customs, setCustoms] = useState<Record<number, ItemCustomisation>>(() =>
-    Object.fromEntries(items.map(it => [it.product_id, { note: '', slots: [] }]))
+  // customs keyed by composite key: `${product_id}` or `${product_id}|v${variant_id}`
+  const itemKey = (it: CartEntry) =>
+    it.variant_id != null ? `${it.product_id}|v${it.variant_id}` : `${it.product_id}`;
+
+  const [customs, setCustoms] = useState<Record<string, ItemCustomisation>>(() =>
+    Object.fromEntries(items.map(it => [itemKey(it), { note: '', slots: [] }]))
   );
-  const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -157,10 +161,10 @@ export default function CheckoutPage() {
     if (validateStep1()) setStep(2);
   };
 
-  const handleFileAdd = useCallback(async (productId: number, fileList: FileList | null) => {
+  const handleFileAdd = useCallback(async (key: string, productId: number, fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
     const limit = productImageLimits[productId] ?? imageLimitFor(items.find(it => it.product_id === productId));
-    const existingCount = customs[productId]?.slots.length ?? 0;
+    const existingCount = customs[key]?.slots.length ?? 0;
     const remaining = limit - existingCount;
     if (remaining <= 0) {
       alert(`Sản phẩm này chỉ được upload tối đa ${limit} ảnh.`);
@@ -179,7 +183,7 @@ export default function CheckoutPage() {
     }));
     setCustoms(prev => ({
       ...prev,
-      [productId]: { ...prev[productId], slots: [...prev[productId].slots, ...newSlots] },
+      [key]: { ...prev[key], slots: [...(prev[key]?.slots ?? []), ...newSlots] },
     }));
     const tryUpload = async () => uploadProductImages(newFiles, sessionId);
     let urls: string[];
@@ -191,47 +195,47 @@ export default function CheckoutPage() {
         urls = await tryUpload();
       } catch {
         setCustoms(prev => {
-          const updated = prev[productId].slots.map(s =>
+          const updated = (prev[key]?.slots ?? []).map(s =>
             newSlots.some(ns => ns.id === s.id) ? { ...s, state: 'error' as const } : s
           );
-          return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+          return { ...prev, [key]: { ...prev[key], slots: updated } };
         });
-        if (fileRefs.current[productId]) fileRefs.current[productId]!.value = '';
+        if (fileRefs.current[key]) fileRefs.current[key]!.value = '';
         return;
       }
     }
     setCustoms(prev => {
-      const updated = prev[productId].slots.map(s => {
+      const updated = (prev[key]?.slots ?? []).map(s => {
         const idx = newSlots.findIndex(ns => ns.id === s.id);
         if (idx === -1) return s;
         return { ...s, uploadedUrl: urls[idx] ?? '', state: 'done' as const };
       });
-      return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+      return { ...prev, [key]: { ...prev[key], slots: updated } };
     });
-    if (fileRefs.current[productId]) fileRefs.current[productId]!.value = '';
+    if (fileRefs.current[key]) fileRefs.current[key]!.value = '';
   }, [customs, items, productImageLimits, sessionId]);
 
-  const handleFileRemove = useCallback((productId: number, id: string) => {
+  const handleFileRemove = useCallback((key: string, id: string) => {
     setCustoms(prev => {
-      const slot = prev[productId].slots.find(s => s.id === id);
+      const slot = prev[key]?.slots.find(s => s.id === id);
       if (slot) URL.revokeObjectURL(slot.previewUrl);
       return {
         ...prev,
-        [productId]: { ...prev[productId], slots: prev[productId].slots.filter(s => s.id !== id) },
+        [key]: { ...prev[key], slots: (prev[key]?.slots ?? []).filter(s => s.id !== id) },
       };
     });
   }, []);
 
-  const handleFileRetry = useCallback(async (productId: number, id: string) => {
+  const handleFileRetry = useCallback(async (key: string, id: string) => {
     let fileToRetry: File | null = null;
     setCustoms(prev => {
-      const slot = prev[productId].slots.find(s => s.id === id);
+      const slot = prev[key]?.slots.find(s => s.id === id);
       if (!slot) return prev;
       fileToRetry = slot.file;
-      const updated = prev[productId].slots.map(s =>
+      const updated = (prev[key]?.slots ?? []).map(s =>
         s.id === id ? { ...s, state: 'uploading' as const } : s
       );
-      return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+      return { ...prev, [key]: { ...prev[key], slots: updated } };
     });
     if (!fileToRetry) return;
     const tryUpload = async () => uploadProductImages([fileToRetry!], sessionId);
@@ -243,24 +247,24 @@ export default function CheckoutPage() {
         urls = await tryUpload();
       } catch {
         setCustoms(prev => {
-          const updated = prev[productId].slots.map(s =>
+          const updated = (prev[key]?.slots ?? []).map(s =>
             s.id === id ? { ...s, state: 'error' as const } : s
           );
-          return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+          return { ...prev, [key]: { ...prev[key], slots: updated } };
         });
         return;
       }
     }
     setCustoms(prev => {
-      const updated = prev[productId].slots.map(s =>
+      const updated = (prev[key]?.slots ?? []).map(s =>
         s.id === id ? { ...s, uploadedUrl: urls[0] ?? '', state: 'done' as const } : s
       );
-      return { ...prev, [productId]: { ...prev[productId], slots: updated } };
+      return { ...prev, [key]: { ...prev[key], slots: updated } };
     });
   }, [sessionId]);
 
-  const handleNoteChange = (productId: number, note: string) => {
-    setCustoms(prev => ({ ...prev, [productId]: { ...prev[productId], note } }));
+  const handleNoteChange = (key: string, note: string) => {
+    setCustoms(prev => ({ ...prev, [key]: { ...prev[key], note } }));
   };
 
   const isUploading = Object.values(customs).some(c => c.slots.some(s => s.state === 'uploading'));
@@ -269,11 +273,12 @@ export default function CheckoutPage() {
     setBusy(true);
     setErrMsg('');
     try {
-      const uploadedCustoms: Record<number, { image_urls: string[]; note: string }> = {};
+      const uploadedCustoms: Record<string, { image_urls: string[]; note: string }> = {};
       for (const it of items) {
-        const c = customs[it.product_id];
+        const key = itemKey(it);
+        const c = customs[key];
         const urls = (c?.slots ?? []).filter(s => s.state === 'done').map(s => s.uploadedUrl);
-        uploadedCustoms[it.product_id] = { image_urls: urls, note: c?.note ?? '' };
+        uploadedCustoms[key] = { image_urls: urls, note: c?.note ?? '' };
       }
 
       const apiItems = cartEntriesToApiItems(items, uploadedCustoms);
@@ -427,13 +432,13 @@ function Step1Form({ info, onChange }: {
 function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, onFileAdd, onFileRemove, onFileRetry, onNoteChange }: {
   items: CartEntry[];
   productImageLimits: Record<number, number>;
-  customs: Record<number, ItemCustomisation>;
-  fileRefs: React.MutableRefObject<Record<number, HTMLInputElement | null>>;
+  customs: Record<string, ItemCustomisation>;
+  fileRefs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
   resolveUrl: (url: string) => string;
-  onFileAdd: (id: number, files: FileList | null) => void;
-  onFileRemove: (id: number, slotId: string) => void;
-  onFileRetry: (id: number, slotId: string) => void;
-  onNoteChange: (id: number, note: string) => void;
+  onFileAdd: (key: string, productId: number, files: FileList | null) => void;
+  onFileRemove: (key: string, slotId: string) => void;
+  onFileRetry: (key: string, slotId: string) => void;
+  onNoteChange: (key: string, note: string) => void;
 }) {
   return (
     <div className="co-form">
@@ -441,16 +446,24 @@ function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, o
       <p className="co-form-hint">Thêm ghi chú cá nhân. Ảnh sản phẩm vui lòng gửi qua Zalo sau khi đặt hàng.</p>
 
       {items.map(it => {
-        const c = customs[it.product_id] ?? { note: '', slots: [] };
+        const key = it.variant_id != null ? `${it.product_id}|v${it.variant_id}` : `${it.product_id}`;
+        const c = customs[key] ?? { note: '', slots: [] };
         const limit = productImageLimits[it.product_id] ?? imageLimitFor(it);
         return (
-          <div key={it.product_id} className="co-item-custom">
+          <div key={key} className="co-item-custom">
             {it.thumbnail && (
               <img src={resolveUrl(it.thumbnail)} alt={it.product_name} className="co-item-thumb" />
             )}
             <div className="co-item-custom-body">
               <div className="co-item-custom-title">
-                <p className="co-item-custom-name">{it.product_name}</p>
+                <p className="co-item-custom-name">
+                  {it.product_name}
+                  {it.variant_name && (
+                    <span style={{ fontSize: '0.85em', color: '#64748b', marginLeft: '0.4em', fontWeight: 400 }}>
+                      — {it.variant_name}
+                    </span>
+                  )}
+                </p>
                 <p className="co-item-custom-qty">Số lượng: {it.quantity}</p>
               </div>
 
@@ -466,7 +479,7 @@ function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, o
                 className="co-input co-textarea co-note"
                 placeholder="Ghi chú: tên, ngày, màu sắc, yêu cầu đặc biệt..."
                 value={c.note}
-                onChange={e => onNoteChange(it.product_id, e.target.value)}
+                onChange={e => onNoteChange(key, e.target.value)}
                 rows={2}
               />
             </div>
@@ -488,18 +501,28 @@ function OrderSummary({ items, subtotal, shippingFee, total, resolveUrl }: {
     <aside className="co-summary">
       <h3 className="co-summary-title">Đơn hàng</h3>
       <ul className="co-summary-list">
-        {items.map(it => (
-          <li key={it.product_id} className="co-summary-item">
+        {items.map(it => {
+          const key = it.variant_id != null ? `${it.product_id}|v${it.variant_id}` : `${it.product_id}`;
+          return (
+          <li key={key} className="co-summary-item">
             {it.thumbnail && (
               <img src={resolveUrl(it.thumbnail)} alt={it.product_name} className="co-summary-img" />
             )}
             <div className="co-summary-item-info">
-              <span className="co-summary-item-name">{it.product_name}</span>
+              <span className="co-summary-item-name">
+                {it.product_name}
+                {it.variant_name && (
+                  <span style={{ display: 'block', fontSize: '0.8em', color: '#64748b', fontWeight: 400 }}>
+                    {it.variant_name}
+                  </span>
+                )}
+              </span>
               <span className="co-summary-item-qty">× {it.quantity}</span>
             </div>
             <span className="co-summary-item-price">{fmt(it.unit_price * it.quantity)}</span>
           </li>
-        ))}
+          );
+        })}
       </ul>
       <div className="co-summary-divider" />
       <div className="co-summary-row">

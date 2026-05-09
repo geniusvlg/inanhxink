@@ -20,15 +20,22 @@ function getOrCreateSessionId(): string {
   return id;
 }
 
+/** Unique key per cart line — includes variant so different variants are separate entries. */
+function entryKey(productId: number, variantId?: number | null): string {
+  return variantId != null ? `${productId}|v${variantId}` : `${productId}`;
+}
+
 // Cart item in context (without uploaded image_urls / note — added at checkout Step 2)
 export interface CartEntry {
-  product_id:   number;
-  product_name: string;
-  unit_price:   number;
-  quantity:     number;
+  product_id:    number;
+  product_name:  string;
+  variant_id?:   number | null;
+  variant_name?: string | null;
+  unit_price:    number;
+  quantity:      number;
   max_upload_images?: number;
   /** Thumbnail to show in drawer — NOT sent to backend (that's image_urls set in Step 2). */
-  thumbnail?:   string;
+  thumbnail?:    string;
 }
 
 export function startBuyNowCheckout(entry: CartEntry): void {
@@ -47,8 +54,8 @@ interface CartContextValue {
   subtotal:    number;
 
   addItem:     (entry: Omit<CartEntry, 'quantity'> & { quantity?: number }) => void;
-  removeItem:  (productId: number) => void;
-  updateQty:   (productId: number, qty: number) => void;
+  removeItem:  (productId: number, variantId?: number | null) => void;
+  updateQty:   (productId: number, qty: number, variantId?: number | null) => void;
   clearCart:   () => void;
   resetSession:() => void;
 }
@@ -77,10 +84,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((entry: Omit<CartEntry, 'quantity'> & { quantity?: number }) => {
     setItems(prev => {
-      const existing = prev.find(it => it.product_id === entry.product_id);
+      const key = entryKey(entry.product_id, entry.variant_id);
+      const existing = prev.find(it => entryKey(it.product_id, it.variant_id) === key);
       if (existing) {
         return prev.map(it =>
-          it.product_id === entry.product_id
+          entryKey(it.product_id, it.variant_id) === key
             ? { ...it, quantity: it.quantity + (entry.quantity ?? 1) }
             : it,
         );
@@ -89,14 +97,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeItem = useCallback((productId: number) => {
-    setItems(prev => prev.filter(it => it.product_id !== productId));
+  const removeItem = useCallback((productId: number, variantId?: number | null) => {
+    const key = entryKey(productId, variantId);
+    setItems(prev => prev.filter(it => entryKey(it.product_id, it.variant_id) !== key));
   }, []);
 
-  const updateQty = useCallback((productId: number, qty: number) => {
+  const updateQty = useCallback((productId: number, qty: number, variantId?: number | null) => {
     if (qty < 1) return;
+    const key = entryKey(productId, variantId);
     setItems(prev =>
-      prev.map(it => (it.product_id === productId ? { ...it, quantity: qty } : it)),
+      prev.map(it => (entryKey(it.product_id, it.variant_id) === key ? { ...it, quantity: qty } : it)),
     );
   }, []);
 
@@ -117,11 +127,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     items.map(it => ({
       product_id:   it.product_id,
       product_name: it.product_name,
+      variant_id:   it.variant_id ?? undefined,
+      variant_name: it.variant_name ?? undefined,
       quantity:     it.quantity,
       unit_price:   it.unit_price,
       image_urls:   [],
       note:         '',
     }));
+
+  void toApiItems; // used externally via cartEntriesToApiItems
 
   return (
     <CartContext.Provider value={{
@@ -143,14 +157,19 @@ export function useCart(): CartContextValue {
 // Exported helper for CheckoutPage Step 2 to convert cart items to API payload items.
 export function cartEntriesToApiItems(
   entries: CartEntry[],
-  customisations: Record<number, { image_urls: string[]; note: string }>,
+  customisations: Record<string, { image_urls: string[]; note: string }>,
 ): CartItem[] {
-  return entries.map(it => ({
-    product_id:   it.product_id,
-    product_name: it.product_name,
-    quantity:     it.quantity,
-    unit_price:   it.unit_price,
-    image_urls:   customisations[it.product_id]?.image_urls ?? [],
-    note:         customisations[it.product_id]?.note ?? '',
-  }));
+  return entries.map(it => {
+    const key = entryKey(it.product_id, it.variant_id);
+    return {
+      product_id:   it.product_id,
+      product_name: it.product_name,
+      variant_id:   it.variant_id ?? undefined,
+      variant_name: it.variant_name ?? undefined,
+      quantity:     it.quantity,
+      unit_price:   it.unit_price,
+      image_urls:   customisations[key]?.image_urls ?? [],
+      note:         customisations[key]?.note ?? '',
+    };
+  });
 }

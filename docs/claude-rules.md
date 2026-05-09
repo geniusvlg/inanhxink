@@ -12,3 +12,7 @@
 ## Database
 
 - Use singular table names for new database tables (for example, `product_transaction`, not `product_transactions`).
+
+## Number formatting (UI)
+
+- Use **comma thousands separators** for all user-visible numbers (storefront + admin). See `docs/number-formatting.md`.

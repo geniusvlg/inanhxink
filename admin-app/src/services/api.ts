@@ -101,6 +101,12 @@ export const productsApi = {
     api.patch('/api/admin/products/featured-on-home/reorder', { items }),
 };
 
+export const productVariantsApi = {
+  list:   (productId: number) => api.get(`/api/admin/products/${productId}/variants`),
+  upsert: (productId: number, variants: unknown[]) => api.put(`/api/admin/products/${productId}/variants`, variants),
+  delete: (productId: number, variantId: number) => api.delete(`/api/admin/products/${productId}/variants/${variantId}`),
+};
+
 export const productCategoriesApi = {
   list:   (type?: string) => api.get('/api/admin/product-categories', { params: type ? { type } : {} }),
   create: (data: unknown) => api.post('/api/admin/product-categories', data),
