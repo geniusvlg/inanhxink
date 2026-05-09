@@ -5,6 +5,7 @@ import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
 import PriceTag, { getActiveDiscountPrice } from '../components/PriceTag';
+import ProductSoldCount from '../components/ProductSoldCount';
 import { startBuyNowCheckout, useCart } from '../contexts/CartContext';
 import './ProductDetailPage.css';
 
@@ -65,6 +66,18 @@ function maxVariantDiscountPercent(variants: ProductVariant[]): number {
   return max;
 }
 
+const PRODUCT_LIST_CRUMB: Record<
+  Product['type'],
+  { path: string; label: string }
+> = {
+  thiep:          { path: '/thiep',             label: 'Thiệp' },
+  khung_anh:      { path: '/khung-anh',         label: 'Khung Ảnh' },
+  so_scrapbook:   { path: '/so-scrapbook',      label: 'Sổ & Scrapbook' },
+  khac:           { path: '/cac-san-pham-khac', label: 'Các Sản Phẩm Khác' },
+  'set-qua-tang': { path: '/set-qua-tang',      label: 'Set Quà Tặng' },
+  in_anh:         { path: '/in-anh',            label: 'In Ảnh' },
+};
+
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -91,8 +104,9 @@ export default function ProductDetailPage() {
     if (cartToastTimerRef.current !== null) clearTimeout(cartToastTimerRef.current);
   }, []);
 
-  const backPath = product?.type === 'khung_anh' ? '/khung-anh' : '/thiep';
-  const backLabel = product?.type === 'khung_anh' ? 'Khung Ảnh' : 'Thiệp';
+  const listCrumb = product ? PRODUCT_LIST_CRUMB[product.type] : PRODUCT_LIST_CRUMB.thiep;
+  const backPath = listCrumb.path;
+  const backLabel = listCrumb.label;
 
   const productImages = product?.images?.length
     ? product.images.map(resolveUrl)
@@ -220,6 +234,7 @@ export default function ProductDetailPage() {
           {/* ── Right: info panel ── */}
           <div className="pd-info">
             <h1 className="pd-name">{product.name}</h1>
+            <ProductSoldCount count={product.sold_count} className="product-sold-count--detail" />
 
             {/* Price — range when variants exist and none selected, variant price when selected */}
             {hasVariants && !selectedVariant ? (

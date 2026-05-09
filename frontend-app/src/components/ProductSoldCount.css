@@ -1,0 +1,22 @@
+.product-sold-count {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+  line-height: 1.3;
+}
+
+.product-sold-count-num {
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.product-sold-count--detail {
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0;
+}
+
+.product-sold-count--home {
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+  text-align: center;
+}

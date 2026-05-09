@@ -124,6 +124,8 @@ export interface Product {
   discount_from: string | null;
   discount_to: string | null;
   max_upload_images: number;
+  /** Total units sold (auto + admin). */
+  sold_count?: number;
   created_at: string;
   variants?: ProductVariant[];
 }

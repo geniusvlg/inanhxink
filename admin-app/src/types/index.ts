@@ -140,6 +140,8 @@ export interface Product {
   discount_from: string | null;
   discount_to: string | null;
   max_upload_images: number;
+  /** Đã bán — increments on payment; admin can adjust. */
+  sold_count?: number;
   is_featured_on_home: boolean;
   home_sort_order: number;
   created_at: string;

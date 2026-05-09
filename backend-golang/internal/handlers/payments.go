@@ -515,29 +515,6 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 		return
 	}
 
-	var requiredAmount float64
-	if err := config.DB.QueryRow(context.Background(),
-		"SELECT total_amount FROM product_orders WHERE id = $1 AND payment_status = 'pending'",
-		orderID).Scan(&requiredAmount); err != nil {
-		log.Printf("[product-webhook] no pending product order: order_id=%d sepay_id=%d amount=%.0f err=%v", orderID, sepayID, amount, err)
-		OK(w, map[string]any{"success": true, "message": "No pending product order found"})
-		return
-	}
-	if amount < requiredAmount {
-		log.Printf("[product-webhook] underpayment ignored: order_id=%d sepay_id=%d paid=%.0f required=%.0f", orderID, sepayID, amount, requiredAmount)
-		OK(w, map[string]any{"success": true, "message": "Underpayment ignored"})
-		return
-	}
-
-	// Prevent duplicate processing for the same SePay transaction ID.
-	var dupCheck int
-	if err := config.DB.QueryRow(context.Background(),
-		"SELECT id FROM product_transaction WHERE sepay_transaction_id = $1", sepayID).Scan(&dupCheck); err == nil {
-		log.Printf("[product-webhook] duplicate webhook ignored: order_id=%d sepay_id=%d existing_transaction_id=%d", orderID, sepayID, dupCheck)
-		OK(w, map[string]any{"success": true, "message": "Duplicate webhook ignored"})
-		return
-	}
-
 	dbtx, err := config.DB.Begin(context.Background())
 	if err != nil {
 		log.Printf("[product-webhook] begin tx failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
@@ -546,17 +523,54 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	}
 	defer dbtx.Rollback(context.Background()) //nolint
 
-	if _, err := dbtx.Exec(context.Background(),
+	ctx := context.Background()
+	var itemsJSON string
+	var paymentStatus string
+	var requiredAmount float64
+	if err := dbtx.QueryRow(ctx, `
+		SELECT items::text, payment_status, total_amount
+		FROM product_orders WHERE id = $1 FOR UPDATE`, orderID).
+		Scan(&itemsJSON, &paymentStatus, &requiredAmount); err != nil {
+		log.Printf("[product-webhook] lock/select product order failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
+		OK(w, map[string]any{"success": true, "message": "No pending product order found"})
+		return
+	}
+	if paymentStatus != "pending" {
+		log.Printf("[product-webhook] order not pending: order_id=%d status=%s", orderID, paymentStatus)
+		OK(w, map[string]any{"success": true, "message": "Order already processed"})
+		return
+	}
+	if amount < requiredAmount {
+		log.Printf("[product-webhook] underpayment ignored: order_id=%d sepay_id=%d paid=%.0f required=%.0f", orderID, sepayID, amount, requiredAmount)
+		OK(w, map[string]any{"success": true, "message": "Underpayment ignored"})
+		return
+	}
+
+	var dupCheck int
+	if err := dbtx.QueryRow(ctx,
+		"SELECT id FROM product_transaction WHERE sepay_transaction_id = $1", sepayID).Scan(&dupCheck); err == nil {
+		log.Printf("[product-webhook] duplicate webhook ignored: order_id=%d sepay_id=%d existing_transaction_id=%d", orderID, sepayID, dupCheck)
+		OK(w, map[string]any{"success": true, "message": "Duplicate webhook ignored"})
+		return
+	}
+
+	orderPaidTag, err := dbtx.Exec(ctx,
 		"UPDATE product_orders SET payment_status = 'paid', updated_at = NOW() WHERE id = $1 AND payment_status = 'pending'",
-		orderID); err != nil {
+		orderID)
+	if err != nil {
 		log.Printf("[product-webhook] update product_orders failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
 		InternalError(w, fmt.Errorf("mark product order paid: %w", err))
+		return
+	}
+	if orderPaidTag.RowsAffected() == 0 {
+		log.Printf("[product-webhook] order already paid (race): order_id=%d", orderID)
+		OK(w, map[string]any{"success": true, "message": "Order already processed"})
 		return
 	}
 
 	// Normal checkout flow creates a pending transaction when the QR is shown.
 	// Update that row first; only insert a paid row if no pending row exists.
-	updateTag, err := dbtx.Exec(context.Background(), `
+	updateTag, err := dbtx.Exec(ctx, `
 		UPDATE product_transaction
 		SET status = 'paid', sepay_transaction_id = $1, webhook_payload = $2,
 			reference_code = $3, paid_at = NOW(), updated_at = NOW()
@@ -569,7 +583,7 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	}
 	if updateTag.RowsAffected() == 0 {
 		log.Printf("[product-webhook] no pending product_transaction row; inserting paid fallback: order_id=%d sepay_id=%d", orderID, sepayID)
-		if _, err := dbtx.Exec(context.Background(), `
+		if _, err := dbtx.Exec(ctx, `
 			INSERT INTO product_transaction (product_order_id, amount, status, sepay_transaction_id, reference_code, webhook_payload, paid_at)
 			VALUES ($1, $2, 'paid', $3, $4, $5, NOW())
 			ON CONFLICT (sepay_transaction_id) WHERE sepay_transaction_id IS NOT NULL DO NOTHING`,
@@ -580,7 +594,19 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 		}
 	}
 
-	if err := dbtx.Commit(context.Background()); err != nil {
+	var orderItems []OrderItem
+	if err := json.Unmarshal([]byte(itemsJSON), &orderItems); err != nil {
+		log.Printf("[product-webhook] unmarshal items order_id=%d: %v", orderID, err)
+		InternalError(w, fmt.Errorf("parse order items: %w", err))
+		return
+	}
+	if err := IncrementProductSoldCounts(ctx, dbtx, orderItems); err != nil {
+		log.Printf("[product-webhook] increment sold_count order_id=%d: %v", orderID, err)
+		InternalError(w, err)
+		return
+	}
+
+	if err := dbtx.Commit(ctx); err != nil {
 		log.Printf("[product-webhook] commit failed: order_id=%d sepay_id=%d amount=%.0f required=%.0f err=%v payload=%s", orderID, sepayID, amount, requiredAmount, err, webhookJSON)
 		InternalError(w, fmt.Errorf("commit product webhook transaction: %w", err))
 		return

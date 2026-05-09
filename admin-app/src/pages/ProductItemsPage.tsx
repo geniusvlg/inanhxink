@@ -47,6 +47,15 @@ function formatMoneyInputWithCommas(rawInput: string): string {
   return num.toLocaleString('en');
 }
 
+/** Comma thousands for whole numbers only (e.g. Đã bán). */
+function formatIntegerInputWithCommas(rawInput: string): string {
+  const raw = rawInput.replace(/,/g, '').replace(/\D/g, '');
+  if (raw === '') return '';
+  const num = Number(raw);
+  if (!Number.isFinite(num)) return '';
+  return num.toLocaleString('en');
+}
+
 /** `datetime-local` value from ISO string (discount window from API). */
 function isoToDatetimeLocal(iso?: string | null): string {
   if (!iso) return '';
@@ -101,6 +110,7 @@ const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
   name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
   discount_price: null, discount_from: null, discount_to: null,
   max_upload_images: 15,
+  sold_count: 0,
   is_featured_on_home: false,
 });
 
@@ -112,6 +122,7 @@ export default function ProductItemsPage({ type }: Props) {
   const [editing, setEditing]       = useState<Product | null>(null);
   const [form, setForm]             = useState<Partial<Product> & { category_ids: number[] }>(emptyForm());
   const [maxUploadImagesInput, setMaxUploadImagesInput] = useState('15');
+  const [soldCountInput, setSoldCountInput]             = useState('0');
   const [imageEntries, setImageEntries] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [reservedProductId, setReservedProductId] = useState<number | null>(null);
@@ -155,6 +166,7 @@ export default function ProductItemsPage({ type }: Props) {
     setEditing(null);
     setForm(emptyForm());
     setMaxUploadImagesInput('15');
+    setSoldCountInput('0');
     setImageEntries([]);
     setReservedProductId(null);
     setNameCheckState('idle');
@@ -168,6 +180,7 @@ export default function ProductItemsPage({ type }: Props) {
     setEditing(p);
     setForm({ ...p, category_ids: p.categories.map(c => c.id) });
     setMaxUploadImagesInput(String(p.max_upload_images ?? 15));
+    setSoldCountInput(formatIntegerInputWithCommas(String(p.sold_count ?? 0)));
     setImageEntries(p.images);
     setReservedProductId(null);
     setNameCheckState('available');
@@ -186,6 +199,7 @@ export default function ProductItemsPage({ type }: Props) {
     setEditing(null);
     setImageEntries([]);
     setReservedProductId(null);
+    setSoldCountInput('0');
     setNameCheckState('idle');
     setVariants([]);
     setVariantEditIdx(null);
@@ -360,11 +374,14 @@ export default function ProductItemsPage({ type }: Props) {
     setSaving(true);
     try {
       const productId = editing?.id ?? reservedProductId!;
+      const soldRaw = soldCountInput.replace(/,/g, '').replace(/\D/g, '');
+      const soldCount = Math.max(0, soldRaw === '' ? 0 : Number(soldRaw));
       await productsApi.update(productId, {
         ...form,
         type,
         images: imageEntries,
         max_upload_images: Number(maxUploadImagesInput) > 0 ? Number(maxUploadImagesInput) : 15,
+        sold_count: soldCount,
         is_active: form.is_active ?? true,
         is_featured_on_home: form.is_featured_on_home ?? false,
       });
@@ -418,6 +435,7 @@ export default function ProductItemsPage({ type }: Props) {
               <th>Ảnh</th>
               <th>Tên</th>
               <th>Giá / Giảm giá</th>
+              <th>Đã bán</th>
               <th>Danh mục</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
@@ -425,7 +443,7 @@ export default function ProductItemsPage({ type }: Props) {
           </thead>
           <tbody>
             {products.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>Chưa có sản phẩm nào</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>Chưa có sản phẩm nào</td></tr>
             )}
             {products.map(p => (
               <tr key={p.id}>
@@ -479,6 +497,7 @@ export default function ProductItemsPage({ type }: Props) {
                     </div>
                   )}
                 </td>
+                <td style={{ whiteSpace: 'nowrap' }}>{Number(p.sold_count ?? 0).toLocaleString('en')}</td>
                 <td>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                     {p.categories?.map(c => (
@@ -649,6 +668,27 @@ export default function ProductItemsPage({ type }: Props) {
                   </div>
                 </div>
               )}
+
+              {/* Đã bán — manual total; checkout increases automatically */}
+              <div className="form-group">
+                <label className="form-label">Đã bán</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={soldCountInput}
+                  onChange={e => setSoldCountInput(formatIntegerInputWithCommas(e.target.value))}
+                  onBlur={() => {
+                    const raw = soldCountInput.replace(/,/g, '').replace(/\D/g, '');
+                    const n = raw === '' ? 0 : Number(raw);
+                    setSoldCountInput(formatIntegerInputWithCommas(String(n)) || '0');
+                  }}
+                />
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.35rem 0 0' }}>
+                  Tự động tăng khi đơn thanh toán thành công; bạn có thể chỉnh hoặc cộng thêm bằng cách nhập số mới.
+                </p>
+              </div>
 
               {/* Customer upload limit */}
               <div className="form-group">

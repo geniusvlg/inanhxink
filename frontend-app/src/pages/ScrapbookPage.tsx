@@ -8,6 +8,7 @@ import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
+import ProductSoldCount from '../components/ProductSoldCount';
 import './ScrapbookPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -127,6 +128,7 @@ export default function ScrapbookPage() {
                   </div>
                   <div className="product-card-info">
                     <div className="product-card-name">{p.name}</div>
+                    <ProductSoldCount count={p.sold_count} />
                     <div className="product-card-price"><PriceTag product={p} /></div>
                   </div>
                 </Link>

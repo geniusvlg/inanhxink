@@ -15,6 +15,7 @@ import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
 import BannerCarousel from '../components/BannerCarousel';
 import FeaturedFeedback from '../components/FeaturedFeedback';
+import ProductSoldCount from '../components/ProductSoldCount';
 import './HomePage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -163,6 +164,7 @@ function HomePage() {
                 </div>
                 <div className="poly-card-cap">
                   <div className="poly-card-name">{p.name}</div>
+                  <ProductSoldCount count={p.sold_count} className="product-sold-count--home" />
                 </div>
               </Link>
             ))}
