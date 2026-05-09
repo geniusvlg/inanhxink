@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { FeatureFlagsProvider, useFeatureFlags, type FeatureFlags } from './contexts/FeatureFlagsContext';
 import { CartProvider } from './contexts/CartContext';
@@ -16,6 +16,7 @@ import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import HomePage from './pages/HomePage';
+import ProductSearchPage from './pages/ProductSearchPage';
 import CheckoutPage from './pages/CheckoutPage';
 import ProductCheckoutPaymentPage from './pages/ProductCheckoutPaymentPage';
 import CheckoutResultPage from './pages/CheckoutResultPage';
@@ -23,8 +24,13 @@ import TrackOrderPage from './pages/TrackOrderPage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
-// Always send `/` to the cute homepage.
+// `/` → home; legacy `?search=` from old header links → product search.
 function HomeRedirect() {
+  const [sp] = useSearchParams();
+  const legacy = sp.get('search')?.trim();
+  if (legacy) {
+    return <Navigate to={`/tim-kiem?q=${encodeURIComponent(legacy)}`} replace />;
+  }
   return <Navigate to="/home" replace />;
 }
 
@@ -48,6 +54,7 @@ function AppRoutes() {
       <Routes>
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/tim-kiem" element={<ProductSearchPage />} />
       <Route path="/order" element={<OrderPage />} />
       <Route path="/payment/:qrName" element={<PaymentPage />} />
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />

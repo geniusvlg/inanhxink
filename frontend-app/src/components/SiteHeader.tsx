@@ -1,9 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useCart } from '../contexts/CartContext';
+import { getProducts, type Product } from '../services/api';
+import { highlightQueryInText } from '../utils/highlightQuery';
+import PriceTag from './PriceTag';
 import CartDrawer from './CartDrawer';
 import './SiteHeader.css';
+
+const SEARCH_DEBOUNCE_MS = 300;
+const SUGGEST_LIMIT = 8;
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const CDN_URL = import.meta.env.VITE_CDN_URL || '';
+const S3_ORIGIN = `https://s3-north1.viettelidc.com.vn/${import.meta.env.VITE_S3_BUCKET || 'inanhxink-prod'}`;
+const resolveThumb = (url: string | undefined) => {
+  if (!url) return '/placeholder.png';
+  if (CDN_URL && url.startsWith(S3_ORIGIN)) return CDN_URL + url.slice(S3_ORIGIN.length);
+  return url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+};
 
 interface SiteHeaderProps {
   activePage?: 'home' | 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia' | 'tra-cuu-don-hang';
@@ -23,19 +38,64 @@ const NAV_PAGES = [
 
 function SiteHeader({ activePage }: SiteHeaderProps) {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestResults, setSuggestResults] = useState<Product[]>([]);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const navigate = useNavigate();
   const flags = useFeatureFlags();
   const { totalItems } = useCart();
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQuery(query.trim()), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(t);
+  }, [query]);
+
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setSuggestResults([]);
+      setSuggestLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSuggestLoading(true);
+    setSuggestResults([]);
+    getProducts({ q: debouncedQuery, limit: SUGGEST_LIMIT, page: 1 })
+      .then(res => {
+        if (!cancelled) setSuggestResults(res.products);
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSuggestLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery]);
+
+  useEffect(() => {
+    const onDocDown = (e: MouseEvent) => {
+      if (!searchWrapRef.current?.contains(e.target as Node)) setSuggestOpen(false);
+    };
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      navigate(`/?search=${encodeURIComponent(query.trim())}`);
-      setMobileMenuOpen(false);
-    }
+    const q = query.trim();
+    if (!q) return;
+    setSuggestOpen(false);
+    navigate(`/tim-kiem?q=${encodeURIComponent(q)}`);
+    setMobileMenuOpen(false);
   };
+
+  const showSuggestPanel = suggestOpen && query.trim().length > 0;
 
   const linkCls = (key: SiteHeaderProps['activePage']) => `site-nav-link${activePage === key ? ' active' : ''}`;
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -53,21 +113,81 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
           <span className="site-logo-text">In Ảnh Xink</span>
         </Link>
 
-        <form className="site-search" onSubmit={handleSearch}>
-          <input
-            className="site-search-input"
-            type="text"
-            placeholder="Tìm kiếm sản phẩm..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
-          <button className="site-search-btn" type="submit">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </button>
-        </form>
+        <div className="site-search-wrap" ref={searchWrapRef}>
+          <form className="site-search" onSubmit={handleSearch} role="search">
+            <input
+              className="site-search-input"
+              type="search"
+              name="q"
+              autoComplete="off"
+              placeholder="Tìm kiếm sản phẩm..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onFocus={() => setSuggestOpen(true)}
+              aria-expanded={showSuggestPanel}
+              aria-controls="site-search-suggest"
+              aria-autocomplete="list"
+            />
+            <button className="site-search-btn" type="submit" aria-label="Tìm kiếm">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+          </form>
+
+          {showSuggestPanel && (
+            <div
+              id="site-search-suggest"
+              className="site-search-suggest"
+              role="listbox"
+              aria-label="Gợi ý sản phẩm"
+            >
+              {(suggestLoading || query.trim() !== debouncedQuery) && (
+                <div className="site-search-suggest-status">Đang tìm…</div>
+              )}
+              {!suggestLoading && query.trim() === debouncedQuery && suggestResults.length === 0 && (
+                <div className="site-search-suggest-empty">Không tìm thấy sản phẩm</div>
+              )}
+              {!suggestLoading && query.trim() === debouncedQuery && suggestResults.map(p => (
+                <Link
+                  key={p.id}
+                  to={`/product/${p.id}`}
+                  className="site-search-suggest-row"
+                  role="option"
+                  onClick={() => {
+                    setSuggestOpen(false);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <img
+                    className="site-search-suggest-img"
+                    src={resolveThumb(p.images?.[0])}
+                    alt=""
+                  />
+                  <div className="site-search-suggest-text">
+                    <div className="site-search-suggest-title">{highlightQueryInText(p.name, debouncedQuery)}</div>
+                    <div className="site-search-suggest-price">
+                      <PriceTag product={p} />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              {!suggestLoading && query.trim() === debouncedQuery && suggestResults.length > 0 && (
+                <Link
+                  to={`/tim-kiem?q=${encodeURIComponent(query.trim())}`}
+                  className="site-search-suggest-more"
+                  onClick={() => {
+                    setSuggestOpen(false);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Xem tất cả kết quả →
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
 
         <button
           type="button"

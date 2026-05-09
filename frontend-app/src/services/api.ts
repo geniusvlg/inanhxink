@@ -136,6 +136,8 @@ export interface ProductFilters {
   min_price?: number;
   max_price?: number;
   sort?: 'newest' | 'price_asc' | 'price_desc';
+  /** Title-only search (backend `q`). */
+  q?: string;
   page?: number;
   limit?: number;
 }
@@ -154,6 +156,7 @@ export const getProducts = async (filters: ProductFilters = {}): Promise<Product
   if (filters.min_price != null && filters.min_price !== 0) params.min_price = filters.min_price;
   if (filters.max_price != null) params.max_price = filters.max_price;
   if (filters.sort && filters.sort !== 'newest') params.sort = filters.sort;
+  if (filters.q?.trim()) params.q = filters.q.trim();
   if (filters.page  != null) params.page  = filters.page;
   if (filters.limit != null) params.limit = filters.limit;
   const response = await api.get<{ success: boolean } & ProductsPage>('/api/products', { params });
