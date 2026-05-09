@@ -4,7 +4,7 @@
   color: #fe2c56;
 }
 
-/* Listing cards: same gradient as .product-card-buy-now */
+/* Listing cards: pink gradient accent */
 .product-card--link .product-card-price .price-tag-current {
   background: linear-gradient(135deg, #fe2c56 0%, #e05c99 100%);
   -webkit-background-clip: text;
