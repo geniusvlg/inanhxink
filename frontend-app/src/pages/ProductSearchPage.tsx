@@ -133,20 +133,6 @@ export default function ProductSearchPage() {
                       src={p.images?.[0] ? resolveUrl(p.images[0]) : '/placeholder.png'}
                       alt={p.name}
                     />
-                    <div className="product-card-action-row">
-                      <button
-                        type="button"
-                        className="product-card-buy-now"
-                        aria-label="Mua ngay"
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigate(`/product/${p.id}`);
-                        }}
-                      >
-                        Mua ngay
-                      </button>
-                    </div>
                   </div>
                   <div className="product-card-info">
                     <div className="product-card-name">{highlightQueryInText(p.name, q)}</div>

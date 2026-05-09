@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { getProducts, getCategories, type Product } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
@@ -20,7 +20,6 @@ const resolveUrl   = (url: string) => {
 };
 
 export default function ScrapbookPage() {
-  const navigate = useNavigate();
   const { products_page_size } = useFeatureFlags();
   const [products,     setProducts]     = useState<Product[]>([]);
   const [total,        setTotal]        = useState(0);
@@ -114,17 +113,6 @@ export default function ScrapbookPage() {
                         alt="Best Seller"
                       />
                     )}
-                    <div className="product-card-action-row">
-                      <button
-                        className="product-card-buy-now"
-                        aria-label="Mua ngay"
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigate(`/product/${p.id}`);
-                        }}
-                      >Mua ngay</button>
-                    </div>
                   </div>
                   <div className="product-card-info">
                     <div className="product-card-name">{p.name}</div>
