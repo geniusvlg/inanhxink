@@ -38,30 +38,42 @@ export default function CartDrawer({ open, onClose }: Props) {
             <p className="cart-empty">Giỏ hàng trống</p>
           ) : (
             <ul className="cart-list">
-              {items.map(item => (
-                <li key={item.product_id} className="cart-item">
+              {items.map(item => {
+                const itemKey = item.variant_id != null
+                  ? `${item.product_id}|v${item.variant_id}`
+                  : `${item.product_id}`;
+                return (
+                <li key={itemKey} className="cart-item">
                   {item.thumbnail && (
                     <img src={item.thumbnail} alt={item.product_name} className="cart-item-img" />
                   )}
                   <div className="cart-item-info">
-                    <span className="cart-item-name">{item.product_name}</span>
+                    <span className="cart-item-name">
+                      {item.product_name}
+                      {item.variant_name && (
+                        <span style={{ display: 'block', fontSize: '0.75em', color: '#64748b', fontWeight: 400 }}>
+                          {item.variant_name}
+                        </span>
+                      )}
+                    </span>
                     <span className="cart-item-price">{fmt(item.unit_price)}</span>
                     <div className="cart-item-qty">
                       <button
-                        onClick={() => updateQty(item.product_id, item.quantity - 1)}
+                        onClick={() => updateQty(item.product_id, item.quantity - 1, item.variant_id)}
                         disabled={item.quantity <= 1}
                       >−</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.product_id, item.quantity + 1)}>+</button>
+                      <button onClick={() => updateQty(item.product_id, item.quantity + 1, item.variant_id)}>+</button>
                     </div>
                   </div>
                   <button
                     className="cart-item-remove"
-                    onClick={() => removeItem(item.product_id)}
+                    onClick={() => removeItem(item.product_id, item.variant_id)}
                     aria-label="Xoá"
                   >✕</button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>

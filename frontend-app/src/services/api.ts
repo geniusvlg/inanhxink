@@ -97,6 +97,17 @@ export const getPaymentByQrName = async (qrName: string) => {
   return response.data;
 };
 
+export interface ProductVariant {
+  id: number;
+  name: string;
+  price: number;
+  discount_price: number | null;
+  discount_from: string | null;
+  discount_to: string | null;
+  image: string | null;
+  sort_order: number;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -114,6 +125,7 @@ export interface Product {
   discount_to: string | null;
   max_upload_images: number;
   created_at: string;
+  variants?: ProductVariant[];
 }
 
 export interface ProductFilters {
@@ -238,6 +250,8 @@ export const getHeroShots = async (): Promise<HeroShot[]> => {
 export interface CartItem {
   product_id:   number;
   product_name: string;
+  variant_id?:   number | null;
+  variant_name?: string | null;
   quantity:     number;
   unit_price:   number;
   image_urls:   string[];

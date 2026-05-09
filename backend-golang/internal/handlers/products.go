@@ -161,6 +161,32 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rewriteProductCDN(row)
+
+	// Fetch variants (CDN-rewritten images)
+	variantRows, err := config.DB.Query(context.Background(), `
+		SELECT id, name, price, discount_price, discount_from, discount_to, image, sort_order
+		FROM product_variants
+		WHERE product_id = $1
+		ORDER BY sort_order ASC, id ASC`, id)
+	if err != nil {
+		InternalError(w, err)
+		return
+	}
+	variants, err := CollectRows(variantRows)
+	if err != nil {
+		InternalError(w, err)
+		return
+	}
+	if variants == nil {
+		variants = []map[string]any{}
+	}
+	for _, v := range variants {
+		if img, ok := v["image"].(string); ok && img != "" {
+			v["image"] = config.CdnStr(img)
+		}
+	}
+	row["variants"] = variants
+
 	OK(w, map[string]any{"success": true, "product": row})
 }
 

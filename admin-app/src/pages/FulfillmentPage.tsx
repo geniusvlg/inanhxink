@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { productOrdersApi, uploadApi } from '../services/api';
+import { productOrdersApi } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import './FulfillmentPage.css';
 
@@ -22,9 +22,14 @@ interface FulfillmentOrder {
 }
 
 interface OrderItem {
+  product_id?: number;
   product_name: string;
+  variant_id?: number | null;
+  variant_name?: string | null;
   quantity: number;
   unit_price: number;
+  /** Product / Phân loại preview (first gallery or variant image). */
+  catalog_image?: string | null;
   image_urls?: string[];
   note?: string;
 }
@@ -88,9 +93,6 @@ function OrderDetailModal({
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const uploadTargetIdx = useRef<number>(-1);
 
   const stageLabel: Record<string, string> = {
     new: 'Chờ xử lý', preparing: 'Đang chuẩn bị',
@@ -107,34 +109,6 @@ function OrderDetailModal({
       ...it,
       image_urls: (it.image_urls ?? []).filter((_, j) => j !== imgIdx),
     }));
-  };
-
-  const handleAddImagesClick = (itemIdx: number) => {
-    uploadTargetIdx.current = itemIdx;
-    fileInputRef.current?.click();
-  };
-
-  const handleFilesChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = '';
-    if (!files.length) return;
-    const itemIdx = uploadTargetIdx.current;
-    setUploadingIdx(itemIdx);
-    try {
-      const form = new FormData();
-      files.forEach(f => form.append('files', f));
-      const res = await uploadApi.images(files, 'product-orders/admin');
-      const newUrls: string[] = res.data.urls ?? [];
-      setItems(prev => prev.map((it, i) => i !== itemIdx ? it : {
-        ...it,
-        image_urls: [...(it.image_urls ?? []), ...newUrls],
-      }));
-      setSaveMsg('');
-    } catch {
-      setSaveMsg('Upload ảnh thất bại. Thử lại.');
-    } finally {
-      setUploadingIdx(null);
-    }
   };
 
   const handleSave = async () => {
@@ -208,16 +182,6 @@ function OrderDetailModal({
   return (
     <div className="ff-modal-overlay" onClick={onClose}>
       <div className="ff-modal" onClick={e => e.stopPropagation()}>
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          style={{ display: 'none' }}
-          onChange={handleFilesChosen}
-        />
-
         <div className="ff-modal-header">
           <div>
             <div className="ff-modal-invoice">{order.invoice_number}</div>
@@ -260,9 +224,16 @@ function OrderDetailModal({
 
         <div className="ff-modal-items">
           {isProduct ? items.map((item, i) => (
-            <div key={i} className="ff-modal-item">
+            <div key={`${item.product_id ?? i}-${item.variant_id ?? 'base'}-${i}`} className="ff-modal-item">
               <div className="ff-modal-item-header">
-                <strong>{item.product_name}</strong>
+                <div>
+                  <strong>{item.product_name}</strong>
+                  {item.variant_name?.trim() && (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem', fontWeight: 400 }}>
+                      Phân loại: <strong style={{ color: '#334155' }}>{item.variant_name}</strong>
+                    </div>
+                  )}
+                </div>
                 <div className="ff-modal-item-header-right">
                   {(item.image_urls?.length ?? 0) > 0 && (
                     <button
@@ -277,8 +248,15 @@ function OrderDetailModal({
                 </div>
               </div>
 
-              {/* Image grid with remove buttons */}
+              {/* Image grid: catalog (web) preview + customer uploads */}
               <div className="ff-modal-images">
+                {item.catalog_image?.trim() && (
+                  <div className="ff-modal-img-wrap ff-modal-img-wrap--catalog" title="Ảnh SP / Phân loại (như trên web)">
+                    <a href={resolveAssetUrl(item.catalog_image)} target="_blank" rel="noreferrer">
+                      <img src={resolveAssetUrl(item.catalog_image)} alt="" className="ff-modal-img" />
+                    </a>
+                  </div>
+                )}
                 {(item.image_urls ?? []).map((url, j) => (
                   <div key={j} className="ff-modal-img-wrap">
                     <a href={resolveAssetUrl(url)} target="_blank" rel="noreferrer">
@@ -291,21 +269,6 @@ function OrderDetailModal({
                     >✕</button>
                   </div>
                 ))}
-                {/* Add images slot */}
-                <button
-                  className="ff-modal-img-add"
-                  onClick={() => handleAddImagesClick(i)}
-                  disabled={uploadingIdx === i}
-                >
-                  {uploadingIdx === i ? (
-                    <span className="ff-modal-uploading">⏳</span>
-                  ) : (
-                    <>
-                      <span className="ff-modal-add-icon">+</span>
-                      <span className="ff-modal-add-label">Thêm ảnh</span>
-                    </>
-                  )}
-                </button>
               </div>
 
               <div className="ff-modal-note-row">
@@ -391,7 +354,9 @@ function OrderCard({
   const [trackingCode, setTrackingCode] = useState('');
   const [shippingCarrier, setShippingCarrier] = useState('');
   const items = parseItems(order.items_json);
-  const firstImg = items[0]?.image_urls?.[0];
+  const firstImg =
+    items[0]?.catalog_image?.trim()
+    || items[0]?.image_urls?.[0];
   const isKeychain = order.order_type === 'qr_keychain';
 
   const handleAdvanceClick = () => {
@@ -448,18 +413,24 @@ function OrderCard({
             <div className="ff-detail-row"><span>Đơn vị vận chuyển:</span><span>{order.shipping_carrier}</span></div>
           )}
           <div className="ff-items">
-            {items.map((item, i) => (
-              <div key={i} className="ff-item-row">
-                {item.image_urls?.[0] && (
-                  <img src={resolveAssetUrl(item.image_urls[0])} alt="" className="ff-item-thumb" />
+            {items.map((item, i) => {
+              const rowThumb = item.catalog_image?.trim() || item.image_urls?.[0];
+              return (
+              <div key={`${item.product_id ?? i}-${item.variant_id ?? 'base'}-${i}`} className="ff-item-row">
+                {rowThumb && (
+                  <img src={resolveAssetUrl(rowThumb)} alt="" className="ff-item-thumb" />
                 )}
                 <div className="ff-item-info">
                   <div className="ff-item-name"><span className="ff-card-label">SP:</span> {item.product_name}</div>
+                  {item.variant_name?.trim() && (
+                    <div className="ff-item-variant">Phân loại: {item.variant_name}</div>
+                  )}
                   <div className="ff-item-qty">SL: {item.quantity} × {formatMoney(item.unit_price)}</div>
                   {item.note && <div className="ff-item-note">📝 {item.note}</div>}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
           <button className="ff-view-detail-btn" onClick={() => onViewDetail(order)}>
             🔍 Xem & chỉnh sửa chi tiết

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { productsApi, productCategoriesApi, uploadApi } from '../services/api';
-import { type Product, type ProductCategory } from '../types';
+import { productsApi, productCategoriesApi, uploadApi, productVariantsApi } from '../services/api';
+import { type Product, type ProductCategory, type ProductVariant } from '../types';
 import LoadingGif from '../components/LoadingGif';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import { captureException } from '../utils/sentry';
@@ -37,6 +37,33 @@ function getDiscountStatus(product: Pick<Product, 'discount_from' | 'discount_to
   if (toTs !== null && toTs < now) return 'expired';
   return 'active';
 }
+
+/** Comma thousands for Phân loại price inputs (aligned with product `price` / `discount_price` fields). */
+function formatMoneyInputWithCommas(rawInput: string): string {
+  const raw = rawInput.replace(/,/g, '');
+  if (raw === '') return '';
+  const num = Number(raw);
+  if (isNaN(num)) return '';
+  return num.toLocaleString('en');
+}
+
+/** `datetime-local` value from ISO string (discount window from API). */
+function isoToDatetimeLocal(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const EMPTY_NEW_VARIANT = {
+  name: '',
+  price: '',
+  discount_price: '',
+  discount_from: '',
+  discount_to: '',
+  image: null as string | null,
+};
 
 function getDiscountStatusUi(status: DiscountStatus): { label: string; style: React.CSSProperties } {
   if (status === 'active') {
@@ -95,6 +122,18 @@ export default function ProductItemsPage({ type }: Props) {
   const [limit, setLimit]           = useState(20);
   const fileRef                     = useRef<HTMLInputElement>(null);
 
+  // Variant state
+  const [variants, setVariants]             = useState<ProductVariant[]>([]);
+  const [newVariant, setNewVariant]         = useState<{
+    name: string; price: string; discount_price: string;
+    discount_from: string; discount_to: string; image: string | null;
+  }>({ ...EMPTY_NEW_VARIANT });
+  /** Index into `variants` when the bottom form edits an existing row (not add). */
+  const [variantEditIdx, setVariantEditIdx] = useState<number | null>(null);
+  const [uploadingVariantImg, setUploadingVariantImg] = useState(false);
+  const [savingVariants, setSavingVariants] = useState(false);
+  const variantImgRef                       = useRef<HTMLInputElement>(null);
+
   const load = (p = page, l = limit) => {
     setLoading(true);
     Promise.all([
@@ -119,6 +158,9 @@ export default function ProductItemsPage({ type }: Props) {
     setImageEntries([]);
     setReservedProductId(null);
     setNameCheckState('idle');
+    setVariants([]);
+    setVariantEditIdx(null);
+    setNewVariant({ ...EMPTY_NEW_VARIANT });
     setShowModal(true);
   };
 
@@ -129,7 +171,14 @@ export default function ProductItemsPage({ type }: Props) {
     setImageEntries(p.images);
     setReservedProductId(null);
     setNameCheckState('available');
+    setVariants([]);
+    setVariantEditIdx(null);
+    setNewVariant({ ...EMPTY_NEW_VARIANT });
     setShowModal(true);
+    // Load existing variants
+    productVariantsApi.list(p.id)
+      .then(res => setVariants((res.data.variants ?? []) as ProductVariant[]))
+      .catch(() => {});
   };
 
   const closeModal = () => {
@@ -138,6 +187,9 @@ export default function ProductItemsPage({ type }: Props) {
     setImageEntries([]);
     setReservedProductId(null);
     setNameCheckState('idle');
+    setVariants([]);
+    setVariantEditIdx(null);
+    setNewVariant({ ...EMPTY_NEW_VARIANT });
   };
 
   const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +249,111 @@ export default function ProductItemsPage({ type }: Props) {
     }
   };
 
+  const handleVariantImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    if (variantImgRef.current) variantImgRef.current.value = '';
+    const productId = editing?.id ?? reservedProductId;
+    if (!productId) return;
+    setUploadingVariantImg(true);
+    try {
+      const res = await uploadApi.images(files.slice(0, 1), `${type}/product-${productId}/variants`, false);
+      setNewVariant(v => ({ ...v, image: res.data.urls[0] ?? null }));
+    } catch (err) {
+      captureException(err);
+      alert('Lỗi khi tải ảnh phân loại lên');
+    } finally {
+      setUploadingVariantImg(false);
+    }
+  };
+
+  const startEditVariant = (idx: number) => {
+    const v = variants[idx];
+    if (!v) return;
+    setVariantEditIdx(idx);
+    setNewVariant({
+      name: v.name,
+      price: formatMoneyInputWithCommas(String(v.price)),
+      discount_price:
+        v.discount_price != null && v.discount_price !== undefined
+          ? formatMoneyInputWithCommas(String(v.discount_price))
+          : '',
+      discount_from: isoToDatetimeLocal(v.discount_from),
+      discount_to: isoToDatetimeLocal(v.discount_to),
+      image: v.image,
+    });
+  };
+
+  const cancelVariantEdit = () => {
+    setVariantEditIdx(null);
+    setNewVariant({ ...EMPTY_NEW_VARIANT });
+  };
+
+  const handleCommitVariantForm = () => {
+    const name = newVariant.name.trim();
+    const price = Number(newVariant.price.replace(/,/g, ''));
+    if (!name || isNaN(price) || price < 0) {
+      alert('Vui lòng nhập tên và giá hợp lệ cho phân loại');
+      return;
+    }
+    const discountPrice = newVariant.discount_price ? Number(newVariant.discount_price.replace(/,/g, '')) : null;
+    const discountFrom = newVariant.discount_from ? new Date(newVariant.discount_from).toISOString() : null;
+    const discountTo = newVariant.discount_to ? new Date(newVariant.discount_to).toISOString() : null;
+
+    if (variantEditIdx !== null) {
+      setVariants(prev =>
+        prev.map((it, i) =>
+          i !== variantEditIdx
+            ? it
+            : {
+                ...it,
+                name,
+                price,
+                discount_price: discountPrice,
+                discount_from: discountFrom,
+                discount_to: discountTo,
+                image: newVariant.image,
+              },
+        ),
+      );
+    } else {
+      const nextOrder = variants.length;
+      setVariants(prev => [
+        ...prev,
+        {
+          name,
+          price,
+          discount_price: discountPrice,
+          discount_from: discountFrom,
+          discount_to: discountTo,
+          image: newVariant.image,
+          sort_order: nextOrder,
+        },
+      ]);
+    }
+    cancelVariantEdit();
+  };
+
+  const handleRemoveVariant = (idx: number) => {
+    if (variantEditIdx === idx) cancelVariantEdit();
+    else if (variantEditIdx !== null && variantEditIdx > idx) setVariantEditIdx(variantEditIdx - 1);
+    setVariants(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveVariants = async (productId: number) => {
+    setSavingVariants(true);
+    try {
+      const payload = variants.map((v, i) => ({ ...v, sort_order: i }));
+      const res = await productVariantsApi.upsert(productId, payload);
+      setVariants((res.data.variants ?? []) as ProductVariant[]);
+    } catch (err) {
+      captureException(err);
+      alert('Lỗi khi lưu phân loại');
+    } finally {
+      setSavingVariants(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing && nameCheckState !== 'available') return;
@@ -211,6 +368,8 @@ export default function ProductItemsPage({ type }: Props) {
         is_active: form.is_active ?? true,
         is_featured_on_home: form.is_featured_on_home ?? false,
       });
+      // Save variants (only meaningful in edit mode, but safe to call always)
+      await handleSaveVariants(productId);
       closeModal();
       load();
     } catch (err) {
@@ -599,6 +758,159 @@ export default function ProductItemsPage({ type }: Props) {
                   onChange={handleImagePick}
                   disabled={!editing && !reservedProductId}
                 />
+              </div>
+
+              {/* Phân loại (Variants) */}
+              <div className="form-group">
+                <label className="form-label">Phân loại</label>
+                {!editing ? (
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0.25rem 0 0' }}>
+                    💡 Lưu sản phẩm trước, sau đó mở lại để thêm phân loại.
+                  </p>
+                ) : (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem', background: '#f8fafc' }}>
+                    {/* Existing variants list */}
+                    {variants.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                        {variants.map((v, idx) => (
+                          <div
+                            key={v.id ?? `new-${idx}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              background: '#fff',
+                              border: variantEditIdx === idx ? '2px solid #6366f1' : '1px solid #e2e8f0',
+                              borderRadius: 6,
+                              padding: '0.4rem 0.6rem',
+                            }}
+                          >
+                            {v.image ? (
+                              <img src={resolveAssetUrl(v.image)} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: 36, height: 36, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏷️</div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</div>
+                              {v.discount_price != null ? (
+                                <div style={{ fontSize: '0.8rem' }}>
+                                  <span style={{ color: '#ef4444', fontWeight: 600 }}>{Number(v.discount_price).toLocaleString('vi-VN')}đ</span>
+                                  <span style={{ color: '#94a3b8', textDecoration: 'line-through', marginLeft: '0.3rem' }}>{Number(v.price).toLocaleString('vi-VN')}đ</span>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.8rem', color: '#ef4444' }}>{Number(v.price).toLocaleString('vi-VN')}đ</div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => startEditVariant(idx)}
+                              style={{ background: '#e0e7ff', color: '#4338ca', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.8rem', flexShrink: 0 }}
+                            >Sửa</button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(idx)}
+                              style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 4, padding: '0.2rem 0.5rem', cursor: 'pointer', fontSize: '0.8rem', flexShrink: 0 }}
+                            >Xoá</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add new variant form */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', padding: '0.5rem', background: '#fff', border: variantEditIdx !== null ? '1px solid #c7d2fe' : '1px dashed #cbd5e1', borderRadius: 6 }}>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                        {variantEditIdx !== null ? '✎ Sửa phân loại (bấm Cập nhật để áp dụng)' : '+ Thêm phân loại mới'}
+                      </p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem' }}>
+                        <input
+                          className="form-input"
+                          placeholder="Tên phân loại (vd: Mẫu 1)"
+                          value={newVariant.name}
+                          onChange={e => setNewVariant(v => ({ ...v, name: e.target.value }))}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                        <input
+                          className="form-input"
+                          placeholder="Giá gốc (đ)"
+                          inputMode="numeric"
+                          value={newVariant.price}
+                          onChange={e => setNewVariant(v => ({ ...v, price: formatMoneyInputWithCommas(e.target.value) }))}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                        <input
+                          className="form-input"
+                          placeholder="Giá khuyến mãi (để trống nếu không)"
+                          inputMode="numeric"
+                          value={newVariant.discount_price}
+                          onChange={e => setNewVariant(v => ({ ...v, discount_price: formatMoneyInputWithCommas(e.target.value) }))}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <input
+                            className="form-input"
+                            type="datetime-local"
+                            title="Giảm giá từ"
+                            value={newVariant.discount_from}
+                            onChange={e => setNewVariant(v => ({ ...v, discount_from: e.target.value }))}
+                            style={{ fontSize: '0.78rem' }}
+                            disabled={!newVariant.discount_price}
+                          />
+                          <input
+                            className="form-input"
+                            type="datetime-local"
+                            title="Giảm giá đến"
+                            value={newVariant.discount_to}
+                            onChange={e => setNewVariant(v => ({ ...v, discount_to: e.target.value }))}
+                            style={{ fontSize: '0.78rem' }}
+                            disabled={!newVariant.discount_price}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {newVariant.image ? (
+                          <div style={{ position: 'relative' }}>
+                            <img src={resolveAssetUrl(newVariant.image)} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }} />
+                            <button
+                              type="button"
+                              onClick={() => setNewVariant(v => ({ ...v, image: null }))}
+                              style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 16, height: 16, cursor: 'pointer', fontSize: 10, lineHeight: '16px', padding: 0 }}
+                            >×</button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => variantImgRef.current?.click()}
+                            disabled={uploadingVariantImg}
+                            style={{ background: '#f1f5f9', border: '1px dashed #cbd5e1', borderRadius: 4, padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}
+                          >
+                            {uploadingVariantImg ? 'Đang tải...' : '📷 Ảnh'}
+                          </button>
+                        )}
+                        <input ref={variantImgRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleVariantImagePick} />
+                        {variantEditIdx !== null && (
+                          <button
+                            type="button"
+                            onClick={cancelVariantEdit}
+                            className="btn-secondary"
+                            style={{ fontSize: '0.825rem', padding: '0.3rem 0.75rem', whiteSpace: 'nowrap' }}
+                          >
+                            Huỷ sửa
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleCommitVariantForm}
+                          disabled={!newVariant.name.trim() || !newVariant.price}
+                          className="btn-primary"
+                          style={{ fontSize: '0.825rem', padding: '0.3rem 0.75rem', whiteSpace: 'nowrap' }}
+                        >
+                          {variantEditIdx !== null ? 'Cập nhật' : 'Thêm'}
+                        </button>
+                      </div>
+                    </div>
+                    {savingVariants && <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.25rem 0 0' }}>Đang lưu phân loại...</p>}
+                  </div>
+                )}
               </div>
 
               {/* Active */}

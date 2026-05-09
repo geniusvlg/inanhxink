@@ -33,8 +33,12 @@ export interface Order {
 export interface ProductOrderItem {
   product_id: number;
   product_name: string;
+  variant_id?: number | null;
+  variant_name?: string | null;
   quantity: number;
   unit_price: number;
+  /** First product gallery image or variant image (same as storefront); set when order is created. */
+  catalog_image?: string | null;
   image_urls: string[];
   note: string;
 }
@@ -106,6 +110,18 @@ export interface HeroShot {
   updated_at: string;
 }
 
+export interface ProductVariant {
+  id?: number;
+  product_id?: number;
+  name: string;
+  price: number;
+  discount_price?: number | null;
+  discount_from?: string | null;
+  discount_to?: string | null;
+  image: string | null;
+  sort_order: number;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -127,5 +143,6 @@ export interface Product {
   is_featured_on_home: boolean;
   home_sort_order: number;
   created_at: string;
+  variants?: ProductVariant[];
 }
 

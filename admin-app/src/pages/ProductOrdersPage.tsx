@@ -45,10 +45,25 @@ function fmt(n: number | null | undefined) {
   return `${Math.round(Number(n ?? 0)).toLocaleString('vi-VN')}đ`;
 }
 
+function itemLineLabel(it: ProductOrderItem): string {
+  const variant = it.variant_name?.trim();
+  const name = variant ? `${it.product_name} — ${variant}` : it.product_name;
+  return `${name} x${it.quantity}`;
+}
+
 function itemSummary(items: ProductOrderItem[]) {
   if (!items.length) return '—';
-  const names = items.slice(0, 2).map(it => `${it.product_name} x${it.quantity}`);
+  const names = items.slice(0, 2).map(itemLineLabel);
   return items.length > 2 ? `${names.join(', ')} +${items.length - 2}` : names.join(', ');
+}
+
+function firstCatalogImage(items: ProductOrderItem[] | undefined): string | null {
+  if (!items?.length) return null;
+  for (const it of items) {
+    const u = it.catalog_image?.trim();
+    if (u) return u;
+  }
+  return null;
 }
 
 export default function ProductOrdersPage() {
@@ -139,7 +154,18 @@ export default function ProductOrdersPage() {
                       <div>{o.customer_name}</div>
                       <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{o.customer_phone}</div>
                     </td>
-                    <td>{itemSummary(o.items ?? [])}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {firstCatalogImage(o.items) && (
+                          <img
+                            src={resolveAssetUrl(firstCatalogImage(o.items)!)}
+                            alt=""
+                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0', flexShrink: 0 }}
+                          />
+                        )}
+                        <span>{itemSummary(o.items ?? [])}</span>
+                      </div>
+                    </td>
                     <td>{fmt(o.total_amount)}</td>
                     <td><PaymentBadge status={o.payment_status} /></td>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
@@ -201,29 +227,68 @@ export default function ProductOrdersPage() {
             <h3 style={{ margin: '1rem 0 0.5rem', color: '#1e293b', fontSize: '1rem' }}>Sản phẩm</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: 320, overflow: 'auto' }}>
               {(detail.items ?? []).map((item, idx) => (
-                <div key={`${item.product_id}-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.4rem' }}>
-                    <strong>{item.product_name}</strong>
-                    <span>{item.quantity} x {fmt(item.unit_price)}</span>
+                <div key={`${item.product_id}-${item.variant_id ?? 'base'}-${idx}`} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                    {item.catalog_image?.trim() ? (
+                      <a
+                        href={resolveAssetUrl(item.catalog_image)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ flexShrink: 0 }}
+                        title="Ảnh trên web (SP / Phân loại)"
+                      >
+                        <img
+                          src={resolveAssetUrl(item.catalog_image)}
+                          alt=""
+                          style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0', display: 'block' }}
+                        />
+                      </a>
+                    ) : (
+                      <div
+                        style={{
+                          width: 72, height: 72, flexShrink: 0, borderRadius: 8, border: '1px dashed #cbd5e1',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', color: '#94a3b8', background: '#f8fafc',
+                        }}
+                        title="Đơn cũ — chưa lưu ảnh SP"
+                      >
+                        📷
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.35rem' }}>
+                        <div>
+                          <strong>{item.product_name}</strong>
+                          {item.variant_name?.trim() && (
+                            <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.2rem' }}>
+                              Phân loại: <strong style={{ color: '#334155' }}>{item.variant_name}</strong>
+                            </div>
+                          )}
+                        </div>
+                        <span style={{ whiteSpace: 'nowrap' }}>{item.quantity} x {fmt(item.unit_price)}</span>
+                      </div>
+                      {item.note && (
+                        <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '0.5rem' }}>
+                          Ghi chú: {item.note}
+                        </div>
+                      )}
+                      {item.image_urls && item.image_urls.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: '0.35rem' }}>Ảnh khách upload (checkout)</div>
+                          <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                            {item.image_urls.map((url, imageIdx) => (
+                              <a key={`${url}-${imageIdx}`} href={resolveAssetUrl(url)} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={resolveAssetUrl(url)}
+                                  alt=""
+                                  style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }}
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {item.note && (
-                    <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '0.5rem' }}>
-                      Ghi chú: {item.note}
-                    </div>
-                  )}
-                  {item.image_urls?.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-                      {item.image_urls.map((url, imageIdx) => (
-                        <a key={`${url}-${imageIdx}`} href={resolveAssetUrl(url)} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={resolveAssetUrl(url)}
-                            alt=""
-                            style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }}
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

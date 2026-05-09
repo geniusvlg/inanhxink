@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProductById, type Product } from '../services/api';
+import { getProductById, type Product, type ProductVariant } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
@@ -20,6 +20,51 @@ function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('vi-VN') + 'đ';
 }
 
+/** Returns the active discount price for a variant, or null if no active discount. */
+function getVariantEffectivePrice(v: ProductVariant): number {
+  if (v.discount_price != null) {
+    const now = Date.now();
+    const from = v.discount_from ? new Date(v.discount_from).getTime() : null;
+    const to   = v.discount_to   ? new Date(v.discount_to).getTime()   : null;
+    const fromOk = from == null || from <= now;
+    const toOk   = to   == null || to   >= now;
+    if (fromOk && toOk) return v.discount_price;
+  }
+  return v.price;
+}
+
+interface VariantPriceRange {
+  minEffective: number;
+  maxEffective: number;
+  minOriginal:  number;
+  maxOriginal:  number;
+  hasDiscount:  boolean;
+}
+
+function computeVariantPriceRange(variants: ProductVariant[]): VariantPriceRange {
+  const effectives = variants.map(getVariantEffectivePrice);
+  const originals  = variants.map(v => v.price);
+  return {
+    minEffective: Math.min(...effectives),
+    maxEffective: Math.max(...effectives),
+    minOriginal:  Math.min(...originals),
+    maxOriginal:  Math.max(...originals),
+    hasDiscount:  variants.some(v => getVariantEffectivePrice(v) < v.price),
+  };
+}
+
+/** Largest rounded % off among variants (effective vs that variant's Giá gốc). Matches "Giảm tới X%" style. */
+function maxVariantDiscountPercent(variants: ProductVariant[]): number {
+  let max = 0;
+  for (const v of variants) {
+    const eff = getVariantEffectivePrice(v);
+    if (eff >= v.price) continue;
+    const pct = Math.round((1 - eff / v.price) * 100);
+    if (pct > max) max = pct;
+  }
+  return max;
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -27,50 +72,77 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeImg, setActiveImg] = useState(0);
-  const [added, setAdded] = useState(false);
+  const [hoveredVariantImg, setHoveredVariantImg] = useState<string | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [cartToastVisible, setCartToastVisible] = useState(false);
+  const cartToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { addItem } = useCart();
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     getProductById(Number(id))
-      .then((p) => { setProduct(p); setActiveImg(0); })
+      .then((p) => { setProduct(p); setActiveImg(0); setSelectedVariant(null); })
       .catch(() => setError('Không thể tải sản phẩm'))
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => () => {
+    if (cartToastTimerRef.current !== null) clearTimeout(cartToastTimerRef.current);
+  }, []);
+
   const backPath = product?.type === 'khung_anh' ? '/khung-anh' : '/thiep';
   const backLabel = product?.type === 'khung_anh' ? 'Khung Ảnh' : 'Thiệp';
 
-  const images = product?.images?.length
+  const productImages = product?.images?.length
     ? product.images.map(resolveUrl)
     : ['/placeholder.png'];
 
-  const handleAddToCart = () => {
-    if (!product) return;
-    const price = getActiveDiscountPrice(product) ?? product.price;
-    addItem({
+  const variants: ProductVariant[] = product?.variants ?? [];
+  const hasVariants = variants.length > 0;
+
+  // The main displayed image: variant hover > gallery selection
+  const displayImg = hoveredVariantImg
+    ? resolveUrl(hoveredVariantImg)
+    : productImages[activeImg];
+
+  // Effective price: variant effective price if selected, else product discount/base price
+  const basePrice = getActiveDiscountPrice(product ?? ({} as Product)) ?? product?.price ?? 0;
+  const effectivePrice = selectedVariant ? getVariantEffectivePrice(selectedVariant) : basePrice;
+
+  const buildCartEntry = () => {
+    if (!product) return null;
+    return {
       product_id:   product.id,
       product_name: product.name,
-      unit_price:   price,
+      variant_id:   selectedVariant?.id ?? null,
+      variant_name: selectedVariant?.name ?? null,
+      unit_price:   effectivePrice,
       max_upload_images: product.max_upload_images ?? 15,
-      thumbnail:    images[0],
-    });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+      thumbnail:    selectedVariant?.image ? resolveUrl(selectedVariant.image) : productImages[0],
+    };
+  };
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    if (hasVariants && !selectedVariant) return;
+    const entry = buildCartEntry();
+    if (!entry) return;
+    addItem(entry);
+    setCartToastVisible(true);
+    if (cartToastTimerRef.current !== null) clearTimeout(cartToastTimerRef.current);
+    cartToastTimerRef.current = setTimeout(() => {
+      setCartToastVisible(false);
+      cartToastTimerRef.current = null;
+    }, 2500);
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-    const price = getActiveDiscountPrice(product) ?? product.price;
-    startBuyNowCheckout({
-      product_id:   product.id,
-      product_name: product.name,
-      unit_price:   price,
-      quantity:     1,
-      max_upload_images: product.max_upload_images ?? 15,
-      thumbnail:    images[0],
-    });
+    if (hasVariants && !selectedVariant) return;
+    const entry = buildCartEntry();
+    if (!entry) return;
+    startBuyNowCheckout({ ...entry, quantity: 1 });
     navigate('/checkout?mode=buy-now');
   };
 
@@ -109,14 +181,14 @@ export default function ProductDetailPage() {
         </nav>
 
         <div className="pd-body">
-          {/* ── Left: image gallery ── */}
+          {/* ── Left: image gallery (product images only, NOT variant images) ── */}
           <div className="pd-gallery">
             <div className="pd-thumbnails">
-              {images.map((src, i) => (
+              {productImages.map((src, i) => (
                 <button
                   key={i}
-                  className={`pd-thumb-btn${activeImg === i ? ' active' : ''}`}
-                  onClick={() => setActiveImg(i)}
+                  className={`pd-thumb-btn${activeImg === i && !hoveredVariantImg ? ' active' : ''}`}
+                  onClick={() => { setActiveImg(i); setHoveredVariantImg(null); }}
                 >
                   <img src={src} alt={`${product.name} ${i + 1}`} />
                 </button>
@@ -125,19 +197,19 @@ export default function ProductDetailPage() {
             <div className="pd-main-img-wrap">
               <img
                 className="pd-main-img"
-                src={images[activeImg]}
+                src={displayImg}
                 alt={product.name}
               />
-              {images.length > 1 && (
+              {productImages.length > 1 && !hoveredVariantImg && (
                 <>
                   <button
                     className="pd-arrow pd-arrow--prev"
-                    onClick={() => setActiveImg((activeImg - 1 + images.length) % images.length)}
+                    onClick={() => setActiveImg((activeImg - 1 + productImages.length) % productImages.length)}
                     aria-label="Ảnh trước"
                   >‹</button>
                   <button
                     className="pd-arrow pd-arrow--next"
-                    onClick={() => setActiveImg((activeImg + 1) % images.length)}
+                    onClick={() => setActiveImg((activeImg + 1) % productImages.length)}
                     aria-label="Ảnh sau"
                   >›</button>
                 </>
@@ -148,7 +220,53 @@ export default function ProductDetailPage() {
           {/* ── Right: info panel ── */}
           <div className="pd-info">
             <h1 className="pd-name">{product.name}</h1>
-            {getActiveDiscountPrice(product) !== null ? (
+
+            {/* Price — range when variants exist and none selected, variant price when selected */}
+            {hasVariants && !selectedVariant ? (
+              (() => {
+                const range = computeVariantPriceRange(variants);
+                const singleEffective = range.minEffective === range.maxEffective;
+                const singleOriginal  = range.minOriginal  === range.maxOriginal;
+                const maxDiscountPct = range.hasDiscount ? maxVariantDiscountPercent(variants) : 0;
+                return (
+                  <div className="pd-price">
+                    <span style={{ color: '#fe2c56' }}>
+                      {singleEffective
+                        ? formatPrice(range.minEffective)
+                        : `${formatPrice(range.minEffective)} - ${formatPrice(range.maxEffective)}`}
+                    </span>
+                    {range.hasDiscount && (
+                      <>
+                        <span style={{ color: '#9ca3af', textDecoration: 'line-through', fontSize: '0.85em', marginLeft: '0.5rem', fontWeight: 400 }}>
+                          {singleOriginal
+                            ? formatPrice(range.minOriginal)
+                            : `${formatPrice(range.minOriginal)} - ${formatPrice(range.maxOriginal)}`}
+                        </span>
+                        {maxDiscountPct > 0 && (
+                          <span style={{ background: '#fe2c56', color: '#fff', fontSize: '0.72rem', fontWeight: 700, borderRadius: '0.25rem', padding: '0.1rem 0.4rem', marginLeft: '0.5rem', verticalAlign: 'middle' }}>
+                            -{maxDiscountPct}%
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()
+            ) : selectedVariant ? (
+              <div className="pd-price">
+                {getVariantEffectivePrice(selectedVariant) < selectedVariant.price ? (
+                  <>
+                    <span style={{ color: '#fe2c56' }}>{formatPrice(getVariantEffectivePrice(selectedVariant))}</span>
+                    <span style={{ color: '#9ca3af', textDecoration: 'line-through', fontSize: '0.85em', marginLeft: '0.5rem', fontWeight: 400 }}>{formatPrice(selectedVariant.price)}</span>
+                    <span style={{ background: '#fe2c56', color: '#fff', fontSize: '0.72rem', fontWeight: 700, borderRadius: '0.25rem', padding: '0.1rem 0.4rem', marginLeft: '0.5rem', verticalAlign: 'middle' }}>
+                      -{Math.round((1 - getVariantEffectivePrice(selectedVariant) / selectedVariant.price) * 100)}%
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: '#fe2c56' }}>{formatPrice(selectedVariant.price)}</span>
+                )}
+              </div>
+            ) : getActiveDiscountPrice(product) !== null ? (
               <div className="pd-price">
                 <span style={{ color: '#fe2c56' }}>{formatPrice(getActiveDiscountPrice(product)!)}</span>
                 <span style={{ color: '#9ca3af', textDecoration: 'line-through', fontSize: '0.85em', marginLeft: '0.5rem', fontWeight: 400 }}>{formatPrice(product.price)}</span>
@@ -164,46 +282,65 @@ export default function ProductDetailPage() {
               <p className="pd-desc">{product.description}</p>
             )}
 
+            {/* ── Phân loại (Variants) ── */}
+            {hasVariants && (
+              <div className="pd-variants">
+                <p className="pd-variants-label">
+                  Phân loại:{' '}
+                  {selectedVariant
+                    ? <strong>{selectedVariant.name}</strong>
+                    : <span style={{ color: '#ef4444', fontWeight: 400 }}>Vui lòng chọn phân loại</span>
+                  }
+                </p>
+                <div className="pd-variants-list">
+                  {variants.map(v => {
+                    const isSelected = selectedVariant?.id === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        className={`pd-variant-btn${isSelected ? ' pd-variant-btn--selected' : ''}`}
+                        onClick={() => {
+                          setSelectedVariant(isSelected ? null : v);
+                          if (v.image) setHoveredVariantImg(isSelected ? null : v.image);
+                          else setHoveredVariantImg(null);
+                        }}
+                        onMouseEnter={() => { if (v.image) setHoveredVariantImg(v.image); }}
+                        onMouseLeave={() => { if (!isSelected) setHoveredVariantImg(selectedVariant?.image ?? null); }}
+                      >
+                        {v.image && (
+                          <img src={resolveUrl(v.image)} alt={v.name} className="pd-variant-img" />
+                        )}
+                        <span className="pd-variant-name">{v.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="pd-action-row">
               <button
                 className="pd-buy-now-btn"
                 onClick={handleBuyNow}
+                disabled={hasVariants && !selectedVariant}
+                title={hasVariants && !selectedVariant ? 'Vui lòng chọn phân loại' : undefined}
               >
                 Mua ngay
               </button>
 
               <button
-                className={`pd-add-to-cart-btn${added ? ' pd-add-to-cart-btn--added' : ''}`}
+                className="pd-add-to-cart-btn"
                 onClick={handleAddToCart}
+                disabled={hasVariants && !selectedVariant}
+                title={hasVariants && !selectedVariant ? 'Vui lòng chọn phân loại' : undefined}
               >
-                {added ? (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    Đã thêm!
-                  </>
-                ) : (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-                      <line x1="3" y1="6" x2="21" y2="6"/>
-                      <path d="M16 10a4 4 0 01-8 0"/>
-                    </svg>
-                    Thêm vào giỏ hàng
-                  </>
-                )}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                  <line x1="3" y1="6" x2="21" y2="6"/>
+                  <path d="M16 10a4 4 0 01-8 0"/>
+                </svg>
+                Thêm vào giỏ hàng
               </button>
-
-              <a
-                className="pd-zalo-btn"
-                href="https://zalo.me/0582818580"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img src="/zalo_icon.svg.webp" alt="Zalo" className="pd-zalo-icon" />
-                Liên hệ Zalo
-              </a>
             </div>
 
             {(product.tiktok_url || product.instagram_url) && (
@@ -277,6 +414,19 @@ export default function ProductDetailPage() {
       </main>
 
       <SiteFooter />
+
+      {cartToastVisible && (
+        <div className="pd-cart-toast-layer" role="status" aria-live="polite">
+          <div className="pd-cart-toast">
+            <div className="pd-cart-toast-icon" aria-hidden>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <p className="pd-cart-toast-text">Sản phẩm đã được thêm vào Giỏ hàng</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

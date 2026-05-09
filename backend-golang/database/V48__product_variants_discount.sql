@@ -1,0 +1,4 @@
+ALTER TABLE product_variants
+  ADD COLUMN IF NOT EXISTS discount_price DECIMAL(12,0),
+  ADD COLUMN IF NOT EXISTS discount_from  TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS discount_to    TIMESTAMP;

@@ -188,6 +188,9 @@ func main() {
 				r.Get("/{id}", adminHandlers.GetProduct)
 				r.Put("/{id}", adminHandlers.UpdateProduct)
 				r.Delete("/{id}", adminHandlers.DeleteProduct)
+				r.Get("/{id}/variants", adminHandlers.ListProductVariants)
+				r.Put("/{id}/variants", adminHandlers.UpsertProductVariants)
+				r.Delete("/{id}/variants/{variantId}", adminHandlers.DeleteProductVariant)
 			})
 
 			r.Route("/product-categories", func(r chi.Router) {

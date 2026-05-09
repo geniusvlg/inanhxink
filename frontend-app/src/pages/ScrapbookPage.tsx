@@ -7,8 +7,7 @@ import ProductFilter, { DEFAULT_FILTERS, type FilterState } from '../components/
 import ProductPageBanner from '../components/ProductPageBanner';
 import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
-import PriceTag, { getActiveDiscountPrice } from '../components/PriceTag';
-import { startBuyNowCheckout, useCart } from '../contexts/CartContext';
+import PriceTag from '../components/PriceTag';
 import './ScrapbookPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -30,9 +29,6 @@ export default function ScrapbookPage() {
   const [loading,      setLoading]      = useState(true);
   const [loadingMore,  setLoadingMore]  = useState(false);
   const [error,        setError]        = useState('');
-  const [addedIds,     setAddedIds]     = useState<Set<number>>(new Set());
-  const { addItem } = useCart();
-
   useEffect(() => {
     getCategories('so_scrapbook').then(setCategories).catch(() => setCategories([]));
   }, []);
@@ -124,21 +120,9 @@ export default function ScrapbookPage() {
                         onClick={e => {
                           e.preventDefault();
                           e.stopPropagation();
-                          startBuyNowCheckout({ product_id: p.id, product_name: p.name, unit_price: getActiveDiscountPrice(p) ?? p.price, quantity: 1, thumbnail: p.images?.[0] ? resolveUrl(p.images[0]) : undefined });
-                          navigate('/checkout?mode=buy-now');
+                          navigate(`/product/${p.id}`);
                         }}
                       >Mua ngay</button>
-                      <button
-                        className={`product-card-atc${addedIds.has(p.id) ? ' product-card-atc--added' : ''}`}
-                        aria-label="Thêm vào giỏ"
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addItem({ product_id: p.id, product_name: p.name, unit_price: getActiveDiscountPrice(p) ?? p.price, thumbnail: p.images?.[0] ? resolveUrl(p.images[0]) : undefined });
-                          setAddedIds(prev => new Set(prev).add(p.id));
-                          setTimeout(() => setAddedIds(prev => { const n = new Set(prev); n.delete(p.id); return n; }), 2000);
-                        }}
-                      >{addedIds.has(p.id) ? 'Đã thêm' : 'Thêm vào giỏ hàng'}</button>
                     </div>
                   </div>
                   <div className="product-card-info">
