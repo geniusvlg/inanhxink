@@ -11,6 +11,7 @@ import (
 
 	"inanhxink/backend-golang/internal/config"
 	"inanhxink/backend-golang/internal/handlers"
+	"inanhxink/backend-golang/internal/notify"
 )
 
 // GET /api/admin/product-orders?page=&limit=&payment_status=
@@ -167,6 +168,30 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 				}
 			}()
 		}
+	}
+
+	if body.PaymentStatus == "paid" && prevPayment != "paid" {
+		oid := handlers.MapInt(order, "id")
+		if oid == 0 {
+			oid = handlers.IntParam(id, 0)
+		}
+		var itemsLines string
+		var items []handlers.OrderItem
+		if err := json.Unmarshal([]byte(itemsJSON), &items); err == nil {
+			itemsLines = handlers.FormatProductOrderItemsVN(items)
+		}
+		notify.ProductOrderPaid(notify.ProductOrderPaidDetail{
+			OrderID:         oid,
+			InvoiceNumber:   handlers.MapStr(order, "invoice_number"),
+			CustomerName:    handlers.MapStr(order, "customer_name"),
+			CustomerPhone:   handlers.MapStr(order, "customer_phone"),
+			CustomerEmail:   handlers.MapStr(order, "customer_email"),
+			CustomerAddress: handlers.MapStr(order, "customer_address"),
+			Subtotal:        handlers.MapFloat64(order, "subtotal"),
+			ShippingFee:     handlers.MapFloat64(order, "shipping_fee"),
+			Total:           handlers.MapFloat64(order, "total_amount"),
+			ItemsLines:      itemsLines,
+		})
 	}
 
 	handlers.OK(w, map[string]any{"success": true, "product_order": order})

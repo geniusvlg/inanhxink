@@ -157,6 +157,17 @@ store the original image bytes/extension.
 
 See `docs/product-orders-fulfillment.md` for the full flow and lifecycle rules.
 
+## Admin email (new orders)
+
+Admins set SMTP and recipients only in **`/admin/config`** (`metadata` keys `notify_*`). There is **no** `.env` fallback for these fields. The SMTP password is stored in the database only; it is **never** returned by the API (only `notify_smtp_password_set`) and is **omitted** from public `GET /api/metadata`.
+
+When recipients plus host and from are present in metadata, the server sends plain-text mail to admins **only after payment is confirmed**:
+
+- **QR / template orders** — when `POST /api/payments/webhook/qr` marks the order paid, or admin `PATCH` sets `payment_status` to `paid` (transition from non-`paid`).
+- **Product orders** — when `handleProductOrderWebhook` marks the order paid, or admin `PATCH` on product order status sets `paid` (transition from non-`paid`).
+
+`notify_smtp_port` defaults to `587` when unset. If user and password are both empty, mail is sent without AUTH (useful for local MailHog). Errors are logged and never fail the HTTP request.
+
 ## Tech stack summary
 
 | Concern | Library |

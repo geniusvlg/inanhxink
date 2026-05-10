@@ -12,6 +12,7 @@ import (
 
 	"inanhxink/backend-golang/internal/config"
 	"inanhxink/backend-golang/internal/handlers"
+	"inanhxink/backend-golang/internal/notify"
 )
 
 func adminDomain() string {
@@ -133,6 +134,13 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(context.Background()) //nolint
 
+	var prevPayment string
+	if err := tx.QueryRow(context.Background(),
+		`SELECT payment_status FROM orders WHERE id = $1 FOR UPDATE`, id).Scan(&prevPayment); err != nil {
+		handlers.NotFound(w)
+		return
+	}
+
 	orderRows, err := tx.Query(context.Background(),
 		fmt.Sprintf("UPDATE orders SET %s, updated_at = NOW() WHERE id = $%d RETURNING *",
 			joinClauses(setClauses), len(values)),
@@ -183,6 +191,24 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		handlers.InternalError(w, err)
 		return
 	}
+
+	if body.PaymentStatus == "paid" && prevPayment != "paid" {
+		oid := handlers.MapInt(order, "id")
+		if oid == 0 {
+			oid = handlers.IntParam(id, 0)
+		}
+		notify.QROrderPaid(notify.QROrderPaidDetail{
+			OrderID:       oid,
+			QRName:        handlers.MapStr(order, "qr_name"),
+			TemplateType:  handlers.MapStr(order, "template_type"),
+			CustomerName:  handlers.MapStr(order, "customer_name"),
+			CustomerEmail: handlers.MapStr(order, "customer_email"),
+			CustomerPhone: handlers.MapStr(order, "customer_phone"),
+			Total:         handlers.MapFloat64(order, "total_amount"),
+			Domain:        adminDomain(),
+		})
+	}
+
 	handlers.OK(w, map[string]any{"success": true, "order": order})
 }
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 
 	"inanhxink/backend-golang/internal/config"
 )
@@ -217,9 +219,28 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx := context.Background()
+	var existingID int
+	var existingPayment string
+	priorErr := config.DB.QueryRow(ctx,
+		`SELECT id, payment_status FROM product_orders WHERE cart_session_id = $1`,
+		body.CartSessionID).Scan(&existingID, &existingPayment)
+	if priorErr == nil && existingPayment == "paid" {
+		Created(w, map[string]any{
+			"success":      true,
+			"order_id":     existingID,
+			"already_paid": true,
+		})
+		return
+	}
+	if priorErr != nil && !errors.Is(priorErr, pgx.ErrNoRows) {
+		InternalError(w, priorErr)
+		return
+	}
+
 	// Upsert: if same cart_session_id is submitted twice, update and return existing row.
 	// Guard: only update if still pending (do not overwrite a paid order).
-	row := config.DB.QueryRow(context.Background(), `
+	row := config.DB.QueryRow(ctx, `
 		INSERT INTO product_orders
 			(cart_session_id, customer_name, customer_phone, customer_email,
 			 customer_address, items, subtotal, shipping_fee, total_amount)
@@ -243,7 +264,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 	var orderID int
 	if err := row.Scan(&orderID); err != nil {
 		// If scan fails, the order is already paid — fetch its id and return it as-is.
-		fetchRow := config.DB.QueryRow(context.Background(),
+		fetchRow := config.DB.QueryRow(ctx,
 			"SELECT id FROM product_orders WHERE cart_session_id = $1",
 			body.CartSessionID)
 		if err2 := fetchRow.Scan(&orderID); err2 != nil {
@@ -261,7 +282,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Set invoice_number: INXK{id}{5-char random suffix}.
 	invoiceNumber := fmt.Sprintf("INXK%d%s", orderID, randomInvoiceSuffix(5))
-	config.DB.Exec(context.Background(), //nolint
+	config.DB.Exec(ctx, //nolint
 		"UPDATE product_orders SET invoice_number = $1 WHERE id = $2 AND invoice_number IS NULL",
 		invoiceNumber, orderID)
 
