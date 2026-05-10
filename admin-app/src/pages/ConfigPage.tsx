@@ -21,6 +21,20 @@ const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
 const SHIPPING_BELOW_THRESHOLD_FEE_KEY = 'product_shipping_fee_below_threshold';
 const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_THRESHOLD_KEY, SHIPPING_BELOW_THRESHOLD_FEE_KEY]);
 
+/** Order notification email (metadata + optional DB SMTP password). Not exposed on public /api/metadata. */
+const NOTIFY_SMTP_PASSWORD_SET_KEY = 'notify_smtp_password_set';
+const NOTIFY_EMAIL_KEYS = [
+  'notify_admin_email',
+  'notify_smtp_host',
+  'notify_smtp_port',
+  'notify_smtp_from',
+  'notify_smtp_user',
+] as const;
+const NOTIFY_CONFIG_KEYS = new Set<string>([
+  ...NOTIFY_EMAIL_KEYS,
+  NOTIFY_SMTP_PASSWORD_SET_KEY,
+]);
+
 // Keys managed by other pages — exclude from "other config" and don't
 // overwrite them when ConfigPage saves.
 const MANAGED_ELSEWHERE = new Set([
@@ -38,6 +52,8 @@ export default function ConfigPage() {
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
   const [saved,   setSaved]   = useState(false);
+  const [smtpPasswordInput, setSmtpPasswordInput] = useState('');
+  const [clearSmtpPassword, setClearSmtpPassword]   = useState(false);
 
   useEffect(() => {
     metadataApi.get()
@@ -104,7 +120,22 @@ export default function ConfigPage() {
       payload[PAGE_ORDER_KEY] = JSON.stringify(orderedPageFlags);
       payload[SHIPPING_THRESHOLD_KEY] = config[SHIPPING_THRESHOLD_KEY] ?? '0';
       payload[SHIPPING_BELOW_THRESHOLD_FEE_KEY] = config[SHIPPING_BELOW_THRESHOLD_FEE_KEY] ?? '0';
+
+      delete payload[NOTIFY_SMTP_PASSWORD_SET_KEY];
+      for (const k of NOTIFY_EMAIL_KEYS) {
+        payload[k] = config[k] ?? '';
+      }
+      if (clearSmtpPassword) {
+        payload.notify_smtp_password = '__CLEAR__';
+      } else if (smtpPasswordInput.trim() !== '') {
+        payload.notify_smtp_password = smtpPasswordInput.trim();
+      }
+
       await metadataApi.update(payload);
+      const refreshed = await metadataApi.get();
+      setConfig(refreshed.data.config ?? {});
+      setSmtpPasswordInput('');
+      setClearSmtpPassword(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -117,7 +148,8 @@ export default function ConfigPage() {
   const pageFlagKeys = new Set(PAGE_FLAGS.map(f => f.key));
   const otherEntries = useMemo(
     () => Object.entries(config).filter(([k]) =>
-      k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k) && !SHIPPING_CONFIG_KEYS.has(k),
+      k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k) && !SHIPPING_CONFIG_KEYS.has(k)
+      && !NOTIFY_CONFIG_KEYS.has(k),
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -204,6 +236,100 @@ export default function ConfigPage() {
                 />
                 <p className="cfg-field-note">Để trống hoặc nhập 0 nếu chưa muốn tính phí ship.</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Order notification email ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">📧 Email thông báo đơn hàng mới</div>
+            <div className="cfg-card-sub">
+              Gửi email cho admin khi đơn QR hoặc đơn sản phẩm được xác nhận thanh toán (SePay webhook hoặc admin đổi trạng thái sang đã thanh toán). 
+            </div>
+          </div>
+          <div className="cfg-section">
+            <div className="form-group">
+              <label className="form-label">Email nhận thông báo (có thể nhiều, cách nhau dấu phẩy)</label>
+              <input
+                className="form-input"
+                type="text"
+                autoComplete="off"
+                placeholder="admin@example.com"
+                value={config.notify_admin_email ?? ''}
+                onChange={e => handleChange('notify_admin_email', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">SMTP host</label>
+              <input
+                className="form-input"
+                type="text"
+                autoComplete="off"
+                placeholder="smtp.gmail.com"
+                value={config.notify_smtp_host ?? ''}
+                onChange={e => handleChange('notify_smtp_host', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">SMTP port</label>
+              <input
+                className="form-input"
+                type="text"
+                inputMode="numeric"
+                placeholder="587"
+                value={config.notify_smtp_port ?? ''}
+                onChange={e => handleChange('notify_smtp_port', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">From (địa chỉ gửi)</label>
+              <input
+                className="form-input"
+                type="email"
+                autoComplete="off"
+                placeholder="noreply@example.com"
+                value={config.notify_smtp_from ?? ''}
+                onChange={e => handleChange('notify_smtp_from', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">SMTP user (thường trùng email gửi)</label>
+              <input
+                className="form-input"
+                type="text"
+                autoComplete="off"
+                value={config.notify_smtp_user ?? ''}
+                onChange={e => handleChange('notify_smtp_user', e.target.value)}
+              />
+              <p className="cfg-field-note">Để trống: server dùng cùng địa chỉ &quot;From&quot; làm tên đăng nhập SMTP (ổn với Gmail).</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">SMTP password / app password</label>
+              <input
+                className="form-input"
+                type="password"
+                autoComplete="new-password"
+                placeholder={config[NOTIFY_SMTP_PASSWORD_SET_KEY] === 'true' ? '•••••••• (để trống để giữ mật khẩu đã lưu)' : 'Điền khi cần xác thực SMTP'}
+                value={smtpPasswordInput}
+                onChange={e => {
+                  setSmtpPasswordInput(e.target.value);
+                  if (e.target.value) setClearSmtpPassword(false);
+                }}
+              />
+              {config[NOTIFY_SMTP_PASSWORD_SET_KEY] === 'true' && (
+                <label className="cfg-field-note" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={clearSmtpPassword}
+                    onChange={e => {
+                      setClearSmtpPassword(e.target.checked);
+                      if (e.target.checked) setSmtpPasswordInput('');
+                    }}
+                  />
+                  Xóa mật khẩu SMTP đã lưu (gửi không xác thực SMTP, ví dụ Mailpit local)
+                </label>
+              )}
             </div>
           </div>
         </div>

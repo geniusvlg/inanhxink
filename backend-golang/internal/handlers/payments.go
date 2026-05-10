@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"inanhxink/backend-golang/internal/config"
+	"inanhxink/backend-golang/internal/notify"
 )
 
 func sepayAPIKey() string    { return os.Getenv("SEPAY_API_KEY") }
@@ -368,9 +369,15 @@ func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 	var templateID int
 	var templateDataRaw []byte
 	var keychainPurchased bool
+	var customerName, customerEmail, customerPhone string
+	var orderTotal float64
 	orderRow := tx.QueryRow(context.Background(),
-		"SELECT qr_name, content, template_id, template_type, template_data, keychain_purchased FROM orders WHERE id = $1 FOR UPDATE", orderID)
-	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw, &keychainPurchased); err != nil {
+		`SELECT qr_name, content, template_id, template_type, template_data, keychain_purchased,
+			COALESCE(customer_name::text, ''), COALESCE(customer_email::text, ''), COALESCE(customer_phone::text, ''),
+			total_amount
+		 FROM orders WHERE id = $1 FOR UPDATE`, orderID)
+	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw, &keychainPurchased,
+		&customerName, &customerEmail, &customerPhone, &orderTotal); err != nil {
 		InternalError(w, err)
 		return
 	}
@@ -460,6 +467,16 @@ func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go migrateQRUploads(qrName, orderID, templateDataRaw)
+	notify.QROrderPaid(notify.QROrderPaidDetail{
+		OrderID:       orderID,
+		QRName:        qrName,
+		TemplateType:  templateType,
+		CustomerName:  customerName,
+		CustomerEmail: customerEmail,
+		CustomerPhone: customerPhone,
+		Total:         orderTotal,
+		Domain:        domain(),
+	})
 	OK(w, map[string]any{"success": true, "message": "Payment confirmed"})
 }
 
@@ -527,10 +544,19 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	var itemsJSON string
 	var paymentStatus string
 	var requiredAmount float64
+	var subtotal, shippingFee float64
+	var invoiceNumber, custName, custPhone, custEmail, custAddr string
 	if err := dbtx.QueryRow(ctx, `
-		SELECT items::text, payment_status, total_amount
+		SELECT items::text, payment_status, total_amount,
+			COALESCE(subtotal, 0)::float8, COALESCE(shipping_fee, 0)::float8,
+			COALESCE(invoice_number::text, ''),
+			COALESCE(customer_name::text, ''),
+			COALESCE(customer_phone::text, ''),
+			COALESCE(customer_email::text, ''),
+			COALESCE(customer_address::text, '')
 		FROM product_orders WHERE id = $1 FOR UPDATE`, orderID).
-		Scan(&itemsJSON, &paymentStatus, &requiredAmount); err != nil {
+		Scan(&itemsJSON, &paymentStatus, &requiredAmount, &subtotal, &shippingFee,
+			&invoiceNumber, &custName, &custPhone, &custEmail, &custAddr); err != nil {
 		log.Printf("[product-webhook] lock/select product order failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
 		OK(w, map[string]any{"success": true, "message": "No pending product order found"})
 		return
@@ -612,6 +638,19 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 		return
 	}
 	log.Printf("[product-orders] order %d paid — sepay_id=%d amount=%.0f", orderID, sepayID, amount)
+
+	notify.ProductOrderPaid(notify.ProductOrderPaidDetail{
+		OrderID:         orderID,
+		InvoiceNumber:   invoiceNumber,
+		CustomerName:    custName,
+		CustomerPhone:   custPhone,
+		CustomerEmail:   custEmail,
+		CustomerAddress: custAddr,
+		Subtotal:        subtotal,
+		ShippingFee:     shippingFee,
+		Total:           requiredAmount,
+		ItemsLines:      FormatProductOrderItemsVN(orderItems),
+	})
 
 	// Move temp S3 images → product-orders/paid/{orderID}/ now that payment is confirmed.
 	go func() {

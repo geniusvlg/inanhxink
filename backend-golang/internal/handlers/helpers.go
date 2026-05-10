@@ -4,8 +4,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -56,6 +58,80 @@ func IntParam(s string, def int) int {
 		return v
 	}
 	return def
+}
+
+// MapStr returns a string column from a row map (pgx RowToMap).
+func MapStr(m map[string]any, key string) string {
+	if m == nil {
+		return ""
+	}
+	v, ok := m[key]
+	if !ok || v == nil {
+		return ""
+	}
+	switch x := v.(type) {
+	case string:
+		return x
+	case []byte:
+		return string(x)
+	default:
+		return fmt.Sprint(x)
+	}
+}
+
+// MapFloat64 returns a numeric column as float64.
+func MapFloat64(m map[string]any, key string) float64 {
+	if m == nil {
+		return 0
+	}
+	v, ok := m[key]
+	if !ok || v == nil {
+		return 0
+	}
+	switch x := v.(type) {
+	case float64:
+		return x
+	case float32:
+		return float64(x)
+	case int64:
+		return float64(x)
+	case int:
+		return float64(x)
+	case int32:
+		return float64(x)
+	case json.Number:
+		f, _ := x.Float64()
+		return f
+	case string:
+		var f float64
+		_, _ = fmt.Sscanf(strings.TrimSpace(x), "%f", &f)
+		return f
+	default:
+		return 0
+	}
+}
+
+// MapInt returns an integer column (handles int32/int64 from PostgreSQL).
+func MapInt(m map[string]any, key string) int {
+	if m == nil {
+		return 0
+	}
+	v, ok := m[key]
+	if !ok || v == nil {
+		return 0
+	}
+	switch x := v.(type) {
+	case int:
+		return x
+	case int32:
+		return int(x)
+	case int64:
+		return int(x)
+	case float64:
+		return int(x)
+	default:
+		return 0
+	}
 }
 
 // Clamp returns val clamped to [min, max].

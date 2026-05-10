@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"inanhxink/backend-golang/internal/config"
+	"inanhxink/backend-golang/internal/notify"
 )
 
 // GET /api/metadata — returns all config as a key/value object.
@@ -30,6 +32,12 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 	if err := rows.Err(); err != nil {
 		InternalError(w, err)
 		return
+	}
+
+	for k := range cfg {
+		if strings.HasPrefix(k, notify.MetaKeyPrefix) {
+			delete(cfg, k)
+		}
 	}
 
 	rewriteBannerSlides(cfg)
