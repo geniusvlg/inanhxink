@@ -126,8 +126,31 @@ export interface Product {
   max_upload_images: number;
   /** Total units sold (auto + admin). */
   sold_count?: number;
+  /** Rolling average from verified purchase reviews; null when there are no reviews. */
+  average_rating?: number | null;
+  review_count?: number;
   created_at: string;
   variants?: ProductVariant[];
+}
+
+export interface ProductReview {
+  id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  customer_name: string;
+  invoice_number: string;
+  /** Variant label from order JSON or resolved server-side from `variant_id`. */
+  variant_name?: string | null;
+  /** Order line variant id when JSON omitted `variant_name` (client omitempty). */
+  variant_id?: number | null;
+}
+
+export interface ProductReviewsPage {
+  reviews: ProductReview[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface ProductFilters {
@@ -171,6 +194,38 @@ export const getProducts = async (filters: ProductFilters = {}): Promise<Product
 export const getProductById = async (id: number): Promise<Product> => {
   const response = await api.get<{ success: boolean; product: Product }>(`/api/products/${id}`);
   return response.data.product;
+};
+
+export const getProductReviews = async (
+  productId: number,
+  opts: { page?: number; limit?: number } = {},
+): Promise<ProductReviewsPage> => {
+  const page = opts.page ?? 1;
+  const limit = opts.limit ?? 10;
+  const response = await api.get<{ success: boolean } & ProductReviewsPage>(
+    `/api/products/${productId}/reviews`,
+    { params: { page, limit } },
+  );
+  return {
+    reviews: response.data.reviews ?? [],
+    total: response.data.total ?? 0,
+    page: response.data.page ?? page,
+    limit: response.data.limit ?? limit,
+  };
+};
+
+export const createProductReview = async (
+  productId: number,
+  body: { invoice_number: string; rating: number; comment: string },
+): Promise<void> => {
+  try {
+    await api.post(`/api/products/${productId}/reviews`, body);
+  } catch (e) {
+    if (axios.isAxiosError(e) && e.response?.data && typeof (e.response.data as { error?: unknown }).error === 'string') {
+      throw new Error((e.response.data as { error: string }).error);
+    }
+    throw e instanceof Error ? e : new Error('Không gửi được đánh giá');
+  }
 };
 
 export const getFeaturedProducts = async (): Promise<Product[]> => {

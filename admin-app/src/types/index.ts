@@ -142,9 +142,25 @@ export interface Product {
   max_upload_images: number;
   /** Đã bán — increments on payment; admin can adjust. */
   sold_count?: number;
+  average_rating?: number | null;
+  review_count?: number;
   is_featured_on_home: boolean;
   home_sort_order: number;
   created_at: string;
   variants?: ProductVariant[];
+}
+
+/** Product review row (admin list includes `is_admin_entry`). */
+export interface AdminProductReview {
+  id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  customer_name: string;
+  invoice_number: string;
+  ordered_product_label: string;
+  variant_name?: string | null;
+  variant_id?: number | null;
+  is_admin_entry?: boolean;
 }
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { AdminProductReview } from '../types';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
@@ -99,6 +100,20 @@ export const productsApi = {
   listFeaturedOnHome: () => api.get('/api/admin/products/featured-on-home'),
   reorderFeaturedOnHome: (items: { id: number; sort_order: number }[]) =>
     api.patch('/api/admin/products/featured-on-home/reorder', { items }),
+  listReviews: (productId: number, params?: { page?: number; limit?: number }) =>
+    api.get<{ success: boolean; reviews: AdminProductReview[]; total: number; page: number; limit: number }>(
+      `/api/admin/products/${productId}/reviews`,
+      { params },
+    ),
+  createReview: (productId: number, body: {
+    rating: number;
+    comment: string;
+    customer_name: string;
+    invoice_number: string;
+    ordered_product_label: string;
+  }) => api.post(`/api/admin/products/${productId}/reviews`, body),
+  deleteReview: (productId: number, reviewId: number) =>
+    api.delete(`/api/admin/products/${productId}/reviews/${reviewId}`),
 };
 
 export const productVariantsApi = {
