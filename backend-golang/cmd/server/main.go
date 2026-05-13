@@ -112,6 +112,8 @@ func main() {
 	r.Route("/api/products", func(r chi.Router) {
 		r.Get("/featured-on-home", handlers.ListFeaturedProducts)
 		r.Get("/", handlers.ListProducts)
+		r.Get("/{id}/reviews", handlers.ListProductReviews)
+		r.Post("/{id}/reviews", handlers.CreateProductReview)
 		r.Get("/{id}", handlers.GetProduct)
 	})
 
@@ -185,6 +187,9 @@ func main() {
 				r.Post("/check-name", adminHandlers.CheckProductName)
 				r.Post("/reserve", adminHandlers.ReserveProduct)
 				r.Post("/", adminHandlers.CreateProduct)
+				r.Get("/{id}/reviews", adminHandlers.ListAdminProductReviews)
+				r.Post("/{id}/reviews", adminHandlers.CreateAdminProductReview)
+				r.Delete("/{id}/reviews/{reviewId}", adminHandlers.DeleteAdminProductReview)
 				r.Get("/{id}", adminHandlers.GetProduct)
 				r.Put("/{id}", adminHandlers.UpdateProduct)
 				r.Delete("/{id}", adminHandlers.DeleteProduct)

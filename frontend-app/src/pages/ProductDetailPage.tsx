@@ -1,6 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProductById, type Product, type ProductVariant } from '../services/api';
+import {
+  getProductById,
+  getProductReviews,
+  createProductReview,
+  type Product,
+  type ProductReview,
+  type ProductVariant,
+} from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import PageLoader from '../components/PageLoader';
@@ -19,6 +26,64 @@ const resolveUrl   = (url: string) => {
 
 function formatPrice(price: number): string {
   return Math.round(price).toLocaleString('vi-VN') + 'đ';
+}
+
+function formatReviewDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/** Label for "Phân loại" on PDP: API text, else resolve variant id from current product. */
+function resolveReviewVariantLabel(rv: ProductReview, product: Product): string {
+  const byName = rv.variant_name != null ? String(rv.variant_name).trim() : '';
+  if (byName) return byName;
+  const raw = rv.variant_id;
+  const vid = typeof raw === 'number' && Number.isFinite(raw) ? raw : raw != null ? Number(raw) : NaN;
+  if (!Number.isFinite(vid) || !product.variants?.length) return '';
+  const row = product.variants.find((x) => x.id === vid);
+  return row?.name?.trim() ?? '';
+}
+
+function StarDisplay({ rating, compact }: { rating: number; compact?: boolean }) {
+  const rounded = Math.min(5, Math.max(0, Math.round(rating)));
+  return (
+    <span
+      className={`pd-star-display${compact ? ' pd-star-display--sm' : ''}`}
+      aria-hidden
+    >
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={i < rounded ? 'pd-star pd-star--on' : 'pd-star'}>★</span>
+      ))}
+    </span>
+  );
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  return (
+    <div className="pd-star-picker" role="group" aria-label="Chọn số sao">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          className={`pd-star-pick${n <= value ? ' pd-star-pick--active' : ''}`}
+          onClick={() => onChange(n)}
+          aria-label={`${n} sao`}
+          aria-pressed={n <= value}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** Returns the active discount price for a variant, or null if no active discount. */
@@ -91,6 +156,17 @@ export default function ProductDetailPage() {
   const cartToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { addItem } = useCart();
 
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [invoiceInput, setInvoiceInput] = useState('');
+  const [ratingPick, setRatingPick] = useState(5);
+  const [commentInput, setCommentInput] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewFormError, setReviewFormError] = useState('');
+  const [reviewFormSuccess, setReviewFormSuccess] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -99,6 +175,84 @@ export default function ProductDetailPage() {
       .catch(() => setError('Không thể tải sản phẩm'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const productIdNum = id ? Number(id) : 0;
+
+  const loadReviewsFirstPage = useCallback(() => {
+    if (!productIdNum || Number.isNaN(productIdNum)) return;
+    setReviewsLoading(true);
+    getProductReviews(productIdNum, { page: 1, limit: 10 })
+      .then((data) => {
+        setReviews(data.reviews);
+        setReviewTotal(data.total);
+        setReviewPage(1);
+      })
+      .catch(() => {
+        setReviews([]);
+        setReviewTotal(0);
+      })
+      .finally(() => setReviewsLoading(false));
+  }, [productIdNum]);
+
+  useEffect(() => {
+    if (!productIdNum || Number.isNaN(productIdNum)) return;
+    loadReviewsFirstPage();
+  }, [productIdNum, loadReviewsFirstPage]);
+
+  const loadMoreReviews = () => {
+    if (!productIdNum || Number.isNaN(productIdNum)) return;
+    if (reviews.length >= reviewTotal) return;
+    const nextPage = reviewPage + 1;
+    setReviewsLoading(true);
+    getProductReviews(productIdNum, { page: nextPage, limit: 10 })
+      .then((data) => {
+        setReviewTotal(data.total);
+        setReviews((prev) => [...prev, ...data.reviews]);
+        setReviewPage(nextPage);
+      })
+      .catch(() => {})
+      .finally(() => setReviewsLoading(false));
+  };
+
+  const refreshProductAndReviews = () => {
+    if (!productIdNum || Number.isNaN(productIdNum)) return;
+    getProductById(productIdNum).then(setProduct).catch(() => {});
+    loadReviewsFirstPage();
+  };
+
+  const handleSubmitReview = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!productIdNum || Number.isNaN(productIdNum)) return;
+    setReviewFormError('');
+    setReviewFormSuccess(false);
+    const inv = invoiceInput.trim();
+    const com = commentInput.trim();
+    if (!inv) {
+      setReviewFormError('Vui lòng nhập mã hóa đơn (mã tra cứu đơn hàng).');
+      return;
+    }
+    if (!com) {
+      setReviewFormError('Vui lòng nhập nội dung đánh giá.');
+      return;
+    }
+    setReviewSubmitting(true);
+    try {
+      await createProductReview(productIdNum, {
+        invoice_number: inv,
+        rating: ratingPick,
+        comment: com,
+      });
+      setReviewFormSuccess(true);
+      setInvoiceInput('');
+      setCommentInput('');
+      setRatingPick(5);
+      refreshProductAndReviews();
+    } catch (err) {
+      setReviewFormError(err instanceof Error ? err.message : 'Không gửi được đánh giá');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   useEffect(() => () => {
     if (cartToastTimerRef.current !== null) clearTimeout(cartToastTimerRef.current);
@@ -159,6 +313,8 @@ export default function ProductDetailPage() {
     startBuyNowCheckout({ ...entry, quantity: 1 });
     navigate('/checkout?mode=buy-now');
   };
+
+  const multiVariant = (product?.variants?.length ?? 0) >= 2;
 
   if (loading) {
     return (
@@ -235,6 +391,17 @@ export default function ProductDetailPage() {
           <div className="pd-info">
             <h1 className="pd-name">{product.name}</h1>
             <ProductSoldCount count={product.sold_count} className="product-sold-count--detail" />
+            {(product.review_count ?? 0) > 0 && product.average_rating != null && (
+              <div className="pd-rating-summary">
+                <StarDisplay rating={Number(product.average_rating)} />
+                <span className="pd-rating-num">
+                  {Number(product.average_rating).toFixed(1)}/5
+                </span>
+                <span className="pd-rating-count">
+                  ({product.review_count} đánh giá đã mua)
+                </span>
+              </div>
+            )}
 
             {/* Price — range when variants exist and none selected, variant price when selected */}
             {hasVariants && !selectedVariant ? (
@@ -426,6 +593,101 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        <section className="pd-reviews" aria-labelledby="pd-reviews-heading">
+          <h2 id="pd-reviews-heading" className="pd-reviews-title">Đánh giá từ khách đã mua</h2>
+          <p className="pd-reviews-hint">
+            Mỗi mã hóa đơn chỉ gửi được một đánh giá cho sản phẩm này. Vui lòng nhập đúng mã trên hóa đơn / email xác nhận sau khi thanh toán.
+          </p>
+
+          <form className="pd-review-form" onSubmit={handleSubmitReview}>
+            <label className="pd-review-label">
+              Mã hóa đơn
+              <input
+                type="text"
+                className="pd-review-input"
+                value={invoiceInput}
+                onChange={(ev) => setInvoiceInput(ev.target.value)}
+                placeholder="VD: INXK37PRMDZ"
+                autoComplete="off"
+                disabled={reviewSubmitting}
+              />
+            </label>
+            <div className="pd-review-field">
+              <span className="pd-review-label-text">Số sao</span>
+              <StarPicker value={ratingPick} onChange={setRatingPick} />
+            </div>
+            <label className="pd-review-label">
+              Nhận xét
+              <textarea
+                className="pd-review-textarea"
+                rows={4}
+                value={commentInput}
+                onChange={(ev) => setCommentInput(ev.target.value)}
+                placeholder="Chia sẻ trải nghiệm của bạn…"
+                maxLength={2000}
+                disabled={reviewSubmitting}
+              />
+            </label>
+            {reviewFormError && <p className="pd-review-msg pd-review-msg--err">{reviewFormError}</p>}
+            {reviewFormSuccess && (
+              <p className="pd-review-msg pd-review-msg--ok">Cảm ơn bạn! Đánh giá đã được ghi nhận.</p>
+            )}
+            <button type="submit" className="pd-review-submit" disabled={reviewSubmitting}>
+              {reviewSubmitting ? 'Đang gửi…' : 'Gửi đánh giá'}
+            </button>
+          </form>
+
+          <div className="pd-reviews-list-wrap">
+            {reviewsLoading && reviewPage === 1 && reviews.length === 0 ? (
+              <p className="pd-reviews-empty">Đang tải đánh giá…</p>
+            ) : reviews.length === 0 ? (
+              <p className="pd-reviews-empty">Chưa có đánh giá nào — bạn có thể là người đầu tiên!</p>
+            ) : (
+              <ul className="pd-reviews-list">
+                {reviews.map((rv) => (
+                  <li key={rv.id} className="pd-review-card">
+                    <div className="pd-review-card-head">
+                      <div className="pd-review-card-main">
+                        <div className="pd-review-name-row">
+                          <span className="pd-review-customer">{rv.customer_name || 'Khách hàng'}</span>
+                          <StarDisplay rating={rv.rating} compact />
+                        </div>
+                        <div className="pd-review-meta">
+                          <span className="pd-review-inv">
+                            Mã Đơn Hàng: <code className="pd-review-inv-code">{rv.invoice_number}</code>
+                          </span>
+                          {multiVariant && (() => {
+                            const phanLoai = resolveReviewVariantLabel(rv, product);
+                            return phanLoai ? (
+                              <span className="pd-review-ordered pd-review-phan-loai">
+                                Phân loại: {phanLoai}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
+                      <time className="pd-review-time" dateTime={rv.created_at}>
+                        {formatReviewDate(rv.created_at)}
+                      </time>
+                    </div>
+                    <p className="pd-review-comment">{rv.comment}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {reviews.length > 0 && reviews.length < reviewTotal && (
+              <button
+                type="button"
+                className="pd-reviews-more"
+                disabled={reviewsLoading}
+                onClick={loadMoreReviews}
+              >
+                {reviewsLoading ? 'Đang tải…' : `Xem thêm (${reviewTotal - reviews.length} còn lại)`}
+              </button>
+            )}
+          </div>
+        </section>
       </main>
 
       <SiteFooter />

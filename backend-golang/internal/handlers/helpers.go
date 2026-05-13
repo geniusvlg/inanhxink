@@ -36,6 +36,9 @@ func Unauthorized(w http.ResponseWriter, msg string) {
 func Forbidden(w http.ResponseWriter) {
 	JSON(w, http.StatusForbidden, map[string]any{"success": false, "error": "Forbidden"})
 }
+func Conflict(w http.ResponseWriter, msg string) {
+	JSON(w, http.StatusConflict, map[string]any{"success": false, "error": msg})
+}
 func InternalError(w http.ResponseWriter, err error) {
 	log.Printf("internal error: %v", err)
 	JSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})

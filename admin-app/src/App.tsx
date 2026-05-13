@@ -20,6 +20,7 @@ import BannersPage from './pages/BannersPage';
 import HeroShotsPage from './pages/HeroShotsPage';
 import FeaturedOnHomePage from './pages/FeaturedOnHomePage';
 import FulfillmentPage from './pages/FulfillmentPage';
+import ProductReviewsPage from './pages/ProductReviewsPage';
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/in-anh"          element={<InAnhPage />} />
               <Route path="/featured-on-home" element={<FeaturedOnHomePage />} />
               <Route path="/categories"       element={<CategoriesPage />} />
+              <Route path="/product-reviews" element={<ProductReviewsPage />} />
               <Route path="/orders"           element={<ProductOrdersPage />} />
               <Route path="/qr-orders"        element={<QrOrdersPage />} />
               <Route path="/fulfillment"      element={<FulfillmentPage />} />
