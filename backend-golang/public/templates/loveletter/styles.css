@@ -548,9 +548,13 @@ body.env-open .background-title {
 }
 
 .polaroid-group.visible {
-  pointer-events: auto;
   opacity: 1;
   visibility: visible;
+}
+
+/* Only individual polaroids capture clicks; the group's empty space lets clicks through */
+.polaroid-group.visible .polaroid {
+  pointer-events: auto;
 }
 
 /* When letter is open, tuck polaroids into the bottom-left corner */
@@ -559,7 +563,6 @@ body.card-open .polaroid-group {
   bottom: 16px;
   transform: scale(0.7);
   transform-origin: left;
-  pointer-events: auto;
 }
 
 .polaroid {
@@ -719,6 +722,9 @@ body.card-open .polaroid-group {
   .tile-body {
     font-size: 1.1rem;
     line-height: 1.35;
+    overflow: hidden;
+  }
+  body.card-open .tile-body {
     overflow-y: auto;
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
