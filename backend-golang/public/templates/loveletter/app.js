@@ -66,56 +66,55 @@ function renderLetter() {
   const bodyTopEl = document.getElementById('letterBodyTop');
   const bodyBotEl = document.getElementById('letterBodyBottom');
 
-  if (bodyTopEl) bodyTopEl.innerHTML = '';
-  if (bodyBotEl) bodyBotEl.innerHTML = '';
-
   if (!bodyTopEl || !bodyBotEl) return;
 
-  const appendParagraph = (container, text) => {
-    const p = document.createElement('p');
-    p.textContent = text;
-    container.appendChild(p);
-    return p;
+  // Both panels hold the full letter body so they act as two viewports of
+  // one continuous letter; setupLetterScrollSync below offsets the bottom by
+  // top.clientHeight so scrolling either panel pages through the letter.
+  const fillBody = (container) => {
+    container.innerHTML = '';
+    paragraphs.forEach(text => {
+      const p = document.createElement('p');
+      p.textContent = text;
+      container.appendChild(p);
+    });
+  };
+  fillBody(bodyTopEl);
+  fillBody(bodyBotEl);
+
+  setupLetterScrollSync(bodyTopEl, bodyBotEl);
+}
+
+let _letterScrollWired = false;
+function setupLetterScrollSync(top, bot) {
+  if (_letterScrollWired) return;
+  _letterScrollWired = true;
+
+  let syncing = false;
+  const onScroll = (source) => {
+    if (syncing) return;
+    syncing = true;
+    if (source === top) {
+      const desired = top.scrollTop + top.clientHeight;
+      bot.scrollTop = desired;
+      // If bot can't follow (already at its max), clamp top to bot's position
+      if (bot.scrollTop !== desired) top.scrollTop = bot.scrollTop - top.clientHeight;
+    } else {
+      top.scrollTop = bot.scrollTop - top.clientHeight;
+    }
+    requestAnimationFrame(() => { syncing = false; });
   };
 
-  // Try to fit as many words of a paragraph as possible into bodyTopEl,
-  // returns the leftover text (or null if everything fit).
-  const splitParagraphForTop = (paragraph) => {
-    const words = paragraph.split(' ');
-    const p = document.createElement('p');
-    bodyTopEl.appendChild(p);
+  top.addEventListener('scroll', () => onScroll(top), { passive: true });
+  bot.addEventListener('scroll', () => onScroll(bot), { passive: true });
+}
 
-    let lastFitIndex = 0;
-    for (let i = 0; i < words.length; i++) {
-      p.textContent = words.slice(0, i + 1).join(' ');
-      if (bodyTopEl.scrollHeight > bodyTopEl.clientHeight) break;
-      lastFitIndex = i + 1;
-    }
-
-    if (lastFitIndex === 0) {
-      bodyTopEl.removeChild(p);
-      return paragraph;
-    }
-
-    p.textContent = words.slice(0, lastFitIndex).join(' ');
-    const remainder = words.slice(lastFitIndex).join(' ');
-    return remainder || null;
-  };
-
-  let useBottom = false;
-  paragraphs.forEach(text => {
-    if (useBottom) {
-      appendParagraph(bodyBotEl, text);
-      return;
-    }
-    const node = appendParagraph(bodyTopEl, text);
-    if (bodyTopEl.scrollHeight > bodyTopEl.clientHeight) {
-      bodyTopEl.removeChild(node);
-      const remainder = splitParagraphForTop(text);
-      if (remainder) appendParagraph(bodyBotEl, remainder);
-      useBottom = true;
-    }
-  });
+function resetLetterScroll() {
+  const top = document.getElementById('letterBodyTop');
+  const bot = document.getElementById('letterBodyBottom');
+  if (!top || !bot) return;
+  top.scrollTop = 0;
+  bot.scrollTop = top.clientHeight;
 }
 
 // ── Floating hearts — infinite rising with staggered start ───────────────────
@@ -216,6 +215,7 @@ function openCard() {
       extractedPaper.classList.remove("is-settled");
       extractedPaper.classList.add("is-expanded");
       cardIsBusy = false;
+      resetLetterScroll();
     }, 400);
   }, 750);
 }
