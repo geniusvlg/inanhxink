@@ -719,7 +719,10 @@ body.card-open .polaroid-group {
   .tile-body {
     font-size: 1.1rem;
     line-height: 1.35;
-    overflow: hidden;
+    overflow-y: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .tile-body p { margin-bottom: 5px; }
   .tile-signoff { font-size: 1.1rem; margin-top: 10px; }
