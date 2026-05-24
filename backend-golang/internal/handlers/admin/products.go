@@ -222,7 +222,10 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 		isActive = v
 	}
 	isBestSeller, _ := body["is_best_seller"].(bool)
-	watermarkEnabled, _ := body["watermark_enabled"].(bool)
+	watermarkEnabled := true
+	if v, ok := body["watermark_enabled"].(bool); ok {
+		watermarkEnabled = v
+	}
 	maxUploadImages := 15
 	if v, ok := body["max_upload_images"].(float64); ok && v >= 1 {
 		maxUploadImages = int(v)
