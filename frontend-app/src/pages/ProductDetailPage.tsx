@@ -14,6 +14,7 @@ import PageLoader from '../components/PageLoader';
 import PriceTag, { getActiveDiscountPrice } from '../components/PriceTag';
 import ProductSoldCount from '../components/ProductSoldCount';
 import { startBuyNowCheckout, useCart } from '../contexts/CartContext';
+import { getProductThumbnailUrl } from '../utils/productImage';
 import './ProductDetailPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -287,7 +288,7 @@ export default function ProductDetailPage() {
       variant_name: selectedVariant?.name ?? null,
       unit_price:   effectivePrice,
       max_upload_images: product.max_upload_images ?? 15,
-      thumbnail:    selectedVariant?.image ? resolveUrl(selectedVariant.image) : productImages[0],
+      thumbnail:    selectedVariant?.image ? resolveUrl(selectedVariant.image) : resolveUrl(getProductThumbnailUrl(product) ?? productImages[0]),
     };
   };
 

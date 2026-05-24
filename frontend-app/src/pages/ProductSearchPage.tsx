@@ -7,6 +7,7 @@ import PageLoader from '../components/PageLoader';
 import PriceTag from '../components/PriceTag';
 import ProductSoldCount from '../components/ProductSoldCount';
 import { highlightQueryInText } from '../utils/highlightQuery';
+import { getProductThumbnailUrl } from '../utils/productImage';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import './ProductSearchPage.css';
 
@@ -130,7 +131,7 @@ export default function ProductSearchPage() {
                   <div className="product-card-img-wrap">
                     <img
                       className="product-card-img"
-                      src={p.images?.[0] ? resolveUrl(p.images[0]) : '/placeholder.png'}
+                      src={getProductThumbnailUrl(p) ? resolveUrl(getProductThumbnailUrl(p)!) : '/placeholder.png'}
                       alt={p.name}
                     />
                   </div>

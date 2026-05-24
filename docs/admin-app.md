@@ -69,6 +69,7 @@ raw S3 URLs for edit/delete flows.
   description?: string;
   price: number;
   images: string[];           // array of S3 URLs (JSONB in DB)
+  thumbnail_url?: string | null; // explicit product card thumbnail; falls back to images[0]
   type: string;
   is_active: boolean;
   is_best_seller: boolean;
@@ -92,14 +93,16 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 ### Edit (existing product)
 1. User selects new files → local preview via object URL
 2. On save: upload pending files via `POST /api/upload?prefix=products/{type}/product-{id}`
-3. Combine saved URLs + new uploaded URLs
-4. `PUT /api/admin/products/:id` with all URLs
+3. Optional thumbnail upload uses `POST /api/upload?prefix=products/{type}/product-{id}/thumbnail`
+4. Combine saved URLs + new uploaded URLs
+5. `PUT /api/admin/products/:id` with all URLs and optional `thumbnail_url`
 
 ### Create (new product) — current pattern
 1. `POST /api/admin/products` with `is_active: false`, no images → get `id`
 2. Upload files via `POST /api/upload?prefix=products/{type}/product-{id}`
-3. `PUT /api/admin/products/:id` with `is_active: true` + image URLs
-4. Rollback: delete product if upload fails
+3. Optional thumbnail upload uses the same product ID under `products/{type}/product-{id}/thumbnail`
+4. `PUT /api/admin/products/:id` with `is_active: true` + image URLs and optional `thumbnail_url`
+5. Rollback: delete product if upload fails
 
 ### Planned improvement — S3-first (Option 1: temp folder)
 - Generate a `temp-{uuid}` key client-side before product exists

@@ -47,7 +47,7 @@ Public routes (`backend/routes/*.ts`):
 
 - `banners.ts` → `image_url`
 - `heroShots.ts` → `image_url`
-- `products.ts` → `images` (JSONB array) — applied in `/`, `/featured-on-home`, `/:id`
+- `products.ts` → `images` (JSONB array) and `thumbnail_url` — applied in `/`, `/featured-on-home`, `/:id`; `thumbnail_url` falls back to `images[0]` at response time when null.
 - `templates.ts` → `image_url` — applied in `/` and `/:id`
 - `qrcodes.ts` → `template.imageUrl`
 - `testimonials.ts` → `image_url`

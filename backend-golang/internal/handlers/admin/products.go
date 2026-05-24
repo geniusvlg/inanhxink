@@ -212,6 +212,10 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 			images = string(b)
 		}
 	}
+	thumbnailURL := body["thumbnail_url"]
+	if s, ok := thumbnailURL.(string); ok && strings.TrimSpace(s) == "" {
+		thumbnailURL = nil
+	}
 
 	isActive := true
 	if v, ok := body["is_active"].(bool); ok {
@@ -225,11 +229,11 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := tx.Query(context.Background(), `
-		INSERT INTO products (name, description, price, images, type, is_active, is_best_seller,
+		INSERT INTO products (name, description, price, images, thumbnail_url, type, is_active, is_best_seller,
 			watermark_enabled, tiktok_url, instagram_url, discount_price, discount_from, discount_to,
 			is_featured_on_home, home_sort_order, max_upload_images)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-		name, body["description"], price, images, productType, isActive, isBestSeller,
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+		name, body["description"], price, images, thumbnailURL, productType, isActive, isBestSeller,
 		watermarkEnabled, body["tiktok_url"], body["instagram_url"],
 		body["discount_price"], body["discount_from"], body["discount_to"],
 		isFeaturedOnHome, homeSortOrder, maxUploadImages)
@@ -270,7 +274,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback(context.Background()) //nolint
 
 	allowed := map[string]bool{
-		"name": true, "description": true, "price": true, "images": true,
+		"name": true, "description": true, "price": true, "images": true, "thumbnail_url": true,
 		"is_active": true, "is_best_seller": true, "watermark_enabled": true,
 		"tiktok_url": true, "instagram_url": true,
 		"discount_price": true, "discount_from": true, "discount_to": true,
@@ -289,6 +293,11 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 					if b, err := json.Marshal(imgs); err == nil {
 						val = string(b)
 					}
+				}
+			}
+			if k == "thumbnail_url" {
+				if s, ok := v.(string); ok && strings.TrimSpace(s) == "" {
+					val = nil
 				}
 			}
 			if k == "max_upload_images" {
