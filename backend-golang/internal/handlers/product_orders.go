@@ -40,7 +40,7 @@ type OrderItem struct {
 	UnitPrice   float64  `json:"unit_price"`
 	ImageURLs   []string `json:"image_urls"`
 	Note        string   `json:"note"`
-	// CatalogImageURL is set server-side: variant image or first product gallery image (raw S3). Admin UI uses it when image_urls is empty.
+	// CatalogImageURL is set server-side: variant image or product thumbnail fallback (raw S3). Admin UI uses it when image_urls is empty.
 	CatalogImageURL string `json:"catalog_image,omitempty"`
 }
 
@@ -126,6 +126,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		var productName string
 		var unitPrice float64
 		var imagesJSON []byte
+		var thumbnailURL *string
 		err := config.DB.QueryRow(context.Background(),
 			`SELECT name,
 				CASE
@@ -136,10 +137,11 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 					ELSE price
 				END AS unit_price,
 				COALESCE(max_upload_images, 15),
-				COALESCE(images, '[]'::jsonb)
+				COALESCE(images, '[]'::jsonb),
+				thumbnail_url
 			FROM products
 			WHERE id = $1 AND is_active = TRUE AND is_draft = FALSE`,
-			it.ProductID).Scan(&productName, &unitPrice, &maxUploadImages, &imagesJSON)
+			it.ProductID).Scan(&productName, &unitPrice, &maxUploadImages, &imagesJSON, &thumbnailURL)
 		if err != nil {
 			BadRequest(w, fmt.Sprintf("product %d not found", it.ProductID))
 			return
@@ -150,7 +152,9 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 			productImageURLs = nil
 		}
 		firstProductImg := ""
-		if len(productImageURLs) > 0 {
+		if thumbnailURL != nil && strings.TrimSpace(*thumbnailURL) != "" {
+			firstProductImg = strings.TrimSpace(*thumbnailURL)
+		} else if len(productImageURLs) > 0 {
 			firstProductImg = strings.TrimSpace(productImageURLs[0])
 		}
 

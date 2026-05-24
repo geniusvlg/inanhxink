@@ -9,6 +9,7 @@ import PageLoader from '../components/PageLoader';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import PriceTag from '../components/PriceTag';
 import ProductSoldCount from '../components/ProductSoldCount';
+import { getProductThumbnailUrl } from '../utils/productImage';
 import './ScrapbookPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -103,7 +104,7 @@ export default function ScrapbookPage() {
                   <div className="product-card-img-wrap">
                     <img
                       className="product-card-img"
-                      src={p.images?.[0] ? resolveUrl(p.images[0]) : '/placeholder.png'}
+                      src={getProductThumbnailUrl(p) ? resolveUrl(getProductThumbnailUrl(p)!) : '/placeholder.png'}
                       alt={p.name}
                     />
                     {p.is_best_seller && (

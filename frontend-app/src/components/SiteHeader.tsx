@@ -4,6 +4,7 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useCart } from '../contexts/CartContext';
 import { getProducts, type Product } from '../services/api';
 import { highlightQueryInText } from '../utils/highlightQuery';
+import { getProductThumbnailUrl } from '../utils/productImage';
 import PriceTag from './PriceTag';
 import CartDrawer from './CartDrawer';
 import './SiteHeader.css';
@@ -162,7 +163,7 @@ function SiteHeader({ activePage }: SiteHeaderProps) {
                 >
                   <img
                     className="site-search-suggest-img"
-                    src={resolveThumb(p.images?.[0])}
+                    src={resolveThumb(getProductThumbnailUrl(p) ?? undefined)}
                     alt=""
                   />
                   <div className="site-search-suggest-text">

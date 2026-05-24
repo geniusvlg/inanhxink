@@ -16,6 +16,7 @@ import PageLoader from '../components/PageLoader';
 import BannerCarousel from '../components/BannerCarousel';
 import FeaturedFeedback from '../components/FeaturedFeedback';
 import ProductSoldCount from '../components/ProductSoldCount';
+import { getProductThumbnailUrl } from '../utils/productImage';
 import './HomePage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -61,7 +62,7 @@ function HomePage() {
       return { image: shot.image_url, caption: shot.caption ?? '' };
     }
     if (fallback) {
-      return { image: fallback.images?.[0] ?? '', caption: fallback.name };
+      return { image: getProductThumbnailUrl(fallback) ?? '', caption: fallback.name };
     }
     return null;
   });
@@ -157,7 +158,7 @@ function HomePage() {
                 <div className="poly-card-frame">
                   <img
                     className="poly-card-img"
-                    src={imageSrc(p.images?.[0])}
+                    src={imageSrc(getProductThumbnailUrl(p))}
                     alt={p.name}
                     loading="lazy"
                   />

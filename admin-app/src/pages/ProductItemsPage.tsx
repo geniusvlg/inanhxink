@@ -107,12 +107,16 @@ function getDiscountStatusUi(status: DiscountStatus): { label: string; style: Re
 
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
-  name: '', description: '', price: undefined, images: [], is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
+  name: '', description: '', price: undefined, images: [], thumbnail_url: null, is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
   discount_price: null, discount_from: null, discount_to: null,
   max_upload_images: 15,
   sold_count: 0,
   is_featured_on_home: false,
 });
+
+function productThumbnailUrl(product: Pick<Product, 'thumbnail_url' | 'images'>): string | null {
+  return product.thumbnail_url || product.images?.[0] || null;
+}
 
 export default function ProductItemsPage({ type }: Props) {
   const [products, setProducts]     = useState<Product[]>([]);
@@ -125,6 +129,7 @@ export default function ProductItemsPage({ type }: Props) {
   const [soldCountInput, setSoldCountInput]             = useState('0');
   const [imageEntries, setImageEntries] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [reservedProductId, setReservedProductId] = useState<number | null>(null);
   const [saving, setSaving]         = useState(false);
   const [nameCheckState, setNameCheckState] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -132,6 +137,7 @@ export default function ProductItemsPage({ type }: Props) {
   const [total, setTotal]           = useState(0);
   const [limit, setLimit]           = useState(20);
   const fileRef                     = useRef<HTMLInputElement>(null);
+  const thumbnailRef                = useRef<HTMLInputElement>(null);
 
   // Variant state
   const [variants, setVariants]             = useState<ProductVariant[]>([]);
@@ -229,6 +235,30 @@ export default function ProductItemsPage({ type }: Props) {
     } finally {
       setUploadingImages(false);
     }
+  };
+
+  const handleThumbnailPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    if (thumbnailRef.current) thumbnailRef.current.value = '';
+
+    const productId = editing?.id ?? reservedProductId;
+    if (!productId) return;
+
+    setUploadingThumbnail(true);
+    try {
+      const res = await uploadApi.images(files.slice(0, 1), `${type}/product-${productId}/thumbnail`, form.watermark_enabled ?? false);
+      setForm(f => ({ ...f, thumbnail_url: res.data.urls[0] ?? null }));
+    } catch (err: unknown) {
+      captureException(err);
+      alert('Lỗi khi tải thumbnail lên');
+    } finally {
+      setUploadingThumbnail(false);
+    }
+  };
+
+  const clearThumbnail = () => {
+    setForm(f => ({ ...f, thumbnail_url: null }));
   };
 
   const removeImage = (url: string) => {
@@ -449,8 +479,8 @@ export default function ProductItemsPage({ type }: Props) {
               <tr key={p.id}>
                 <td>{p.id}</td>
                 <td>
-                  {p.images?.[0]
-                    ? <img src={resolveAssetUrl(p.images[0])} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
+                  {productThumbnailUrl(p)
+                    ? <img src={resolveAssetUrl(productThumbnailUrl(p)!)} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }} />
                     : <div style={{ width: 48, height: 48, background: '#f1f5f9', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📷</div>
                   }
                 </td>
@@ -729,11 +759,62 @@ export default function ProductItemsPage({ type }: Props) {
                 </div>
               </div>
 
+              {/* Thumbnail Upload */}
+              <div className="form-group">
+                <label className="form-label">Ảnh thumbnail</label>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
+                  Nếu để trống, hệ thống sẽ dùng ảnh sản phẩm đầu tiên.
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  {form.thumbnail_url ? (
+                    <div style={{ position: 'relative' }}>
+                      <img
+                        src={resolveAssetUrl(form.thumbnail_url)}
+                        alt=""
+                        style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 6, border: '1px solid #e2e8f0' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={clearThumbnail}
+                        style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
+                      >×</button>
+                    </div>
+                  ) : (
+                    <div style={{ width: 96, height: 96, background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '0.5rem' }}>
+                      Dùng ảnh đầu tiên
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => thumbnailRef.current?.click()}
+                      disabled={uploadingThumbnail || (!editing && !reservedProductId)}
+                    >
+                      {uploadingThumbnail ? 'Đang tải...' : 'Tải thumbnail'}
+                    </button>
+                    {form.thumbnail_url && (
+                      <button type="button" className="btn-secondary" onClick={clearThumbnail}>
+                        Dùng ảnh đầu tiên
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  ref={thumbnailRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleThumbnailPick}
+                  disabled={!editing && !reservedProductId}
+                />
+              </div>
+
               {/* Image Upload */}
               <div className="form-group">
                 <label className="form-label">Ảnh sản phẩm</label>
                 <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
-                  💡 Ảnh đầu tiên sẽ được dùng làm thumbnail hiển thị ngoài danh sách.
+                  💡 Ảnh đầu tiên sẽ được dùng làm thumbnail nếu bạn không tải thumbnail riêng.
                 </p>
                 <div
                   style={{

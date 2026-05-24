@@ -15,7 +15,7 @@ func SiteData(w http.ResponseWriter, r *http.Request) {
 	subdomain := getSubdomain(r)
 	if subdomain == "" {
 		JSON(w, 400, map[string]any{
-			"error": "No subdomain detected. On localhost use ?sub=NAME or ?preview=NAME.",
+			"error": "No subdomain detected. On localhost or ngrok use ?sub=NAME or ?preview=NAME.",
 		})
 		return
 	}
@@ -60,14 +60,33 @@ func rewriteTemplateDataCDN(data map[string]any) {
 	}
 }
 
+// hostWithoutPort strips :port from r.Host (e.g. localhost:3001 → localhost).
+func hostWithoutPort(host string) string {
+	if i := strings.LastIndex(host, ":"); i > 0 && strings.Index(host, "]") < 0 {
+		return host[:i]
+	}
+	return host
+}
+
+// isDevOrTunnelHost is true for localhost and tunnel URLs (ngrok, etc.) where the
+// first hostname label is NOT a customer QR subdomain.
+func isDevOrTunnelHost(host string) bool {
+	h := strings.ToLower(hostWithoutPort(host))
+	if strings.HasPrefix(h, "localhost") || strings.HasPrefix(h, "127.0.0.1") {
+		return true
+	}
+	return strings.HasSuffix(h, ".ngrok-free.app") ||
+		strings.HasSuffix(h, ".ngrok.io") ||
+		strings.HasSuffix(h, ".ngrok.app") ||
+		strings.Contains(h, ".ngrok")
+}
+
 // getSubdomain extracts the subdomain from the request host or query param (dev mode).
 func getSubdomain(r *http.Request) string {
 	host := r.Host
 	domain := domainFromEnv()
 
-	isLocal := strings.HasPrefix(host, "localhost") || strings.HasPrefix(host, "127.0.0.1")
-
-	if isLocal {
+	if isDevOrTunnelHost(host) {
 		if p := r.URL.Query().Get("preview"); p != "" {
 			return p
 		}
