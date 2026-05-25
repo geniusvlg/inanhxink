@@ -154,6 +154,7 @@
 
 .site-search-input {
   flex: 1;
+  min-width: 0;
   padding: 0.6rem 1rem;
   border: none;
   outline: none;
@@ -309,11 +310,12 @@
 
   .site-search-input {
     padding: 0.48rem 0.6rem;
-    font-size: 0.9rem;
+    font-size: 16px;
   }
 
   .site-search-btn {
     padding: 0 0.8rem;
+    flex-shrink: 0;
   }
 
   .site-menu-btn {
