@@ -151,6 +151,15 @@ export default function ProductItemsPage({ type }: Props) {
   const [savingVariants, setSavingVariants] = useState(false);
   const variantImgRef                       = useRef<HTMLInputElement>(null);
 
+  // When variants exist, auto-derive product price from the lowest effective variant price.
+  useEffect(() => {
+    if (variants.length === 0) return;
+    const minPrice = Math.min(
+      ...variants.map(v => (v.discount_price != null && v.discount_price < v.price ? v.discount_price : v.price)),
+    );
+    setForm(f => ({ ...f, price: minPrice, discount_price: null }));
+  }, [variants]);
+
   const load = (p = page, l = limit) => {
     setLoading(true);
     Promise.all([
@@ -638,23 +647,40 @@ export default function ProductItemsPage({ type }: Props) {
               {/* Price */}
               <div className="form-group">
                 <label className="form-label">Giá (đ) *</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={form.price != null ? form.price.toLocaleString('en') : ''}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/,/g, '');
-                    if (raw === '') { setForm(f => ({ ...f, price: undefined })); return; }
-                    const num = Number(raw);
-                    if (!isNaN(num)) setForm(f => ({ ...f, price: num }));
-                  }}
-                  required
-                />
+                {variants.length > 0 ? (
+                  <>
+                    <input
+                      className="form-input"
+                      type="text"
+                      value={form.price != null ? form.price.toLocaleString('en') : ''}
+                      readOnly
+                      disabled
+                      style={{ background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }}
+                    />
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0.35rem 0 0' }}>
+                      💡 Giá được tự động lấy từ phân loại có giá thấp nhất.
+                    </p>
+                  </>
+                ) : (
+                  <input
+                    className="form-input"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={form.price != null ? form.price.toLocaleString('en') : ''}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/,/g, '');
+                      if (raw === '') { setForm(f => ({ ...f, price: undefined })); return; }
+                      const num = Number(raw);
+                      if (!isNaN(num)) setForm(f => ({ ...f, price: num }));
+                    }}
+                    required
+                  />
+                )}
               </div>
 
-              {/* Discount price */}
+              {/* Discount price — hidden when variants control pricing */}
+              {variants.length === 0 && (
               <div className="form-group">
                 <label className="form-label">Giá khuyến mãi (đ) <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem' }}>— để trống nếu không giảm giá</span></label>
                 <input
@@ -671,9 +697,10 @@ export default function ProductItemsPage({ type }: Props) {
                   }}
                 />
               </div>
+              )}
 
-              {/* Discount date range */}
-              {form.discount_price != null && (
+              {/* Discount date range — only shown when no variants and a discount price is set */}
+              {variants.length === 0 && form.discount_price != null && (
                 <div className="form-group">
                   <label className="form-label">Thời gian áp dụng <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '0.8rem' }}>— để trống = không giới hạn</span></label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
