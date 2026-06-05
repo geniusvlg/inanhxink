@@ -402,9 +402,13 @@ func UpdateQRKeychainFulfillment(w http.ResponseWriter, r *http.Request) {
 		handlers.BadRequest(w, "fulfillment_status must be preparing, packing, or shipped")
 		return
 	}
-	if body.FulfillmentStatus == "shipped" && (strings.TrimSpace(body.TrackingCode) == "" || strings.TrimSpace(body.ShippingCarrier) == "") {
-		handlers.BadRequest(w, "tracking_code and shipping_carrier are required when shipped")
+	if body.FulfillmentStatus == "shipped" && strings.TrimSpace(body.TrackingCode) == "" {
+		handlers.BadRequest(w, "tracking_code is required when shipped")
 		return
+	}
+	shippingCarrier := strings.TrimSpace(body.ShippingCarrier)
+	if shippingCarrier == "" {
+		shippingCarrier = "SPX"
 	}
 
 	rows, err := config.DB.Query(context.Background(), `
@@ -415,7 +419,7 @@ func UpdateQRKeychainFulfillment(w http.ResponseWriter, r *http.Request) {
 		    updated_at               = NOW()
 		WHERE id = $4 AND payment_status = 'paid' AND keychain_purchased = true
 		RETURNING id, qr_name, customer_name, keychain_delivery_status, tracking_code, shipping_carrier`,
-		body.FulfillmentStatus, body.TrackingCode, body.ShippingCarrier, id)
+		body.FulfillmentStatus, body.TrackingCode, shippingCarrier, id)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return

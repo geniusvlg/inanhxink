@@ -54,12 +54,13 @@ export const productOrdersApi = {
   get:  (id: number)  => api.get(`/api/admin/product-orders/${id}`),
   updateStatus: (id: number, data: { payment_status: string }) =>
     api.patch(`/api/admin/product-orders/${id}/status`, data),
-  listFulfillment: (fulfillment_status?: string, limit?: number, offset?: number) =>
+  listFulfillment: (fulfillment_status?: string, limit?: number, offset?: number, today_only = true) =>
     api.get('/api/admin/product-orders/fulfillment', {
       params: {
         ...(fulfillment_status ? { fulfillment_status } : {}),
         ...(limit !== undefined ? { limit } : {}),
         ...(offset !== undefined ? { offset } : {}),
+        today_only: today_only ? 'true' : 'false',
       },
     }),
   updateFulfillment: (id: number, fulfillment_status: string, tracking_code?: string, shipping_carrier?: string) =>

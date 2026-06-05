@@ -418,5 +418,33 @@ export const trackOrder = async (code: string): Promise<TrackOrderResult> => {
   return response.data as TrackOrderResult;
 };
 
+export interface SpxTrackingEvent {
+  time: string;
+  date: string;
+  description: string;
+  milestone: number;
+}
+
+export interface SpxMilestone {
+  key: string;
+  label: string;
+  done: boolean;
+}
+
+export interface SpxTrackingInfo {
+  spx_tn: string;
+  status: string;
+  status_group: string;
+  delivery_date: string | null;
+  milestones: SpxMilestone[];
+  events: SpxTrackingEvent[];
+}
+
+export const fetchSpxTracking = async (spxTn: string): Promise<SpxTrackingInfo> => {
+  const response = await api.get('/api/orders/spx-tracking', { params: { spx_tn: spxTn } });
+  if (!response.data.success) throw new Error('not_spx');
+  return response.data.tracking as SpxTrackingInfo;
+};
+
 export default api;
 

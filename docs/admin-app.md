@@ -143,8 +143,9 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
 | GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
 
-Fulfillment shipping step requires both `tracking_code` and `shipping_carrier`
-when moving product or QR-keychain orders to `shipped`.
+Fulfillment shipping step requires only the SPX `tracking_code` when moving
+product or QR-keychain orders to `shipped`. `shipping_carrier` is auto-set to
+`SPX` by the backend.
 
 ## Page Visibility And Order
 
