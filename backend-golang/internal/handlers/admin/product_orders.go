@@ -197,10 +197,11 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 	handlers.OK(w, map[string]any{"success": true, "product_order": order})
 }
 
-// GET /api/admin/product-orders/fulfillment?fulfillment_status=&limit=&offset=
+// GET /api/admin/product-orders/fulfillment?fulfillment_status=&limit=&offset=&today_only=true
 // Returns all PAID product orders AND paid QR orders with keychain, filtered by fulfillment stage.
 // fulfillment_status="" (omitted) means "new" = not yet started.
 // limit/offset are applied only for the "shipped" stage (default limit 30).
+// today_only=true (default) restricts to orders created today in Asia/Ho_Chi_Minh timezone.
 func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	stage := q.Get("fulfillment_status")
@@ -217,9 +218,14 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	// product_orders: fulfillment_status IS NULL → 'new', otherwise use the value.
-	// orders (keychain): keychain_delivery_status 'processing' → 'new', otherwise use value.
-	query := `
+	// today_only defaults to true; pass today_only=false to see all history
+	todayOnly := q.Get("today_only") != "false"
+	todayFilter := ""
+	if todayOnly {
+		todayFilter = `AND (created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date`
+	}
+
+	query := fmt.Sprintf(`
 		SELECT order_type, id, reference, customer_name, customer_phone,
 		       customer_address, items_json, total_amount, fulfillment_stage, tracking_code, shipping_carrier, created_at
 		FROM (
@@ -262,7 +268,8 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 			WHERE payment_status = 'paid' AND keychain_purchased = true
 		) sub
 		WHERE fulfillment_stage = $1
-		ORDER BY created_at ASC`
+		%s
+		ORDER BY created_at DESC`, todayFilter)
 
 	if stage == "shipped" {
 		// Fetch one extra row to detect whether more pages exist.
@@ -314,9 +321,13 @@ func UpdateFulfillmentStatus(w http.ResponseWriter, r *http.Request) {
 		handlers.BadRequest(w, "fulfillment_status must be preparing, packing, or shipped")
 		return
 	}
-	if body.FulfillmentStatus == "shipped" && (strings.TrimSpace(body.TrackingCode) == "" || strings.TrimSpace(body.ShippingCarrier) == "") {
-		handlers.BadRequest(w, "tracking_code and shipping_carrier are required when shipped")
+	if body.FulfillmentStatus == "shipped" && strings.TrimSpace(body.TrackingCode) == "" {
+		handlers.BadRequest(w, "tracking_code is required when shipped")
 		return
+	}
+	shippingCarrier := strings.TrimSpace(body.ShippingCarrier)
+	if shippingCarrier == "" {
+		shippingCarrier = "SPX"
 	}
 
 	// Always write tracking_code; it will only be non-empty for "shipped".
@@ -328,7 +339,7 @@ func UpdateFulfillmentStatus(w http.ResponseWriter, r *http.Request) {
 		    updated_at         = NOW()
 		WHERE id = $4 AND payment_status = 'paid'
 		RETURNING *`,
-		body.FulfillmentStatus, body.TrackingCode, body.ShippingCarrier, id)
+		body.FulfillmentStatus, body.TrackingCode, shippingCarrier, id)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return

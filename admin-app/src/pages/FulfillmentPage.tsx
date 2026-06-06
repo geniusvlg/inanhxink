@@ -352,7 +352,8 @@ function OrderCard({
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
-  const [shippingCarrier, setShippingCarrier] = useState('');
+  const [shippingCarrier, setShippingCarrier] = useState<'SPX' | 'Viettel' | 'Khác'>('SPX');
+  const [customCarrier, setCustomCarrier] = useState('');
   const items = parseItems(order.items_json);
   const firstImg =
     items[0]?.catalog_image?.trim()
@@ -368,11 +369,13 @@ function OrderCard({
     setShowConfirm(false);
   };
   const handleConfirmShipped = () => {
-    if (!trackingCode.trim() || !shippingCarrier.trim()) return;
-    if (next) onAdvance(order.id, order.order_type, next, trackingCode.trim(), shippingCarrier.trim());
+    if (!trackingCode.trim()) return;
+    const carrier = shippingCarrier === 'Khác' ? (customCarrier.trim() || 'Khác') : shippingCarrier;
+    if (next) onAdvance(order.id, order.order_type, next, trackingCode.trim(), carrier);
     setShowTracking(false);
     setTrackingCode('');
-    setShippingCarrier('');
+    setShippingCarrier('SPX');
+    setCustomCarrier('');
   };
 
   return (
@@ -455,27 +458,41 @@ function OrderCard({
       )}
       {showTracking && (
         <div className="ff-tracking-input">
-          <label className="ff-tracking-label">Đơn vị vận chuyển (bắt buộc)</label>
-          <input
-            className="ff-tracking-field"
-            type="text"
-            placeholder="Ví dụ: GHN, Viettel Post, SPX..."
-            value={shippingCarrier}
-            onChange={e => setShippingCarrier(e.target.value)}
-            autoFocus
-          />
+          <label className="ff-tracking-label">Đơn vị vận chuyển</label>
+          <div className="ff-carrier-options">
+            {(['SPX', 'Viettel', 'Khác'] as const).map(opt => (
+              <button
+                key={opt}
+                type="button"
+                className={`ff-carrier-btn${shippingCarrier === opt ? ' ff-carrier-btn--active' : ''}`}
+                onClick={() => setShippingCarrier(opt)}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+          {shippingCarrier === 'Khác' && (
+            <input
+              className="ff-tracking-field"
+              type="text"
+              placeholder="Tên đơn vị vận chuyển..."
+              value={customCarrier}
+              onChange={e => setCustomCarrier(e.target.value)}
+            />
+          )}
           <label className="ff-tracking-label">Mã vận đơn (bắt buộc)</label>
           <input
             className="ff-tracking-field"
             type="text"
-            placeholder="Nhập mã vận đơn..."
+            placeholder={shippingCarrier === 'SPX' ? 'Ví dụ: SPXVN067045025476' : 'Nhập mã vận đơn...'}
             value={trackingCode}
             onChange={e => setTrackingCode(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && trackingCode.trim() && shippingCarrier.trim() && handleConfirmShipped()}
+            onKeyDown={e => e.key === 'Enter' && trackingCode.trim() && handleConfirmShipped()}
+            autoFocus
           />
           <div className="ff-tracking-actions">
-            <button className="ff-tracking-cancel" onClick={() => { setShowTracking(false); setTrackingCode(''); setShippingCarrier(''); }}>Huỷ</button>
-            <button className="ff-tracking-confirm" onClick={handleConfirmShipped} disabled={!trackingCode.trim() || !shippingCarrier.trim()}>
+            <button className="ff-tracking-cancel" onClick={() => { setShowTracking(false); setTrackingCode(''); setShippingCarrier('SPX'); setCustomCarrier(''); }}>Huỷ</button>
+            <button className="ff-tracking-confirm" onClick={handleConfirmShipped} disabled={!trackingCode.trim()}>
               🚚 Xác nhận giao
             </button>
           </div>
@@ -496,6 +513,7 @@ export default function FulfillmentPage() {
   const [loading, setLoading] = useState(true);
   const [shippedHasMore, setShippedHasMore] = useState(false);
   const [shippedLoadingMore, setShippedLoadingMore] = useState(false);
+  const [todayOnly, setTodayOnly] = useState(true);
   const [searchInvoice, setSearchInvoice] = useState('');
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
@@ -505,14 +523,14 @@ export default function FulfillmentPage() {
   const [detailOrder, setDetailOrder] = useState<{ result: SearchResult } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (today = todayOnly) => {
     setLoading(true);
     try {
       const [newRes, preparingRes, packingRes, shippedRes] = await Promise.all([
-        productOrdersApi.listFulfillment(),
-        productOrdersApi.listFulfillment('preparing'),
-        productOrdersApi.listFulfillment('packing'),
-        productOrdersApi.listFulfillment('shipped', SHIPPED_PAGE_SIZE, 0),
+        productOrdersApi.listFulfillment(undefined, undefined, undefined, today),
+        productOrdersApi.listFulfillment('preparing', undefined, undefined, today),
+        productOrdersApi.listFulfillment('packing', undefined, undefined, today),
+        productOrdersApi.listFulfillment('shipped', SHIPPED_PAGE_SIZE, 0, today),
       ]);
       setColumns({
         new:       newRes.data.orders ?? [],
@@ -526,13 +544,13 @@ export default function FulfillmentPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [todayOnly]);
 
   const loadMoreShipped = async () => {
     setShippedLoadingMore(true);
     try {
       const res = await productOrdersApi.listFulfillment(
-        'shipped', SHIPPED_PAGE_SIZE, columns.shipped.length,
+        'shipped', SHIPPED_PAGE_SIZE, columns.shipped.length, todayOnly,
       );
       setColumns(prev => ({ ...prev, shipped: [...prev.shipped, ...(res.data.orders ?? [])] }));
       setShippedHasMore(res.data.has_more ?? false);
@@ -615,9 +633,18 @@ export default function FulfillmentPage() {
       {/* Header */}
       <div className="ff-page-header">
         <h1 className="admin-page-title">⚙️ Xử lý đơn hàng</h1>
-        <button className="ff-refresh-btn" onClick={load} disabled={loading}>
-          {loading ? 'Đang tải...' : '🔄 Làm mới'}
-        </button>
+        <div className="ff-header-actions">
+          <button
+            className={`ff-today-toggle${todayOnly ? ' ff-today-toggle--active' : ''}`}
+            onClick={() => setTodayOnly(v => !v)}
+            title={todayOnly ? 'Đang hiển thị hôm nay — bấm để xem tất cả' : 'Đang xem tất cả — bấm để lọc hôm nay'}
+          >
+            {todayOnly ? '📅 Hôm nay' : '📋 Tất cả'}
+          </button>
+          <button className="ff-refresh-btn" onClick={() => load()} disabled={loading}>
+            {loading ? 'Đang tải...' : '🔄 Làm mới'}
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}

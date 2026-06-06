@@ -78,6 +78,7 @@ func main() {
 		r.Post("/", handlers.CreateOrder)
 		r.Get("/{id}", handlers.GetOrder)
 		r.Get("/track", handlers.TrackOrder)
+		r.Get("/spx-tracking", handlers.SpxTracking)
 	})
 
 	r.Route("/api/qrcodes", func(r chi.Router) {

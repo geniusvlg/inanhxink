@@ -29,8 +29,15 @@ number** (`product_orders.invoice_number`, e.g. `INXK37PRMDZ`):
 The same API also matches paid QR keychain orders by `qr_name` when the code
 does not match a product invoice.
 
-When admin moves an order to `shipped`, both `tracking_code` and
-`shipping_carrier` are required and are shown on the customer tracking page.
+When admin moves an order to `shipped`, only the SPX `tracking_code` is required.
+The backend auto-sets `shipping_carrier` to `SPX`.
+
+After shipment, `/tra-cuu-don-hang` fetches live delivery status from the SPX
+public tracking API via `GET /api/orders/spx-tracking?spx_tn={tracking_code}`.
+The backend proxies `https://spx.vn/shipment/order/open/order/get_order_info`
+and returns a normalized milestone stepper plus event timeline for the customer
+UI.
+
 The tracking response also returns the read-only order `items` array so
 customers can review what they ordered; product image URLs are rewritten through
 the CDN at response time.

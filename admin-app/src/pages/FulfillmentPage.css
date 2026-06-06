@@ -12,6 +12,31 @@
   gap: 1rem;
 }
 
+.ff-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ff-today-toggle {
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: all 0.15s;
+}
+.ff-today-toggle--active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.ff-today-toggle:hover { background: #f3f4f6; }
+.ff-today-toggle--active:hover { background: #dbeafe; }
+
 .ff-refresh-btn {
   padding: 0.45rem 1.1rem;
   border-radius: 8px;
@@ -254,6 +279,30 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: #15803d;
+}
+
+.ff-carrier-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ff-carrier-btn {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid #86efac;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #15803d;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ff-carrier-btn:hover { border-color: #16a34a; background: #f0fdf4; }
+.ff-carrier-btn--active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
 }
 
 .ff-tracking-field {
