@@ -197,11 +197,12 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 	handlers.OK(w, map[string]any{"success": true, "product_order": order})
 }
 
-// GET /api/admin/product-orders/fulfillment?fulfillment_status=&limit=&offset=&today_only=true
+// GET /api/admin/product-orders/fulfillment?fulfillment_status=&limit=&offset=
 // Returns all PAID product orders AND paid QR orders with keychain, filtered by fulfillment stage.
 // fulfillment_status="" (omitted) means "new" = not yet started.
 // limit/offset are applied only for the "shipped" stage (default limit 30).
-// today_only=true (default) restricts to orders created today in Asia/Ho_Chi_Minh timezone.
+// All in-progress stages show full history; the "shipped" stage is restricted to
+// orders created within the last 7 days so the column stays manageable.
 func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	stage := q.Get("fulfillment_status")
@@ -218,11 +219,11 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	// today_only defaults to true; pass today_only=false to see all history
-	todayOnly := q.Get("today_only") != "false"
-	todayFilter := ""
-	if todayOnly {
-		todayFilter = `AND (created_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = (NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date`
+	// Shipped orders accumulate indefinitely, so only show the last 7 days there.
+	// Every other stage shows full history so nothing in progress is hidden.
+	dateFilter := ""
+	if stage == "shipped" {
+		dateFilter = `AND created_at >= NOW() - INTERVAL '7 days'`
 	}
 
 	query := fmt.Sprintf(`
@@ -269,7 +270,7 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 		) sub
 		WHERE fulfillment_stage = $1
 		%s
-		ORDER BY created_at DESC`, todayFilter)
+		ORDER BY created_at DESC`, dateFilter)
 
 	if stage == "shipped" {
 		// Fetch one extra row to detect whether more pages exist.

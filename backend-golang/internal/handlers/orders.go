@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -99,6 +100,15 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		JSON(w, 409, map[string]any{"success": false, "error": "Tên QR này vừa được đặt bởi người khác. Vui lòng chọn tên khác."})
 		return
 	}
+	// Release the lock if order creation fails before the row is inserted, so a
+	// validation/processing error doesn't keep the name locked for the full
+	// 5-minute TTL (the user would otherwise lock themselves out on retry).
+	committed := false
+	defer func() {
+		if !committed {
+			releaseReservation(qrNameLowerEarly)
+		}
+	}()
 
 	templateType, _ := body["templateType"].(string)
 	resolvedType := ""
@@ -112,10 +122,12 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Birthday: finalText max 50 chars
+	// Birthday: finalText max 200 chars. Count runes (characters), not bytes —
+	// the frontend counter uses string length, so Vietnamese diacritics and
+	// emoji must not inflate the count and trigger a false rejection.
 	if resolvedType == "birthday" {
-		if ft, ok := body["birthdayFinalText"].(string); ok && len(ft) > 50 {
-			BadRequest(w, "Lời chúc không được quá 50 ký tự")
+		if ft, ok := body["birthdayFinalText"].(string); ok && utf8.RuneCountInString(ft) > 200 {
+			BadRequest(w, "Lời chúc không được quá 200 ký tự")
 			return
 		}
 	}
@@ -331,6 +343,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		InternalError(w, err)
 		return
 	}
+	committed = true // order row exists; keep the name reserved until payment
 
 	// Return full order row
 	orderRows, err := config.DB.Query(context.Background(), "SELECT * FROM orders WHERE id = $1", orderID)

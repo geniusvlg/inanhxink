@@ -513,7 +513,6 @@ export default function FulfillmentPage() {
   const [loading, setLoading] = useState(true);
   const [shippedHasMore, setShippedHasMore] = useState(false);
   const [shippedLoadingMore, setShippedLoadingMore] = useState(false);
-  const [todayOnly, setTodayOnly] = useState(true);
   const [searchInvoice, setSearchInvoice] = useState('');
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
@@ -523,14 +522,14 @@ export default function FulfillmentPage() {
   const [detailOrder, setDetailOrder] = useState<{ result: SearchResult } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async (today = todayOnly) => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [newRes, preparingRes, packingRes, shippedRes] = await Promise.all([
-        productOrdersApi.listFulfillment(undefined, undefined, undefined, today),
-        productOrdersApi.listFulfillment('preparing', undefined, undefined, today),
-        productOrdersApi.listFulfillment('packing', undefined, undefined, today),
-        productOrdersApi.listFulfillment('shipped', SHIPPED_PAGE_SIZE, 0, today),
+        productOrdersApi.listFulfillment(),
+        productOrdersApi.listFulfillment('preparing'),
+        productOrdersApi.listFulfillment('packing'),
+        productOrdersApi.listFulfillment('shipped', SHIPPED_PAGE_SIZE, 0),
       ]);
       setColumns({
         new:       newRes.data.orders ?? [],
@@ -544,13 +543,13 @@ export default function FulfillmentPage() {
     } finally {
       setLoading(false);
     }
-  }, [todayOnly]);
+  }, []);
 
   const loadMoreShipped = async () => {
     setShippedLoadingMore(true);
     try {
       const res = await productOrdersApi.listFulfillment(
-        'shipped', SHIPPED_PAGE_SIZE, columns.shipped.length, todayOnly,
+        'shipped', SHIPPED_PAGE_SIZE, columns.shipped.length,
       );
       setColumns(prev => ({ ...prev, shipped: [...prev.shipped, ...(res.data.orders ?? [])] }));
       setShippedHasMore(res.data.has_more ?? false);
@@ -634,13 +633,6 @@ export default function FulfillmentPage() {
       <div className="ff-page-header">
         <h1 className="admin-page-title">⚙️ Xử lý đơn hàng</h1>
         <div className="ff-header-actions">
-          <button
-            className={`ff-today-toggle${todayOnly ? ' ff-today-toggle--active' : ''}`}
-            onClick={() => setTodayOnly(v => !v)}
-            title={todayOnly ? 'Đang hiển thị hôm nay — bấm để xem tất cả' : 'Đang xem tất cả — bấm để lọc hôm nay'}
-          >
-            {todayOnly ? '📅 Hôm nay' : '📋 Tất cả'}
-          </button>
           <button className="ff-refresh-btn" onClick={() => load()} disabled={loading}>
             {loading ? 'Đang tải...' : '🔄 Làm mới'}
           </button>
