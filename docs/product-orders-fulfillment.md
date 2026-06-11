@@ -156,6 +156,20 @@ server-side from the trusted order subtotal, stores it on
 
 `/admin/fulfillment` shows only paid fulfillment orders.
 
+### Column date scope
+
+The board shows **all** orders by default — there is no "Hôm nay" (today-only)
+toggle. The first three columns (`new`, `preparing`, `packing`) always show full
+history so nothing in progress is ever hidden. The **`shipped`
+("Đã giao vận chuyển")** column is restricted to orders created **within the last
+7 days** (`AND created_at >= NOW() - INTERVAL '7 days'`) to keep an ever-growing
+column manageable; it still paginates 30 at a time via "Xem thêm".
+
+The filter lives in the Go handler `ListFulfillmentOrders`
+(`backend-golang/internal/handlers/admin/product_orders.go`). The old `today_only`
+query param was removed, and `listFulfillment` in
+`admin-app/src/services/api.ts` no longer sends it.
+
 Admins can:
 
 - Search paid product/QR orders by code.
