@@ -223,7 +223,7 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 	// Every other stage shows full history so nothing in progress is hidden.
 	dateFilter := ""
 	if stage == "shipped" {
-		dateFilter = `AND created_at >= NOW() - INTERVAL '7 days'`
+		dateFilter = `AND updated_at >= NOW() - INTERVAL '7 days'`
 	}
 
 	query := fmt.Sprintf(`

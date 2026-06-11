@@ -161,9 +161,9 @@ server-side from the trusted order subtotal, stores it on
 The board shows **all** orders by default — there is no "Hôm nay" (today-only)
 toggle. The first three columns (`new`, `preparing`, `packing`) always show full
 history so nothing in progress is ever hidden. The **`shipped`
-("Đã giao vận chuyển")** column is restricted to orders created **within the last
-7 days** (`AND created_at >= NOW() - INTERVAL '7 days'`) to keep an ever-growing
-column manageable; it still paginates 30 at a time via "Xem thêm".
+("Đã giao vận chuyển")** column is restricted to orders **moved to shipped within
+the last 7 days** (`AND updated_at >= NOW() - INTERVAL '7 days'`) to keep an
+ever-growing column manageable; it still paginates 30 at a time via "Xem thêm".
 
 The filter lives in the Go handler `ListFulfillmentOrders`
 (`backend-golang/internal/handlers/admin/product_orders.go`). The old `today_only`
