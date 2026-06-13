@@ -5,6 +5,7 @@ import { CartProvider } from './contexts/CartContext';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
 import QrGeneratePage from './pages/QrGeneratePage';
+import QrLookupPage from './pages/QrLookupPage';
 import TemplatePreviewPage from './pages/TemplatePreviewPage';
 import ThiepPage from './pages/ThiepPage';
 import KhungAnhPage from './pages/KhungAnhPage';
@@ -57,6 +58,7 @@ function AppRoutes() {
       <Route path="/tim-kiem" element={<ProductSearchPage />} />
       <Route path="/order" element={<OrderPage />} />
       <Route path="/payment/:qrName" element={<PaymentPage />} />
+      <Route path="/tao-ma-qr" element={<FlaggedRoute flag="page_tao_ma_qr" element={<QrLookupPage />} />} />
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
       <Route path="/preview/:templateName" element={<TemplatePreviewPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />

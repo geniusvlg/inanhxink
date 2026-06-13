@@ -50,9 +50,10 @@ const TEMPLATES: Record<string, QRTemplateConfig> = {
 interface StyledQRCodeProps {
   url: string;
   template?: string;
+  imgRef?: React.RefObject<HTMLImageElement | null>;
 }
 
-function StyledQRCode({ url, template = 'heart' }: StyledQRCodeProps) {
+function StyledQRCode({ url, template = 'heart', imgRef }: StyledQRCodeProps) {
   const [imgSrc, setImgSrc] = useState('');
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -131,6 +132,7 @@ function StyledQRCode({ url, template = 'heart' }: StyledQRCodeProps) {
 
   return (
     <img
+      ref={imgRef}
       src={imgSrc}
       alt="QR Code"
       style={{

@@ -572,3 +572,24 @@
     padding-left: 0;
   }
 }
+
+.to-qr-cta {
+  text-align: center;
+  padding-top: 0.25rem;
+}
+
+.to-qr-cta-btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #fe2c56;
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.to-qr-cta-btn:hover {
+  background: #e01e45;
+}

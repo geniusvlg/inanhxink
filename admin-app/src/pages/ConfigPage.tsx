@@ -12,6 +12,7 @@ const PAGE_FLAGS: { key: string; label: string; description: string }[] = [
   { key: 'page_cac_san_pham_khac', label: 'Các Sản Phẩm Khác', description: 'Trang các sản phẩm khác' },
   { key: 'page_in_anh',            label: 'In Ảnh',            description: 'Trang dịch vụ in ảnh' },
   { key: 'page_order_tracking',    label: 'Tra cứu đơn hàng',   description: 'Trang khách hàng tra cứu đơn theo mã invoice' },
+  { key: 'page_tao_ma_qr',         label: 'Tạo mã QR',          description: 'Trang khách hàng tạo và tải mã QR cho đơn QR đã mua' },
   { key: 'page_danh_gia',          label: 'Feedback',           description: 'Trang đánh giá / phản hồi khách hàng' },
 ];
 

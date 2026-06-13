@@ -1,0 +1,152 @@
+.ql-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #fdf4ff 0%, #fff5f7 60%, #fff 100%);
+}
+
+.ql-page {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.ql-container {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ql-hero {
+  text-align: center;
+}
+
+.ql-hero-icon {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.5rem;
+}
+
+.ql-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 0.3rem;
+}
+
+.ql-subtitle {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ql-search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ql-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.ql-input:focus {
+  border-color: #fe2c56;
+}
+
+.ql-btn {
+  padding: 0.75rem 1.4rem;
+  background: #fe2c56;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+}
+
+.ql-btn:hover:not(:disabled) {
+  background: #e01e45;
+}
+
+.ql-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ql-preview-url {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+  background: #f9fafb;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+}
+
+.ql-preview-url strong {
+  color: #fe2c56;
+}
+
+.ql-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ql-pay-link {
+  color: #fe2c56;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ql-pay-link:hover {
+  text-decoration: underline;
+}
+
+.ql-help {
+  background: #fff;
+  border: 1px solid #f3e8ff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+}
+
+.ql-help-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 0.75rem;
+}
+
+.ql-help-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.ql-help-list li + li {
+  margin-top: 0.35rem;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { trackOrder, fetchSpxTracking, TrackOrderResult, SpxTrackingInfo } from '../services/api';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
@@ -247,6 +247,14 @@ export default function TrackOrderPage() {
                 </div>
               )}
             </div>
+
+            {result.type === 'qr' && order.payment_status === 'paid' && (
+              <div className="to-qr-cta">
+                <Link to={`/qr/${order.invoice_number}`} className="to-qr-cta-btn">
+                  Tạo mã QR in →
+                </Link>
+              </div>
+            )}
 
             {/* 4. SPX delivery timeline */}
             {showSpx && (

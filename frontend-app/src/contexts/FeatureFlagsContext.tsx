@@ -48,6 +48,7 @@ export interface FeatureFlags {
   page_set_qua_tang:       boolean;
   page_in_anh:             boolean;
   page_order_tracking:     boolean;
+  page_tao_ma_qr:          boolean;
   page_danh_gia:           boolean;
   page_order:              string[];
   products_page_size:      number;
@@ -79,6 +80,7 @@ const DEFAULTS: FeatureFlags = {
   page_set_qua_tang:       true,
   page_in_anh:             true,
   page_order_tracking:     true,
+  page_tao_ma_qr:          true,
   page_danh_gia:           true,
   page_order: [
     'page_qr_yeu_thuong',
@@ -89,6 +91,7 @@ const DEFAULTS: FeatureFlags = {
     'page_set_qua_tang',
     'page_in_anh',
     'page_order_tracking',
+    'page_tao_ma_qr',
     'page_danh_gia',
   ],
   products_page_size:      12,
@@ -192,6 +195,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           page_set_qua_tang:      c.page_set_qua_tang      !== 'false',
           page_in_anh:            c.page_in_anh            !== 'false',
           page_order_tracking:    c.page_order_tracking    !== 'false',
+          page_tao_ma_qr:         c.page_tao_ma_qr         !== 'false',
           page_danh_gia:          c.page_danh_gia          !== 'false',
           page_order:             parsePageOrder(c.page_order),
           products_page_size:     Math.max(1, parseInt(c.products_page_size) || 12),
