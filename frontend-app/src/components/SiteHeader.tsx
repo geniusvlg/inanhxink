@@ -22,7 +22,7 @@ const resolveThumb = (url: string | undefined) => {
 };
 
 interface SiteHeaderProps {
-  activePage?: 'home' | 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia' | 'tra-cuu-don-hang';
+  activePage?: 'home' | 'qr-yeu-thuong' | 'thiep' | 'khung-anh' | 'so-scrapbook' | 'set-qua-tang' | 'cac-san-pham-khac' | 'in-anh' | 'danh-gia' | 'tra-cuu-don-hang' | 'tao-ma-qr';
 }
 
 const NAV_PAGES = [
@@ -34,6 +34,7 @@ const NAV_PAGES = [
   { flag: 'page_cac_san_pham_khac', path: '/cac-san-pham-khac', active: 'cac-san-pham-khac', label: 'Các Sản Phẩm Khác' },
   { flag: 'page_in_anh', path: '/in-anh', active: 'in-anh', label: 'In Ảnh' },
   { flag: 'page_order_tracking', path: '/tra-cuu-don-hang', active: 'tra-cuu-don-hang', label: 'Tra cứu đơn hàng' },
+  { flag: 'page_tao_ma_qr', path: '/tao-ma-qr', active: 'tao-ma-qr', label: 'Tạo mã QR' },
   { flag: 'page_danh_gia', path: '/danh-gia', active: 'danh-gia', label: 'Feedback' },
 ] as const;
 

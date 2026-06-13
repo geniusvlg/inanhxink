@@ -26,3 +26,15 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 4. If the order form needs custom fields, add them in
    `frontend-app/src/pages/OrderPage.tsx`; otherwise it will use the generic
    content editor and image uploader.
+
+## Customer QR Download Page
+
+After payment, customers can create and download a printable QR image at
+`/qr/<qr_name>`. The discoverable entry point is `/tao-ma-qr`, where they enter
+their QR name (subdomain prefix).
+
+- Feature flag: `page_tao_ma_qr` (Admin → Cấu hình → Hiển thị trang)
+- Lookup page: `frontend-app/src/pages/QrLookupPage.tsx`
+- Generator page: `frontend-app/src/pages/QrGeneratePage.tsx`
+- Post-payment redirect still goes directly to `/qr/<qr_name>` even if the menu
+  entry is hidden.

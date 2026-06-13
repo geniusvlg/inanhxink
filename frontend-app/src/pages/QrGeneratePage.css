@@ -1,3 +1,64 @@
+.qrg-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #fdf4ff 0%, #fff5f7 60%, #fff 100%);
+}
+
+.qrg-page {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.qrg-container {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+
+.qrg-container--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 3rem;
+}
+
+.qrg-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0 0 0.35rem;
+}
+
+.qrg-subtitle {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.qrg-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+}
+
+.qrg-back-link {
+  color: #fe2c56;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.qrg-back-link:hover {
+  text-decoration: underline;
+}
+
 .qr-generate-page {
   text-align: center;
 }
@@ -24,6 +85,11 @@
   font-weight: 600;
   font-size: 1rem;
   word-break: break-all;
+  text-decoration: none;
+}
+
+.qr-gen-url-value:hover {
+  text-decoration: underline;
 }
 
 .qr-gen-section {
@@ -112,4 +178,25 @@
 
 .qr-gen-result {
   margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.qr-gen-download {
+  padding: 0.65rem 1.5rem;
+  background: #fff;
+  color: #fe2c56;
+  border: 2px solid #fe2c56;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.qr-gen-download:hover {
+  background: #fe2c56;
+  color: #fff;
 }
