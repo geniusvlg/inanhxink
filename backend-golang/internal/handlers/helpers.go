@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+
+	"inanhxink/backend-golang/internal/sentrylog"
 )
 
 // JSON writes v as a JSON response with the given status code.
@@ -41,6 +43,7 @@ func Conflict(w http.ResponseWriter, msg string) {
 }
 func InternalError(w http.ResponseWriter, err error) {
 	log.Printf("internal error: %v", err)
+	sentrylog.CaptureException(err)
 	JSON(w, http.StatusInternalServerError, map[string]any{"success": false, "error": err.Error()})
 }
 

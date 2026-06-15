@@ -16,12 +16,16 @@ import (
 	"inanhxink/backend-golang/internal/handlers"
 	adminHandlers "inanhxink/backend-golang/internal/handlers/admin"
 	"inanhxink/backend-golang/internal/middleware"
+	"inanhxink/backend-golang/internal/sentrylog"
 )
 
 func main() {
 	// Load .env from common launch locations. godotenv resolves paths from the
 	// current working directory, not the compiled binary location.
 	godotenv.Load(".env", "backend-golang/.env", "../../.env") //nolint — optional; env vars may be set externally
+
+	sentrylog.Init(os.Getenv("SENTRY_DSN"), os.Getenv("APP_ENV"), os.Getenv("APP_VERSION"))
+	defer sentrylog.Flush()
 
 	// Initialise shared resources
 	config.InitDB()
