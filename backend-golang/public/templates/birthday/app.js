@@ -115,11 +115,11 @@
   })();
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 2. PARTICLE COUNTDOWN  (Three.js WebGL — ported from Harumi countdown-3d)
+  // 2. PARTICLE COUNTDOWN  (Three.js WebGL — ported from Inanhxink countdown-3d)
   // ═══════════════════════════════════════════════════════════════════════════
   (function initParticleCountdown() {
 
-    // ── Quality presets (same as Harumi) ────────────────────────────────────
+    // ── Quality presets (same as Inanhxink) ────────────────────────────────────
     var QUALITY = {
       low:    { dotGapMultiplier: 1.5, effectIntensity: 0.7,  blurEnabled: false, maxFlyingDots: 180 },
       medium: { dotGapMultiplier: 1.2, effectIntensity: 0.85, blurEnabled: true,  maxFlyingDots: 387 },
@@ -138,7 +138,7 @@
     }
     var cfg = QUALITY[quality];
 
-    var DOT_SIZE   = 6;   // base gl_PointSize (same as Harumi)
+    var DOT_SIZE   = 6;   // base gl_PointSize (same as Inanhxink)
     var isMobile   = !/Macintosh|MacIntel|MacPPC|Mac68K/.test(navigator.userAgent)
                      && (window.innerHeight + getSafeArea('top') + getSafeArea('bottom')) <= 768;
     var DOT_GAP_BASE = isMobile ? 3 : 4;
@@ -183,7 +183,7 @@
     var dotTex  = makeDotTexture(DOT_SIZE);
     var blurTex = makeDotTexture(DOT_SIZE * 2.5);
 
-    // ── GLSL shaders (identical to Harumi) ───────────────────────────────────
+    // ── GLSL shaders (identical to Inanhxink) ───────────────────────────────────
     var r = textColor.r, g = textColor.g, b = textColor.b;
     var vertexShader = [
       'attribute float alpha;',
@@ -345,7 +345,7 @@
       var fontSize = 150;
       octx.font = 'bold ' + fontSize + 'px system-ui, Arial, sans-serif';
 
-      // Font-load guard (same as Harumi)
+      // Font-load guard (same as Inanhxink)
       if (document.fonts && document.fonts.check && !document.fonts.check(octx.font)) {
         return [];
       }

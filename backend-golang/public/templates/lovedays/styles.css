@@ -194,7 +194,7 @@ body[data-theme="polaroid"] {
 
 /*
  * Draw mode: applied for the first 2 seconds.
- * Targets ALL paths (like Harumi's `.heart path`), overriding both the gradient
+ * Targets ALL paths (like Inanhxink's `.heart path`), overriding both the gradient
  * fill and the outline, so the heart draws itself as a stroke then fills pink.
  */
 .heart-svg.draw-mode path {
@@ -212,7 +212,7 @@ body[data-theme="polaroid"] {
   100% { stroke-dashoffset: 0;   fill: #ff9999; }
 }
 
-/* Heartbeat — scales to 1.3 (same as Harumi) for a heavy pump */
+/* Heartbeat — scales to 1.3 (same as Inanhxink) for a heavy pump */
 .heart-svg.heartbeat {
   animation: heartbeat 1.5s ease-in-out infinite;
 }
@@ -225,7 +225,7 @@ body[data-theme="polaroid"] {
 
 /*
  * Aura ripple SVGs are appended to heart-wrapper by JS on each click.
- * They fill the full wrapper (not just the SVG) to match Harumi's effect.
+ * They fill the full wrapper (not just the SVG) to match Inanhxink's effect.
  */
 .aura-svg {
   pointer-events: none;
