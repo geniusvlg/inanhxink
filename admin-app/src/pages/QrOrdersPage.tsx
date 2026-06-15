@@ -117,7 +117,7 @@ export default function OrdersPage() {
                     <td>{o.template_name}</td>
                     <td>{o.total_amount?.toLocaleString('vi-VN')}đ</td>
                     <td><PaymentBadge status={o.payment_status} /></td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleDateString('vi-VN')}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleString('vi-VN', { day: '2-digit', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                   </tr>
                 ))}
               </tbody>
