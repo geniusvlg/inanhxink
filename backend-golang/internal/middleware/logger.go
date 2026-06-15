@@ -1,25 +1,25 @@
 package middleware
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
 
-// Logger logs each HTTP request with method, path, status code, and duration.
+// Logger logs each HTTP request to stderr (docker logs) and Sentry Logs.
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rw, r)
 		ms := time.Since(start).Milliseconds()
-		color := "\x1b[32m"
 		if rw.status >= 500 {
-			color = "\x1b[31m"
+			log.Printf("HTTP error %d %s %s %dms", rw.status, r.Method, r.RequestURI, ms)
 		} else if rw.status >= 400 {
-			color = "\x1b[33m"
+			log.Printf("HTTP warn %d %s %s %dms", rw.status, r.Method, r.RequestURI, ms)
+		} else {
+			log.Printf("HTTP %d %s %s %dms", rw.status, r.Method, r.RequestURI, ms)
 		}
-		fmt.Printf("%s%s\x1b[0m %s %d %dms\n", color, r.Method, r.RequestURI, rw.status, ms)
 	})
 }
 
