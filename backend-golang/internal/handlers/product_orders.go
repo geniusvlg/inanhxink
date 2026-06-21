@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -51,6 +52,7 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		CustomerEmail   string      `json:"customer_email"`
 		CustomerAddress string      `json:"customer_address"`
 		Items           []OrderItem `json:"items"`
+		PaymentMethod   string      `json:"payment_method"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		BadRequest(w, "Invalid JSON")
@@ -172,8 +174,39 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		subtotal += float64(it.Quantity) * it.UnitPrice
 	}
 	subtotal = math.Round(subtotal)
-	shippingFee := 0.0
-	total := math.Round(subtotal)
+
+	var shippingFee float64
+	var sfRaw string
+	if err := config.DB.QueryRow(context.Background(),
+		"SELECT value FROM metadata WHERE key = 'product_shipping_fee'").Scan(&sfRaw); err == nil {
+		if v, err2 := strconv.ParseFloat(strings.TrimSpace(sfRaw), 64); err2 == nil && v > 0 {
+			shippingFee = math.Round(v)
+		}
+	}
+	total := math.Round(subtotal + shippingFee)
+
+	paymentMethod := strings.TrimSpace(body.PaymentMethod)
+	if paymentMethod == "" {
+		paymentMethod = "bank_transfer"
+	}
+	if paymentMethod != "bank_transfer" && paymentMethod != "cod" {
+		BadRequest(w, "payment_method must be 'bank_transfer' or 'cod'")
+		return
+	}
+	if paymentMethod == "bank_transfer" {
+		shippingFee = 0
+	}
+	total = math.Round(subtotal + shippingFee)
+	var codFee float64
+	if paymentMethod == "cod" {
+		var raw string
+		if err := config.DB.QueryRow(context.Background(),
+			"SELECT value FROM metadata WHERE key = 'product_cod_fee_percent'").Scan(&raw); err == nil {
+			if percent, err2 := strconv.ParseFloat(strings.TrimSpace(raw), 64); err2 == nil && percent > 0 {
+				codFee = math.Round(total * percent / 100)
+			}
+		}
+	}
 
 	itemsJSON, err := json.Marshal(body.Items)
 	if err != nil {
@@ -205,8 +238,9 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 	row := config.DB.QueryRow(ctx, `
 		INSERT INTO product_orders
 			(cart_session_id, customer_name, customer_phone, customer_email,
-			 customer_address, items, subtotal, shipping_fee, total_amount)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+			 customer_address, items, subtotal, shipping_fee, total_amount,
+			 payment_method, cod_fee)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 		ON CONFLICT (cart_session_id) DO UPDATE SET
 			customer_name    = EXCLUDED.customer_name,
 			customer_phone   = EXCLUDED.customer_phone,
@@ -216,12 +250,15 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 			subtotal         = EXCLUDED.subtotal,
 			shipping_fee     = EXCLUDED.shipping_fee,
 			total_amount     = EXCLUDED.total_amount,
+			payment_method   = EXCLUDED.payment_method,
+			cod_fee          = EXCLUDED.cod_fee,
 			updated_at       = NOW()
 		WHERE product_orders.payment_status = 'pending'
 		RETURNING id`,
 		body.CartSessionID, body.CustomerName, body.CustomerPhone,
 		nullStr(body.CustomerEmail), body.CustomerAddress,
 		string(itemsJSON), subtotal, shippingFee, total,
+		paymentMethod, codFee,
 	)
 	var orderID int
 	if err := row.Scan(&orderID); err != nil {
@@ -254,6 +291,8 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		"invoice_number": invoiceNumber,
 		"shipping_fee":   shippingFee,
 		"total_amount":   total,
+		"payment_method": paymentMethod,
+		"cod_fee":        codFee,
 	})
 }
 

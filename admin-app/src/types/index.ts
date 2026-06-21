@@ -58,6 +58,8 @@ export interface ProductOrder {
   total_amount: number;
   created_at: string;
   updated_at: string;
+  payment_method?: string;
+  cod_fee?: number;
 }
 
 export interface Voucher {

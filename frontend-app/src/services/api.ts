@@ -326,15 +326,18 @@ export interface CreateProductOrderPayload {
   customer_email?:  string;
   customer_address: string;
   items:            CartItem[];
+  payment_method?:  'bank_transfer' | 'cod';
 }
 
 export interface ProductOrderResult {
-  success:      boolean;
-  order_id:     number;
+  success:         boolean;
+  order_id:        number;
   invoice_number?: string;
   shipping_fee?:   number;
   total_amount?:   number;
   already_paid?:   boolean;
+  payment_method?: string;
+  cod_fee?:        number;
 }
 
 export const createProductOrder = async (
@@ -369,13 +372,15 @@ export interface ProductPaymentResponse {
     paymentStatus: string;
   };
   payment: {
-    qrUrl:       string;
-    amount:      number;
-    paymentCode: string;
-    status:      string;
-    accountNo:   string;
-    accountName: string;
-    bank:        string;
+    qrUrl:           string;
+    amount:          number;
+    paymentCode:     string;
+    status:          string;
+    accountNo:       string;
+    accountName:     string;
+    bank:            string;
+    payment_method?: string;
+    cod_fee?:        number;
   };
 }
 

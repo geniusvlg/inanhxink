@@ -228,7 +228,8 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 
 	query := fmt.Sprintf(`
 		SELECT order_type, id, reference, customer_name, customer_phone,
-		       customer_address, items_json, total_amount, fulfillment_stage, tracking_code, shipping_carrier, created_at
+		       customer_address, items_json, total_amount, fulfillment_stage, tracking_code, shipping_carrier, created_at, updated_at,
+		       payment_method, cod_fee
 		FROM (
 			SELECT
 				'product'                                          AS order_type,
@@ -242,7 +243,10 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 				COALESCE(fulfillment_status, 'new')                AS fulfillment_stage,
 				COALESCE(tracking_code, '')                        AS tracking_code,
 				COALESCE(shipping_carrier, '')                     AS shipping_carrier,
-				created_at
+				created_at,
+				COALESCE(updated_at, created_at)                   AS updated_at,
+				COALESCE(payment_method, 'bank_transfer')          AS payment_method,
+				COALESCE(cod_fee, 0)                               AS cod_fee
 			FROM product_orders
 			WHERE payment_status = 'paid'
 
@@ -264,7 +268,10 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 				END                                                AS fulfillment_stage,
 				COALESCE(tracking_code, '')                        AS tracking_code,
 				COALESCE(shipping_carrier, '')                     AS shipping_carrier,
-				created_at
+				created_at,
+				COALESCE(updated_at, created_at)                   AS updated_at,
+				'bank_transfer'::varchar                           AS payment_method,
+				0::decimal                                         AS cod_fee
 			FROM orders
 			WHERE payment_status = 'paid' AND keychain_purchased = true
 		) sub

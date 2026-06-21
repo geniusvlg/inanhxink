@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import { useCart, cartEntriesToApiItems, type CartEntry } from '../contexts/CartContext';
-import { createProductOrder, getProductById, uploadProductImages } from '../services/api';
+import { createProductOrder, getMetadata, getProductById, uploadProductImages } from '../services/api';
 import './CheckoutPage.css';
 
 const DEFAULT_PRODUCT_IMAGE_LIMIT = 15;
@@ -72,7 +72,12 @@ export default function CheckoutPage() {
   const items = isBuyNow ? (buyNowDraft?.items ?? []) : cart.items;
   const sessionId = isBuyNow ? (buyNowDraft?.sessionId ?? '') : cart.sessionId;
   const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
-  const total = subtotal;
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'cod'>('bank_transfer');
+  const [codFeePercent, setCodFeePercent] = useState(0);
+  const [shippingFee, setShippingFee] = useState(0);
+  const effectiveShippingFee = paymentMethod === 'bank_transfer' ? 0 : shippingFee;
+  const total = subtotal + effectiveShippingFee;
+  const codFee = Math.round(total * codFeePercent / 100);
   const [productImageLimits, setProductImageLimits] = useState<Record<number, number>>({});
 
   const [step,    setStep]    = useState<1 | 2>(1);
@@ -199,6 +204,20 @@ export default function CheckoutPage() {
     });
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    getMetadata().then(cfg => {
+      if (cancelled) return;
+      const v = Number(cfg['product_cod_fee_percent'] ?? '0');
+      const percent = Number.isFinite(v) && v > 0 ? v : 0;
+      setCodFeePercent(percent);
+      if (percent === 0 || percent >= 100) setPaymentMethod('bank_transfer');
+      const sf = Number(cfg['product_shipping_fee'] ?? '0');
+      setShippingFee(Number.isFinite(sf) && sf > 0 ? Math.round(sf) : 0);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const handleFileRetry = useCallback(async (key: string, id: string) => {
     let fileToRetry: File | null = null;
     setCustoms(prev => {
@@ -263,6 +282,7 @@ export default function CheckoutPage() {
         customer_email:   info.email || undefined,
         customer_address: info.address,
         items:            apiItems,
+        payment_method:   paymentMethod,
       });
 
       if (orderResult.already_paid) {
@@ -324,6 +344,36 @@ export default function CheckoutPage() {
               />
             )}
 
+            {step === 1 && (
+              <div className="co-payment-method">
+                <label className="co-payment-label">
+                  <input type="radio" name="paymentMethod" value="bank_transfer"
+                    checked={paymentMethod === 'bank_transfer'}
+                    onChange={() => setPaymentMethod('bank_transfer')} />
+                  <span className="co-payment-radio" aria-hidden="true" />
+                  <span className="co-payment-icon">💳</span>
+                  <span className="co-payment-text">
+                    <span className="co-payment-title">Chuyển khoản</span>
+                    <span className="co-payment-desc">Quét mã QR, xác nhận tự động</span>
+                  </span>
+                  <span className="co-payment-badge co-payment-badge--free">Miễn phí ship</span>
+                </label>
+                {codFeePercent > 0 && codFeePercent < 100 && (
+                  <label className="co-payment-label">
+                    <input type="radio" name="paymentMethod" value="cod"
+                      checked={paymentMethod === 'cod'}
+                      onChange={() => setPaymentMethod('cod')} />
+                    <span className="co-payment-radio" aria-hidden="true" />
+                    <span className="co-payment-icon">🚚</span>
+                    <span className="co-payment-text">
+                      <span className="co-payment-title">Ship COD</span>
+                      <span className="co-payment-desc">Phí COD =  {codFeePercent}% tổng giá trị đơn hàng (đã bao gồm phí ship)</span>
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+
             {errMsg && <p className="co-error">{errMsg}</p>}
 
             <div className="co-btn-row">
@@ -346,7 +396,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* ── Right: order summary ── */}
-          <OrderSummary items={items} subtotal={subtotal} total={total} resolveUrl={resolveUrl} />
+          <OrderSummary items={items} subtotal={subtotal} shippingFee={shippingFee} effectiveShippingFee={effectiveShippingFee} total={total} resolveUrl={resolveUrl} paymentMethod={paymentMethod} codFee={codFee} />
         </div>
       </main>
 
@@ -463,11 +513,15 @@ function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, o
   );
 }
 
-function OrderSummary({ items, subtotal, total, resolveUrl }: {
+function OrderSummary({ items, subtotal, shippingFee, effectiveShippingFee, total, resolveUrl, paymentMethod, codFee }: {
   items: CartEntry[];
   subtotal: number;
+  shippingFee?: number;
+  effectiveShippingFee?: number;
   total: number;
   resolveUrl: (url: string) => string;
+  paymentMethod?: 'bank_transfer' | 'cod';
+  codFee?: number;
 }) {
   return (
     <aside className="co-summary">
@@ -501,10 +555,30 @@ function OrderSummary({ items, subtotal, total, resolveUrl }: {
         <span>Tạm tính</span>
         <strong>{fmt(subtotal)}</strong>
       </div>
+      <div className="co-summary-row">
+        <span>Phí ship</span>
+        <strong>
+          {shippingFee && shippingFee > 0 && effectiveShippingFee === 0
+            ? <><s style={{ color: '#94a3b8', fontWeight: 400 }}>{fmt(shippingFee)}</s> 0đ</>
+            : effectiveShippingFee && effectiveShippingFee > 0 ? fmt(effectiveShippingFee) : '0đ'}
+        </strong>
+      </div>
+      {paymentMethod !== undefined && (
+        <div className="co-summary-row">
+          <span>Phương Thức Thanh toán</span>
+          <strong>{paymentMethod === 'cod' ? 'Ship COD' : 'Chuyển khoản'}</strong>
+        </div>
+      )}
       <div className="co-summary-total">
         <span>Tổng cộng</span>
         <strong>{fmt(total)}</strong>
       </div>
+      {paymentMethod === 'cod' && codFee && codFee > 0 && (
+        <div className="co-summary-row co-summary-row--deposit">
+          <span>Tiền COD</span>
+          <strong>{fmt(Math.round(codFee))}</strong>
+        </div>
+      )}
     </aside>
   );
 }

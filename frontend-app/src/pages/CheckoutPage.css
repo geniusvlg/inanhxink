@@ -87,6 +87,105 @@
   padding: 1.75rem;
   border: 1px solid #f3f4f6;
 }
+.co-payment-method {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.25rem 1.75rem;
+  border: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.co-payment-method::before {
+  content: 'Phương thức thanh toán';
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.co-payment-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.co-payment-label:hover {
+  border-color: #f0abc8;
+  background: #fffafc;
+}
+.co-payment-label:has(input:checked) {
+  border-color: #e05c99;
+  background: #fdf2f8;
+  box-shadow: 0 0 0 3px rgba(224, 92, 153, 0.12);
+}
+/* Native radio hidden; custom dot rendered via .co-payment-radio */
+.co-payment-label input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.co-payment-radio {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.co-payment-label:has(input:checked) .co-payment-radio {
+  border-color: #e05c99;
+}
+.co-payment-label:has(input:checked) .co-payment-radio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #e05c99;
+}
+.co-payment-icon {
+  flex-shrink: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.co-payment-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+.co-payment-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+.co-payment-label:has(input:checked) .co-payment-title {
+  color: #be185d;
+}
+.co-payment-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+.co-payment-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.co-payment-badge--free {
+  background: #d1fae5;
+  color: #047857;
+}
 .co-form-title {
   font-size: 1.1rem;
   font-weight: 700;
@@ -490,6 +589,17 @@
 .co-summary-total strong {
   font-size: 1.1rem;
   color: #1f2937;
+}
+.co-summary-row--deposit {
+  font-weight: 600;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e5e7eb;
+  color: #e05c99;
+}
+.co-summary-row--deposit strong {
+  color: #e05c99;
+  font-size: 0.95rem;
 }
 .co-summary-note {
   font-size: 0.78rem;

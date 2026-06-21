@@ -19,6 +19,9 @@ interface FulfillmentOrder {
   tracking_code: string;
   shipping_carrier: string;
   created_at: string;
+  updated_at?: string;
+  payment_method?: string;
+  cod_fee?: number;
 }
 
 interface OrderItem {
@@ -71,7 +74,11 @@ interface SearchResult {
     fulfillment_label?: string;
     tracking_code?: string;
     shipping_carrier?: string;
+    created_at?: string;
+    updated_at?: string;
     items?: string | OrderItem[];
+    payment_method?: string;
+    cod_fee?: number;
   };
 }
 
@@ -188,6 +195,11 @@ function OrderDetailModal({
             <div className="ff-modal-customer">
               <span className="ff-card-label">Tên khách hàng:</span> {order.customer_name}
             </div>
+            {order.created_at && (
+              <div className="ff-modal-order-date">
+                🕐 Đặt lúc: {new Date(order.created_at).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
           </div>
           <button className="ff-modal-close" onClick={onClose}>✕</button>
         </div>
@@ -209,10 +221,19 @@ function OrderDetailModal({
                 : order.customer_address}
             </span>
           )}
-          {order.total_amount && <span>💰 {formatMoney(Number(order.total_amount))}</span>}
+          {order.total_amount && (
+            <span className="ff-modal-money">
+              💰 {formatMoney(Number(order.total_amount))}
+            </span>
+          )}
           <span className={`ff-modal-payment ff-modal-payment--${order.payment_status ?? 'pending'}`}>
             {order.payment_status === 'paid' ? '✓ Đã thanh toán' : '⏳ Chưa thanh toán'}
           </span>
+          {(order as SearchResult['order']).payment_method != null && (
+            (order as SearchResult['order']).payment_method === 'cod'
+              ? <span className="ff-modal-paymethod ff-modal-paymethod--cod">🚚 Ship COD</span>
+              : <span className="ff-modal-paymethod ff-modal-paymethod--bank">💳 Chuyển khoản</span>
+          )}
           {order.fulfillment_status && order.payment_status === 'paid' && (
             <span className={`ff-modal-stage ff-modal-stage--${order.fulfillment_status}`}>
               {stageLabel[order.fulfillment_status] ?? order.fulfillment_status}
@@ -220,7 +241,23 @@ function OrderDetailModal({
           )}
           {order.shipping_carrier && <span>🚚 {order.shipping_carrier}</span>}
           {order.tracking_code && <span>📦 {order.tracking_code}</span>}
+          {order.fulfillment_status === 'shipped' && order.updated_at && (
+            <span>📅 {new Date(order.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+          )}
         </div>
+
+        {(order as SearchResult['order']).payment_method === 'cod' && order.total_amount && (
+          <div className="ff-modal-cod-box">
+            <div className="ff-modal-cod-line ff-modal-cod-line--deposit">
+              <span className="ff-modal-cod-label">Đã cọc</span>
+              <span className="ff-modal-cod-value">{formatMoney(Number((order as SearchResult['order']).cod_fee ?? 0))}</span>
+            </div>
+            <div className="ff-modal-cod-line ff-modal-cod-line--remaining">
+              <span className="ff-modal-cod-label">Còn lại (thu khi giao)</span>
+              <span className="ff-modal-cod-value">{formatMoney(Number(order.total_amount) - Number((order as SearchResult['order']).cod_fee ?? 0))}</span>
+            </div>
+          </div>
+        )}
 
         <div className="ff-modal-items">
           {isProduct ? items.map((item, i) => (
@@ -398,7 +435,20 @@ function OrderCard({
             </div>
           </div>
         </div>
-        <div className="ff-card-amount">{formatMoney(Number(order.total_amount))}</div>
+        <div className="ff-card-amount">
+          <div className="ff-card-amount-total">
+            {formatMoney(Number(order.total_amount))}
+            {order.payment_method === 'cod'
+              ? <span className="ff-pay-badge ff-pay-badge--cod" title="Ship COD">COD</span>
+              : <span className="ff-pay-badge ff-pay-badge--ck" title="Chuyển khoản">CK</span>}
+          </div>
+          {order.payment_method === 'cod' && (
+            <div className="ff-card-cod-breakdown">
+              <span className="ff-card-cod-deposit">Cọc: {formatMoney(Number(order.cod_fee ?? 0))}</span>
+              <span className="ff-card-cod-remaining">Còn: {formatMoney(Number(order.total_amount) - Number(order.cod_fee ?? 0))}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {open && (
@@ -414,6 +464,16 @@ function OrderCard({
           )}
           {order.shipping_carrier && (
             <div className="ff-detail-row"><span>Đơn vị vận chuyển:</span><span>{order.shipping_carrier}</span></div>
+          )}
+          {order.fulfillment_stage === 'shipped' && order.updated_at && (
+            <div className="ff-detail-row"><span>Ngày giao vận chuyển:</span><span>{new Date(order.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+          )}
+          {order.payment_method === 'cod' && (
+            <>
+              <div className="ff-detail-row"><span>Thanh toán:</span><span>Ship COD</span></div>
+              <div className="ff-detail-row"><span>Đã cọc:</span><span>{formatMoney(Number(order.cod_fee ?? 0))}</span></div>
+              <div className="ff-detail-row ff-detail-row--remaining"><span>Còn lại:</span><span>{formatMoney(Number(order.total_amount) - Number(order.cod_fee ?? 0))}</span></div>
+            </>
           )}
           <div className="ff-items">
             {items.map((item, i) => {
@@ -621,6 +681,10 @@ export default function FulfillmentPage() {
           fulfillment_status: order.fulfillment_stage,
           tracking_code: order.tracking_code,
           shipping_carrier: order.shipping_carrier,
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+          payment_method: order.payment_method,
+          cod_fee: order.cod_fee,
           items: JSON.stringify(items),
         },
       },

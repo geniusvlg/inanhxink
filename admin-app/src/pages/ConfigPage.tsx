@@ -18,6 +18,10 @@ const PAGE_FLAGS: { key: string; label: string; description: string }[] = [
 
 const PAGE_ORDER_KEY = 'page_order';
 const DEFAULT_PAGE_ORDER = PAGE_FLAGS.map(f => f.key);
+const COD_FEE_KEY = 'product_cod_fee_percent';
+const COD_CONFIG_KEYS = new Set([COD_FEE_KEY]);
+const SHIPPING_FEE_KEY = 'product_shipping_fee';
+const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY]);
 
 /** Order notification email (metadata + optional DB SMTP password). Not exposed on public /api/metadata. */
 const NOTIFY_SMTP_PASSWORD_SET_KEY = 'notify_smtp_password_set';
@@ -100,6 +104,10 @@ export default function ConfigPage() {
       const payload: Record<string, string> = { ...config };
       for (const k of MANAGED_ELSEWHERE) delete payload[k];
       payload[PAGE_ORDER_KEY] = JSON.stringify(orderedPageFlags);
+      const codVal = Number(config[COD_FEE_KEY]);
+      payload[COD_FEE_KEY] = (Number.isFinite(codVal) && codVal >= 1 && codVal <= 100) ? String(codVal) : '100';
+      const sfVal = Number(config[SHIPPING_FEE_KEY]);
+      payload[SHIPPING_FEE_KEY] = (Number.isFinite(sfVal) && sfVal >= 0) ? String(Math.round(sfVal)) : '0';
 
       delete payload[NOTIFY_SMTP_PASSWORD_SET_KEY];
       for (const k of NOTIFY_EMAIL_KEYS) {
@@ -129,7 +137,7 @@ export default function ConfigPage() {
   const otherEntries = useMemo(
     () => Object.entries(config).filter(([k]) =>
       k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)
-      && !NOTIFY_CONFIG_KEYS.has(k),
+      && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k),
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -180,6 +188,67 @@ export default function ConfigPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* ── Shipping fee ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">📦 Phí ship</div>
+            <div className="cfg-card-sub">
+              Phí giao hàng cố định áp dụng cho tất cả đơn sản phẩm. Để 0 để miễn phí ship.
+            </div>
+          </div>
+          <div className="cfg-section">
+            <div className="form-group">
+              <label className="form-label">Phí ship (đ)</label>
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder="30000"
+                value={config[SHIPPING_FEE_KEY] ?? ''}
+                onChange={e => {
+                  const raw = e.target.value;
+                  if (raw === '') { handleChange(SHIPPING_FEE_KEY, ''); return; }
+                  const v = Number(raw);
+                  if (!Number.isNaN(v) && v >= 0) handleChange(SHIPPING_FEE_KEY, String(Math.round(v)));
+                }}
+              />
+              <p className="cfg-field-note">Ví dụ: 25000 = phí ship 25,000đ. Để 0 để miễn phí ship cho tất cả đơn.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── COD fee ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">🚚 Ship COD</div>
+            <div className="cfg-card-sub">
+              Tỉ lệ đặt cọc khi khách chọn Ship COD. Khách quét QR đặt cọc tỉ lệ % này so với giá trị đơn hàng; phần còn lại thu khi giao hàng.
+            </div>
+          </div>
+          <div className="cfg-section">
+            <div className="form-group">
+              <label className="form-label">Tỉ lệ đặt cọc COD (% giá trị đơn hàng)</label>
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                max="100"
+                placeholder="30"
+                value={config[COD_FEE_KEY] ?? ''}
+                onChange={e => {
+                  const raw = e.target.value;
+                  if (raw === '') { handleChange(COD_FEE_KEY, ''); return; }
+                  const v = Number(raw);
+                  if (!Number.isNaN(v) && v >= 1 && v <= 100) handleChange(COD_FEE_KEY, String(v));
+                }}
+              />
+              <p className="cfg-field-note">Nhập 1–99 để bật Ship COD với tỉ lệ đặt cọc tương ứng. Nhập 100 để tắt (khách phải trả toàn bộ trước, giống chuyển khoản).</p>
+            </div>
+          </div>
         </div>
 
         {/* ── Order notification email ── */}
