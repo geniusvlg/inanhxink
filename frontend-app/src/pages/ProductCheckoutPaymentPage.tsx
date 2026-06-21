@@ -184,6 +184,12 @@ export default function ProductCheckoutPaymentPage() {
                 </div>
               </div>
 
+              {data.payment.payment_method === 'cod' && (data.payment.cod_fee ?? 0) > 0 && (
+                <div className="pcp-cod-note">
+                  Bạn đang đặt cọc <strong>{fmt(data.payment.cod_fee!)}</strong>. Còn lại <strong>{fmt(data.order.totalAmount - data.payment.cod_fee!)}</strong> sẽ thanh toán khi nhận hàng.
+                </div>
+              )}
+
               {pollExpired ? (
                 <div className="pcp-expired">
                   <p className="pcp-expired-text">

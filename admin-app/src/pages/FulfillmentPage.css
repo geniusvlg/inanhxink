@@ -165,6 +165,57 @@
   color: #d9468b;
   white-space: nowrap;
   flex-shrink: 0;
+  text-align: right;
+}
+
+.ff-card-amount-total {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.ff-card-cod-breakdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  margin-top: 0.2rem;
+}
+
+.ff-card-cod-deposit {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.ff-card-cod-remaining {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.ff-pay-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  letter-spacing: 0.03em;
+}
+.ff-pay-badge--cod {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+.ff-pay-badge--ck {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+.ff-detail-row--remaining span:last-child {
+  color: #dc2626;
+  font-weight: 700;
 }
 
 /* Detail */
@@ -582,9 +633,16 @@
   color: #1f2937;
 }
 .ff-modal-customer {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin-top: 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-top: 0.2rem;
+}
+.ff-modal-order-date {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 0.3rem;
 }
 .ff-modal-close {
   background: none;
@@ -672,6 +730,54 @@
 }
 .ff-modal-payment--paid    { background: #d1fae5; color: #065f46; }
 .ff-modal-payment--pending { background: #fef3c7; color: #92400e; }
+
+.ff-modal-paymethod {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+.ff-modal-paymethod--cod  { background: #fef3c7; color: #92400e; }
+.ff-modal-paymethod--bank { background: #dbeafe; color: #1d4ed8; }
+
+.ff-modal-money {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ff-modal-cod-box {
+  margin: 0 1.5rem;
+  padding: 0.6rem 0.9rem;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ff-modal-cod-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.ff-modal-cod-label {
+  font-weight: 600;
+  color: #475569;
+}
+
+.ff-modal-cod-value {
+  font-weight: 700;
+  font-size: 1rem;
+}
+.ff-modal-cod-line--deposit   .ff-modal-cod-value { color: #047857; }
+.ff-modal-cod-line--remaining .ff-modal-cod-value { color: #b91c1c; }
+
 .ff-modal-items {
   flex: 1;
   overflow-y: auto;

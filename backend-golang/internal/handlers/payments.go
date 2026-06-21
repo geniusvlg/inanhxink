@@ -546,6 +546,8 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	var requiredAmount float64
 	var subtotal, shippingFee float64
 	var invoiceNumber, custName, custPhone, custEmail, custAddr string
+	var paymentMethodW string
+	var codFeeW float64
 	if err := dbtx.QueryRow(ctx, `
 		SELECT items::text, payment_status, total_amount,
 			COALESCE(subtotal, 0)::float8, COALESCE(shipping_fee, 0)::float8,
@@ -553,10 +555,13 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 			COALESCE(customer_name::text, ''),
 			COALESCE(customer_phone::text, ''),
 			COALESCE(customer_email::text, ''),
-			COALESCE(customer_address::text, '')
+			COALESCE(customer_address::text, ''),
+			COALESCE(payment_method, 'bank_transfer'),
+			COALESCE(cod_fee, 0)::float8
 		FROM product_orders WHERE id = $1 FOR UPDATE`, orderID).
 		Scan(&itemsJSON, &paymentStatus, &requiredAmount, &subtotal, &shippingFee,
-			&invoiceNumber, &custName, &custPhone, &custEmail, &custAddr); err != nil {
+			&invoiceNumber, &custName, &custPhone, &custEmail, &custAddr,
+			&paymentMethodW, &codFeeW); err != nil {
 		log.Printf("[product-webhook] lock/select product order failed: order_id=%d sepay_id=%d err=%v", orderID, sepayID, err)
 		OK(w, map[string]any{"success": true, "message": "No pending product order found"})
 		return
@@ -565,6 +570,9 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 		log.Printf("[product-webhook] order not pending: order_id=%d status=%s", orderID, paymentStatus)
 		OK(w, map[string]any{"success": true, "message": "Order already processed"})
 		return
+	}
+	if paymentMethodW == "cod" && codFeeW > 0 {
+		requiredAmount = codFeeW
 	}
 	if amount < requiredAmount {
 		log.Printf("[product-webhook] underpayment ignored: order_id=%d sepay_id=%d paid=%.0f required=%.0f", orderID, sepayID, amount, requiredAmount)
@@ -783,12 +791,15 @@ func GetProductPayment(w http.ResponseWriter, r *http.Request) {
 	orderID := chi.URLParam(r, "orderId")
 
 	row := config.DB.QueryRow(context.Background(), `
-		SELECT id, COALESCE(invoice_number, ''), total_amount, payment_status
+		SELECT id, COALESCE(invoice_number, ''), total_amount, payment_status,
+			COALESCE(payment_method, 'bank_transfer'), COALESCE(cod_fee, 0)::float8
 		FROM product_orders WHERE id = $1`, orderID)
 	var id int
 	var invoiceNumber, paymentStatus string
 	var totalAmount float64
-	if err := row.Scan(&id, &invoiceNumber, &totalAmount, &paymentStatus); err != nil {
+	var paymentMethod string
+	var codFee float64
+	if err := row.Scan(&id, &invoiceNumber, &totalAmount, &paymentStatus, &paymentMethod, &codFee); err != nil {
 		JSON(w, 404, map[string]any{"success": false, "error": "Product order not found"})
 		return
 	}
@@ -796,12 +807,15 @@ func GetProductPayment(w http.ResponseWriter, r *http.Request) {
 		invoiceNumber = fmt.Sprintf("INXK%d%s", id, randomInvoiceSuffix(5))
 	}
 
-	amount := int(math.Round(totalAmount))
+	qrAmount := int(math.Round(totalAmount))
+	if paymentMethod == "cod" && codFee > 0 {
+		qrAmount = int(math.Round(codFee))
+	}
 	qrURL := fmt.Sprintf(
 		"https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
 		url.QueryEscape(sepayProductAccountNo()),
 		url.QueryEscape(sepayProductBank()),
-		amount,
+		qrAmount,
 		url.QueryEscape(invoiceNumber),
 	)
 
@@ -827,7 +841,7 @@ func GetProductPayment(w http.ResponseWriter, r *http.Request) {
 			if _, err := config.DB.Exec(context.Background(), `
 				INSERT INTO product_transaction (product_order_id, amount, status, payment_qr_url)
 				VALUES ($1, $2, 'pending', $3)`,
-				id, amount, qrURL); err != nil {
+				id, qrAmount, qrURL); err != nil {
 				InternalError(w, fmt.Errorf("create pending product transaction: %w", err))
 				return
 			}
@@ -857,13 +871,15 @@ func GetProductPayment(w http.ResponseWriter, r *http.Request) {
 			"paymentStatus": paymentStatus,
 		},
 		"payment": map[string]any{
-			"qrUrl":       qrURL,
-			"amount":      amount,
-			"paymentCode": invoiceNumber,
-			"status":      txStatus,
-			"accountNo":   sepayProductAccountNo(),
-			"accountName": sepayProductAccountName(),
-			"bank":        sepayProductBank(),
+			"qrUrl":          qrURL,
+			"amount":         qrAmount,
+			"paymentCode":    invoiceNumber,
+			"status":         txStatus,
+			"accountNo":      sepayProductAccountNo(),
+			"accountName":    sepayProductAccountName(),
+			"bank":           sepayProductBank(),
+			"payment_method": paymentMethod,
+			"cod_fee":        codFee,
 		},
 	})
 }
