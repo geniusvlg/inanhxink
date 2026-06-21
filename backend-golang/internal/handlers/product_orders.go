@@ -9,7 +9,6 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -19,8 +18,6 @@ import (
 )
 
 const invoiceAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ" // no I/O to avoid confusion
-const productShippingFeeThresholdKey = "product_shipping_fee_threshold"
-const productShippingFeeBelowThresholdKey = "product_shipping_fee_below_threshold"
 
 func randomInvoiceSuffix(n int) string {
 	b := make([]byte, n)
@@ -46,40 +43,6 @@ type OrderItem struct {
 
 // POST /api/product-orders
 // Idempotent via cart_session_id (UUID from localStorage).
-func productShippingFeeForSubtotal(ctx context.Context, subtotal float64) (float64, error) {
-	rows, err := config.DB.Query(ctx, `
-		SELECT key, value FROM metadata
-		WHERE key IN ($1, $2)`,
-		productShippingFeeThresholdKey, productShippingFeeBelowThresholdKey)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	values := map[string]float64{}
-	for rows.Next() {
-		var key, raw string
-		if err := rows.Scan(&key, &raw); err != nil {
-			return 0, err
-		}
-		amount, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
-		if err != nil || amount < 0 {
-			amount = 0
-		}
-		values[key] = amount
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
-
-	threshold := values[productShippingFeeThresholdKey]
-	fee := values[productShippingFeeBelowThresholdKey]
-	if threshold <= 0 || fee <= 0 || subtotal >= threshold {
-		return 0, nil
-	}
-	return math.Round(fee), nil
-}
-
 func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		CartSessionID   string      `json:"cart_session_id"`
@@ -209,13 +172,8 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		subtotal += float64(it.Quantity) * it.UnitPrice
 	}
 	subtotal = math.Round(subtotal)
-	shippingFee, err := productShippingFeeForSubtotal(context.Background(), subtotal)
-	if err != nil {
-		InternalError(w, err)
-		return
-	}
-	total := math.Round(subtotal + shippingFee)
-	shippingFee = math.Round(shippingFee)
+	shippingFee := 0.0
+	total := math.Round(subtotal)
 
 	itemsJSON, err := json.Marshal(body.Items)
 	if err != nil {

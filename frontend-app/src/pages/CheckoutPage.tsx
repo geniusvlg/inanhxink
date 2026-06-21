@@ -3,12 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import SiteHeader from '../components/SiteHeader';
 import SiteFooter from '../components/SiteFooter';
 import { useCart, cartEntriesToApiItems, type CartEntry } from '../contexts/CartContext';
-import { createProductOrder, getMetadata, getProductById, uploadProductImages } from '../services/api';
+import { createProductOrder, getProductById, uploadProductImages } from '../services/api';
 import './CheckoutPage.css';
 
 const DEFAULT_PRODUCT_IMAGE_LIMIT = 15;
-const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
-const SHIPPING_BELOW_THRESHOLD_FEE_KEY = 'product_shipping_fee_below_threshold';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const CDN_URL      = import.meta.env.VITE_CDN_URL || '';
 const S3_ORIGIN    = `https://s3-north1.viettelidc.com.vn/${import.meta.env.VITE_S3_BUCKET || 'inanhxink-prod'}`;
@@ -50,17 +48,6 @@ function imageLimitFor(item?: Pick<CartEntry, 'max_upload_images'>): number {
   return Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_PRODUCT_IMAGE_LIMIT;
 }
 
-function moneyConfigValue(config: Record<string, string>, key: string): number {
-  const value = Number((config[key] ?? '0').replace(/,/g, ''));
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
-function shippingFeeForSubtotal(subtotal: number, config: Record<string, string>): number {
-  const threshold = moneyConfigValue(config, SHIPPING_THRESHOLD_KEY);
-  const fee = moneyConfigValue(config, SHIPPING_BELOW_THRESHOLD_FEE_KEY);
-  return threshold > 0 && fee > 0 && subtotal < threshold ? fee : 0;
-}
-
 interface BuyNowDraft {
   sessionId: string;
   items:     CartEntry[];
@@ -85,9 +72,7 @@ export default function CheckoutPage() {
   const items = isBuyNow ? (buyNowDraft?.items ?? []) : cart.items;
   const sessionId = isBuyNow ? (buyNowDraft?.sessionId ?? '') : cart.sessionId;
   const subtotal = items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
-  const [shippingConfig, setShippingConfig] = useState<Record<string, string>>({});
-  const shippingFee = shippingFeeForSubtotal(subtotal, shippingConfig);
-  const total = subtotal + shippingFee;
+  const total = subtotal;
   const [productImageLimits, setProductImageLimits] = useState<Record<number, number>>({});
 
   const [step,    setStep]    = useState<1 | 2>(1);
@@ -123,18 +108,6 @@ export default function CheckoutPage() {
     loadLimits();
     return () => { cancelled = true; };
   }, [items]);
-
-  useEffect(() => {
-    let cancelled = false;
-    getMetadata()
-      .then(config => {
-        if (!cancelled) setShippingConfig(config);
-      })
-      .catch(() => {
-        if (!cancelled) setShippingConfig({});
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   if (items.length === 0) {
     return (
@@ -373,7 +346,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* ── Right: order summary ── */}
-          <OrderSummary items={items} subtotal={subtotal} shippingFee={shippingFee} total={total} resolveUrl={resolveUrl} />
+          <OrderSummary items={items} subtotal={subtotal} total={total} resolveUrl={resolveUrl} />
         </div>
       </main>
 
@@ -490,10 +463,9 @@ function Step2Form({ items, productImageLimits, customs, fileRefs, resolveUrl, o
   );
 }
 
-function OrderSummary({ items, subtotal, shippingFee, total, resolveUrl }: {
+function OrderSummary({ items, subtotal, total, resolveUrl }: {
   items: CartEntry[];
   subtotal: number;
-  shippingFee: number;
   total: number;
   resolveUrl: (url: string) => string;
 }) {
@@ -528,10 +500,6 @@ function OrderSummary({ items, subtotal, shippingFee, total, resolveUrl }: {
       <div className="co-summary-row">
         <span>Tạm tính</span>
         <strong>{fmt(subtotal)}</strong>
-      </div>
-      <div className="co-summary-row">
-        <span>Phí ship</span>
-        <strong>{fmt(shippingFee)}</strong>
       </div>
       <div className="co-summary-total">
         <span>Tổng cộng</span>
