@@ -1,19 +1,21 @@
-# Freeship (Free Shipping) Policy — REMOVED
+# Bank-Transfer Freeship Policy
 
-The threshold-based free shipping feature has been removed. Shipping is now always free for **Chuyển khoản** orders. For **Ship COD** orders, a fixed deposit is charged (see `docs/payment-feature.md`).
+Bank-transfer orders get free shipping only when the product subtotal reaches `product_shipping_fee_threshold` (default `149000`). If the subtotal is lower, the fixed `product_shipping_fee` is added to the order total. When `product_shipping_fee_threshold = 0`, bank-transfer orders always get free shipping.
 
-## What was removed
-
-The feature previously charged a shipping fee when the order subtotal was below a configured threshold. It was removed in favour of the simpler COD/bank-transfer model.
+For **Ship COD** orders, the fixed `product_shipping_fee` is added to the order total, then the customer pays a `product_cod_fee_percent` deposit by QR and the remainder on delivery (see `docs/payment-feature.md`).
 
 ## Deprecated DB artifacts
+
+The old separate "fee below threshold" metadata is still deprecated. The active
+policy uses the single fixed shipping fee for both COD and below-threshold bank
+transfer.
 
 Migration `V55__deprecate_shipping_fee_policy.sql` marks the leftovers:
 
 | Artifact | Status |
 |----------|--------|
-| `product_orders.shipping_fee` column | Kept for historical data; always `0` for new orders |
-| `metadata.product_shipping_fee_threshold` | Kept; description updated to `[DEPRECATED]` |
+| `product_orders.shipping_fee` column | Active; stores the shipping fee charged for the order |
+| `metadata.product_shipping_fee_threshold` | Active; bank-transfer free-shipping threshold |
 | `metadata.product_shipping_fee_below_threshold` | Kept; description updated to `[DEPRECATED]` |
 
-No code reads these values.
+No code reads `metadata.product_shipping_fee_below_threshold`.

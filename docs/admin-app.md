@@ -158,14 +158,19 @@ metadata keys:
 - `page_order`: JSON array of page flag keys that controls storefront nav order
   after `Trang chủ`.
 
-`ConfigPage.tsx` also manages the global product checkout shipping rule:
+`ConfigPage.tsx` also manages product checkout payment/shipping settings:
 
-- `product_shipping_fee_threshold`: order subtotal required for free shipping.
-- `product_shipping_fee_below_threshold`: shipping fee when subtotal is below
-  the threshold.
+- `product_shipping_fee`: fixed shipping fee in VND, applied to Ship COD orders
+  and to bank-transfer orders below the free-shipping threshold.
+- `product_shipping_fee_threshold`: product subtotal required for bank-transfer
+  orders to get free shipping. Default is `149000`; `0` means bank-transfer
+  orders always get free shipping.
+- `product_cod_fee_percent`: COD deposit percent calculated from the COD order
+  total, including shipping. Values `1`-`99` enable COD; `100` hides COD from
+  checkout.
 
-Both default to `0`, which means no shipping fee is applied until admin sets the
-rule.
+The current default shipping fee is `30000`; set it to `0` for free shipping on
+all product orders.
 
 ## S3 Folder Structure (Products)
 

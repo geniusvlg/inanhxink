@@ -3,8 +3,8 @@
 ## Overview
 
 Customers choose a **payment method** at checkout:
-- **Chuyển khoản** (bank transfer) — QR shows full order total, free shipping.
-- **Ship COD** — QR shows a fixed deposit (`product_cod_fee` metadata key); remainder collected on delivery. Admin sees "Đã cọc / Còn lại" in fulfillment.
+- **Chuyển khoản** (bank transfer) — QR shows the full order total. Shipping is free only when the product subtotal reaches `product_shipping_fee_threshold` (default `149000`; `0` means always free ship).
+- **Ship COD** — order total includes the fixed shipping fee (`product_shipping_fee`), QR shows the configured deposit percent (`product_cod_fee_percent`), and the remainder is collected on delivery. Admin sees "Đã cọc / Còn lại" in fulfillment.
 
 The project has **two independent order flows**, both backed by [SePay](https://sepay.vn) (Vietnamese payment aggregator):
 
@@ -19,12 +19,12 @@ The project has **two independent order flows**, both backed by [SePay](https://
 
 | Value | QR amount | Shipping |
 |-------|-----------|---------|
-| `bank_transfer` | `total_amount` | Free |
-| `cod` | `cod_fee` (admin-configured deposit) | Free; rest collected on delivery |
+| `bank_transfer` | `total_amount` | `0` when subtotal >= `product_shipping_fee_threshold`; otherwise fixed `product_shipping_fee` |
+| `cod` | `cod_fee` (`product_cod_fee_percent` of total) | Fixed `product_shipping_fee`; rest collected on delivery |
 
-`cod_fee` is read from `metadata.product_cod_fee` at order creation time and stored on `product_orders.cod_fee`.
+`cod_fee` is calculated from `metadata.product_cod_fee_percent` at order creation time and stored on `product_orders.cod_fee`.
 
-Admin configures the deposit in **Config → 🚚 Ship COD**. Setting it to 0 hides the COD option on checkout.
+Admin configures shipping fee and the bank-transfer free-shipping threshold in **Config → 📦 Phí ship**, and the COD deposit percent in **Config → 🚚 Ship COD**. Setting the COD percent to `100` hides the COD option on checkout.
 
 ---
 
@@ -81,11 +81,11 @@ CheckoutPage (select payment method) → POST /api/product-orders → /checkout/
 ```
 
 1. Customer fills out `CheckoutPage.tsx`, picks Chuyển khoản or Ship COD.
-2. `POST /api/product-orders` stores `payment_method` and `cod_fee` (fetched from metadata for COD).
+2. `POST /api/product-orders` recalculates subtotal from current product prices, applies `product_shipping_fee` for COD and for bank-transfer orders below `product_shipping_fee_threshold`, then stores `payment_method`, `shipping_fee`, and `cod_fee`.
 3. Redirected to `/checkout/payment/:orderId`.
 4. `ProductCheckoutPaymentPage.tsx` calls `GET /api/payments/product/:orderId`.
    - For COD: QR amount = `cod_fee`; shows deposit note with remaining balance.
-   - For bank transfer: QR amount = `total_amount`.
+   - For bank transfer: QR amount = `total_amount` (including shipping when below the free-shipping threshold).
 5. Page polls every 2 s for up to 2 minutes.
 6. When `paymentStatus === 'paid'`, cart is reset, user sent to `/checkout/result`.
 
@@ -99,7 +99,7 @@ CheckoutPage (select payment method) → POST /api/product-orders → /checkout/
 
 ### DB tables
 
-- `product_orders` — `payment_status`, `payment_method`, `cod_fee`, `invoice_number`, `items` (JSONB)
+- `product_orders` — `payment_status`, `payment_method`, `shipping_fee`, `cod_fee`, `invoice_number`, `items` (JSONB)
 - `product_transaction` — `product_order_id`, `amount`, `status`, `payment_qr_url`, `sepay_transaction_id`, `paid_at`
 
 ### Payment code / Webhook matching
@@ -173,10 +173,12 @@ Both payment pages: 2-second interval, 2-minute timeout. Countdown displayed; sh
 | File | Role |
 |------|------|
 | `backend-golang/internal/handlers/payments.go` | All payment handlers |
-| `backend-golang/internal/handlers/product_orders.go` | `CreateProductOrder` — stores `payment_method` + `cod_fee` |
-| `backend-golang/database/V56__product_order_payment_method.sql` | Adds `payment_method`, `cod_fee` columns + `product_cod_fee` metadata |
+| `backend-golang/internal/handlers/product_orders.go` | `CreateProductOrder` — stores `payment_method`, `shipping_fee`, and `cod_fee` |
+| `backend-golang/database/V56__product_order_payment_method.sql` | Adds `payment_method`, `cod_fee` columns + `product_cod_fee_percent` metadata |
+| `backend-golang/database/V57__product_shipping_fee_config.sql` | Adds `product_shipping_fee` metadata |
+| `backend-golang/database/V58__clarify_cod_shipping_fee.sql` | Re-activates `product_shipping_fee_threshold` for bank-transfer free shipping |
 | `frontend-app/src/pages/CheckoutPage.tsx` | Checkout form with payment method selector |
 | `frontend-app/src/pages/PaymentPage.tsx` | QR order payment UI |
 | `frontend-app/src/pages/ProductCheckoutPaymentPage.tsx` | Product checkout payment UI (shows COD deposit note) |
 | `admin-app/src/pages/FulfillmentPage.tsx` | Shows COD badge, Đã cọc / Còn lại |
-| `admin-app/src/pages/ConfigPage.tsx` | Config → 🚚 Ship COD (sets `product_cod_fee`) |
+| `admin-app/src/pages/ConfigPage.tsx` | Config → 📦 Phí ship and 🚚 Ship COD |

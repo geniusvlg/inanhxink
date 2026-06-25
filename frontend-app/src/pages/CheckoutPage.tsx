@@ -75,7 +75,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'cod'>('bank_transfer');
   const [codFeePercent, setCodFeePercent] = useState(0);
   const [shippingFee, setShippingFee] = useState(0);
-  const effectiveShippingFee = paymentMethod === 'bank_transfer' ? 0 : shippingFee;
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
+  const bankTransferHasFreeShipping = freeShippingThreshold <= 0 || subtotal >= freeShippingThreshold;
+  const effectiveShippingFee = paymentMethod === 'bank_transfer' && bankTransferHasFreeShipping ? 0 : shippingFee;
   const total = subtotal + effectiveShippingFee;
   const codFee = Math.round(total * codFeePercent / 100);
   const [productImageLimits, setProductImageLimits] = useState<Record<number, number>>({});
@@ -214,6 +216,8 @@ export default function CheckoutPage() {
       if (percent === 0 || percent >= 100) setPaymentMethod('bank_transfer');
       const sf = Number(cfg['product_shipping_fee'] ?? '0');
       setShippingFee(Number.isFinite(sf) && sf > 0 ? Math.round(sf) : 0);
+      const threshold = Number(cfg['product_shipping_fee_threshold'] ?? '0');
+      setFreeShippingThreshold(Number.isFinite(threshold) && threshold > 0 ? Math.round(threshold) : 0);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -356,7 +360,9 @@ export default function CheckoutPage() {
                     <span className="co-payment-title">Chuyển khoản</span>
                     <span className="co-payment-desc">Quét mã QR, xác nhận tự động</span>
                   </span>
-                  <span className="co-payment-badge co-payment-badge--free">Miễn phí ship</span>
+                  <span className="co-payment-badge co-payment-badge--free">
+                    {bankTransferHasFreeShipping ? 'Miễn phí ship' : `Freeship từ ${fmt(freeShippingThreshold)}`}
+                  </span>
                 </label>
                 {codFeePercent > 0 && codFeePercent < 100 && (
                   <label className="co-payment-label">
@@ -367,7 +373,7 @@ export default function CheckoutPage() {
                     <span className="co-payment-icon">🚚</span>
                     <span className="co-payment-text">
                       <span className="co-payment-title">Ship COD</span>
-                      <span className="co-payment-desc">Phí COD =  {codFeePercent}% tổng giá trị đơn hàng (đã bao gồm phí ship)</span>
+                      <span className="co-payment-desc">Đặt cọc {codFeePercent}% tổng giá trị đơn hàng (đã bao gồm phí ship)</span>
                     </span>
                   </label>
                 )}
@@ -575,7 +581,7 @@ function OrderSummary({ items, subtotal, shippingFee, effectiveShippingFee, tota
       </div>
       {paymentMethod === 'cod' && codFee && codFee > 0 && (
         <div className="co-summary-row co-summary-row--deposit">
-          <span>Tiền COD</span>
+          <span>Đặt cọc COD</span>
           <strong>{fmt(Math.round(codFee))}</strong>
         </div>
       )}
