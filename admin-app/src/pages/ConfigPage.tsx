@@ -21,7 +21,8 @@ const DEFAULT_PAGE_ORDER = PAGE_FLAGS.map(f => f.key);
 const COD_FEE_KEY = 'product_cod_fee_percent';
 const COD_CONFIG_KEYS = new Set([COD_FEE_KEY]);
 const SHIPPING_FEE_KEY = 'product_shipping_fee';
-const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY]);
+const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
+const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY, SHIPPING_THRESHOLD_KEY]);
 
 /** Order notification email (metadata + optional DB SMTP password). Not exposed on public /api/metadata. */
 const NOTIFY_SMTP_PASSWORD_SET_KEY = 'notify_smtp_password_set';
@@ -108,6 +109,8 @@ export default function ConfigPage() {
       payload[COD_FEE_KEY] = (Number.isFinite(codVal) && codVal >= 1 && codVal <= 100) ? String(codVal) : '100';
       const sfVal = Number(config[SHIPPING_FEE_KEY]);
       payload[SHIPPING_FEE_KEY] = (Number.isFinite(sfVal) && sfVal >= 0) ? String(Math.round(sfVal)) : '0';
+      const thresholdVal = Number(config[SHIPPING_THRESHOLD_KEY]);
+      payload[SHIPPING_THRESHOLD_KEY] = (Number.isFinite(thresholdVal) && thresholdVal >= 0) ? String(Math.round(thresholdVal)) : '0';
 
       delete payload[NOTIFY_SMTP_PASSWORD_SET_KEY];
       for (const k of NOTIFY_EMAIL_KEYS) {
@@ -195,7 +198,7 @@ export default function ConfigPage() {
           <div className="cfg-card-head">
             <div className="cfg-card-title">📦 Phí ship</div>
             <div className="cfg-card-sub">
-              Phí giao hàng cố định áp dụng cho tất cả đơn sản phẩm. Để 0 để miễn phí ship.
+              Phí giao hàng cố định. Đơn chuyển khoản được miễn phí ship khi tạm tính đạt ngưỡng bên dưới.
             </div>
           </div>
           <div className="cfg-section">
@@ -216,6 +219,24 @@ export default function ConfigPage() {
                 }}
               />
               <p className="cfg-field-note">Ví dụ: 25000 = phí ship 25,000đ. Để 0 để miễn phí ship cho tất cả đơn.</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Miễn phí ship cho đơn chuyển khoản từ (đ)</label>
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder="200000"
+                value={config[SHIPPING_THRESHOLD_KEY] ?? ''}
+                onChange={e => {
+                  const raw = e.target.value;
+                  if (raw === '') { handleChange(SHIPPING_THRESHOLD_KEY, ''); return; }
+                  const v = Number(raw);
+                  if (!Number.isNaN(v) && v >= 0) handleChange(SHIPPING_THRESHOLD_KEY, String(Math.round(v)));
+                }}
+              />
+              <p className="cfg-field-note">Mặc định: 149000. Ví dụ: 149000 = chuyển khoản đơn từ 149,000đ sẽ miễn phí ship. Để 0 để chuyển khoản luôn miễn phí ship.</p>
             </div>
           </div>
         </div>

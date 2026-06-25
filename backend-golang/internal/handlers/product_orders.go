@@ -175,15 +175,22 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	subtotal = math.Round(subtotal)
 
-	var shippingFee float64
+	var baseShippingFee float64
 	var sfRaw string
 	if err := config.DB.QueryRow(context.Background(),
 		"SELECT value FROM metadata WHERE key = 'product_shipping_fee'").Scan(&sfRaw); err == nil {
 		if v, err2 := strconv.ParseFloat(strings.TrimSpace(sfRaw), 64); err2 == nil && v > 0 {
-			shippingFee = math.Round(v)
+			baseShippingFee = math.Round(v)
 		}
 	}
-	total := math.Round(subtotal + shippingFee)
+	var freeShippingThreshold float64
+	var thresholdRaw string
+	if err := config.DB.QueryRow(context.Background(),
+		"SELECT value FROM metadata WHERE key = 'product_shipping_fee_threshold'").Scan(&thresholdRaw); err == nil {
+		if v, err2 := strconv.ParseFloat(strings.TrimSpace(thresholdRaw), 64); err2 == nil && v > 0 {
+			freeShippingThreshold = math.Round(v)
+		}
+	}
 
 	paymentMethod := strings.TrimSpace(body.PaymentMethod)
 	if paymentMethod == "" {
@@ -193,10 +200,11 @@ func CreateProductOrder(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "payment_method must be 'bank_transfer' or 'cod'")
 		return
 	}
-	if paymentMethod == "bank_transfer" {
+	shippingFee := baseShippingFee
+	if paymentMethod == "bank_transfer" && (freeShippingThreshold <= 0 || subtotal >= freeShippingThreshold) {
 		shippingFee = 0
 	}
-	total = math.Round(subtotal + shippingFee)
+	total := math.Round(subtotal + shippingFee)
 	var codFee float64
 	if paymentMethod == "cod" {
 		var raw string

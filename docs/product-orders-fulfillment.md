@@ -136,21 +136,31 @@ Backend behavior:
   the current product `max_upload_images`.
 - This protects against users bypassing the frontend.
 
-## Global Shipping Fee
+## Shipping Fee
 
 Product orders have `shipping_fee DECIMAL(12,2) NOT NULL DEFAULT 0`.
 
-Admin configures one global rule in `ConfigPage.tsx` through metadata:
+Admin configures shipping in `ConfigPage.tsx` through metadata:
 
-- `product_shipping_fee_threshold`: subtotal required for free shipping.
-- `product_shipping_fee_below_threshold`: shipping fee when subtotal is below
-  the threshold.
+- `product_shipping_fee`: fixed shipping fee in VND.
+- `product_shipping_fee_threshold`: product subtotal required for bank-transfer
+  orders to get free shipping.
 
-Both default to `0`, so no shipping fee is applied until admin sets the rule.
-Checkout shows `Phí ship` based on the same metadata, and `CreateProductOrder`
+`product_shipping_fee` defaults to `30000` in migration
+`V57__product_shipping_fee_config.sql`; set it to `0` for free shipping.
+`product_shipping_fee_threshold` defaults to `149000`. **Chuyển khoản** orders
+below that subtotal pay `product_shipping_fee`, while orders at or above the
+threshold store `shipping_fee = 0`. Admin can still set the threshold to `0` to
+make all bank-transfer orders free-shipping.
+
+Checkout shows `Phí ship` from the same metadata, and `CreateProductOrder`
 refreshes each product's active price from the database, recalculates the fee
-server-side from the trusted order subtotal, stores it on
-`product_orders.shipping_fee`, and adds it to `total_amount`.
+server-side, stores it on `product_orders.shipping_fee`, and adds it to
+`total_amount`.
+
+COD deposits are configured separately with `product_cod_fee_percent`. For COD,
+`cod_fee` is calculated as that percent of the order total including shipping;
+the remaining balance is collected on delivery.
 
 ## Admin Fulfillment
 
