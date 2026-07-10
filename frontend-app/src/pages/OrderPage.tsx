@@ -318,8 +318,11 @@ function OrderPage() {
       setError('Vui lòng chọn ngày bắt đầu');
       return;
     }
-    if (templateType === 'birthday' && birthdayFinalText.length > 200) {
-      setError('Lời chúc không được quá 200 ký tự'); return;
+    if (templateType === 'specialgift' && content.length > 200) {
+      setError('Nội dung thư không được quá 200 ký tự'); return;
+    }
+    if (templateType === 'birthday' && birthdayFinalText.length > 50) {
+      setError('Lời chúc không được quá 50 ký tự'); return;
     }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
 
@@ -516,7 +519,7 @@ function OrderPage() {
           onChange={setContent}
           label={templateType === 'specialgift' ? 'Nội dung thư' : undefined}
           placeholder={templateType === 'specialgift' ? 'Nhập nội dung sẽ hiển thị trong popup thư...' : undefined}
-          note={templateType === 'specialgift' ? 'Không giới hạn số dòng hoặc số chữ.' : undefined}
+          maxLength={templateType === 'specialgift' ? 200 : undefined}
         />
       )}
 
@@ -674,7 +677,7 @@ function OrderPage() {
               value={birthdayFinalText}
               onChange={e => {
                 const val = e.target.value;
-                if (val.length <= 200) {
+                if (val.length <= 50) {
                   setBirthdayFinalText(val);
                 }
               }}
@@ -682,8 +685,8 @@ function OrderPage() {
               rows={2}
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
             />
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: birthdayFinalText.length >= 200 ? '#ef4444' : '#6b7280', textAlign: 'right' }}>
-              {birthdayFinalText.length}/200
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: birthdayFinalText.length >= 50 ? '#ef4444' : '#6b7280', textAlign: 'right' }}>
+              {birthdayFinalText.length}/50
             </p>
           </div>
         </div>

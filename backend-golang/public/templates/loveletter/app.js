@@ -80,9 +80,29 @@ function renderLetter() {
     });
   };
   fillBody(bodyTopEl);
-  fillBody(bodyBotEl);
 
-  setupLetterScrollSync(bodyTopEl, bodyBotEl);
+  // The bottom panel only exists to continue text that overflows past the
+  // top panel. If the whole letter already fits in the top panel, there's
+  // nothing to continue into — mirroring the same text would just show the
+  // short letter twice, since resetLetterScroll's offset has no scrollable
+  // range left to clamp into.
+  if (bodyTopEl.scrollHeight > bodyTopEl.clientHeight) {
+    fillBody(bodyBotEl);
+    // resetLetterScroll offsets the bottom panel by top.clientHeight so it
+    // continues right where the top panel's visible text ends. That offset
+    // can only be as large as the bottom panel's own scrollable range
+    // (scrollHeight - clientHeight); for letters that overflow the top
+    // panel by less than a full bottom-panel height, that range would be
+    // smaller than the needed offset, so the browser clamps scrollTop and
+    // the seam shows a few duplicated lines. Padding the bottom panel by
+    // its own clientHeight guarantees enough scrollable range for any
+    // amount of overflow, since the padding itself covers the shortfall.
+    bodyBotEl.style.paddingBottom = bodyBotEl.clientHeight + 'px';
+    setupLetterScrollSync(bodyTopEl, bodyBotEl);
+  } else {
+    bodyBotEl.innerHTML = '';
+    bodyBotEl.style.paddingBottom = '';
+  }
 }
 
 let _letterScrollWired = false;

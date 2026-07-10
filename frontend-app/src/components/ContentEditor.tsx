@@ -7,15 +7,19 @@ interface ContentEditorProps {
   label?: string;
   placeholder?: string;
   note?: string;
+  maxLength?: number;
 }
 
-function ContentEditor({ value, onChange, label, placeholder, note }: ContentEditorProps) {
+function ContentEditor({ value, onChange, label, placeholder, note, maxLength }: ContentEditorProps) {
   const [content, setContent] = useState(value || '');
   const maxLines = 11;
   const maxCharsPerLine = 7;
   const labelText = label || `Nội dung (tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ)`;
   const placeholderText = placeholder || `Nhập mỗi dòng một câu (tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ)`;
-  const noteText = note || `Lưu ý: Tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ`;
+  const noteText = note || (maxLength !== undefined
+    ? `${content.length}/${maxLength} ký tự`
+    : `Lưu ý: Tối đa ${maxLines} dòng, mỗi dòng tối đa ${maxCharsPerLine} chữ`);
+  const atLimit = maxLength !== undefined && content.length >= maxLength;
 
   useEffect(() => {
     if (value !== undefined) {
@@ -25,6 +29,7 @@ function ContentEditor({ value, onChange, label, placeholder, note }: ContentEdi
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
+    if (maxLength !== undefined && newValue.length > maxLength) return;
     setContent(newValue);
     onChange(newValue);
   };
@@ -43,9 +48,10 @@ function ContentEditor({ value, onChange, label, placeholder, note }: ContentEdi
         onChange={handleChange}
         placeholder={placeholderText}
         rows={4}
+        maxLength={maxLength}
         className="content-textarea"
       />
-      <p className="content-editor-note">
+      <p className={`content-editor-note${atLimit ? ' content-editor-note--limit' : ''}`}>
         {noteText}
       </p>
     </div>
