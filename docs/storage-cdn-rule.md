@@ -16,53 +16,63 @@ persisted, never reversed, never branched on.
 
 | Surface          | What it sees       | Why                                                     |
 | ---------------- | ------------------ | ------------------------------------------------------- |
-| DB (`*.image_url`) | Raw S3 URL         | Canonical pointer to the bucket object. Used by deletes (`deleteFromS3` parses the bucket key out of it) and verification tooling. |
+| DB (`*.image_url`) | Raw S3 URL         | Canonical pointer to the bucket object. Used by deletes (`DeleteFromS3` in `backend-golang/internal/config/s3.go` parses the bucket key out of it) and verification tooling. |
 | Public client    | CDN URL            | Cheap bandwidth, edge caching, friendly domain.         |
 | Admin API/client state | Raw S3 URL         | Admins need to verify objects exist in the bucket and trigger deletes. |
 | Admin image previews | CDN URL when configured | Preview thumbnails can use cached CDN delivery without changing saved values. |
 
 If we stored CDN URLs we'd:
 
-- break `deleteFromS3` (it expects the S3 origin)
+- break `DeleteFromS3` (it expects the S3 origin)
 - couple every DB row to one CDN deployment (changing CDN means a migration)
 - need a reverse rewrite in admin tools
 
 ## How
 
-The single source of truth is `backend/config/cdn.ts`. It exposes:
+The single source of truth is `backend-golang/internal/config/cdn.go`. It exposes:
 
-| Helper                                | When to use                                           |
-| ------------------------------------- | ----------------------------------------------------- |
-| `rewriteS3ToCdn(unknown) → unknown`   | Generic — used by template injection (mixed types).   |
-| `cdnUrl(string \| null) → string \| null` | One scalar URL field on a single row.             |
-| `cdnUrlArray(unknown) → string[]`     | A JSONB array of URLs (e.g. `products.images`).       |
-| `rewriteRowImageFields(row, { url, array })` | A row with one or more image columns; preferred for `result.rows.map(...)` patterns. |
+| Helper                                       | When to use                                                          |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| `RewriteS3ToCdn(url any) any`                 | Generic — used when mapping over slices of mixed types.              |
+| `CdnStr(url string) string`                   | One scalar URL value (e.g. a single map/struct field).                |
+| `CdnURLField(row map[string]any, field string)` | Rewrites one string field of a row map **in place**.                |
+| `CdnArrayField(row map[string]any, field string)` | Rewrites every string element of a `[]any` field of a row map **in place**. |
 
 Behaviour: if `CDN_BASE_URL` is unset (typical in local dev), URLs pass
-through unchanged so dev still works against raw S3.
+through unchanged so dev still works against raw S3. The rewrite is a
+**prefix match** on `${S3_ENDPOINT}/${S3_BUCKET}` (see Configuration below),
+implemented once in `CdnStr` — every other helper delegates to it.
+
+There is no single combined "rewrite this row's image fields" helper (no Go
+equivalent of the old `rewriteRowImageFields`) — call `CdnURLField`/`CdnArrayField`
+once per field, or loop manually like `rewriteTemplateDataCDN` does (see below).
 
 ## Where the rewrite is applied today
 
-Public routes (`backend/routes/*.ts`):
+Public handlers (`backend-golang/internal/handlers/*.go`):
 
-- `banners.ts` → `image_url`
-- `heroShots.ts` → `image_url`
-- `products.ts` → `images` (JSONB array) and `thumbnail_url` — applied in `/`, `/featured-on-home`, `/:id`; `thumbnail_url` falls back to `images[0]` at response time when null.
-- `templates.ts` → `image_url` — applied in `/` and `/:id`
-- `qrcodes.ts` → `template.imageUrl`
-- `testimonials.ts` → `image_url`
+- `banners.go` → `image_url` (`CdnURLField`)
+- `heroshots.go` → `image_url` (`CdnURLField`)
+- `products.go` → `thumbnail_url` (`CdnURLField`) and `images` (`CdnArrayField`) on product list/detail rows; `variants[].image` per-variant image (`CdnStr`)
+- `templates.go` → `image_url` (`CdnURLField`) — applied on both the list and single-template responses
+- `qrcodes.go` → `template_image_url` (`CdnStr`)
+- `testimonials.go` → `image_url` (`CdnURLField`) — applied on both the list and single-testimonial responses
+- `metadata.go` → banner/config slide `imageUrl` fields, `in_anh_price_image_url`, and generic string-array config values (`CdnStr`, looped per entry)
+- `orders.go` → order item `ImageURLs[]` in order detail/confirmation responses (`CdnStr`, looped per entry)
 
-Server-level helpers (`backend/server.ts`):
+Shared template-data rewrite (`sitedata.go`'s `rewriteTemplateDataCDN(data map[string]any)`),
+used by both:
+- `SiteData` handler (`GET /api/site-data`, `sitedata.go`)
+- `ServeTemplate`'s `injectScripts()` (`templateserve.go`) — rewrites before injecting `window.dataFromSubdomain` into the served template HTML
 
-- `injectScripts()` — rewrites `musicUrl`, `imageUrls`, `avatarFrom`,
-  `avatarTo` before injecting into rendered template HTML.
-- `GET /api/site-data` — rewrites `musicUrl` and `imageUrls` in
-  `template_data` JSONB before returning it.
+It rewrites the scalar fields `musicUrl`, `avatarFrom`, `avatarTo`, `boyImage`,
+`girlImage`, and the array fields `imageUrls`, `popupImages` inside `template_data`.
 
-Admin routes (`backend/routes/admin/*.ts`): **DO NOT REWRITE**. Admin pages
-upload, list, edit, and delete using the raw S3 URLs. If an admin page needs an
-`<img>` preview, rewrite only the rendered `src` with the admin app's asset URL
-helper; do not mutate form values or persisted payloads.
+Admin handlers (`backend-golang/internal/handlers/admin/*.go`): **DO NOT REWRITE**.
+Admin pages upload, list, edit, and delete using the raw S3 URLs. If an admin page
+needs an `<img>` preview, rewrite only the rendered `src` with the admin app's asset
+URL helper (`admin-app/src/utils/assetUrl.ts`); do not mutate form values or persisted
+payloads.
 
 ## Product-order image prefixes
 
@@ -82,16 +92,17 @@ URLs while keeping DB state as raw S3 URLs.
 
 ## Adding a new public endpoint
 
-When you add a public route that returns image fields:
+When you add a public handler that returns image fields:
 
-1. `import { rewriteRowImageFields } from '../config/cdn';`
-2. Map every returned row through it before sending the response:
+1. Import `"inanhxink/backend-golang/internal/config"`.
+2. Rewrite every image field on each row before sending the response:
 
-   ```ts
-   const rows = result.rows.map(r =>
-     rewriteRowImageFields(r, { url: ['image_url'], array: ['extra_images'] })
-   );
-   return res.json({ success: true, items: rows });
+   ```go
+   for _, row := range rows {
+       config.CdnURLField(row, "image_url")
+       config.CdnArrayField(row, "extra_images")
+   }
+   JSON(w, 200, map[string]any{"success": true, "items": rows})
    ```
 
 3. Test with `CDN_BASE_URL=https://cdn.inanhxink.com/inanhxink-prod`
