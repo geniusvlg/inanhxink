@@ -1,0 +1,143 @@
+.cat-rail-wrap {
+  position: relative;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.9rem 0 0.6rem;
+}
+
+.cat-rail {
+  display: flex;
+  gap: 1.2rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 0.2rem 1.5rem 0.6rem;
+  scrollbar-width: none;
+}
+
+/* Only centered when everything fits — centering a scrollable flex row
+   whose content overflows makes the start of the row unreachable by
+   scrolling in some browsers, so overflowing rails stay left-aligned. */
+.cat-rail--centered {
+  justify-content: center;
+}
+
+.cat-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-rail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 4.8rem;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cat-rail-ring {
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, #fe2c56, #ffb3c1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cat-rail-item:hover .cat-rail-ring {
+  transform: scale(1.06);
+  box-shadow: 0 6px 16px rgba(254, 44, 86, 0.28);
+}
+
+.cat-rail-item:focus-visible {
+  outline: none;
+}
+
+.cat-rail-item:focus-visible .cat-rail-ring {
+  outline: 2px solid #fe2c56;
+  outline-offset: 2px;
+}
+
+.cat-rail-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #fdf2f8;
+  border: 2px solid #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-rail-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cat-rail-fallback {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #e05c99;
+}
+
+.cat-rail-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #374151;
+  max-width: 4.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.cat-rail-fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0.6rem;
+  width: 3rem;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--cat-rail-fade-color, #fff));
+  pointer-events: none;
+}
+
+@media (hover: none) {
+  .cat-rail-fade {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .cat-rail-wrap {
+    padding: 0.7rem 0 0.5rem;
+  }
+
+  .cat-rail {
+    gap: 0.9rem;
+    padding: 0.2rem 1rem 0.5rem;
+  }
+
+  .cat-rail-item {
+    width: 4.2rem;
+  }
+
+  .cat-rail-ring {
+    width: 4.2rem;
+    height: 4.2rem;
+  }
+
+  .cat-rail-label {
+    max-width: 4.2rem;
+  }
+
+  .cat-rail-fallback {
+    font-size: 1.2rem;
+  }
+}

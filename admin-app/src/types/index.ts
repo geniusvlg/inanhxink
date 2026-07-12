@@ -77,7 +77,12 @@ export interface Voucher {
 export interface ProductCategory {
   id: number;
   name: string;
-  type: string;
+  /** Absent/empty means the category is common across all product types. */
+  type?: string;
+  /** Admin-uploaded cover image; falls back to the best-selling product's thumbnail on the storefront when unset. */
+  image_url?: string | null;
+  /** Whether this category shows on the public storefront. */
+  is_active: boolean;
 }
 
 export interface Testimonial {

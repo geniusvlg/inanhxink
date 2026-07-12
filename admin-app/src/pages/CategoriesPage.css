@@ -1,0 +1,23 @@
+.cat-thumb-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cat-thumb {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+
+.cat-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-size: 1.1rem;
+}

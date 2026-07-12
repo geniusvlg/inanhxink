@@ -24,6 +24,9 @@
 .homepage-banner-section {
   position: relative;
   padding: 1.5rem max(1rem, calc((100% - 1400px) / 2)) 2rem;
+  /* The nested CategoryRail's right-edge scroll-fade should dissolve into
+     this section's own gradient tail, not the component's white default. */
+  --cat-rail-fade-color: var(--cute-cream);
   background:
     radial-gradient(120% 80% at 95% 0%, rgba(255, 240, 232, 0.85) 0%, rgba(255, 240, 232, 0) 55%),
     linear-gradient(90deg,
@@ -41,7 +44,9 @@
 
 /* ── Hero ──────────────────────────────────────────────────────────────── */
 /* The hero shares the EXACT same horizontal pink-to-cream wash as the
-   banner section above, so the boundary between the two is invisible.
+   banner section above (the category rail is nested inside that section,
+   right under the carousel, so it inherits the same background rather than
+   breaking it), so the boundary between banner+rail and hero is invisible.
    A vertical-fade-to-cream overlay sits on top so the wash dissolves into
    the cream products section as you scroll down. */
 .homepage-hero {

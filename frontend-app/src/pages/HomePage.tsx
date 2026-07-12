@@ -17,6 +17,7 @@ import BannerCarousel from '../components/BannerCarousel';
 import FeaturedFeedback from '../components/FeaturedFeedback';
 import ProductSoldCount from '../components/ProductSoldCount';
 import { getProductThumbnailUrl } from '../utils/productImage';
+import CategoryRail from '../components/CategoryRail';
 import './HomePage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -72,10 +73,13 @@ function HomePage() {
     <div className="homepage">
       <SiteHeader activePage="home" />
 
-      {banners.length > 0 && (
+      {banners.length > 0 ? (
         <section className="homepage-banner-section">
           <BannerCarousel banners={banners} />
+          <CategoryRail />
         </section>
+      ) : (
+        <CategoryRail />
       )}
 
       {/* Cute hero always renders — when a banner is also shown above, the

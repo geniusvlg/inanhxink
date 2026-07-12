@@ -136,6 +136,7 @@ func main() {
 
 	r.Route("/api/categories", func(r chi.Router) {
 		r.Get("/", handlers.ListCategories)
+		r.Get("/{id}", handlers.GetCategory)
 	})
 
 	// ── Admin API routes (JWT-protected) ────────────────────────────────────
@@ -206,6 +207,7 @@ func main() {
 			r.Route("/product-categories", func(r chi.Router) {
 				r.Get("/", adminHandlers.ListProductCategories)
 				r.Post("/", adminHandlers.CreateProductCategory)
+				r.Put("/{id}", adminHandlers.UpdateProductCategory)
 				r.Delete("/{id}", adminHandlers.DeleteProductCategory)
 			})
 

@@ -120,9 +120,10 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | POST | `/api/admin/products` | Create product |
 | PUT | `/api/admin/products/:id` | Update product |
 | DELETE | `/api/admin/products/:id` | Delete product |
-| GET | `/api/admin/product-categories?type=` | List categories |
-| POST | `/api/admin/product-categories` | Create category |
-| DELETE | `/api/admin/product-categories/:id` | Delete category |
+| GET | `/api/admin/product-categories?type=` | List categories (includes inactive ones — admin needs to see and re-enable them). Omit `type` for every category (typed + common), ordered by name. |
+| POST | `/api/admin/product-categories` | Create category. Body `{ name, type? }` — omitting `type` creates a category common to all product types. Defaults to `is_active = true`, `image_url = NULL`. |
+| PUT | `/api/admin/product-categories/:id` | Partial update, body `{ image_url?, is_active? }` only (`name`/`type` not editable). Replacing `image_url` purges the previous S3 image; setting it to `""` clears it (and purges). |
+| DELETE | `/api/admin/product-categories/:id` | Delete category (also removes the S3 image, best-effort) |
 | GET | `/api/admin/testimonials` | List all testimonials |
 | POST | `/api/admin/testimonials` | Create testimonial (single) |
 | POST | `/api/admin/testimonials/bulk` | Create many from `image_urls[]` (used after bulk upload) |
@@ -139,6 +140,7 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | POST | `/api/upload?prefix=products/{folder}` | Upload images to S3 |
 | POST | `/api/upload?prefix=testimonials` | Upload testimonial screenshots to S3 |
 | POST | `/api/upload?prefix=banners` | Upload banner images to S3 |
+| POST | `/api/upload?prefix=categories` | Upload a category cover image to S3 |
 | GET | `/api/admin/product-orders/fulfillment?fulfillment_status=` | Paid product + QR keychain fulfillment board |
 | PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
 | GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
@@ -208,6 +210,29 @@ the original format and bytes for print quality. See
 - **Reorder**: `↑ / ↓` buttons swap `sort_order` with neighbour; persisted via `PATCH /reorder`.
 - **Featured (`⭐`)**: surfaces the row first on the public `/danh-gia` page.
 - **Public side**: see `docs/feedback-feature.md` for the full feature (DB schema, public page, S3 layout).
+
+## Categories
+
+`CategoriesPage.tsx` — manages `product_categories`, shared by the storefront's
+category rail and cross-type category grid.
+
+- **Create modal**: name only — no type picker. Every new category is common
+  to all product types (`type = NULL`). Legacy categories created before this
+  change keep whatever single type they already had.
+- **Table**: "Phạm vi" (scope) column reads **"Chung"** (common) for
+  `type == null`, otherwise the legacy per-type Vietnamese label.
+- **Cover image (`Ảnh` column)**: admin-uploaded, per-row circular thumbnail +
+  inline "Tải ảnh"/"Thay ảnh" button (hidden file input, no modal). Uploads via
+  `POST /api/upload?prefix=categories`, then `PUT { image_url }`. When unset,
+  the public storefront falls back to auto-deriving the cover from the
+  category's best-selling active product, same as before this change.
+- **Visibility (`Hiển thị` column)**: shared `.cfg-toggle` pill switch (from
+  `Layout.css`, same component `ConfigPage.tsx` uses) calls `PUT { is_active }`
+  directly, no confirmation. Inactive categories stay listed/editable in the
+  admin table but are filtered out of every public `/api/categories` response.
+- **Public side**: storefront rail (`CategoryRail`) + detail grid
+  (`CategoryDetailPage`) at `/danh-muc/:id`; see `docs/category-feature.md` for
+  the full feature (DB schema, public API, storefront composition).
 
 ## Banners (homepage hero)
 

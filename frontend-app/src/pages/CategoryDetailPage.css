@@ -1,0 +1,16 @@
+@import './ProductSearchPage.css';
+
+.cd-type-chip {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  padding: 0.2rem 0.6rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #e05c99;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0 1px 4px rgba(40, 20, 30, 0.12);
+}

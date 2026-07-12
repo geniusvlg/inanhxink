@@ -31,7 +31,7 @@ export default function SetQuaTangPage() {
   const [loadingMore,  setLoadingMore]  = useState(false);
   const [error,        setError]        = useState('');
   useEffect(() => {
-    getCategories('set-qua-tang').then(setCategories).catch(() => setCategories([]));
+    getCategories(undefined, 'set-qua-tang').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {

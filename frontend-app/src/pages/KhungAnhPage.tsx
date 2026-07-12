@@ -31,7 +31,7 @@ export default function KhungAnhPage() {
   const [loadingMore,  setLoadingMore]  = useState(false);
   const [error,        setError]        = useState('');
   useEffect(() => {
-    getCategories('khung_anh').then(setCategories).catch(() => setCategories([]));
+    getCategories(undefined, 'khung_anh').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {

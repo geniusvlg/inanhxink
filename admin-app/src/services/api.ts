@@ -125,6 +125,7 @@ export const productVariantsApi = {
 export const productCategoriesApi = {
   list:   (type?: string) => api.get('/api/admin/product-categories', { params: type ? { type } : {} }),
   create: (data: unknown) => api.post('/api/admin/product-categories', data),
+  update: (id: number, data: unknown) => api.put(`/api/admin/product-categories/${id}`, data),
   delete: (id: number)    => api.delete(`/api/admin/product-categories/${id}`),
 };
 
@@ -153,6 +154,15 @@ export const uploadApi = {
     files.forEach(f => form.append('files', f));
     return api.post<{ success: boolean; urls: string[] }>(
       '/api/upload?prefix=banners',
+      form,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
+  categoryImage: (files: File[]) => {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+    return api.post<{ success: boolean; urls: string[] }>(
+      '/api/upload?prefix=categories',
       form,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );

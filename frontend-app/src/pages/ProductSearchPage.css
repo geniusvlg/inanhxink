@@ -23,14 +23,39 @@
 }
 
 .ps-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   margin-top: 1rem;
-  padding: 0.55rem 1.25rem;
+  padding: 0.5rem 1.15rem;
   border-radius: 2rem;
-  border: 1.5px solid #fe2c56;
-  background: #fff;
+  border: none;
+  background: #fdf2f8;
   color: #fe2c56;
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.ps-back svg {
+  width: 0.85em;
+  height: 0.85em;
+  flex-shrink: 0;
+}
+
+.ps-back:hover {
+  background: #ffe1eb;
+  box-shadow: 0 6px 16px rgba(254, 44, 86, 0.2);
+}
+
+.ps-back:active {
+  transform: scale(0.96);
+}
+
+.ps-back:focus-visible {
+  outline: 2px solid #fe2c56;
+  outline-offset: 2px;
 }
 
 .ps-heading {

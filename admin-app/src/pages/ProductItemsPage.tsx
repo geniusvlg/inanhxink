@@ -164,7 +164,7 @@ export default function ProductItemsPage({ type }: Props) {
     setLoading(true);
     Promise.all([
       productsApi.list(type, p, l),
-      productCategoriesApi.list(type),
+      productCategoriesApi.list(),
     ])
       .then(([pr, cr]) => {
         setProducts(pr.data.products ?? []);
