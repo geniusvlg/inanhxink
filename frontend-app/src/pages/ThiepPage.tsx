@@ -32,7 +32,7 @@ export default function ThiepPage() {
   const [error,        setError]        = useState('');
   // Load categories once
   useEffect(() => {
-    getCategories('thiep').then(setCategories).catch(() => setCategories([]));
+    getCategories(undefined, 'thiep').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   // Fetch whenever filters or page changes

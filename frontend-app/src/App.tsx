@@ -15,6 +15,7 @@ import KhacPage from './pages/KhacPage';
 import InAnhPage from './pages/InAnhPage';
 import SetQuaTangPage from './pages/SetQuaTangPage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import CategoryDetailPage from './pages/CategoryDetailPage';
 import TestimonialsPage from './pages/TestimonialsPage';
 import HomePage from './pages/HomePage';
 import ProductSearchPage from './pages/ProductSearchPage';
@@ -62,6 +63,7 @@ function AppRoutes() {
       <Route path="/qr/:qrName" element={<QrGeneratePage />} />
       <Route path="/preview/:templateName" element={<TemplatePreviewPage />} />
       <Route path="/product/:id" element={<ProductDetailPage />} />
+      <Route path="/danh-muc/:id" element={<CategoryDetailPage />} />
       <Route path="/danh-gia" element={<FlaggedRoute flag="page_danh_gia" element={<TestimonialsPage />} />} />
 
       <Route path="/qr-yeu-thuong"     element={<FlaggedRoute flag="page_qr_yeu_thuong"     element={<QrYeuThuongPage />} />} />

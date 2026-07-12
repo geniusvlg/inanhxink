@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { productCategoriesApi } from '../services/api';
+import { useRef, useState, useEffect } from 'react';
+import { productCategoriesApi, uploadApi } from '../services/api';
 import { type ProductCategory } from '../types';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import '../components/Layout.css';
+import './CategoriesPage.css';
 
 const PRODUCT_TYPES = [
   { value: 'thiep',        label: 'Thiệp' },
@@ -12,16 +14,17 @@ const PRODUCT_TYPES = [
   { value: 'in_anh',       label: 'In Ảnh' },
 ];
 
-const typeLabel = (type: string) =>
-  PRODUCT_TYPES.find(t => t.value === type)?.label ?? type;
+const typeLabel = (type?: string) =>
+  type ? (PRODUCT_TYPES.find(t => t.value === type)?.label ?? type) : 'Chung';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
   const [name, setName]             = useState('');
-  const [type, setType]             = useState('thiep');
   const [saving, setSaving]         = useState(false);
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const load = () => {
     setLoading(true);
@@ -33,14 +36,14 @@ export default function CategoriesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setName(''); setType('thiep'); setShowModal(true); };
+  const openCreate = () => { setName(''); setShowModal(true); };
   const closeModal = () => setShowModal(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await productCategoriesApi.create({ name, type });
+      await productCategoriesApi.create({ name });
       closeModal();
       load();
     } catch {
@@ -60,6 +63,36 @@ export default function CategoriesPage() {
     }
   };
 
+  const toggleActive = async (c: ProductCategory) => {
+    setCategories(prev => prev.map(x => x.id === c.id ? { ...x, is_active: !c.is_active } : x));
+    try {
+      await productCategoriesApi.update(c.id, { is_active: !c.is_active });
+    } catch {
+      alert('Lỗi khi cập nhật');
+      load();
+    }
+  };
+
+  const handleUploadImage = async (c: ProductCategory, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingId(c.id);
+    try {
+      const upload = await uploadApi.categoryImage([file]);
+      const url = upload.data.urls?.[0];
+      if (url) {
+        await productCategoriesApi.update(c.id, { image_url: url });
+        load();
+      }
+    } catch {
+      alert('Lỗi khi tải ảnh');
+    } finally {
+      setUploadingId(null);
+      const input = fileInputRefs.current[c.id];
+      if (input) input.value = '';
+    }
+  };
+
   if (loading) return <div className="admin-loading">Đang tải...</div>;
 
   return (
@@ -74,15 +107,17 @@ export default function CategoriesPage() {
           <thead>
             <tr>
               <th>ID</th>
+              <th>Ảnh</th>
               <th>Tên danh mục</th>
-              <th>Loại sản phẩm</th>
+              <th>Phạm vi</th>
+              <th style={{ textAlign: 'center' }}>Hiển thị</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody>
             {categories.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
+                <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
                   Chưa có danh mục nào
                 </td>
               </tr>
@@ -90,8 +125,43 @@ export default function CategoriesPage() {
             {categories.map(c => (
               <tr key={c.id}>
                 <td>{c.id}</td>
+                <td>
+                  <div className="cat-thumb-cell">
+                    {c.image_url
+                      ? <img src={resolveAssetUrl(c.image_url)} alt="" className="cat-thumb" />
+                      : <div className="cat-thumb cat-thumb--empty">—</div>}
+                    <input
+                      ref={el => { fileInputRefs.current[c.id] = el; }}
+                      type="file"
+                      accept="image/*"
+                      onChange={e => handleUploadImage(c, e)}
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-edit"
+                      onClick={() => fileInputRefs.current[c.id]?.click()}
+                      disabled={uploadingId === c.id}
+                    >
+                      {uploadingId === c.id ? 'Đang tải...' : (c.image_url ? 'Thay ảnh' : 'Tải ảnh')}
+                    </button>
+                  </div>
+                </td>
                 <td><strong>{c.name}</strong></td>
                 <td>{typeLabel(c.type)}</td>
+                <td style={{ textAlign: 'center' }}>
+                  <label
+                    className="cfg-toggle"
+                    title={c.is_active ? 'Bấm để ẩn trên website' : 'Bấm để hiện trên website'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={c.is_active}
+                      onChange={() => toggleActive(c)}
+                    />
+                    <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
+                  </label>
+                </td>
                 <td>
                   <button className="btn-danger" onClick={() => handleDelete(c)}>Xoá</button>
                 </td>
@@ -106,19 +176,6 @@ export default function CategoriesPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">Thêm danh mục mới</h2>
             <form onSubmit={handleSave}>
-              <div className="form-group">
-                <label className="form-label">Loại sản phẩm *</label>
-                <select
-                  className="form-input"
-                  value={type}
-                  onChange={e => setType(e.target.value)}
-                  required
-                >
-                  {PRODUCT_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
               <div className="form-group">
                 <label className="form-label">Tên danh mục *</label>
                 <input

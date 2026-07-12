@@ -31,7 +31,7 @@ export default function ScrapbookPage() {
   const [loadingMore,  setLoadingMore]  = useState(false);
   const [error,        setError]        = useState('');
   useEffect(() => {
-    getCategories('so_scrapbook').then(setCategories).catch(() => setCategories([]));
+    getCategories(undefined, 'so_scrapbook').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {

@@ -31,7 +31,7 @@ export default function KhacPage() {
   const [loadingMore,  setLoadingMore]  = useState(false);
   const [error,        setError]        = useState('');
   useEffect(() => {
-    getCategories('khac').then(setCategories).catch(() => setCategories([]));
+    getCategories(undefined, 'khac').then(setCategories).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {

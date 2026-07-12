@@ -3,7 +3,9 @@ package admin
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -32,7 +34,7 @@ func ListProductCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rs, err := config.DB.Query(context.Background(),
-		"SELECT * FROM product_categories ORDER BY type, name")
+		"SELECT * FROM product_categories ORDER BY name")
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
@@ -59,12 +61,13 @@ func CreateProductCategory(w http.ResponseWriter, r *http.Request) {
 		handlers.BadRequest(w, "name required")
 		return
 	}
-	if body.Type == "" {
-		handlers.BadRequest(w, "type required")
-		return
+	// Empty type means the category is common across all product types.
+	var typeVal any
+	if body.Type != "" {
+		typeVal = body.Type
 	}
 	rows, err := config.DB.Query(context.Background(),
-		"INSERT INTO product_categories (name, type) VALUES ($1, $2) RETURNING *", body.Name, body.Type)
+		"INSERT INTO product_categories (name, type) VALUES ($1, $2) RETURNING *", body.Name, typeVal)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
@@ -73,18 +76,86 @@ func CreateProductCategory(w http.ResponseWriter, r *http.Request) {
 	handlers.Created(w, map[string]any{"success": true, "category": row})
 }
 
-// DELETE /api/admin/product-categories/:id
-func DeleteProductCategory(w http.ResponseWriter, r *http.Request) {
+// PUT /api/admin/product-categories/:id — partial update; cleans up old S3 image if replaced.
+// Only visibility (is_active) and cover image (image_url) are editable here.
+func UpdateProductCategory(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	result, err := config.DB.Exec(context.Background(),
-		"DELETE FROM product_categories WHERE id = $1", id)
+	var fields map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
+		handlers.BadRequest(w, "Invalid JSON")
+		return
+	}
+
+	allowed := map[string]bool{"image_url": true, "is_active": true}
+	setClauses := []string{}
+	values := []any{}
+	i := 1
+	for k, v := range fields {
+		if !allowed[k] {
+			continue
+		}
+		if k == "image_url" {
+			if s, ok := v.(string); ok {
+				if strings.TrimSpace(s) == "" {
+					v = nil
+				} else {
+					v = strings.TrimSpace(s)
+				}
+			}
+		}
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", k, i))
+		values = append(values, v)
+		i++
+	}
+	if len(setClauses) == 0 {
+		handlers.BadRequest(w, "No fields to update")
+		return
+	}
+
+	var previousImage string
+	if _, replacing := fields["image_url"]; replacing {
+		config.DB.QueryRow(context.Background(), //nolint
+			"SELECT image_url FROM product_categories WHERE id = $1", id).Scan(&previousImage)
+	}
+
+	values = append(values, id)
+	rows, err := config.DB.Query(context.Background(),
+		fmt.Sprintf("UPDATE product_categories SET %s WHERE id = $%d RETURNING *",
+			joinClauses(setClauses), len(values)),
+		values...)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
 	}
-	if result.RowsAffected() == 0 {
+	row, err := handlers.CollectOne(rows)
+	if err != nil || row == nil {
 		handlers.NotFound(w)
 		return
+	}
+
+	if newImg, _ := fields["image_url"].(string); previousImage != "" && previousImage != newImg {
+		config.DeleteFromS3(previousImage) //nolint
+	}
+
+	handlers.OK(w, map[string]any{"success": true, "category": row})
+}
+
+// DELETE /api/admin/product-categories/:id — also removes S3 image (best-effort)
+func DeleteProductCategory(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	rows, err := config.DB.Query(context.Background(),
+		"DELETE FROM product_categories WHERE id = $1 RETURNING id, image_url", id)
+	if err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+	row, err := handlers.CollectOne(rows)
+	if err != nil || row == nil {
+		handlers.NotFound(w)
+		return
+	}
+	if imgURL, ok := row["image_url"].(string); ok && imgURL != "" {
+		config.DeleteFromS3(imgURL) //nolint
 	}
 	handlers.OK(w, map[string]any{"success": true, "message": "Category deleted"})
 }

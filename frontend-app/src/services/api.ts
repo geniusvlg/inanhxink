@@ -236,10 +236,25 @@ export const getFeaturedProducts = async (): Promise<Product[]> => {
   return response.data.products ?? [];
 };
 
-export const getCategories = async (type?: string): Promise<{ id: number; name: string }[]> => {
-  const params = type ? { type } : {};
-  const response = await api.get<{ success: boolean; categories: { id: number; name: string }[] }>('/api/categories', { params });
+export interface Category {
+  id: number;
+  name: string;
+  /** Best-selling active product's thumbnail for this category; null when empty. */
+  cover_image_url: string | null;
+  product_count: number;
+}
+
+export const getCategories = async (type?: string, productType?: string): Promise<Category[]> => {
+  const params: Record<string, string> = {};
+  if (type) params.type = type;
+  if (productType) params.product_type = productType;
+  const response = await api.get<{ success: boolean; categories: Category[] }>('/api/categories', { params });
   return response.data.categories ?? [];
+};
+
+export const getCategoryById = async (id: number | string): Promise<Category> => {
+  const response = await api.get<{ success: boolean; category: Category }>(`/api/categories/${id}`);
+  return response.data.category;
 };
 
 export interface Testimonial {
