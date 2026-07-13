@@ -22,6 +22,7 @@ export default function CategoriesPage() {
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
   const [name, setName]             = useState('');
+  const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
   const [saving, setSaving]         = useState(false);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
@@ -36,18 +37,23 @@ export default function CategoriesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setName(''); setShowModal(true); };
-  const closeModal = () => setShowModal(false);
+  const openCreate = () => { setEditingCategory(null); setName(''); setShowModal(true); };
+  const openEdit = (c: ProductCategory) => { setEditingCategory(c); setName(c.name); setShowModal(true); };
+  const closeModal = () => { setShowModal(false); setEditingCategory(null); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await productCategoriesApi.create({ name });
+      if (editingCategory) {
+        await productCategoriesApi.update(editingCategory.id, { name });
+      } else {
+        await productCategoriesApi.create({ name });
+      }
       closeModal();
       load();
     } catch {
-      alert('Lỗi khi thêm danh mục');
+      alert(editingCategory ? 'Lỗi khi đổi tên danh mục' : 'Lỗi khi thêm danh mục');
     } finally {
       setSaving(false);
     }
@@ -163,7 +169,9 @@ export default function CategoriesPage() {
                   </label>
                 </td>
                 <td>
-                  <button className="btn-danger" onClick={() => handleDelete(c)}>Xoá</button>
+                  <button type="button" className="btn-edit" onClick={() => openEdit(c)}>Sửa tên</button>
+                  {' '}
+                  <button type="button" className="btn-danger" onClick={() => handleDelete(c)}>Xoá</button>
                 </td>
               </tr>
             ))}
@@ -174,7 +182,7 @@ export default function CategoriesPage() {
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2 className="modal-title">Thêm danh mục mới</h2>
+            <h2 className="modal-title">{editingCategory ? 'Đổi tên danh mục' : 'Thêm danh mục mới'}</h2>
             <form onSubmit={handleSave}>
               <div className="form-group">
                 <label className="form-label">Tên danh mục *</label>
@@ -190,7 +198,7 @@ export default function CategoriesPage() {
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={closeModal}>Huỷ</button>
                 <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? 'Đang lưu...' : 'Thêm'}
+                  {saving ? 'Đang lưu...' : (editingCategory ? 'Lưu tên' : 'Thêm')}
                 </button>
               </div>
             </form>

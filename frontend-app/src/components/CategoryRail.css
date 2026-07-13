@@ -92,9 +92,9 @@
   font-weight: 600;
   color: #374151;
   max-width: 4.8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-align: center;
 }
 

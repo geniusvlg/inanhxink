@@ -99,7 +99,7 @@ only ever stores the raw S3 URL, for both `image_url` and product thumbnails.
 |--------|------|-------------|
 | `GET` | `/api/admin/product-categories?type=` | List categories (active + inactive), optionally filtered by type. Unfiltered list orders by `name` (no longer `type, name`, since type is no longer the primary grouping). |
 | `POST` | `/api/admin/product-categories` | Body: `{ name, type? }`. Omitting `type` creates a common category. `image_url`/`is_active` aren't accepted here — new rows always start with `image_url = NULL`, `is_active = true` (DB defaults); set an image or hide it afterward via `PUT`. |
-| `PUT` | `/api/admin/product-categories/:id` | Partial update. Only `image_url` and `is_active` are editable (`name`/`type` are rejected — silently dropped, not erred). 400 "No fields to update" if the body has neither. Replacing `image_url` deletes the previous S3 object (best-effort); sending `image_url: ""` clears it back to the auto-derived cover and also deletes the old S3 object. |
+| `PUT` | `/api/admin/product-categories/:id` | Partial update. `name`, `image_url`, and `is_active` are editable; `type`/scope is intentionally locked. 400 "No fields to update" if the body has none of the editable fields. Replacing `image_url` deletes the previous S3 object (best-effort); sending `image_url: ""` clears it back to the auto-derived cover and also deletes the old S3 object. |
 | `DELETE` | `/api/admin/product-categories/:id` | Also deletes the category's `image_url` from S3 (best-effort) if one was set. |
 
 `backend-golang/internal/handlers/admin/product_categories.go`.
@@ -110,6 +110,8 @@ only ever stores the raw S3 URL, for both `image_url` and product thumbnails.
 
 - The create modal **no longer has a type `<select>`** — every new category is
   common unless created against legacy data directly in the DB.
+- The same modal is reused for **renaming** from the table's "Sửa tên" action.
+  Only the display name changes; the legacy/common scope (`type`) stays locked.
 - `typeLabel` renders **"Chung"** (Common) for `type == null`/`''`, otherwise
   the existing per-type Vietnamese label.
 - Table column header changed from "Loại sản phẩm" to "Phạm vi" (scope), since
