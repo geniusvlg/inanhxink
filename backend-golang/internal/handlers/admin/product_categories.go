@@ -77,7 +77,7 @@ func CreateProductCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // PUT /api/admin/product-categories/:id — partial update; cleans up old S3 image if replaced.
-// Only visibility (is_active) and cover image (image_url) are editable here.
+// Admins can rename a category, toggle visibility, or update its cover image. Scope/type stays locked.
 func UpdateProductCategory(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var fields map[string]any
@@ -86,13 +86,21 @@ func UpdateProductCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowed := map[string]bool{"image_url": true, "is_active": true}
+	allowed := map[string]bool{"name": true, "image_url": true, "is_active": true}
 	setClauses := []string{}
 	values := []any{}
 	i := 1
 	for k, v := range fields {
 		if !allowed[k] {
 			continue
+		}
+		if k == "name" {
+			s, ok := v.(string)
+			if !ok || strings.TrimSpace(s) == "" {
+				handlers.BadRequest(w, "name required")
+				return
+			}
+			v = strings.TrimSpace(s)
 		}
 		if k == "image_url" {
 			if s, ok := v.(string); ok {

@@ -122,7 +122,7 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | DELETE | `/api/admin/products/:id` | Delete product |
 | GET | `/api/admin/product-categories?type=` | List categories (includes inactive ones — admin needs to see and re-enable them). Omit `type` for every category (typed + common), ordered by name. |
 | POST | `/api/admin/product-categories` | Create category. Body `{ name, type? }` — omitting `type` creates a category common to all product types. Defaults to `is_active = true`, `image_url = NULL`. |
-| PUT | `/api/admin/product-categories/:id` | Partial update, body `{ image_url?, is_active? }` only (`name`/`type` not editable). Replacing `image_url` purges the previous S3 image; setting it to `""` clears it (and purges). |
+| PUT | `/api/admin/product-categories/:id` | Partial update, body `{ name?, image_url?, is_active? }` (`type`/scope not editable). Replacing `image_url` purges the previous S3 image; setting it to `""` clears it (and purges). |
 | DELETE | `/api/admin/product-categories/:id` | Delete category (also removes the S3 image, best-effort) |
 | GET | `/api/admin/testimonials` | List all testimonials |
 | POST | `/api/admin/testimonials` | Create testimonial (single) |
@@ -219,6 +219,8 @@ category rail and cross-type category grid.
 - **Create modal**: name only — no type picker. Every new category is common
   to all product types (`type = NULL`). Legacy categories created before this
   change keep whatever single type they already had.
+- **Rename**: per-row "Sửa tên" action opens the same modal and calls
+  `PUT { name }`. Category scope/type remains locked after creation.
 - **Table**: "Phạm vi" (scope) column reads **"Chung"** (common) for
   `type == null`, otherwise the legacy per-type Vietnamese label.
 - **Cover image (`Ảnh` column)**: admin-uploaded, per-row circular thumbnail +
