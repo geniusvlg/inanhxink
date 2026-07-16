@@ -23,6 +23,7 @@ const COD_CONFIG_KEYS = new Set([COD_FEE_KEY]);
 const SHIPPING_FEE_KEY = 'product_shipping_fee';
 const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
 const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY, SHIPPING_THRESHOLD_KEY]);
+const VOICE_RECORDING_PRICE_KEY = 'voice_recording_price';
 
 /** Order notification email (metadata + optional DB SMTP password). Not exposed on public /api/metadata. */
 const NOTIFY_SMTP_PASSWORD_SET_KEY = 'notify_smtp_password_set';
@@ -111,6 +112,10 @@ export default function ConfigPage() {
       payload[SHIPPING_FEE_KEY] = (Number.isFinite(sfVal) && sfVal >= 0) ? String(Math.round(sfVal)) : '0';
       const thresholdVal = Number(config[SHIPPING_THRESHOLD_KEY]);
       payload[SHIPPING_THRESHOLD_KEY] = (Number.isFinite(thresholdVal) && thresholdVal >= 0) ? String(Math.round(thresholdVal)) : '0';
+      const voicePrice = Number(config[VOICE_RECORDING_PRICE_KEY]);
+      payload[VOICE_RECORDING_PRICE_KEY] = (Number.isFinite(voicePrice) && voicePrice >= 0)
+        ? String(Math.round(voicePrice))
+        : '10000';
 
       delete payload[NOTIFY_SMTP_PASSWORD_SET_KEY];
       for (const k of NOTIFY_EMAIL_KEYS) {
@@ -140,7 +145,8 @@ export default function ConfigPage() {
   const otherEntries = useMemo(
     () => Object.entries(config).filter(([k]) =>
       k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)
-      && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k),
+      && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k)
+      && k !== VOICE_RECORDING_PRICE_KEY,
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -268,6 +274,38 @@ export default function ConfigPage() {
                 }}
               />
               <p className="cfg-field-note">Nhập 1–99 để bật Ship COD với tỉ lệ đặt cọc tương ứng. Nhập 100 để tắt (khách phải trả toàn bộ trước, giống chuyển khoản).</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── QR voice recording ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">🎙️ Ghi âm giọng nói cho QR</div>
+            <div className="cfg-card-sub">
+              Phụ phí cho lời nhắn ghi âm tối đa 30 giây trên trang QR.
+            </div>
+          </div>
+          <div className="cfg-section">
+            <div className="form-group">
+              <label className="form-label">Giá ghi âm (đ)</label>
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder="10000"
+                value={config[VOICE_RECORDING_PRICE_KEY] ?? ''}
+                onChange={e => {
+                  const raw = e.target.value;
+                  if (raw === '') { handleChange(VOICE_RECORDING_PRICE_KEY, ''); return; }
+                  const value = Number(raw);
+                  if (!Number.isNaN(value) && value >= 0) {
+                    handleChange(VOICE_RECORDING_PRICE_KEY, String(Math.round(value)));
+                  }
+                }}
+              />
+              <p className="cfg-field-note">Nhập 0 nếu muốn cung cấp tính năng ghi âm miễn phí.</p>
             </div>
           </div>
         </div>

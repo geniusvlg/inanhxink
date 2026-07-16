@@ -15,6 +15,24 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `birthday` | `birthday` | Birthday fields, no image uploader |
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
 
+## Shared Voice Player
+
+See `docs/qr-voice-recording.md` for the complete recording, pricing, storage,
+and playback flow.
+
+Every active template receives the shared
+`public/templates/common/voice-player.js` and `.css` assets through
+`handlers/templateserve.go`. When `template_data.voiceRecordingUrl` or
+`musicUrl` is present, audio starts automatically and the page shows a fixed
+mute/unmute button. Voice recordings loop through the shared player; existing
+template background-audio elements remain template-owned but are controlled by
+the shared mute button. If browser autoplay policy blocks sound, playback starts
+on the visitor's first tap, click, or key press anywhere on the template.
+
+Template implementations do not need their own voice-message code. Public
+template data is CDN-rewritten before it is injected into
+`window.dataFromSubdomain`.
+
 ## Adding A Template
 
 1. Add the static template folder under `backend/public/templates/`.

@@ -1,0 +1,108 @@
+.voice-recording-option {
+  margin-bottom: 1.5rem;
+}
+
+.voice-recording-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #374151;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.voice-recording-checkbox input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: #fe2c56;
+}
+
+.voice-recording-price {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.voice-recording-panel {
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  border: 1px solid #fecdd3;
+  border-radius: 0.75rem;
+  background: #fff7f8;
+}
+
+.voice-recording-hint {
+  margin: 0 0 0.75rem;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.voice-recording-start,
+.voice-recording-stop,
+.voice-recording-actions button {
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.voice-recording-start {
+  padding: 0.65rem 1rem;
+  background: #fe2c56;
+  color: #fff;
+}
+
+.voice-recording-active {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  color: #be123c;
+}
+
+.voice-recording-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: #e11d48;
+  animation: voice-recording-pulse 1s ease-in-out infinite;
+}
+
+.voice-recording-stop {
+  padding: 0.5rem 0.8rem;
+  background: #374151;
+  color: #fff;
+}
+
+.voice-recording-preview audio {
+  width: 100%;
+  min-height: 42px;
+}
+
+.voice-recording-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.voice-recording-actions button {
+  padding: 0.4rem 0.65rem;
+  background: #ffe4e8;
+  color: #be123c;
+}
+
+.voice-recording-error {
+  margin: 0.625rem 0 0;
+  color: #dc2626;
+  font-size: 0.8rem;
+}
+
+@keyframes voice-recording-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}

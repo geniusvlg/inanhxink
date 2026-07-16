@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { extractMusic } from '../services/api';
 import './MusicOption.css';
 
@@ -18,6 +18,18 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
   const [rawUrl, setRawUrl] = useState(musicLink || '');
   const [extractState, setExtractState] = useState<ExtractState>(musicLink ? 'success' : 'idle');
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    setShowInput(musicAdded);
+    if (!musicAdded) {
+      setRawUrl('');
+      setExtractState('idle');
+      setErrorMsg('');
+    } else if (musicLink) {
+      setRawUrl(musicLink);
+      setExtractState('success');
+    }
+  }, [musicAdded, musicLink]);
 
   const handleToggle = (checked: boolean) => {
     onMusicToggle(checked);

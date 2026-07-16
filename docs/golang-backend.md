@@ -127,6 +127,12 @@ marks an order as paid, the Go backend serializes activation for that QR name,
 cancels other unpaid orders with the same `qr_name`, and prunes the shared S3
 folder so only objects referenced by the paid order's `template_data` remain.
 
+QR voice messages use `POST /api/upload/voice`, which accepts one browser-recorded
+audio file up to 5 MB under `uploads/temp/{qrName}/`. `CreateOrder` validates the
+raw S3 URL, applies the server-side `voice_recording_price`, and stores it as
+`template_data.voiceRecordingUrl`; payment activation moves it to the permanent
+QR folder.
+
 ## Pay2S webhook discovery
 
 `POST /api/payments/webhook/pay2s` is a temporary discovery endpoint for the

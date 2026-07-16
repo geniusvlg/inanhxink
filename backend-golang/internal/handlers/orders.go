@@ -137,12 +137,18 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	musicUrl, _ := body["musicUrl"].(string)
 	musicLink, _ := body["musicLink"].(string)
 	musicAdded, _ := body["musicAdded"].(bool)
+	voiceRecordingURL, _ := body["voiceRecordingUrl"].(string)
+	voiceRecordingAdded, _ := body["voiceRecordingAdded"].(bool)
 	keychainPurchased, _ := body["keychainPurchased"].(bool)
 	tipAmount := toFloat(body["tipAmount"])
 	voucherCode, _ := body["voucherCode"].(string)
 	customerName, _ := body["customerName"].(string)
 	customerEmail, _ := body["customerEmail"].(string)
 	customerPhone, _ := body["customerPhone"].(string)
+	if musicAdded && voiceRecordingAdded {
+		BadRequest(w, "Chỉ được chọn nhạc nền hoặc lời nhắn giọng nói")
+		return
+	}
 
 	// Build template_data
 	templateData := map[string]any{"content": content}
@@ -244,6 +250,17 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if resolvedMusicUrl != "" {
 		templateData["musicUrl"] = resolvedMusicUrl
 	}
+	voiceRecordingURL = strings.TrimSpace(voiceRecordingURL)
+	if voiceRecordingAdded {
+		expectedPrefix := config.GetPublicURL("uploads/temp/" + qrNameLowerEarly + "/")
+		if voiceRecordingURL == "" || !strings.HasPrefix(voiceRecordingURL, expectedPrefix) {
+			BadRequest(w, "Bản ghi âm không hợp lệ hoặc không thuộc tên QR này")
+			return
+		}
+		templateData["voiceRecordingUrl"] = voiceRecordingURL
+	} else {
+		voiceRecordingURL = ""
+	}
 
 	// Get template price
 	var templatePrice float64
@@ -253,9 +270,9 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get music/keychain prices from metadata
+	// Get add-on prices from metadata
 	metaRows, err := config.DB.Query(context.Background(),
-		"SELECT key, value FROM metadata WHERE key IN ('music_price', 'keychain_price')")
+		"SELECT key, value FROM metadata WHERE key IN ('music_price', 'voice_recording_price', 'keychain_price')")
 	if err != nil {
 		InternalError(w, err)
 		return
@@ -275,6 +292,14 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			musicPrice = p
 		} else {
 			musicPrice = 10000
+		}
+	}
+	voiceRecordingPrice := 0.0
+	if voiceRecordingAdded {
+		if p, ok := meta["voice_recording_price"]; ok {
+			voiceRecordingPrice = math.Max(0, p)
+		} else {
+			voiceRecordingPrice = 10000
 		}
 	}
 	keychainPrice := 0.0
@@ -306,7 +331,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subtotal := templatePrice + keychainPrice + musicPrice + tipAmount
+	subtotal := templatePrice + keychainPrice + musicPrice + voiceRecordingPrice + tipAmount
 	total := subtotal
 	if voucherDiscount > 0 {
 		if discountType == "percentage" {
@@ -329,14 +354,16 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		INSERT INTO orders (
 			customer_name, customer_email, customer_phone,
 			template_id, template_type, template_data, qr_name, content, music_link, music_added,
+			voice_recording_added, voice_recording_url, voice_recording_price,
 			keychain_purchased, keychain_price, tip_amount, voucher_code, voucher_discount,
 			subtotal, total_amount, payment_status, keychain_delivery_status
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
 		RETURNING id`,
 		nullStr(customerName), nullStr(customerEmail), nullStr(customerPhone),
 		templateID, resolvedType, string(tdJSON),
 		qrNameLower, content, nullStr(resolvedMusicUrl),
-		musicAdded, keychainPurchased, keychainPrice,
+		musicAdded, voiceRecordingAdded, nullStr(voiceRecordingURL), voiceRecordingPrice,
+		keychainPurchased, keychainPrice,
 		tipAmount, nullStr(voucherCode), discount, subtotal, total, "pending", keychainDelivery(keychainPurchased),
 	).Scan(&orderID)
 	if err != nil {

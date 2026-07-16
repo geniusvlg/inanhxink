@@ -704,7 +704,10 @@ func migrateQRUploads(qrName string, orderID int, templateDataRaw []byte) {
 
 	ctx := context.Background()
 	if _, err := config.DB.Exec(ctx,
-		"UPDATE orders SET template_data = $1 WHERE id = $2",
+		`UPDATE orders
+		 SET template_data = $1,
+		     voice_recording_url = COALESCE(($1::jsonb ->> 'voiceRecordingUrl'), voice_recording_url)
+		 WHERE id = $2`,
 		string(rewritten), orderID); err != nil {
 		log.Printf("[payments] migrateQRUploads %s: update orders failed: %v", qrName, err)
 	}

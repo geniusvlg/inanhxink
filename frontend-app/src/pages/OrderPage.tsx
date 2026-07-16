@@ -7,11 +7,12 @@ import QrNameInput from '../components/QrNameInput';
 import ContentEditor from '../components/ContentEditor';
 import LetterInSpaceForm from '../components/LetterInSpaceForm';
 import MusicOption from '../components/MusicOption';
+import VoiceRecordingOption, { type VoiceRecording } from '../components/VoiceRecordingOption';
 import TipSelector from '../components/TipSelector';
 import VoucherInput from '../components/VoucherInput';
 import ImageUploader from '../components/ImageUploader';
 import { type Template } from '../data/mockTemplates';
-import { createOrder, uploadFiles, getTemplate, getMetadata } from '../services/api';
+import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
 const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'galaxy']);
@@ -38,6 +39,8 @@ function OrderPage() {
   const [content, setContent] = useState('');
   const [musicAdded, setMusicAdded] = useState(false);
   const [musicLink, setMusicLink] = useState('');
+  const [voiceRecordingAdded, setVoiceRecordingAdded] = useState(false);
+  const [voiceRecording, setVoiceRecording] = useState<VoiceRecording | null>(null);
   const [keychainPurchased, setKeychainPurchased] = useState(false);
   const [selectedTip, setSelectedTip] = useState<number | 'custom' | null>(null);
   const [customTipAmount, setCustomTipAmount] = useState(0);
@@ -72,6 +75,7 @@ function OrderPage() {
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [musicPrice, setMusicPrice] = useState(10000);
+  const [voiceRecordingPrice, setVoiceRecordingPrice] = useState(10000);
   const [keychainPrice, setKeychainPrice] = useState(35000);
 
   // Background upload tracking: slot index → { promise, cancelled }
@@ -95,6 +99,7 @@ function OrderPage() {
   useEffect(() => {
     getMetadata().then(data => {
       if (data.music_price) setMusicPrice(parseInt(data.music_price));
+      if (data.voice_recording_price) setVoiceRecordingPrice(parseInt(data.voice_recording_price));
       if (data.keychain_price) setKeychainPrice(parseInt(data.keychain_price));
     }).catch(() => {});
   }, []);
@@ -151,6 +156,7 @@ function OrderPage() {
   const calculateTotal = () => {
     let subtotal = selectedTemplate ? selectedTemplate.price : 0;
     if (musicAdded) subtotal += musicPrice;
+    if (voiceRecordingAdded) subtotal += voiceRecordingPrice;
     if (keychainPurchased) subtotal += keychainPrice;
     const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);
     subtotal += tipAmount;
@@ -193,6 +199,22 @@ function OrderPage() {
 
   const handleVoucherValidated = (voucherData: Voucher | null) => {
     setVoucher(voucherData);
+  };
+
+  const handleMusicToggle = (added: boolean) => {
+    setMusicAdded(added);
+    if (added) {
+      setVoiceRecordingAdded(false);
+      setVoiceRecording(null);
+    }
+  };
+
+  const handleVoiceRecordingToggle = (added: boolean) => {
+    setVoiceRecordingAdded(added);
+    if (added) {
+      setMusicAdded(false);
+      setMusicLink('');
+    }
   };
 
   const startUpload = (index: number, file: File, name: string) => {
@@ -278,6 +300,8 @@ function OrderPage() {
       setContent('');
       setMusicAdded(false);
       setMusicLink('');
+      setVoiceRecordingAdded(false);
+      setVoiceRecording(null);
       setKeychainPurchased(false);
       setSelectedTip(null);
       setCustomTipAmount(0);
@@ -325,6 +349,7 @@ function OrderPage() {
       setError('Lời chúc không được quá 50 ký tự'); return;
     }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
+    if (voiceRecordingAdded && !voiceRecording) { setError('Vui lòng ghi âm lời nhắn trước khi thanh toán'); return; }
 
     setSubmitting(true);
     try {
@@ -350,6 +375,11 @@ function OrderPage() {
         }
       }
 
+      let voiceRecordingUrl: string | undefined;
+      if (voiceRecordingAdded && voiceRecording) {
+        voiceRecordingUrl = await uploadVoiceRecording(voiceRecording.file, qrName);
+      }
+
       const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);
       const parsedTimeline = loveDaysTimeline
         .map(item => ({ date: item.date.trim(), text: item.text.trim() }))
@@ -363,6 +393,8 @@ function OrderPage() {
         imageUrls,
         musicUrl: musicLink || undefined,
         musicAdded,
+        voiceRecordingAdded,
+        voiceRecordingUrl,
         keychainPurchased,
         tipAmount,
         voucherCode: voucher?.code,
@@ -924,11 +956,19 @@ function OrderPage() {
 
       <MusicOption
         musicAdded={musicAdded}
-        onMusicToggle={setMusicAdded}
+        onMusicToggle={handleMusicToggle}
         musicLink={musicLink}
         onMusicLinkChange={setMusicLink}
         qrName={qrName}
         musicPrice={musicPrice}
+      />
+
+      <VoiceRecordingOption
+        added={voiceRecordingAdded}
+        onToggle={handleVoiceRecordingToggle}
+        recording={voiceRecording}
+        onRecordingChange={setVoiceRecording}
+        price={voiceRecordingPrice}
       />
 
       <div className="keychain-option">
