@@ -69,6 +69,16 @@ export const uploadFiles = async (files: File[], qrName?: string): Promise<strin
   return response.data.urls as string[];
 };
 
+export const uploadVoiceRecording = async (file: File, qrName: string): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('qrName', qrName);
+  const response = await api.post('/api/upload/voice', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data.url as string;
+};
+
 // Music extraction
 export const extractMusic = async (url: string, qrName?: string): Promise<string> => {
   const response = await api.post('/api/music/extract', { url, qrName });

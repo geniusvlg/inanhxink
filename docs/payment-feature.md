@@ -70,6 +70,23 @@ OrderPage → /payment/:qrName → PaymentPage.tsx
 5. Goroutine: `migrateQRUploads` — moves temp S3 files to permanent path.
 6. Sends notification via `notify.QROrderPaid`.
 
+### Optional voice recording
+
+- `OrderPage` can record one voice message of up to 30 seconds with the browser
+  `MediaRecorder` API. The recording stays as an in-memory Blob for local replay
+  and is uploaded only when the customer submits the order.
+- Background music and a voice message are mutually exclusive. Selecting either
+  option clears the other, and `CreateOrder` rejects requests that select both.
+- `POST /api/upload/voice` accepts one audio file up to 5 MB and stores it under
+  `uploads/temp/{qrName}/`. `CreateOrder` validates that the raw S3 URL belongs
+  to that QR name before adding it to `template_data.voiceRecordingUrl`.
+- `metadata.voice_recording_price` controls the add-on price. The backend
+  recalculates the total and snapshots the selected URL, flag, and price in
+  `orders`; the browser total is display-only.
+- Payment activation moves the temporary recording to `uploads/{qrName}/`
+  together with the other referenced QR assets. Live template responses rewrite
+  the raw S3 URL to the CDN.
+
 ---
 
 ## 2. Product Checkout Payment

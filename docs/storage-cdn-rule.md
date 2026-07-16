@@ -65,8 +65,9 @@ used by both:
 - `SiteData` handler (`GET /api/site-data`, `sitedata.go`)
 - `ServeTemplate`'s `injectScripts()` (`templateserve.go`) — rewrites before injecting `window.dataFromSubdomain` into the served template HTML
 
-It rewrites the scalar fields `musicUrl`, `avatarFrom`, `avatarTo`, `boyImage`,
-`girlImage`, and the array fields `imageUrls`, `popupImages` inside `template_data`.
+It rewrites the scalar fields `musicUrl`, `voiceRecordingUrl`, `avatarFrom`,
+`avatarTo`, `boyImage`, `girlImage`, and the array fields `imageUrls`,
+`popupImages` inside `template_data`.
 
 Admin handlers (`backend-golang/internal/handlers/admin/*.go`): **DO NOT REWRITE**.
 Admin pages upload, list, edit, and delete using the raw S3 URLs. If an admin page

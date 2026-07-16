@@ -44,7 +44,7 @@ func SiteData(w http.ResponseWriter, r *http.Request) {
 }
 
 func rewriteTemplateDataCDN(data map[string]any) {
-	for _, key := range []string{"musicUrl", "avatarFrom", "avatarTo", "boyImage", "girlImage"} {
+	for _, key := range []string{"musicUrl", "voiceRecordingUrl", "avatarFrom", "avatarTo", "boyImage", "girlImage"} {
 		if v, ok := data[key].(string); ok {
 			data[key] = config.CdnStr(v)
 		}

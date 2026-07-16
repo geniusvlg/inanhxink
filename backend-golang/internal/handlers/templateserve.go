@@ -86,7 +86,9 @@ func injectScripts(html, subdomain, templateType string, templateData map[string
 	dataPayload, _ := json.Marshal(map[string]any{"template": templateType, "data": data})
 	subdomainJSON, _ := json.Marshal(subdomain)
 	tag := fmt.Sprintf(
-		"<script>window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;</script>",
+		"<script>window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;</script>\n"+
+			"<link rel=\"stylesheet\" href=\"/templates/common/voice-player.css\">\n"+
+			"<script defer src=\"/templates/common/voice-player.js\"></script>",
 		string(subdomainJSON), string(dataPayload),
 	)
 	return strings.Replace(html, "</head>", tag+"\n</head>", 1)

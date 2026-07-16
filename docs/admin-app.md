@@ -174,6 +174,11 @@ metadata keys:
 The current default shipping fee is `30000`; set it to `0` for free shipping on
 all product orders.
 
+It also manages `voice_recording_price`, the optional QR voice-message add-on
+price in VND. The default is `10000`; `0` makes the add-on free. The Go backend
+reads this metadata value when the QR order is created and stores the charged
+price on the order, so changing the setting does not alter existing orders.
+
 ## S3 Folder Structure (Products)
 
 ```
