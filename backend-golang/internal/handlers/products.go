@@ -168,6 +168,17 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 		NotFound(w)
 		return
 	}
+
+	// Every product view bumps the sold counter by 1 (best-effort; a failure
+	// here must not block serving the product).
+	var newSold int64
+	if err := config.DB.QueryRow(context.Background(),
+		`UPDATE products SET sold_count = sold_count + 1 WHERE id = $1 RETURNING sold_count`,
+		id,
+	).Scan(&newSold); err == nil {
+		row["sold_count"] = newSold
+	}
+
 	rewriteProductCDN(row)
 
 	// Fetch variants (CDN-rewritten images)

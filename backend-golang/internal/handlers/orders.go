@@ -21,7 +21,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "specialgift": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -30,6 +30,7 @@ var templateFolderMap = map[string]string{
 	"galaxy":        "galaxy",
 	"lovedays":      "lovedays",
 	"birthday":      "birthday",
+	"birthdaycake":  "birthdaycake",
 	"specialgift":   "specialgift",
 }
 
@@ -118,7 +119,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, specialgift"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift"))
 		return
 	}
 
@@ -229,6 +230,17 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			birthdayDateMessage(body),
 		}
 		templateData["finalText"] = strOrDefault(body, "birthdayFinalText", "")
+	case "birthdaycake":
+		templateData["letterTitle"] = strOrDefault(body, "birthdayCakeLetterTitle", "Gửi công chúa nhỏ của anh ❤️")
+		templateData["letterBody"] = strOrDefault(body, "birthdayCakeLetterBody", content)
+		templateData["cakeInscription"] = strOrDefault(body, "birthdayCakeInscription", "")
+		templateData["giftLanguage"] = strOrDefault(body, "birthdayCakeGiftLanguage", "vi")
+		templateData["finalGift"] = true
+		if len(imageUrls) > 0 {
+			templateData["photoBlobUrls"] = imageUrls
+		} else {
+			templateData["photoBlobUrls"] = []any{}
+		}
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls

@@ -44,12 +44,12 @@ func SiteData(w http.ResponseWriter, r *http.Request) {
 }
 
 func rewriteTemplateDataCDN(data map[string]any) {
-	for _, key := range []string{"musicUrl", "voiceRecordingUrl", "avatarFrom", "avatarTo", "boyImage", "girlImage"} {
+	for _, key := range []string{"musicUrl", "customMusicUrl", "voiceRecordingUrl", "avatarFrom", "avatarTo", "boyImage", "girlImage"} {
 		if v, ok := data[key].(string); ok {
 			data[key] = config.CdnStr(v)
 		}
 	}
-	for _, key := range []string{"imageUrls", "popupImages"} {
+	for _, key := range []string{"imageUrls", "popupImages", "photoBlobUrls"} {
 		if arr, ok := data[key].([]any); ok {
 			for i, item := range arr {
 				if s, ok := item.(string); ok {

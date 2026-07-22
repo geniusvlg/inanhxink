@@ -1,0 +1,739 @@
+.svg-filters {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+@font-face {
+    font-family: 'Pacifico';
+    src: url('../assets/fonts/Pacifico-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    /* Nền phong bì hồng / kem lãng mạn thay vì trắng xám */
+    --color-env: #fdf5f6;
+    --color-env2: #f6e8ea;
+    --color-flap: #fffafb;
+    --color-bg: #5a5a58;
+    /* Cùng tông màu chữ Happy Birthday (.page-birthday-heading__glyph #ec8e98) */
+    --color-heart: #ec8e98;
+    --color-sparkle: #ffd700;
+    --wax-seal: #9e1b1b;
+    --envelope-center-heart: #ec8e98;
+}
+
+/* Lớp phủ trong index — không style body trang */
+.letter-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.75s ease, visibility 0.75s;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y; /* Cấp đặc quyền cuộn dọc lại cho lá thư do body đã bị khóa cứng touch-action */
+    user-select: none;
+    cursor: auto;
+    min-height: 0;
+}
+
+/* Căn giữa dọc đều hai trên dưới không thiên vị để tránh bị tụt sâu xuống bottom trên màn hình dọc */
+.letter-modal-overlay::before {
+    content: "";
+    flex: 1 1 0;
+    min-height: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+.letter-modal-overlay::after {
+    content: "";
+    flex: 1 1 0;
+    min-height: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+/* Audio chỉ để phát nhạc — không tham gia flex (tránh đẩy phong bì lệch giữa màn hình) */
+.letter-modal-overlay > audio {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.letter-modal-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0.8s;
+}
+
+/* Kết thư: tan toàn bộ lớp phong bì/thư */
+.letter-modal-overlay.letter-modal--ending {
+    transition: opacity 0.85s ease, visibility 0.85s ease;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Lá thư tan biến trước khi đóng modal */
+#loveLetter.letter--ending {
+    transition:
+        opacity 0.5s ease,
+        transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+        filter 0.55s ease !important;
+    opacity: 0 !important;
+    transform: scale(0.88) translateY(12px) !important;
+    filter: blur(10px);
+    pointer-events: none;
+}
+
+@keyframes letterModalFloat {
+
+    0%,
+    100% {
+        transform: translateY(var(--envelope-float-base, 0px));
+    }
+
+    50% {
+        transform: translateY(calc(var(--envelope-float-base, 0px) - 8px));
+    }
+}
+
+.envlope-wrapper {
+    height: 380px;
+    margin-top: 0;
+    animation: letterModalFloat 3s ease-in-out infinite;
+}
+
+.letter-modal-overlay .envlope-wrapper {
+    flex-shrink: 0;
+    /* Đẩy nhẹ xuống so với tâm hình học — khớp tâm thị giác (nắp + thân phong bì) */
+    --envelope-float-base: clamp(18px, 4.5vh, 46px);
+    margin-top: clamp(8px, 1.5vh, 20px);
+}
+
+/*
+ * Mobile ngang: flex + ::before/::after + overflow:auto dễ khiến spacer co / vh lệch → phong bì dính top.
+ * Dùng grid + place-content:center; bỏ hẳn pseudo; max-width 932px bắt phone ngang (không chỉ max-height).
+ */
+@media (orientation: landscape) and (max-width: 932px) {
+    .letter-modal-overlay {
+        display: grid;
+        place-content: center;
+        place-items: center;
+        align-content: center;
+        justify-content: center;
+        justify-items: center;
+        flex-direction: unset;
+        min-height: -webkit-fill-available;
+        min-height: 100vh;
+        min-height: 100svh;
+        min-height: 100dvh;
+        min-height: 100lvh;
+        /* Tránh padding-top lớn làm lệch tâm — safe-area đối xứng */
+        padding: max(8px, env(safe-area-inset-top, 0px))
+            max(8px, env(safe-area-inset-right, 0px))
+            max(8px, env(safe-area-inset-bottom, 0px))
+            max(8px, env(safe-area-inset-left, 0px));
+    }
+
+    .letter-modal-overlay::before,
+    .letter-modal-overlay::after {
+        content: none !important;
+        display: none !important;
+        flex: 0 0 0 !important;
+    }
+
+    /*
+     * #envelope chỉ cao 240px trong khối 380px — trước đây dính mép trên → tâm bbox
+     * lệch ~-60px so với tâm viewport dù wrapper đã giữa. Flex căn giữa phong bì trong khối.
+     */
+    .letter-modal-overlay .envlope-wrapper {
+        margin-top: 0;
+        --envelope-float-base: clamp(8px, 2.5vmin, 24px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .letter-modal-overlay #envelope {
+        transform: scale(0.82);
+        transform-origin: center center;
+    }
+}
+
+.letter-modal-overlay .wax-seal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -56%);
+    width: 52px;
+    height: 52px;
+    background-color: var(--wax-seal);
+    border-radius: 50%;
+    z-index: 10;
+    box-shadow: 
+        inset 0 0 6px rgba(0,0,0,0.5),
+        0 4px 8px rgba(0,0,0,0.15),
+        0 1px 3px rgba(0,0,0,0.2);
+    border: 3px solid #751414;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#envelope.open .wax-seal {
+    opacity: 0;
+    transform: translate(-50%, -56%) scale(0.85);
+}
+
+/* Tim nhỏ tròn mặt phong bì nằm trong sáp */
+.envelope-center-heart {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 26px;
+    height: 24px;
+    transform: translate(-50%, -56%);
+    z-index: 11;
+    pointer-events: none;
+    opacity: 0.95;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.envelope-center-heart::before,
+.envelope-center-heart::after {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 0;
+    width: 13px;
+    height: 20px;
+    background: var(--envelope-center-heart);
+    border-radius: 13px 13px 0 0;
+    transform: rotate(-45deg);
+    transform-origin: 0 100%;
+}
+
+.envelope-center-heart::after {
+    left: 0;
+    transform: rotate(45deg);
+    transform-origin: 100% 100%;
+}
+
+#envelope.open .envelope-center-heart {
+    opacity: 0;
+    transform: translate(-50%, -56%) scale(0.85);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+#envelope {
+    position: relative;
+    width: 380px;
+    height: 240px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    margin: 0 auto;
+    top: 0;
+    background-color: var(--color-flap);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.07);
+    cursor: pointer;
+    isolation: isolate;
+}
+
+/* Tạo "shape" mềm giống lá thư nhưng chỉ áp lên thân phong bì */
+#envelope::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 10px;
+    background:
+        linear-gradient(180deg,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(250, 250, 249, 0.9) 45%,
+            rgba(238, 238, 236, 0.35) 100%),
+        var(--color-env);
+    filter: url(#loveLetterWavyBorder);
+    pointer-events: none;
+}
+
+/* Nhấn rõ viền trái/phải theo cùng shape filter */
+#envelope::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: 10px;
+    background:
+        linear-gradient(90deg,
+            rgba(200, 200, 198, 0.4) 0 8px,
+            transparent 8px calc(100% - 8px),
+            rgba(200, 200, 198, 0.4) calc(100% - 8px) 100%);
+    filter: url(#loveLetterWavyBorder);
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.front {
+    position: absolute;
+    width: 0;
+    height: 0;
+    z-index: 4;
+}
+
+.flap {
+    border-left: 190px solid transparent;
+    border-right: 190px solid transparent;
+    border-bottom: 92px solid transparent;
+    border-top: 150px solid var(--color-flap);
+    transform-origin: top;
+    pointer-events: none;
+    filter: url(#loveLetterWavyBorder);
+}
+
+.pocket {
+    border-left: 190px solid var(--color-env);
+    border-right: 190px solid var(--color-env);
+    border-bottom: 90px solid var(--color-env2);
+    border-top: 150px solid transparent;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    filter: url(#loveLetterWavyBorder);
+}
+
+/* Đóng: slot khớp thân bì (top: 0) — không để thư/shadow lọt phía trên phong bì. Mở: mở rộng lên để kéo thư ra */
+.letter-slot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    z-index: 2;
+    pointer-events: none;
+    border-radius: inherit;
+    transition: top 0.35s ease;
+}
+
+#envelope.open .letter-slot {
+    top: -240px;
+}
+
+.letter-slot .letter {
+    pointer-events: auto;
+}
+
+/* Khi thư fixed ra giữa màn hình: slot phải cao hơn pocket (3) hoặc cả cây con vẫn bị đè */
+.letter-slot.letter-slot--floating {
+    z-index: 40;
+}
+
+/* Nền + viền sóng chỉ ở ::before (filter SVG) — chữ không bị méo (theo LETTER_MODAL_SHAPE.md) */
+.letter {
+    position: relative;
+    background: transparent;
+    width: 95%;
+    margin: 0 auto;
+    height: 95%;
+    top: 0%;
+    border-radius: 10px;
+    padding: 15px;
+    box-sizing: border-box;
+    overflow: visible;
+    isolation: isolate;
+}
+
+.letter::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: 10px;
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 28px,
+            rgba(220, 150, 160, 0.3) 28px,
+            rgba(220, 150, 160, 0.3) 29px
+        ),
+        linear-gradient(135deg,
+            #fffafa 0%,
+            #fdf1f3 50%,
+            #fae3e6 100%);
+    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.1);
+    filter: url(#loveLetterWavyBorder);
+    pointer-events: none;
+}
+
+.message {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    padding: 8px 0 8px 10px;
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.letter-inner {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 12px;
+    padding: 4px 2px 2px;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.letter-btn-close {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 5;
+    width: 30px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    color: #4a4a48;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 1.35rem;
+    line-height: 1;
+    font-family: system-ui, -apple-system, sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.letter-btn-close:hover {
+    background: var(--color-env2);
+    color: #2a2a28;
+    transform: scale(1.06);
+}
+
+.letter-btn-continue {
+    display: none;
+    flex-shrink: 0;
+    align-self: center;
+    margin-top: 2px;
+    padding: 10px 32px;
+    border: 2px solid #e8b0b5;
+    border-radius: 22px;
+    background: #fff8f9;
+    color: #a72828;
+    font-family: 'Pacifico', cursive;
+    font-size: 1.05rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transition: background 0.2s ease, transform 0.2s ease, opacity 0.25s ease;
+}
+
+.letter-btn-continue.letter-btn-continue--visible {
+    display: block;
+}
+
+.letter-btn-continue.letter-btn-continue--visible:hover:not(:disabled) {
+    background: #fee6e9;
+    border-color: #d6959b;
+    transform: translateY(-2px);
+}
+
+.letter-btn-continue.letter-btn-continue--visible:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Gắn class trên #loveLetter — khi thư nhảy lên body không còn nằm trong #envelope.open */
+.letter-show-inner .letter-inner {
+    display: flex;
+    opacity: 1;
+}
+
+/* Mở lại thư khi lần trước đã gõ xong: từ mờ (blur) đến tỏ rõ dần */
+.letter-inner.letter-text-reveal .letter-title,
+.letter-inner.letter-text-reveal .letter-body {
+    opacity: 0;
+    filter: blur(12px);
+    animation: letterContentFadeIn 0.95s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.letter-inner.letter-text-reveal .letter-body {
+    animation-delay: 0.08s;
+}
+
+@keyframes letterContentFadeIn {
+    from {
+        opacity: 0;
+        filter: blur(12px);
+    }
+
+    to {
+        opacity: 1;
+        filter: blur(0);
+    }
+}
+
+.letter-title {
+    margin: 0;
+    padding: 0 34px 0 4px;
+    font-family: 'Dancing Script', 'Pacifico', cursive;
+    font-synthesis: none;
+    font-size: clamp(1.7rem, 6vw, 2.25rem);
+    font-weight: 700;
+    color: #a72828;
+    text-align: center;
+    line-height: 1.35;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.letter-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 0 6px 0;
+    font-family: 'Dancing Script', 'Pacifico', cursive;
+    font-size: 1.35rem;
+    font-weight: 600;
+    font-synthesis: none;
+    line-height: 1.45;
+    color: #5c3a3a;
+    text-align: left;
+    white-space: pre-line;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(160, 160, 158, 0.65) rgba(0, 0, 0, 0.04);
+}
+
+.letter-body::-webkit-scrollbar {
+    width: 2px;
+}
+
+.letter-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.04);
+    margin: 2px 0;
+    border-radius: 1px;
+}
+
+.letter-body::-webkit-scrollbar-thumb {
+    background: rgba(150, 150, 148, 0.5);
+    border-radius: 1px;
+}
+
+.letter-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(110, 110, 108, 0.75);
+}
+
+/* Trong phong bì (chưa bay ra giữa màn hình): giới hạn chiều cao vùng cuộn */
+.open .letter:not(.letter-is-centered) .letter-body {
+    max-height: 140px;
+}
+
+.open .flap {
+    transform: rotateX(180deg);
+    transition: transform 0.4s ease, z-index 0.6s;
+    z-index: 1;
+}
+
+.close .flap {
+    transform: rotateX(0deg);
+    transition: transform 0.4s 0.6s ease, z-index 1s;
+    z-index: 5;
+}
+
+.close .letter {
+    animation: none;
+    transform: translateY(0);
+    transition: transform 0.5s ease, z-index 1s;
+    z-index: 1;
+}
+
+@keyframes letterPullOut {
+    from {
+        transform: translateY(0) rotate(-2deg);
+    }
+    to {
+        transform: translateY(-300px) rotate(0deg);
+    }
+}
+
+.open .letter {
+    animation: letterPullOut 0.85s cubic-bezier(0.34, 1.15, 0.52, 1) 0.5s forwards;
+    z-index: 1;
+}
+
+.envlope-wrapper.letter-stage-open {
+    animation: none;
+    transform: translateY(var(--envelope-float-base, 0px));
+}
+
+/* Tắt animation kéo thư — nếu không, forwards vẫn giữ translateY(-300px) và đẩy cả khối lên trên */
+.letter-is-centered {
+    animation: none !important;
+    transform: none !important;
+}
+
+.letter-is-centered::before {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18) !important;
+}
+
+.letter-is-centered .letter-body {
+    max-height: min(52vh, 420px);
+}
+
+.letter-corner {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border: 2px solid #d6959b;
+    border-radius: 8px;
+    z-index: 3;
+}
+
+.corner-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+.corner-br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+
+.hearts, .sparkles {
+    position: absolute;
+    top: 90px;
+    left: 0;
+    right: 0;
+    z-index: 2;
+}
+
+.heart, .sparkle {
+    position: absolute;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.heart:before,
+.heart:after {
+    content: "";
+    position: absolute;
+    left: 25px;
+    top: 0;
+    width: 25px;
+    height: 40px;
+    background: var(--color-heart);
+    border-radius: 25px 25px 0 0;
+    transform: rotate(-45deg);
+    transform-origin: 0 100%;
+}
+
+.heart:after {
+    left: 0;
+    transform: rotate(45deg);
+    transform-origin: 100% 100%;
+}
+
+.sparkle {
+    width: 8px;
+    height: 8px;
+    background: var(--color-sparkle);
+    border-radius: 50%;
+    animation: sparkleTwinkle 1s infinite;
+}
+
+.close .heart,
+.close .sparkle {
+    opacity: 0;
+    animation: none;
+}
+
+.a1 { left: 20%; transform: scale(0.6); animation: slideUp 4s linear infinite, sideSway 2s ease-in-out infinite alternate; }
+.a2 { left: 55%; animation: slideUp 5s linear infinite, sideSway 4s ease-in-out infinite alternate; }
+.a3 { left: 10%; transform: scale(0.8); animation: slideUp 7s linear infinite, sideSway 2s ease-in-out infinite alternate; }
+
+.s1 { left: 30%; animation: sparkleUp 3s linear infinite; }
+.s2 { left: 60%; animation: sparkleUp 4s linear infinite; }
+.s3 { left: 45%; animation: sparkleUp 5s linear infinite; }
+
+@keyframes slideUp {
+    0% { top: 0; }
+    100% { top: -600px; }
+}
+
+@keyframes sideSway {
+    0% { margin-left: 0; }
+    50% { margin-left: 50px; }
+    100% { margin-left: 0; }
+}
+
+@keyframes sparkleUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-500px) rotate(360deg); opacity: 0; }
+}
+
+@keyframes sparkleTwinkle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.5); }
+}
+
+.controls {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.controls button {
+    font-weight: 600;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    border: 2px solid #d6d6d4;
+    border-radius: 20px;
+    color: #2c2c2a;
+    padding: 12px 25px;
+    margin: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    font-family: Arial, sans-serif;
+}
+
+.controls button:hover {
+    background-color: var(--color-env2);
+    border-color: #c8c8c6;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 7px 25px rgba(0,0,0,0.2);
+}
