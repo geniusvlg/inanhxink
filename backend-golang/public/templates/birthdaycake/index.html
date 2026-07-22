@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#fff4f7">
+  <title>Birthday Gift Pro ❤️</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Dancing+Script:wght@500;600;700&family=Fredoka+One&family=Pacifico&family=Satisfy&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./giftbox/gift-box.css">
+  <link rel="stylesheet" href="./cake/cake.css">
+  <link rel="stylesheet" href="./letter/letter-modal.css">
+</head>
+<body>
+  <div class="page-top-banner" aria-hidden="true">
+    <img class="page-top-banner__left" src="./assets/images/left_banner.png" alt="">
+    <img class="page-top-banner__right" src="./assets/images/left_banner.png" alt="">
+  </div>
+
+  <div class="page-top-purl" aria-hidden="true">
+    <img class="page-top-purl__left" src="./assets/images/left_purl.png" alt="">
+    <img class="page-top-purl__right" src="./assets/images/left_purl.png" alt="">
+  </div>
+
+  <div class="page-birthday-heading" role="img" aria-label="Happy Birthday!">
+    <div class="page-birthday-heading__board">
+      <div class="page-birthday-heading__row">
+        <span class="page-birthday-heading__letter" data-ch="H" style="--r:-9deg; --arc:0px; --gc:#f4a6c8;"><span class="page-birthday-heading__glyph">H</span></span>
+        <span class="page-birthday-heading__letter" data-ch="a" style="--r:6deg; --arc:-9px; --gc:#f6a29c;"><span class="page-birthday-heading__glyph">a</span></span>
+        <span class="page-birthday-heading__letter" data-ch="p" style="--r:-5deg; --arc:-15px; --gc:#f8cf85;"><span class="page-birthday-heading__glyph">p</span></span>
+        <span class="page-birthday-heading__letter" data-ch="p" style="--r:7deg; --arc:-9px; --gc:#b7e29a;"><span class="page-birthday-heading__glyph">p</span></span>
+        <span class="page-birthday-heading__letter" data-ch="y" style="--r:-8deg; --arc:0px; --gc:#93dcc4;"><span class="page-birthday-heading__glyph">y</span></span>
+      </div>
+      <div class="page-birthday-heading__row">
+        <span class="page-birthday-heading__letter" data-ch="B" style="--r:-7deg; --arc:0px; --gc:#9fc9f2;"><span class="page-birthday-heading__glyph">B</span></span>
+        <span class="page-birthday-heading__letter" data-ch="i" style="--r:8deg; --arc:-7px; --gc:#c3b1ec;"><span class="page-birthday-heading__glyph">i</span></span>
+        <span class="page-birthday-heading__letter" data-ch="r" style="--r:-4deg; --arc:-12px; --gc:#f3a9cf;"><span class="page-birthday-heading__glyph">r</span></span>
+        <span class="page-birthday-heading__letter" data-ch="t" style="--r:5deg; --arc:-16px; --gc:#f6a29c;"><span class="page-birthday-heading__glyph">t</span></span>
+        <span class="page-birthday-heading__letter" data-ch="h" style="--r:-5deg; --arc:-17px; --gc:#f8cf85;"><span class="page-birthday-heading__glyph">h</span></span>
+        <span class="page-birthday-heading__letter" data-ch="d" style="--r:4deg; --arc:-16px; --gc:#b7e29a;"><span class="page-birthday-heading__glyph">d</span></span>
+        <span class="page-birthday-heading__letter" data-ch="a" style="--r:-6deg; --arc:-12px; --gc:#93dcc4;"><span class="page-birthday-heading__glyph">a</span></span>
+        <span class="page-birthday-heading__letter" data-ch="y" style="--r:7deg; --arc:-7px; --gc:#9fc9f2;"><span class="page-birthday-heading__glyph">y</span></span>
+        <span class="page-birthday-heading__letter page-birthday-heading__letter--bang" data-ch="!" style="--r:11deg; --arc:0px; --gc:#c3b1ec;"><span class="page-birthday-heading__glyph">!</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="title"></div>
+  <audio loop id="audios" preload="auto">
+    <source src="./assets/musics/birthday/hppd_amee.mp3" type="audio/mpeg">
+  </audio>
+
+  <div class="cube-view" id="cube-view">
+    <div class="cube gift-box" id="gift-cube" role="button" tabindex="0" aria-label="Nhấn để mở hộp quà">
+      <div id="gift-box-canvas" aria-hidden="true"></div>
+      <span class="gift-open-label">Chạm để mở</span>
+    </div>
+  </div>
+
+  <div class="fireworks-layer" id="fireworks-layer" aria-hidden="true"></div>
+  <div class="balloon-layer" id="balloon-layer" aria-hidden="true"></div>
+  <div class="photo-wall" id="photo-wall" aria-hidden="true"></div>
+
+  <div id="letter-modal" class="letter-modal-overlay" aria-hidden="true">
+    <svg class="svg-filters" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="loveLetterWavyBorder" x="-15%" y="-15%" width="130%" height="130%">
+          <feTurbulence type="turbulence" baseFrequency="0.014 0.007" numOctaves="2" seed="5" result="noise"></feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+        </filter>
+      </defs>
+    </svg>
+    <div class="envlope-wrapper">
+      <div id="envelope" class="close">
+        <div class="wax-seal"></div>
+        <span class="envelope-center-heart" aria-hidden="true"></span>
+        <div class="front flap"></div>
+        <div class="front pocket"></div>
+        <div class="letter-slot">
+          <div class="letter" id="loveLetter">
+            <div class="letter-corner corner-tl"></div>
+            <div class="letter-corner corner-br"></div>
+            <div class="message">
+              <div class="letter-inner">
+                <button type="button" class="letter-btn-close" id="letterBtnClose" aria-label="Đóng thư">×</button>
+                <h2 class="letter-title" id="letterTitle"></h2>
+                <div class="letter-body" id="letterBody"></div>
+                <button type="button" class="letter-btn-continue" id="letterBtnContinue" disabled aria-hidden="true">Tiếp tục</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hearts">
+          <div class="heart a1"></div>
+          <div class="heart a2"></div>
+          <div class="heart a3"></div>
+        </div>
+        <div class="sparkles">
+          <div class="sparkle s1"></div>
+          <div class="sparkle s2"></div>
+          <div class="sparkle s3"></div>
+        </div>
+      </div>
+    </div>
+    <audio id="letterSound" loop preload="metadata">
+      <source src="./assets/musics/birthday/hppd_amee.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+
+  <div id="memory-zone" class="memory-zone" aria-hidden="true">
+    <div id="memory-cake-stage" class="memory-cake-stage" aria-hidden="true"></div>
+    <div id="memory-blow-slot" class="memory-blow-slot">
+      <button id="memory-blow-candle-btn" class="memory-blow-candle-btn" type="button">🔥 Thổi nến</button>
+      <p id="memory-cake-cut-reminder" class="memory-cake-cut-reminder" hidden>Vuốt <strong>xuyên qua bánh</strong> để cắt bánh — cắt đủ <strong>2 nhát</strong></p>
+    </div>
+  </div>
+
+  <div class="page-float-bubble" aria-hidden="true">
+    <img src="./assets/images/ballon.png" alt="">
+  </div>
+  <div class="page-cloud-decor-sky" aria-hidden="true">
+    <img class="page-cloud-decor__cloud" src="./assets/images/cloud_decor.png" alt="">
+  </div>
+  <div class="page-cloud-decor" aria-hidden="true">
+    <img class="page-cloud-decor__rabbit page-cloud-decor__rabbit--left" src="./assets/images/left_rabbit.png" alt="">
+    <img class="page-cloud-decor__rabbit page-cloud-decor__rabbit--right" src="./assets/images/left_rabbit.png" alt="">
+  </div>
+
+  <script src="./photo-data.js"></script>
+  <script src="./demo-data.js"></script>
+  <script src="./gift-i18n.js"></script>
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+    window.THREE = THREE;
+  </script>
+  <script src="./giftbox/gift-model.js" defer></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+  <script src="./cake/cake.js" defer></script>
+  <script src="./letter/letter-index.js" defer></script>
+  <script src="./giftbox/gift-box.js" defer></script>
+</body>
+</html>

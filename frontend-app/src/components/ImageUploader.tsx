@@ -63,8 +63,8 @@ function ImageUploader({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 5MB');
+    if (file.size > 7 * 1024 * 1024) {
+      alert('Kích thước ảnh không được vượt quá 7MB');
       return;
     }
 
@@ -118,8 +118,37 @@ function ImageUploader({
 
   const handleBatchUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    // Validate each file with the same rules as single-slot upload:
+    // must be an image and must not exceed 7MB.
+    const files: File[] = [];
+    let hasNonImage = false;
+    let hasOversized = false;
+    selectedFiles.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        hasNonImage = true;
+        return;
+      }
+      if (file.size > 7 * 1024 * 1024) {
+        hasOversized = true;
+        return;
+      }
+      files.push(file);
+    });
+
+    if (hasNonImage) {
+      alert('Vui lòng chỉ chọn file ảnh');
+    }
+    if (hasOversized) {
+      alert('Kích thước mỗi ảnh không được vượt quá 7MB. Các ảnh quá lớn đã bị bỏ qua.');
+    }
+
+    if (files.length === 0) {
+      event.target.value = '';
+      return;
+    }
 
     const emptySlots: number[] = [];
     for (let i = 0; i < maxImages; i++) {

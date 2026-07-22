@@ -17,12 +17,12 @@
 
 ## Project Overview
 
-**inanhxink** — Vietnamese QR-code ordering system. Customers buy a personalised subdomain (e.g. `anhyeuem.inanhxink.com`) serving a themed template page, alongside a physical-product storefront (cards, photo frames, prints, scrapbooks, gifts).
+**inanhxink** — QR-code ordering system + product storefront. Customers buy a personalised subdomain (e.g. `anhyeuem.inanhxink.com`) serving a themed template page, or order physical products (thiệp, khung ảnh, in ảnh, etc).
 
-- **Customer storefront** (`inanhxink.com`) — React 19 SPA (Vite + TypeScript) in `frontend-app/`
-- **Admin app** (`admin.inanhxink.com`) — React 19 SPA (Vite + TypeScript) in `admin-app/`, JWT-authenticated; manages products, templates, orders, feedback, banners, config. See `docs/admin-app.md`.
-- **Backend** — Go (chi v5) + PostgreSQL (pgx v5, raw SQL) in `backend-golang/`. **This replaced the old Node.js/Express backend** (`backend/`, removed entirely in commit `c3b2620`, April 2026) — don't reference `backend/` in new work. See `docs/golang-backend.md`.
-- **Template pages** (`*.inanhxink.com`) — static HTML/JS in `backend-golang/public/templates/`, served by the Go backend with `window.__SUBDOMAIN__` / `window.dataFromSubdomain` injected
+- **Order site** (`inanhxink.com`) — customer storefront SPA (React + Vite + TypeScript) in `frontend-app/`
+- **Admin site** — admin SPA (React + Vite + TypeScript, JWT auth) in `admin-app/`
+- **Template pages** (`*.inanhxink.com`) — Static HTML/JS in `backend-golang/public/templates/`, served by the Go backend with `window.__SUBDOMAIN__` / `window.dataFromSubdomain` injected
+- **Backend** — **Go 1.26** + chi router + pgx v5 in `backend-golang/`, PostgreSQL. This is a full rewrite of an earlier Node.js/Express backend (`backend/`, now deleted) — same DB/S3, API-compatible. See `docs/golang-backend.md` for deployment details (libwebp/CGO build requirement, `.env` layout, static file paths, yt-dlp dependency).
 - **Infra** — `nginx/` for SSL + reverse proxy + wildcard subdomains, `docker-compose.yml`
 
 ## Commands
@@ -30,51 +30,49 @@
 ```bash
 # Backend (Go)
 cd backend-golang
-CGO_ENABLED=1 go run ./cmd/server              # run locally
-CGO_ENABLED=1 go build -o bin/server ./cmd/server   # build binary
-# macOS local dev needs: brew install webp pkg-config (libwebp/CGO dependency)
+cp .env.example .env                              # first-time
+CGO_ENABLED=1 go run ./cmd/server                  # dev run (CGO needed for webp encode)
+CGO_ENABLED=1 go build -o bin/server ./cmd/server  # build binary
+go vet ./...
+gofmt -l .
 
-# Customer storefront
-cd frontend-app
-npm run dev       # Vite on :5173, proxies /api → localhost:3001
-npm run build     # Build to dist/
+# Frontend (storefront) / Admin — same commands in frontend-app/ or admin-app/
+cd frontend-app   # or admin-app
+npm run dev       # Vite dev server
+npm run build     # frontend-app: vite build; admin-app: tsc -b && vite build
+npm run lint      # eslint .
 
-# Admin app
-cd admin-app
-npm run dev       # Vite dev server on :5174
-npm run build     # tsc -b && vite build
-
-# Production
-docker-compose up -d --build
+# Production (full stack)
+docker-compose up -d --build   # services: frontend, admin, postgres, flyway, backend (Go), nginx
 ```
 
-Env: `backend-golang/.env` (copy from `.env.example`) needs at minimum `DOMAIN`, `DB_HOST/PORT/USER/PASSWORD/NAME`; see `docs/golang-backend.md` for the full list (S3, CDN, JWT, SePay, SMTP).
+Env: `backend-golang/.env` (copy from `.env.example`) needs `DOMAIN=inanhxink.com`, `DB_PASSWORD=<password>`, plus S3/Sepay/JWT/Sentry vars — see `.env.example` for the full list. DB migrations are Flyway SQL files in `backend-golang/database/`, applied automatically by the `flyway` Compose service.
 
 ## Architecture
 
 ```
 Browser → nginx (:443)
-  ├── inanhxink.com         → React static (frontend-app/dist) + /api/ → backend-golang:3001
-  ├── admin.inanhxink.com   → React static (admin-app/dist)   + /api/ → backend-golang:3001
-  └── *.inanhxink.com       → backend-golang:3001 (template serving)
+  ├── inanhxink.com    → frontend-app static + /api/ → backend:3001 (Go)
+  ├── admin.*          → admin-app static (served separately, JWT-protected API calls to backend:3001)
+  └── *.inanhxink.com  → backend:3001 (Go template serving)
 ```
 
-**API routes** (`/api/`): `upload`, `site-data`, `templates`, `orders`, `vouchers`, `qrcodes`, `products`, `product-orders`, `payments`, `music`, `metadata`, plus JWT-protected `admin/*`
+**API routes** (`/api/`, public): `health`, `upload`, `site-data`, `templates`, `vouchers`, `orders`, `qrcodes`, `payments`, `product-orders`, `music`, `metadata`, `products`, `testimonials`, `banners`, `hero-shots`, `categories`
 
-**DB tables**: `templates`, `qr_codes` (JSONB `template_data`), `orders`, `vouchers`, `products`, `product_categories`, `testimonials`, `banners`, `admin_users`, `metadata`, `product_orders`, `product_transaction`, `qr_transaction`. Migrations are versioned SQL in `backend-golang/database/V{n}__*.sql` (up to V46+), applied by the **`flyway`** service in `docker-compose.yml` — the Go binary itself does not run migrations on startup.
+**Admin API routes** (`/api/admin/`, JWT-protected): `auth`, `templates`, `orders`, `product-orders`, `vouchers`, `metadata`, `products`, and more — see `docs/admin-app.md`
 
-**Template types** — mapping in `backend-golang/internal/handlers/orders.go` (`templateFolderMap` / `validTemplateTypes`):
-- `galaxy` → `galaxy`, `letterinspace` (legacy alias) → `galaxy`, `loveletter` → `loveletter`, `birthday` → `birthday`, `lovedays` → `lovedays`, `specialgift` → `specialgift`
-- Adding a template: folder in `backend-golang/public/templates/` + entry in `templateFolderMap`/`validTemplateTypes` + DB row
+**DB tables**: `templates`, `qr_codes` (JSONB `template_data`), `orders`, `vouchers`, `products`, `product_orders`, `categories`, `testimonials`, `banners`, and others added via Flyway migrations — use **singular** names for new tables (e.g. `product_transaction`, not `product_transactions`)
 
-**Key frontend files** (`frontend-app/src/`): `pages/CheckoutPage.tsx` (product checkout), `pages/OrderPage.tsx` (QR keychain order form), `pages/TemplatePreviewPage.tsx`, `pages/QrGeneratePage.tsx`, `pages/QrYeuThuongPage.tsx` (template listing), `services/api.ts`
+**Template types** — mapping in `backend-golang/internal/handlers/orders.go` (`validTemplateTypes`, `templateFolderMap`):
+- `galaxy`, `loveletter`, `letterinspace`, `lovedays`, `birthday`, `birthdaycake`, `specialgift`
+- Adding a template: folder in `backend-golang/public/templates/` + entries in `validTemplateTypes`/`templateFolderMap` + DB row. See `docs/qr-templates.md`.
 
-**Key admin files** (`admin-app/src/`): `pages/ProductItemsPage.tsx` (shared product CRUD), `pages/FulfillmentPage.tsx`, `pages/ConfigPage.tsx`, `services/api.ts`. See `docs/admin-app.md`.
+**Key frontend files**: `OrderPage.tsx` (order form), `TemplatePreviewPage.tsx`, `QrCodePage.tsx`/`QrGeneratePage.tsx`, `services/api.ts` (Axios calls)
 
 ## Local Dev (without Docker)
 
-1. `docker-compose up -d postgres flyway` — starts PostgreSQL and applies migrations (or point a local Postgres at the same schema and apply the SQL files in `backend-golang/database/` yourself)
-2. `cd backend-golang && cp .env.example .env`, then fill in `DB_*` (see `docs/golang-backend.md` for the full env reference)
-3. `CGO_ENABLED=1 go run ./cmd/server`
-4. `npm run dev` in `frontend-app/` and/or `admin-app/`
+1. Start PostgreSQL (e.g. via the `postgres` Compose service or a local install) and apply migrations from `backend-golang/database/`.
+2. `cd backend-golang && cp .env.example .env`, filling in DB/S3/Sepay credentials for local dev.
+3. `CGO_ENABLED=1 go run ./cmd/server` (macOS: `brew install webp pkg-config` first for CGO webp support).
+4. `npm run dev` in both `frontend-app/` and `admin-app/`.
 5. Preview templates: `http://localhost:3001/?preview=<qrName>`

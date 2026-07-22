@@ -1,0 +1,841 @@
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+html {
+    overflow: hidden;
+    height: 100%;
+    perspective: 1600px;
+    perspective-origin: 50% 38%;
+    background: url(../assets/images/background-balloons.png) center center / cover no-repeat fixed;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none; /* Khóa khả năng browser tự ý chiếm quyền vuốt touch để xoay hộp 3D không bị ngắt/văng */
+    position: relative;
+    background: url('../assets/images/background-balloons.png') center/cover no-repeat;
+}
+
+body::before {
+    content: none;
+}
+
+/* Banner top viewport trái / phải */
+.page-top-banner {
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 0;
+    z-index: 23;
+    pointer-events: none;
+    line-height: 0;
+}
+
+.page-top-banner__left,
+.page-top-banner__right {
+    position: absolute;
+    top: 0;
+    width: clamp(180px, 30vw, 360px);
+    height: auto;
+    object-fit: contain;
+    object-position: top center;
+}
+
+.page-top-banner__left {
+    left: max(0px, env(safe-area-inset-left, 0px));
+}
+
+.page-top-banner__right {
+    right: max(0px, env(safe-area-inset-right, 0px));
+    transform: scaleX(-1);
+    transform-origin: top center;
+}
+
+/* Viền trang trí góc trên trái / phải — sát mép, dưới hộp (45) */
+.page-top-purl {
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 0;
+    z-index: 24;
+    pointer-events: none;
+    line-height: 0;
+}
+
+.page-top-purl__left,
+.page-top-purl__right {
+    position: absolute;
+    top: 0;
+    width: clamp(168px, 48vw, 520px);
+    height: auto;
+    object-fit: contain;
+    object-position: top center;
+}
+
+.page-top-purl__left {
+    left: calc(max(0px, env(safe-area-inset-left, 0px)) - 14px);
+}
+
+.page-top-purl__right {
+    right: calc(max(0px, env(safe-area-inset-right, 0px)) - 14px);
+    transform: scaleX(-1);
+    transform-origin: top center;
+}
+
+@media (min-width: 921px) {
+    .page-top-banner__left,
+    .page-top-banner__right {
+        width: clamp(320px, 30vw, 560px);
+    }
+
+    .page-top-purl__left,
+    .page-top-purl__right {
+        width: clamp(220px, 34vw, 720px);
+    }
+}
+
+/* Bong bóng trang trí giữa màn hình — dưới hộp (45) */
+.page-float-bubble {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 25;
+    pointer-events: none;
+    line-height: 0;
+    width: clamp(160px, 62vw, 420px);
+}
+
+.page-float-bubble img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+@media (min-width: 921px) {
+    .page-float-bubble {
+        width: clamp(240px, 52vw, 580px);
+    }
+}
+
+/*
+ * Mây (sky) tách khỏi thỏ: khi thỏ bay cả khối cũ lên z-210 → cloud_decor đè phong bì (z-200).
+ * .page-cloud-decor-sky luôn dưới modal; chỉ .page-cloud-decor (thỏ) lên 210 khi bay.
+ */
+.page-cloud-decor-sky {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 41;
+    pointer-events: none;
+    line-height: 0;
+}
+
+.page-cloud-decor-sky .page-cloud-decor__cloud {
+    display: block;
+    width: 100%;
+    height: auto;
+    position: relative;
+    z-index: 0;
+}
+
+/* Lớp chỉ chứa thỏ — cùng geometry đáy màn */
+.page-cloud-decor {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 42;
+    pointer-events: none;
+    line-height: 0;
+    transition: z-index 0s;
+}
+
+/* Khi có thỏ đang bay: chỉ lớp thỏ lên trên phong bì; mây vẫn z-41 */
+.page-cloud-decor:has(.rabbit--flying),
+.page-cloud-decor.rabbit--active {
+    z-index: 210;
+    overflow: visible !important;
+}
+
+/* Thỏ đè lên mây, trái / phải theo tên file */
+.page-cloud-decor__rabbit {
+    position: absolute;
+    bottom: 0;
+    width: clamp(76px, 20vw, 190px);
+    height: auto;
+    z-index: 1;
+    pointer-events: none;
+    object-fit: contain;
+    object-position: bottom center;
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-cloud-decor__rabbit--left {
+    left: calc(max(0px, env(safe-area-inset-left, 0px)) - 20px);
+}
+
+.page-cloud-decor__rabbit--right {
+    right: calc(max(0px, env(safe-area-inset-right, 0px)) - 20px);
+    transform: scaleX(-1);
+    transform-origin: bottom center;
+}
+
+/* Khi thỏ bay lên: raise z-index vượt modal (200) để hiện đè lên phong bì */
+.page-cloud-decor__rabbit--left.rabbit--flying,
+.page-cloud-decor__rabbit--right.rabbit--flying {
+    z-index: 210;
+}
+.page-cloud-decor__rabbit--left.rabbit--flying {
+    transform: translateX(var(--rabbit-tx, 0px)) translateY(var(--rabbit-ty, 0px));
+}
+.page-cloud-decor__rabbit--right.rabbit--flying {
+    /* giữ scaleX(-1) gốc, thêm translate trước */
+    transform: translateX(var(--rabbit-tx, 0px)) translateY(var(--rabbit-ty, 0px)) scaleX(-1);
+}
+
+/* Mobile dọc: mây cao hơn + bong bóng to + purl góc trên rõ hơn */
+@media (max-width: 920px) and (orientation: portrait) {
+    .page-top-banner__left,
+    .page-top-banner__right {
+        width: clamp(170px, 42vw, 280px);
+    }
+
+    .page-top-purl__left,
+    .page-top-purl__right {
+        width: clamp(200px, 58vw, 560px);
+    }
+
+    .page-float-bubble {
+        width: clamp(245px, 98vw, 560px);
+    }
+
+    .page-cloud-decor-sky {
+        overflow: hidden;
+    }
+
+    .page-cloud-decor-sky .page-cloud-decor__cloud {
+        height: 26vh;
+        min-height: 140px;
+        width: 100%;
+        object-fit: cover;
+        object-position: 50% 100%;
+    }
+
+    .page-cloud-decor__rabbit {
+        width: clamp(108px, 36vw, 236px);
+    }
+}
+
+.title {
+    color: rgb(0, 255, 255);
+    text-align: center;
+    /* text-shadow: 0px 1px 0px #999, 0px 2px 0px #888, 0px 3px 0px #777, 0px 4px 0px #666, 0px 5px 0px #555, 0px 6px 0px #444, 0px 7px 0px #333, 0px 8px 7px #001135; */
+    font-size: 40px;
+}
+
+/* Hộp quà Three.js — geometry thật, không còn khe hở giữa các mặt CSS. */
+.cube-view {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: min(76vw, 390px);
+    height: min(76vw, 390px);
+    z-index: 45;
+    transform: translate(-50%, -50%);
+}
+
+.cube {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    outline: none;
+}
+
+.cube:focus-visible {
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(236, 142, 152, 0.42);
+}
+
+#gift-box-canvas {
+    position: absolute;
+    /* Canvas extends well beyond the box footprint so the lid isn't clipped by
+       the WebGL viewport edge when it lifts off. gift-model.js compensates with
+       camera zoom so the box keeps its original on-screen size. */
+    inset: -80%;
+    overflow: visible;
+    pointer-events: none;
+    filter: drop-shadow(0 20px 24px rgba(166, 55, 102, 0.2));
+    transition: opacity 0.65s ease 2.8s, transform 0.65s ease 2.8s;
+}
+
+#gift-box-canvas canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.gift-open-label {
+    position: absolute;
+    left: 50%;
+    bottom: -18px;
+    min-width: 112px;
+    padding: 8px 15px;
+    transform: translateX(-50%);
+    border: 1px solid rgba(236,142,152,0.38);
+    border-radius: 999px;
+    background: rgba(255,248,251,0.92);
+    color: #d65e7f;
+    font-family: 'Pacifico', cursive;
+    font-size: 14px;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(155,57,94,0.16);
+    animation: gift-label-pulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes gift-label-pulse {
+    50% {
+        transform: translateX(-50%) scale(1.06);
+        box-shadow: 0 8px 30px rgba(212,72,126,0.3);
+    }
+}
+
+.cube.open .gift-open-label {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.cube.open #gift-box-canvas {
+    opacity: 0;
+    transform: scale(1.08);
+}
+
+body.is-scene-dragging {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+@media (max-width: 560px) {
+    .cube-view {
+        width: min(88vw, 360px);
+        height: min(88vw, 360px);
+    }
+
+    .gift-open-label {
+        bottom: -12px;
+    }
+}
+
+/* Bánh ký ức: ẩn hộp 3D (trước đó z-index đè bánh; mặt ngoài mờ vẫn quay + viền trắng). */
+body.memory-cake-active .cube-view {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.75s ease 0.12s, visibility 0s linear 0.95s;
+}
+
+body.memory-cake-active #gift-cube,
+body.memory-cake-active #gift-cube.open {
+    animation: none !important;
+}
+
+.cube.exploded {
+    pointer-events: none;
+}
+
+.photo-wall {
+    position: fixed;
+    inset: 0;
+    z-index: 260;
+    --photo-size: min(11vw, 108px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.7s ease;
+}
+
+.photo-wall.active {
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* ── Click hint — pill "chạm để tiếp tục" + vòng lan toả giữa tim ── */
+@keyframes hint-ripple {
+    0%   { transform: translate(-50%, -50%) scale(0.3); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1);   opacity: 0;   }
+}
+@keyframes hint-bob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(-7px); }
+}
+@keyframes hint-tap {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    45%      { transform: translateY(3px) rotate(-10deg); }
+}
+
+/* Vòng lan toả đặt giữa trái tim để hút mắt vào chỗ cần chạm */
+.photo-wall-hint__pulse,
+.photo-wall-hint__pulse::before {
+    position: fixed;
+    left: 50%;
+    top: 48%;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255, 120, 160, 0.6);
+    pointer-events: none;
+    z-index: 262;
+    opacity: 0;
+}
+.photo-wall-hint__pulse::before {
+    content: '';
+    border-color: rgba(255, 120, 160, 0.5);
+}
+
+/* Pill ở đáy màn hình nói rõ user cần làm gì */
+.photo-wall-hint {
+    position: fixed;
+    left: 50%;
+    bottom: 6%;
+    transform: translateX(-50%);
+    z-index: 263;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 22px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 10px 26px rgba(220, 90, 130, 0.3);
+    color: #d6386a;
+    font-family: "Baloo 2", "Nunito", system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(0.95rem, 3.6vw, 1.15rem);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.photo-wall-hint__icon {
+    font-size: 1.25em;
+    line-height: 1;
+    display: inline-block;
+}
+.photo-wall-hint__text { line-height: 1; }
+
+.photo-wall-hint.photo-wall-hint--visible {
+    opacity: 1;
+    animation: hint-bob 2s ease-in-out infinite;
+}
+.photo-wall-hint.photo-wall-hint--visible .photo-wall-hint__icon {
+    animation: hint-tap 1.2s ease-in-out infinite;
+}
+.photo-wall-hint.photo-wall-hint--visible .photo-wall-hint__pulse {
+    animation: hint-ripple 1.6s ease-out infinite;
+}
+.photo-wall-hint.photo-wall-hint--visible .photo-wall-hint__pulse::before {
+    animation: hint-ripple 1.6s ease-out 0.8s infinite;
+}
+
+.photo-wall-hint--hidden {
+    opacity: 0 !important;
+    transition: opacity 0.2s ease;
+    animation: none !important;
+}
+.photo-wall-hint--hidden .photo-wall-hint__pulse,
+.photo-wall-hint--hidden .photo-wall-hint__pulse::before { animation: none !important; }
+
+/* ── Click tim: bong bóng nước bay từ đáy ─────────────────────────────── */
+@keyframes center-bubble-shrink {
+    0% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+    100% { transform: translate(-50%, -50%) scale(0.28); filter: brightness(1.08); }
+}
+
+.page-float-bubble.page-float-bubble--shrink {
+    animation: center-bubble-shrink 0.55s cubic-bezier(0.2, 0.82, 0.2, 1) forwards;
+}
+
+/* Sau thu tim: fade toàn lớp tim + ẩn bóng giữa */
+.photo-wall.active.photo-wall--fading {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.page-float-bubble.page-float-bubble--hide-after-shrink {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 0.55s ease,
+        visibility 0s linear 0.55s;
+}
+
+.heart-bubble-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 263;
+    overflow: hidden;
+}
+
+.heart-bubble {
+    position: absolute;
+    left: var(--x, 50%);
+    top: calc(100% + 40px);
+    width: var(--size-w, 42px);
+    height: var(--size-h, 48px);
+    opacity: 0;
+    transform: translate(-50%, 0) scale(var(--s0, 0.35));
+    will-change: transform, opacity;
+    animation: heart-bubble-rise var(--dur, 2.8s) cubic-bezier(0.45, 0.03, 0.22, 1) forwards;
+    animation-delay: var(--delay, 0s);
+    /* Layer là none — con bật auto để ấn giữ / kéo bóng */
+    pointer-events: auto;
+    touch-action: none;
+    cursor: grab;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.heart-bubble.heart-bubble--dragging {
+    cursor: grabbing;
+    z-index: 80;
+    animation: none !important;
+}
+
+/* Dây chỉ: dài + đường cong sóng (SVG), cố định không đung đưa */
+.heart-bubble::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: calc(100% - 2px);
+    width: clamp(14px, 2.4vw, 22px);
+    /* Desktop: vừa đủ; portrait mobile vh rất cao — override bên dưới */
+    height: clamp(150px, 24vh, 340px);
+    transform: translateX(-50%);
+    pointer-events: none;
+    opacity: 0.95;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 360'%3E%3Cpath d='M7 0 Q11 45 4 90 Q11 135 4 180 Q11 225 4 270 Q11 315 4 360' stroke='rgba(255,198,218,0.95)' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: 100% 100%;
+    filter: drop-shadow(0 0 2px rgba(255, 170, 200, 0.45));
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+    .heart-bubble::after {
+        width: clamp(12px, 2.2vw, 18px);
+        height: clamp(64px, 9.5vh, 118px);
+        height: clamp(64px, 9.5svh, 118px);
+    }
+}
+
+/* Ảnh nằm bên trong bóng — gần sát viền bóng, chỉ chừa rất ít */
+.heart-bubble .heart-bubble-photo {
+    pointer-events: none;
+    position: absolute;
+    /* Khóa kích thước theo bubble để không phình theo intrinsic size ảnh */
+    left: 50%;
+    top: 50.5%;
+    width: 99%;
+    height: 94%;
+    transform: translate(-50%, -50%);
+    display: block;
+    /* Form bóng: giữa phình, đầu & đuôi thon */
+    border-radius: 50%;
+    overflow: hidden;
+    object-fit: cover;
+    filter: saturate(1.06) brightness(1.02);
+}
+
+/* Vỏ bóng: cùng dáng elip + tâm như ảnh user, to hơn rõ rệt để thấy viền/họa tiết PNG */
+.heart-bubble .heart-bubble-shell {
+    position: absolute;
+    left: 50%;
+    top: 50.5%;
+    /* ~tỉ lệ 99:94, phóng ~+25% so với vùng ảnh để bóng không “trùng” hết ảnh */
+    width: 124%;
+    height: 118%;
+    display: block;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    overflow: hidden;
+    /* contain: hiện cả asset bóng; cover dễ cắn vào vùng trong suốt giữa PNG */
+    object-fit: contain;
+    object-position: 50% 50%;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 8px rgba(255, 170, 210, 0.25));
+}
+
+@keyframes heart-bubble-rise {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(var(--s0, 0.35));
+    }
+    24% {
+        opacity: 0.55;
+    }
+    42% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + var(--dx, 0px)),
+            calc(-112vh + var(--dy, 0px))
+        ) scale(var(--s1, 1));
+    }
+}
+
+/* Sau khi thả tay kéo: bay tiếp từ đúng vị trí thả (fixed px + translate) */
+@keyframes heart-bubble-resume {
+    0% {
+        opacity: var(--release-opacity, 0.9);
+        transform: translate3d(0, 0, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate3d(var(--resume-dx, 0px), var(--resume-dy, -112vh), 0);
+    }
+}
+
+.heart-bubble.heart-bubble--resume-flight {
+    animation: heart-bubble-resume var(--resume-dur, 8s) cubic-bezier(0.45, 0.03, 0.22, 1) forwards !important;
+    pointer-events: none;
+    cursor: default;
+    touch-action: none;
+}
+
+/* Ảnh tim thu về giữa → chuyển sang lá thư */
+.photo-wall.photo-wall--collapse .photo-card {
+    animation: none !important;
+    transition:
+        left 2s cubic-bezier(0.4, 0, 0.2, 1),
+        top 2s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 1.5s ease-out !important;
+    transition-delay: 0s !important;
+    left: 50% !important;
+    top: 50% !important;
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) rotate(var(--tilt, 0deg)) scale(1) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02) !important;
+}
+
+.photo-card {
+    position: absolute;
+    left: var(--x, 50%);
+    top: var(--y, 50%);
+    width: var(--photo-size);
+    background: rgba(255, 255, 255, 0.92);
+    border: 0.5px solid rgba(255, 255, 255, 0.35);
+    border-radius: 12px;
+    padding: 3px;
+    box-sizing: border-box;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+    transform: translate(-50%, -50%) rotate(var(--tilt, 0deg)) scale(0.88);
+    opacity: 0;
+    animation: photo-in 0.6s ease forwards;
+    animation-delay: calc(var(--order) * 0.03s);
+}
+
+.photo-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+@keyframes photo-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -38%) rotate(var(--tilt, 0deg)) scale(0.7);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(var(--tilt, 0deg)) scale(1);
+    }
+}
+
+/* Tim 3D bay ra khi mở hộp */
+.balloon-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 46;
+    pointer-events: none;
+    overflow: visible;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.balloon-layer.active {
+    opacity: 1;
+}
+
+.balloon-unit {
+    position: absolute;
+    left: var(--spawn-x, 50%);
+    top: var(--spawn-y, 50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 54px;
+    box-sizing: border-box;
+    transform: translate(calc(-50% + var(--off-x, 0px)), calc(-50% + var(--off-y, 0px)));
+    animation: balloon-burst-fly var(--dur, 7s) cubic-bezier(0.18, 0.72, 0.22, 1) forwards;
+    animation-delay: var(--delay, 0s);
+    opacity: 0;
+    will-change: transform, opacity;
+    z-index: 1;
+}
+
+.gift-heart {
+    display: block;
+    width: 54px;
+    height: 54px;
+    flex-shrink: 0;
+    position: relative;
+    color: var(--balloon-color, #ff6b9d);
+}
+
+.gift-heart svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 4px 5px rgba(170, 45, 95, 0.14));
+}
+
+/* Tản khỏi hộp rồi bay lên nhiều hướng và biến mất */
+@keyframes balloon-burst-fly {
+    0% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--off-x, 0px)), calc(-50% + var(--off-y, 0px)))
+            scale(calc(var(--b-scale, 1) * 0.12)) rotate(var(--rot, 0deg));
+    }
+
+    8% {
+        opacity: 1;
+    }
+
+    20% {
+        opacity: 1;
+        transform: translate(
+                calc(-50% + var(--off-x, 0px) + var(--tx2, 0px)),
+                calc(-50% + var(--off-y, 0px) + var(--ty2, 0px))
+            )
+            scale(calc(var(--b-scale, 1) * 0.9)) rotate(var(--rot, 0deg));
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(
+                calc(-50% + var(--off-x, 0px) + var(--tx, 0px)),
+                calc(-50% - 150vh)
+            )
+            scale(var(--b-scale, 1)) rotate(calc(var(--rot, 0deg) * 2.2));
+    }
+}
+
+/* Pháo hoa sinh nhật — cùng lúc mở hộp */
+.fireworks-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 47;
+    pointer-events: none;
+    overflow: visible;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.fireworks-layer.active {
+    opacity: 1;
+}
+
+.firework-burst {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.firework-burst::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0.4) 45%, transparent 70%);
+    animation: firework-core-pop 0.22s ease-out forwards;
+}
+
+@keyframes firework-core-pop {
+    0% {
+        opacity: 1;
+        transform: scale(0.2);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(2.4);
+    }
+}
+
+.firework-spark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    margin: -2px 0 0 -2px;
+    border-radius: 50%;
+    background: hsl(var(--fh, 320), 100%, 80%);
+    box-shadow:
+        0 0 8px hsl(var(--fh, 320), 100%, 65%),
+        0 0 16px hsla(var(--fh, 320), 100%, 70%, 0.6);
+    opacity: 0;
+    mix-blend-mode: screen;
+    animation-name: firework-spark-fly;
+    animation-timing-function: cubic-bezier(0.12, 0.72, 0.22, 1);
+    animation-fill-mode: forwards;
+    animation-delay: var(--fd, 0s);
+}
+
+@keyframes firework-spark-fly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+
+    55% {
+        opacity: 1;
+        transform: translate(calc(var(--sx, 0px) * 0.72), calc(var(--sy, 0px) * 0.72)) scale(0.95);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(var(--sx, 0px), var(--sy, 0px)) scale(0.15);
+    }
+}

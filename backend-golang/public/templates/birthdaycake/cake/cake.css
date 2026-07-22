@@ -1,0 +1,397 @@
+@font-face {
+    font-family: 'Pacifico';
+    src: url('../assets/fonts/Pacifico-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Khu vực hiển thị bánh ký ức 3D */
+.memory-zone {
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.9s ease, visibility 0.9s ease;
+}
+
+.memory-zone.is-visible {
+    /* Cùng tầng .cube-view (45) nhưng sau trong DOM → đè hộp; bóng/pháo (46/47) vẫn trên */
+    z-index: 45;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    touch-action: none;
+    overscroll-behavior: none;
+}
+
+.memory-zone.memory-zone--faded {
+    opacity: 0 !important;
+    visibility: hidden;
+    pointer-events: none !important;
+    transition: opacity 1.8s ease, visibility 0s linear 1.8s;
+}
+
+.memory-cake-stage {
+    position: absolute;
+    inset: 0;
+    touch-action: none;
+    overscroll-behavior: contain;
+    opacity: 0;
+    /* Bánh: fade-in nhanh gọn để hiện ngay khi ảnh đã tải xong */
+    transition: opacity 1s cubic-bezier(0.22, 0.55, 0.36, 1);
+    transition-delay: 0.1s;
+}
+
+.memory-zone.is-visible .memory-cake-stage {
+    opacity: 1;
+}
+
+.memory-cake-stage canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Nút thổi nến + sau khi thổi: dòng nhắc cắt bánh cùng vị trí — căn giữa ngang viewport */
+.memory-blow-slot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: clamp(10px, 11vh, 82px);
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
+    max-width: min(92vw, 420px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+    z-index: 55;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.memory-blow-slot.is-hidden-by-tilt {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.memory-blow-candle-btn {
+    pointer-events: auto;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.7rem 1.25rem;
+    font-family: 'Pacifico', cursive;
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.15;
+    color: #ec8e98;
+    background: linear-gradient(180deg, #fff6fb 0%, #f6cad7 100%);
+    box-shadow: 0 8px 20px rgba(122, 54, 79, 0.22);
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.memory-blow-candle-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+}
+
+.memory-blow-candle-btn.is-blown {
+    background: linear-gradient(180deg, #f1f1f1 0%, #d7d7d7 100%);
+    color: #ec8e98;
+}
+
+.memory-cake-cut-reminder {
+    margin: 0;
+    padding: 0.55rem 0.75rem;
+    width: 100%;
+    max-width: min(92vw, 420px);
+    box-sizing: border-box;
+    font: 600 0.88rem/1.38 "Segoe UI", system-ui, sans-serif;
+    color: rgba(88, 42, 58, 0.96);
+    text-align: center;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+    pointer-events: none;
+}
+
+.memory-cake-cut-reminder strong {
+    font-weight: 800;
+    color: rgba(130, 36, 62, 0.98);
+}
+
+.memory-blow-slot.memory-blow-slot--after-candle .memory-blow-candle-btn {
+    display: none;
+}
+
+.memory-blow-slot.memory-blow-slot--after-candle .memory-cake-cut-reminder {
+    display: block;
+}
+
+@media (max-width: 920px) and (orientation: portrait) {
+    .memory-blow-slot {
+        bottom: clamp(12px, 15vh, 110px);
+    }
+
+    .memory-blow-candle-btn {
+        font-size: 1.24rem;
+        padding: 0.92rem 1.7rem;
+    }
+
+    .memory-cake-cut-reminder {
+        font-size: 0.92rem;
+        padding: 0.65rem 0.5rem;
+    }
+}
+
+/* Vuốt chém bánh: canvas chỉ vẽ nét, pointer-events none để cảm ứng vẫn tới WebGL bên dưới */
+.memory-cake-slash-ui {
+    position: absolute;
+    inset: 0;
+    z-index: 52;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.5s ease;
+}
+
+.memory-cake-slash-ui.memory-cake-slash-ui--ready {
+    opacity: 1;
+}
+
+.memory-cake-slash-ui.memory-cake-slash-ui--done {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.55s ease, visibility 0s linear 0.55s;
+}
+
+.memory-cake-slash-canvas {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    display: block;
+    pointer-events: none;
+    touch-action: none;
+}
+
+@keyframes memory-cake-letter-fly {
+    0% {
+        transform: translate(-50%, 0) scale(0.55) rotate(-6deg);
+        opacity: 0;
+    }
+    12% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -48vh) scale(1.05) rotate(4deg);
+        opacity: 0;
+    }
+}
+
+.memory-cake-letter-fly {
+    position: absolute;
+    left: 50%;
+    bottom: 18%;
+    width: 48px;
+    height: 62px;
+    border-radius: 3px;
+    background: linear-gradient(145deg, #fffefb 0%, #ffe8f0 45%, #ffd6e5 100%);
+    box-shadow:
+        0 2px 0 rgba(180, 100, 120, 0.25),
+        0 10px 24px rgba(120, 40, 70, 0.22);
+    z-index: 60;
+    pointer-events: none;
+    animation: memory-cake-letter-fly 1.05s cubic-bezier(0.25, 0.82, 0.28, 1) forwards;
+}
+
+.memory-cake-letter-fly::after {
+    content: "💌";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+/* Tiêu đề Happy Birthday — chữ nổi tường 3D, vòm parabol úp ngược, màu hồng đỏ */
+.page-birthday-heading {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    left: 50%;
+    /* Trên .cube-view (45), balloon (46), fireworks (47); dưới photo-wall (50) và modal thư (200) */
+    z-index: 48;
+    width: min(96vw, 880px);
+    margin: 0;
+    padding: 0 0.12rem;
+    box-sizing: border-box;
+    transform: translateX(-50%) perspective(600px) rotateX(7deg);
+    transform-origin: 50% 0;
+    pointer-events: none;
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.page-birthday-heading.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.page-birthday-heading__board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1em;
+}
+
+.page-birthday-heading__row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 0.03em 0.22em;
+}
+
+.page-birthday-heading__letter {
+    --r: 0deg;
+    --arc: 0px;
+    position: relative;
+    display: inline-block;
+    padding: 0.02em 0.04em 0.07em;
+    font-family: "Baloo 2", "Fredoka One", "Nunito", system-ui, sans-serif;
+    font-size: clamp(2.35rem, 7.4vw, 4.1rem);
+    font-weight: 800;
+    line-height: 1;
+    transform: rotate(var(--r)) translateY(var(--arc));
+    transform-origin: 50% 90%;
+    isolation: isolate;
+}
+
+/* Đo vị trí đích mà không hiện ra người dùng */
+.page-birthday-heading.is-measuring {
+    visibility: visible !important;
+    opacity: 0 !important;
+}
+
+/* Clone đang bay — tạo bằng JS, fixed trên toàn màn hình */
+.bday-flying-letter {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    margin: 0;
+    font-family: "Baloo 2", "Fredoka One", "Nunito", system-ui, sans-serif;
+    font-weight: 800;
+    line-height: 1;
+    isolation: isolate;
+    will-change: left, top, transform, opacity;
+}
+
+/* Mặt chữ: mỗi ký tự một màu pastel (--gc), viền trắng kiểu kẹo + bóng nhẹ */
+.page-birthday-heading__glyph,
+.bday-flying-letter .page-birthday-heading__glyph {
+    position: relative;
+    z-index: 2;
+    display: block;
+    color: var(--gc, #f4a6c8);
+    -webkit-text-stroke: clamp(2px, 0.1em, 3.5px) #ffffff;
+    paint-order: stroke fill;
+    text-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.65),
+        0 0.07em 0.09em rgba(120, 90, 105, 0.18),
+        0 0.13em 0.2em rgba(120, 90, 105, 0.12);
+    filter: saturate(1.05);
+}
+
+/* Bỏ 2 lớp đúc hồng đỏ 3D cũ để chữ phẳng nhiều màu như ảnh mẫu */
+.page-birthday-heading__letter::before,
+.bday-flying-letter::before {
+    content: none;
+}
+
+/* Lớp bóng đổ mềm phía dưới — giữ chút chiều sâu cho chữ nổi */
+.page-birthday-heading__letter::after,
+.bday-flying-letter::after {
+    content: attr(data-ch);
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font: inherit;
+    line-height: inherit;
+    transform: translate(0.04em, 0.08em);
+    color: rgba(150, 115, 135, 0.22);
+    paint-order: stroke fill;
+    pointer-events: none;
+}
+
+.page-birthday-heading__letter--bang {
+    font-size: clamp(2rem, 6.2vw, 3.35rem);
+}
+
+/* Tất cả chữ bob cùng nhịp — --arc giữ nguyên vị trí vòm parabol */
+@keyframes page-birthday-letter-bob {
+    0%,
+    100% {
+        transform: rotate(var(--r)) translateY(var(--arc));
+    }
+
+    50% {
+        transform: rotate(var(--r)) translateY(calc(var(--arc) - 8px));
+    }
+}
+
+@media (max-width: 920px) and (orientation: portrait) {
+    .page-birthday-heading {
+        top: max(52px, env(safe-area-inset-top, 0px));
+    }
+
+    .page-birthday-heading__letter {
+        font-size: clamp(2.9rem, 10.5vw, 4.6rem);
+    }
+
+    .page-birthday-heading__letter--bang {
+        font-size: clamp(3.2rem, 11.2vw, 5rem);
+    }
+
+    .page-birthday-heading__row {
+        gap: 0.03em 0.18em;
+    }
+}
+
+/* ── Hiệu ứng cơn gió thổi nến ──────────────────────────────────────────── */
+@keyframes wind-streak {
+    0%   { transform: translateX(-110%) rotate(var(--ws-rot, -2deg)); opacity: 0; }
+    12%  { opacity: var(--ws-op, 0.55); }
+    80%  { opacity: var(--ws-op, 0.55); }
+    100% { transform: translateX(130%)  rotate(var(--ws-rot, -2deg)); opacity: 0; }
+}
+
+.cake-wind-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+    overflow: hidden;
+}
+
+.cake-wind-streak {
+    position: absolute;
+    left: 0;
+    border-radius: 999px;
+    background: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(210, 220, 230, var(--ws-op, 0.55)) 35%,
+        rgba(190, 205, 220, var(--ws-op, 0.55)) 65%,
+        transparent 100%
+    );
+    animation: wind-streak var(--ws-dur, 0.52s) ease-out var(--ws-delay, 0ms) forwards;
+}

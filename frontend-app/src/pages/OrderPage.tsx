@@ -15,7 +15,7 @@ import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
-const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'galaxy']);
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy']);
 const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday']);
 
 interface Voucher {
@@ -70,6 +70,10 @@ function OrderPage() {
   const [birthdayDay = '', birthdayMonth = ''] = birthdayDate.split('.');
   const [birthdayFinalText, setBirthdayFinalText] = useState('');
   const [birthdayBackgroundText, setBirthdayBackgroundText] = useState('I LOVE YOU');
+  // Birthday Cake fields
+  const [birthdayCakeLetterTitle, setBirthdayCakeLetterTitle] = useState('Gửi công chúa nhỏ của anh ❤️');
+  const [birthdayCakeLetterBody, setBirthdayCakeLetterBody] = useState('');
+  const [birthdayCakeInscription, setBirthdayCakeInscription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -88,6 +92,7 @@ function OrderPage() {
   const AVATAR_SLOTS = 2;
   const GALLERY_SLOTS = 10;
   const QR_TEMPLATE_MAX_IMAGES = 12;
+  const BIRTHDAY_CAKE_MAX_IMAGES = 24;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
   const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
@@ -126,6 +131,9 @@ function OrderPage() {
         if (d.specialGiftNameRight) setSpecialGiftNameRight(d.specialGiftNameRight);
         if (d.specialGiftDayLabel) setSpecialGiftDayLabel(d.specialGiftDayLabel);
         if (d.specialGiftTitle) setSpecialGiftTitle(d.specialGiftTitle);
+        if (d.birthdayCakeLetterTitle) setBirthdayCakeLetterTitle(d.birthdayCakeLetterTitle);
+        if (d.birthdayCakeLetterBody) setBirthdayCakeLetterBody(d.birthdayCakeLetterBody);
+        if (d.birthdayCakeInscription) setBirthdayCakeInscription(d.birthdayCakeInscription);
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
           // Convert base64 previews back to File objects
@@ -325,6 +333,9 @@ function OrderPage() {
       setBirthdayDate('');
       setBirthdayFinalText('');
       setBirthdayBackgroundText('I LOVE YOU');
+      setBirthdayCakeLetterTitle('Gửi công chúa nhỏ của anh ❤️');
+      setBirthdayCakeLetterBody('');
+      setBirthdayCakeInscription('');
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
@@ -347,6 +358,14 @@ function OrderPage() {
     }
     if (templateType === 'birthday' && birthdayFinalText.length > 50) {
       setError('Lời chúc không được quá 50 ký tự'); return;
+    }
+    if (templateType === 'birthdaycake' && !birthdayCakeLetterBody.trim()) {
+      setError('Vui lòng nhập nội dung thư sinh nhật');
+      return;
+    }
+    if (templateType === 'birthdaycake' && !uploadedImages.some(Boolean)) {
+      setError('Vui lòng tải ít nhất 1 ảnh cho Birthday Cake');
+      return;
     }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
     if (voiceRecordingAdded && !voiceRecording) { setError('Vui lòng ghi âm lời nhắn trước khi thanh toán'); return; }
@@ -433,6 +452,12 @@ function OrderPage() {
           birthdayFinalText,
           birthdayBackgroundText,
         }),
+        ...(templateType === 'birthdaycake' && {
+          birthdayCakeLetterTitle: birthdayCakeLetterTitle.trim(),
+          birthdayCakeLetterBody: birthdayCakeLetterBody.trim(),
+          birthdayCakeInscription: birthdayCakeInscription.trim(),
+          birthdayCakeGiftLanguage: 'vi',
+        }),
       });
 
       if (response.success) {
@@ -442,7 +467,8 @@ function OrderPage() {
             musicAdded, musicLink, keychainPurchased, selectedTip,
             customTipAmount, voucher, specialGiftDate,
             specialGiftNameLeft, specialGiftNameRight, specialGiftDayLabel,
-            specialGiftTitle,
+            specialGiftTitle, birthdayCakeLetterTitle, birthdayCakeLetterBody,
+            birthdayCakeInscription,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -724,6 +750,46 @@ function OrderPage() {
         </div>
       )}
 
+      {templateType === 'birthdaycake' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tiêu đề thư</label>
+            <input
+              type="text"
+              value={birthdayCakeLetterTitle}
+              onChange={e => setBirthdayCakeLetterTitle(e.target.value)}
+              placeholder="Ví dụ: Gửi công chúa nhỏ của anh ❤️"
+              maxLength={80}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Nội dung thư sinh nhật</label>
+            <textarea
+              value={birthdayCakeLetterBody}
+              onChange={e => setBirthdayCakeLetterBody(e.target.value)}
+              placeholder="Viết lời chúc sẽ hiện trong phong thư..."
+              rows={5}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Chữ trên bánh</label>
+            <textarea
+              value={birthdayCakeInscription}
+              onChange={e => setBirthdayCakeInscription(e.target.value)}
+              placeholder={'Ví dụ: Bé Hương Giang\n21+'}
+              rows={2}
+              maxLength={60}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+              Các ảnh bên dưới sẽ dùng cho tường ảnh và bánh sinh nhật.
+            </p>
+          </div>
+        </div>
+      )}
+
       {templateType === 'lovedays' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
           <div>
@@ -931,6 +997,29 @@ function OrderPage() {
                 onFileRemoved={(index) => handleFileRemoved(index + SPECIAL_GIFT_AVATAR_SLOTS)}
                 onRetry={(index) => handleRetry(index + SPECIAL_GIFT_AVATAR_SLOTS)}
                 uploadStates={segmentStates(SPECIAL_GIFT_AVATAR_SLOTS, SPECIAL_GIFT_GALLERY_SLOTS)}
+                disabled={!canUploadImages}
+                disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
+              />
+            </>
+          ) : templateType === 'birthdaycake' ? (
+            <>
+              <p style={{ fontWeight: 500, marginBottom: '0.25rem' }}>
+                Ảnh Birthday Cake
+                <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                  (tối đa {BIRTHDAY_CAKE_MAX_IMAGES} ảnh)
+                </span>
+              </p>
+              <ImageUploader
+                images={uploadedImages}
+                onImagesChange={setUploadedImages}
+                maxImages={BIRTHDAY_CAKE_MAX_IMAGES}
+                onImageSelected={() => {}}
+                initialPreviews={imagePreviews}
+                onPreviewsChange={setImagePreviews}
+                onNewFiles={handleNewFiles}
+                onFileRemoved={handleFileRemoved}
+                onRetry={handleRetry}
+                uploadStates={uploadStates}
                 disabled={!canUploadImages}
                 disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
               />
