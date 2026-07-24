@@ -25,6 +25,60 @@ const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
 const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY, SHIPPING_THRESHOLD_KEY]);
 const VOICE_RECORDING_PRICE_KEY = 'voice_recording_price';
 
+interface NumericFieldConfig {
+  key: string;
+  label: string;
+  placeholder: string;
+  defaultValue: string;
+  min: number;
+  note: string;
+}
+
+const ADDON_PRICE_FIELDS: NumericFieldConfig[] = [
+  {
+    key: 'keychain_price',
+    label: 'Giá móc khóa quét QR (đ)',
+    placeholder: '35000',
+    defaultValue: '35000',
+    min: 0,
+    note: 'Phụ phí khi khách chọn mua kèm móc khóa QR.',
+  },
+  {
+    key: 'music_price',
+    label: 'Giá thêm nhạc nền (đ)',
+    placeholder: '10000',
+    defaultValue: '10000',
+    min: 0,
+    note: 'Phụ phí khi khách thêm nhạc nền TikTok/Instagram vào trang QR.',
+  },
+];
+
+const PAGE_SIZE_FIELDS: NumericFieldConfig[] = [
+  {
+    key: 'products_page_size',
+    label: 'Số sản phẩm mỗi lần tải (Load More)',
+    placeholder: '12',
+    defaultValue: '12',
+    min: 1,
+    note: 'Áp dụng cho các trang danh sách sản phẩm: Thiệp, Khung ảnh, Sổ & Scrapbook, Set quà tặng, Sản phẩm khác.',
+  },
+  {
+    key: 'testimonials_page_size',
+    label: 'Số đánh giá mỗi lần tải (Load More)',
+    placeholder: '12',
+    defaultValue: '12',
+    min: 1,
+    note: 'Áp dụng riêng cho trang Đánh giá (Feedback), độc lập với số sản phẩm.',
+  },
+];
+
+const NUMERIC_FIELDS = [...ADDON_PRICE_FIELDS, ...PAGE_SIZE_FIELDS];
+const KNOWN_OTHER_KEYS = new Set(NUMERIC_FIELDS.map(f => f.key));
+
+// Kept in the DB for historical reasons but no longer read anywhere — hide from the UI
+// instead of showing a confusing raw key (see backend-golang/database/V55__deprecate_shipping_fee_policy.sql).
+const DEPRECATED_KEYS = new Set(['product_shipping_fee_below_threshold']);
+
 /** Order notification email (metadata + optional DB SMTP password). Not exposed on public /api/metadata. */
 const NOTIFY_SMTP_PASSWORD_SET_KEY = 'notify_smtp_password_set';
 const NOTIFY_EMAIL_KEYS = [
@@ -116,6 +170,10 @@ export default function ConfigPage() {
       payload[VOICE_RECORDING_PRICE_KEY] = (Number.isFinite(voicePrice) && voicePrice >= 0)
         ? String(Math.round(voicePrice))
         : '10000';
+      for (const f of NUMERIC_FIELDS) {
+        const v = Number(config[f.key]);
+        payload[f.key] = (Number.isFinite(v) && v >= f.min) ? String(Math.round(v)) : f.defaultValue;
+      }
 
       delete payload[NOTIFY_SMTP_PASSWORD_SET_KEY];
       for (const k of NOTIFY_EMAIL_KEYS) {
@@ -141,12 +199,33 @@ export default function ConfigPage() {
     }
   };
 
+  const renderNumericField = (f: NumericFieldConfig) => (
+    <div className="form-group" key={f.key}>
+      <label className="form-label">{f.label}</label>
+      <input
+        className="form-input"
+        type="number"
+        inputMode="numeric"
+        min={f.min}
+        placeholder={f.placeholder}
+        value={config[f.key] ?? ''}
+        onChange={e => {
+          const raw = e.target.value;
+          if (raw === '') { handleChange(f.key, ''); return; }
+          const v = Number(raw);
+          if (!Number.isNaN(v) && v >= f.min) handleChange(f.key, String(Math.round(v)));
+        }}
+      />
+      <p className="cfg-field-note">{f.note}</p>
+    </div>
+  );
+
   const pageFlagKeys = new Set(PAGE_FLAGS.map(f => f.key));
   const otherEntries = useMemo(
     () => Object.entries(config).filter(([k]) =>
       k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)
       && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k)
-      && k !== VOICE_RECORDING_PRICE_KEY,
+      && k !== VOICE_RECORDING_PRICE_KEY && !KNOWN_OTHER_KEYS.has(k) && !DEPRECATED_KEYS.has(k),
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -307,6 +386,32 @@ export default function ConfigPage() {
               />
               <p className="cfg-field-note">Nhập 0 nếu muốn cung cấp tính năng ghi âm miễn phí.</p>
             </div>
+          </div>
+        </div>
+
+        {/* ── Add-on surcharges ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">🎁 Phụ phí tuỳ chọn</div>
+            <div className="cfg-card-sub">
+              Giá các tuỳ chọn thêm mà khách có thể chọn khi đặt QR.
+            </div>
+          </div>
+          <div className="cfg-section">
+            {ADDON_PRICE_FIELDS.map(renderNumericField)}
+          </div>
+        </div>
+
+        {/* ── Listing page sizes ── */}
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">📄 Số lượng hiển thị (Load More)</div>
+            <div className="cfg-card-sub">
+              Số lượng mục tải mỗi lần trên các trang danh sách công khai.
+            </div>
+          </div>
+          <div className="cfg-section">
+            {PAGE_SIZE_FIELDS.map(renderNumericField)}
           </div>
         </div>
 
