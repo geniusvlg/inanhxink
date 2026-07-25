@@ -530,9 +530,10 @@ export class FlowerRingSystem {
                 return;
             }
 
-            // Giảm số lượng flowers trên iOS để tránh lag
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const numFlowers = isIOS ? 400 : 800; // Giảm 50% trên iOS
+            // Keep the ring recognizable without covering the whole viewport.
+            // The old 400/800 counts duplicated each customer photo dozens of times.
+            const flowerCounts = { low: 72, medium: 120, high: 180 };
+            const numFlowers = flowerCounts[this.deviceTier] || flowerCounts.medium;
             
             const innerRadius = 130;
             const outerRadius = 530;
@@ -988,12 +989,17 @@ export class FlowerRingSystem {
                                     return;
                                 }
                                 
-                                canvas.width = texture.image.width || 80;
-                                canvas.height = texture.image.height || 80;
-                                
                                 const img = texture.image;
+                                const sourceWidth = img.width || 80;
+                                const sourceHeight = img.height || 80;
+                                const maxDimensions = { low: 256, medium: 384, high: 512 };
+                                const maxDimension = maxDimensions[this.deviceTier] || maxDimensions.medium;
+                                const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+                                canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+                                canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+
                                 let orientation = 1;
-                                
+
                                 try {
                                     if (img instanceof HTMLImageElement && img.src.startsWith('data:')) {
                                         if (typeof EXIF !== 'undefined' && EXIF.getData) {
@@ -1006,40 +1012,30 @@ export class FlowerRingSystem {
                                     console.warn('⚠️ EXIF processing error:', exifError);
                                 }
                                 
+                                // Clip before drawing instead of scanning every source pixel.
+                                // This keeps cold loads fast even when uploads are multi-megapixel.
+                                const radius = Math.min(canvas.width, canvas.height) * 0.08;
                                 ctx.save();
+                                ctx.beginPath();
+                                ctx.moveTo(radius, 0);
+                                ctx.lineTo(canvas.width - radius, 0);
+                                ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+                                ctx.lineTo(canvas.width, canvas.height - radius);
+                                ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+                                ctx.lineTo(radius, canvas.height);
+                                ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+                                ctx.lineTo(0, radius);
+                                ctx.quadraticCurveTo(0, 0, radius, 0);
+                                ctx.closePath();
+                                ctx.clip();
                                 try {
                                     this.drawImageWithOrientation(ctx, img, orientation, canvas.width, canvas.height);
                                 } catch (drawError) {
                                     console.warn('⚠️ Error drawing image with orientation:', drawError);
-                                    // Fallback: vẽ hình tròn đơn giản
                                     ctx.fillStyle = '#ff69b4';
-                                    ctx.beginPath();
-                                    ctx.arc(canvas.width/2, canvas.height/2, Math.min(canvas.width, canvas.height)/3, 0, Math.PI * 2);
-                                    ctx.fill();
+                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                                 }
                                 ctx.restore();
-                                
-                                // Xử lý bo tròn góc
-                                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                                const data = imageData.data;
-                                const radius = Math.min(canvas.width, canvas.height) * 0.1;
-                                
-                                for (let y = 0; y < canvas.height; y++) {
-                                    for (let x = 0; x < canvas.width; x++) {
-                                        const idx = (y * canvas.width + x) * 4;
-                                        const distX = Math.min(x, canvas.width - x);
-                                        const distY = Math.min(y, canvas.height - y);
-                                        const dist = Math.sqrt(distX * distX + distY * distY);
-                                        if (dist < radius) {
-                                            const alpha = Math.min(1, dist / radius);
-                                            data[idx + 3] = Math.floor(255 * alpha);
-                                        } else {
-                                            data[idx + 3] = 255;
-                                        }
-                                    }
-                                }
-                                
-                                ctx.putImageData(imageData, 0, 0);
                                 const processedTexture = new THREE.CanvasTexture(canvas);
                                 processedTexture.minFilter = THREE.NearestFilter;
                                 processedTexture.magFilter = THREE.NearestFilter;

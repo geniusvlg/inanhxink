@@ -45,7 +45,7 @@ hung forever on the "Đang tải thiên hà..." overlay because the handler that
 fetches `/api/site-data` never ran. Large bundles lose this race the most often,
 so the failure can look intermittent.
 
-Two independent protections are in place; keep both when editing templates:
+Three independent protections are in place; keep all of them when editing templates:
 
 1. Every script tag on a template page carries `data-cfasync="false"`, which
    makes Rocket Loader skip it and preserve normal document order. This applies
@@ -68,6 +68,18 @@ bundle would otherwise see an empty hash.
 
 Note that `public/templates/galaxy/bundle.js` is a committed build artifact with
 its own copy of `sphere.js` logic — fixes must be applied to both files.
+
+## Galaxy Cold-Load Performance
+
+Galaxy downsizes uploaded images before creating WebGL textures (maximum edge:
+256px low-tier, 384px medium-tier, 512px high-tier) and uses adaptive photo
+sprite counts (72/120/180). Do not restore full-resolution canvas processing or
+the old 400/800 sprite counts: cold loads can otherwise block the main thread
+for more than 10 seconds and cover the scene with duplicated photos. The loading
+overlay remains visible until images, 3D text, and the heart model are ready and
+the textured scene has rendered for two animation frames. An 8-second fail-safe
+reveals the best available scene if an asset or readiness event fails and shows
+a `Thử tải lại` button; successful late completion removes that button.
 
 ## Adding A Template
 

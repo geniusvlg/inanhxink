@@ -47481,11 +47481,36 @@ M\xE3i b\xEAn nhau!"></textarea>
         }
         const isChildWeb = hash2.startsWith("#id=") || hash2.startsWith("#config=");
         const readiness = { text3d: false, images: false, heart3d: false };
+        function removeRetryButton() {
+          document.getElementById("galaxy-retry-button")?.remove();
+        }
+        function showRetryButton() {
+          if (document.getElementById("galaxy-retry-button")) return;
+          const button = document.createElement("button");
+          button.id = "galaxy-retry-button";
+          button.type = "button";
+          button.textContent = "Thử tải lại";
+          button.style.cssText = "position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:1000000;padding:11px 20px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(20,20,24,.9);color:#fff;font:600 14px Arial,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.35);cursor:pointer;";
+          button.addEventListener("click", () => window.location.reload());
+          document.body.appendChild(button);
+        }
+        const overlayTimeout = isChildWeb && overlay ? setTimeout(() => {
+          overlay.style.display = "none";
+          if (!(readiness.text3d && readiness.images && readiness.heart3d)) {
+            showRetryButton();
+          }
+        }, 8e3) : null;
         function tryHideOverlay() {
           if (!isChildWeb || !overlay) return;
           if (readiness.text3d && readiness.images && readiness.heart3d) {
+            if (overlayTimeout) clearTimeout(overlayTimeout);
+            removeRetryButton();
             overlay.style.display = "none";
           }
+        }
+        function markImagesReady() {
+          readiness.images = true;
+          requestAnimationFrame(() => requestAnimationFrame(tryHideOverlay));
         }
         document.addEventListener("hearttext_ready", () => {
           readiness.text3d = true;
@@ -47534,7 +47559,11 @@ M\xE3i b\xEAn nhau!"></textarea>
                   this.particleSystem.updateTextureRotationSpeed(data.config.textureRotationSpeed);
                 }
               }
-              if (this.flowerRing) {
+              const applyImages = () => {
+                if (!this.flowerRing) {
+                  setTimeout(applyImages, 100);
+                  return;
+                }
                 if (data.config.textureRotationSpeed !== void 0) {
                   this.flowerRing.updateRotationSpeed(data.config.textureRotationSpeed);
                 }
@@ -47544,14 +47573,13 @@ M\xE3i b\xEAn nhau!"></textarea>
                 if (data.config.imageUrls && data.config.imageUrls.length > 0 && this.flowerRing.preloadTextures) {
                   this.flowerRing.preloadTextures(data.config.imageUrls).then(() => {
                     this.flowerRing.randomizeFlowerTextures();
-                    if (overlay) overlay.style.display = "none";
-                  });
+                    markImagesReady();
+                  }).catch(markImagesReady);
                 } else {
-                  if (overlay) overlay.style.display = "none";
+                  markImagesReady();
                 }
-              } else {
-                if (overlay) overlay.style.display = "none";
-              }
+              };
+              applyImages();
               if (data.config.audioUrl && window.audioManager && window.audioManager.setAudioUrl) {
                 window.audioManager.setAudioUrl(data.config.audioUrl);
               } else if ((!data.config.audioUrl || data.config.audioUrl === "") && data.config.selectedAudioFile && window.audioManager && window.audioManager.setAudioUrl) {
@@ -47629,7 +47657,6 @@ M\xE3i b\xEAn nhau!"></textarea>
                   }
                 }
               }, 1200);
-              if (overlay) overlay.style.display = "none";
               setTimeout(() => {
                 const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
                 const mobileHelp = document.getElementById("mobileQuickHelp");
@@ -49527,8 +49554,8 @@ M\xE3i b\xEAn nhau!"></textarea>
           console.error("\u274C Cannot create flower material");
           return;
         }
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const numFlowers = isIOS ? 400 : 800;
+        const flowerCounts = { low: 72, medium: 120, high: 180 };
+        const numFlowers = flowerCounts[this.deviceTier] || flowerCounts.medium;
         const innerRadius = 130;
         const outerRadius = 530;
         const heightRange = 8;
@@ -49880,9 +49907,14 @@ M\xE3i b\xEAn nhau!"></textarea>
                     resolve(this.createFallbackTexture());
                     return;
                   }
-                  canvas.width = texture.image.width || 80;
-                  canvas.height = texture.image.height || 80;
                   const img = texture.image;
+                  const sourceWidth = img.width || 80;
+                  const sourceHeight = img.height || 80;
+                  const maxDimensions = { low: 256, medium: 384, high: 512 };
+                  const maxDimension = maxDimensions[this.deviceTier] || maxDimensions.medium;
+                  const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+                  canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+                  canvas.height = Math.max(1, Math.round(sourceHeight * scale));
                   let orientation = 1;
                   try {
                     if (img instanceof HTMLImageElement && img.src.startsWith("data:")) {
@@ -49893,37 +49925,30 @@ M\xE3i b\xEAn nhau!"></textarea>
                       }
                     }
                   } catch (exifError) {
-                    console.warn("\u26A0\uFE0F EXIF processing error:", exifError);
+                    console.warn("⚠️ EXIF processing error:", exifError);
                   }
+                  const radius = Math.min(canvas.width, canvas.height) * 0.08;
                   ctx.save();
+                  ctx.beginPath();
+                  ctx.moveTo(radius, 0);
+                  ctx.lineTo(canvas.width - radius, 0);
+                  ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+                  ctx.lineTo(canvas.width, canvas.height - radius);
+                  ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+                  ctx.lineTo(radius, canvas.height);
+                  ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+                  ctx.lineTo(0, radius);
+                  ctx.quadraticCurveTo(0, 0, radius, 0);
+                  ctx.closePath();
+                  ctx.clip();
                   try {
                     this.drawImageWithOrientation(ctx, img, orientation, canvas.width, canvas.height);
                   } catch (drawError) {
-                    console.warn("\u26A0\uFE0F Error drawing image with orientation:", drawError);
+                    console.warn("⚠️ Error drawing image with orientation:", drawError);
                     ctx.fillStyle = "#ff69b4";
-                    ctx.beginPath();
-                    ctx.arc(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) / 3, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                   }
                   ctx.restore();
-                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                  const data = imageData.data;
-                  const radius = Math.min(canvas.width, canvas.height) * 0.1;
-                  for (let y = 0; y < canvas.height; y++) {
-                    for (let x = 0; x < canvas.width; x++) {
-                      const idx = (y * canvas.width + x) * 4;
-                      const distX = Math.min(x, canvas.width - x);
-                      const distY = Math.min(y, canvas.height - y);
-                      const dist = Math.sqrt(distX * distX + distY * distY);
-                      if (dist < radius) {
-                        const alpha = Math.min(1, dist / radius);
-                        data[idx + 3] = Math.floor(255 * alpha);
-                      } else {
-                        data[idx + 3] = 255;
-                      }
-                    }
-                  }
-                  ctx.putImageData(imageData, 0, 0);
                   const processedTexture = new CanvasTexture(canvas);
                   processedTexture.minFilter = NearestFilter;
                   processedTexture.magFilter = NearestFilter;
