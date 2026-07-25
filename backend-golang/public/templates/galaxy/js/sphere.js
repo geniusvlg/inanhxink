@@ -1131,11 +1131,39 @@ export class CentralSphere {
             // Helper: cơ chế chờ đủ điều kiện trước khi ẩn overlay trên web con
             const isChildWeb = hash.startsWith('#id=') || hash.startsWith('#config=');
             const readiness = { text3d: false, images: false, heart3d: false };
+            function removeRetryButton() {
+                document.getElementById('galaxy-retry-button')?.remove();
+            }
+            function showRetryButton() {
+                if (document.getElementById('galaxy-retry-button')) return;
+                const button = document.createElement('button');
+                button.id = 'galaxy-retry-button';
+                button.type = 'button';
+                button.textContent = 'Thử tải lại';
+                button.style.cssText = 'position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:1000000;padding:11px 20px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(20,20,24,.9);color:#fff;font:600 14px Arial,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.35);cursor:pointer;';
+                button.addEventListener('click', () => window.location.reload());
+                document.body.appendChild(button);
+            }
+            const overlayTimeout = isChildWeb && overlay
+                ? setTimeout(() => {
+                    overlay.style.display = 'none';
+                    if (!(readiness.text3d && readiness.images && readiness.heart3d)) {
+                        showRetryButton();
+                    }
+                }, 8000)
+                : null;
             function tryHideOverlay() {
                 if (!isChildWeb || !overlay) return;
                 if (readiness.text3d && readiness.images && readiness.heart3d) {
+                    if (overlayTimeout) clearTimeout(overlayTimeout);
+                    removeRetryButton();
                     overlay.style.display = 'none';
                 }
+            }
+            function markImagesReady() {
+                readiness.images = true;
+                // Wait for the texture assignment to reach the WebGL canvas before revealing it.
+                requestAnimationFrame(() => requestAnimationFrame(tryHideOverlay));
             }
             // Lắng nghe sự kiện text3D render xong
             document.addEventListener('hearttext_ready', () => {
@@ -1198,7 +1226,6 @@ export class CentralSphere {
                             // Đảm bảo overlay chỉ tắt sau khi ảnh (nếu có) đã load xong
                             const _applyImagesAndHideOverlay = () => {
                                 if (!this.flowerRing) {
-                                    // flowerRing chưa init — thử lại sau 100ms
                                     setTimeout(_applyImagesAndHideOverlay, 100);
                                     return;
                                 }
@@ -1211,12 +1238,10 @@ export class CentralSphere {
                                 if (data.config.imageUrls && data.config.imageUrls.length > 0 && this.flowerRing.preloadTextures) {
                                     this.flowerRing.preloadTextures(data.config.imageUrls).then(() => {
                                         this.flowerRing.randomizeFlowerTextures();
-                                        if (overlay) overlay.style.display = 'none';
-                                    }).catch(() => {
-                                        if (overlay) overlay.style.display = 'none';
-                                    });
+                                        markImagesReady();
+                                    }).catch(markImagesReady);
                                 } else {
-                                    if (overlay) overlay.style.display = 'none';
+                                    markImagesReady();
                                 }
                             };
                             _applyImagesAndHideOverlay();
@@ -1317,8 +1342,7 @@ export class CentralSphere {
                                 }
                             }, 1200); // Đợi lâu hơn để đảm bảo heartText đã khởi tạo
 
-                            // Ẩn overlay khi load xong
-                            if (overlay) overlay.style.display = 'none';
+                            // Image loading owns overlay completion; do not reveal a partial scene.
                             // Hiện dialog hướng dẫn nhanh sau khi load xong config
                             setTimeout(() => {
                                 const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
@@ -1495,8 +1519,7 @@ export class CentralSphere {
                             } else if (window.toggleMeteorShower && !config.meteorEnabled && window.isMeteorShowerActive) {
                                 window.toggleMeteorShower();
                             }
-                            // Ẩn overlay khi load xong
-                            if (overlay) overlay.style.display = 'none';
+                            // Image loading owns overlay completion; do not reveal a partial scene.
                         }, 1500);
                     }
 
