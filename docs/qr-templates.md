@@ -34,6 +34,35 @@ Template implementations do not need their own voice-message code. Public
 template data is CDN-rewritten before it is injected into
 `window.dataFromSubdomain`.
 
+## Cloudflare Rocket Loader Must Not Touch Template Scripts
+
+Rocket Loader defers every `<script>` on the page and only replays a synthetic
+`DOMContentLoaded` afterwards. Any template code that registers a
+`DOMContentLoaded` listener at execution time can therefore miss the event
+entirely and never bootstrap — this silently broke the `galaxy` template, which
+hung forever on the "Đang tải thiên hà..." overlay because the handler that
+fetches `/api/site-data` never ran. Large bundles lose this race the most often,
+so the failure can look intermittent.
+
+Two independent protections are in place; keep both when editing templates:
+
+1. Every script tag on a template page carries `data-cfasync="false"`, which
+   makes Rocket Loader skip it and preserve normal document order. This applies
+   to the tags in each template's `index.html` **and** to the tags injected by
+   `injectScripts` in `backend-golang/internal/handlers/templateserve.go`.
+2. Template bootstraps are `readyState`-aware: run the work immediately (via
+   `setTimeout(cb, 0)`, so post-init state such as `flowerRing` exists) when
+   `document.readyState !== 'loading'`, and only fall back to a
+   `DOMContentLoaded` listener while the document is still parsing. See
+   `whenDomReady` in `public/templates/galaxy/js/sphere.js`.
+
+The `galaxy` bootstrap also reads `window.__GALAXY_ID__` as a fallback for the
+`#id=` hash, because `index.html` strips that hash on `load` and a late-running
+bundle would otherwise see an empty hash.
+
+Note that `public/templates/galaxy/bundle.js` is a committed build artifact with
+its own copy of `sphere.js` logic — fixes must be applied to both files.
+
 ## Adding A Template
 
 1. Add the static template folder under `backend-golang/public/templates/`.
