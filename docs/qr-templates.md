@@ -27,7 +27,8 @@ Every active template receives the shared
 `musicUrl` is present, audio starts automatically and the page shows a fixed
 mute/unmute button. Voice recordings loop through the shared player; existing
 template background-audio elements remain template-owned but are controlled by
-the shared mute button. If browser autoplay policy blocks sound, playback starts
+the shared mute button. Galaxy's `#bg-audio` element also loops its selected
+background music continuously. If browser autoplay policy blocks sound, playback starts
 on the visitor's first tap, click, or key press anywhere on the template.
 
 Template implementations do not need their own voice-message code. Public

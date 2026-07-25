@@ -101,7 +101,7 @@ export class HeartText {
             const textGeometry = new TextGeometry(line, {
                 font: this.font,
                 size: this.config.size,
-                height: this.config.height,
+                depth: this.config.height,
                 curveSegments: this.config.curveSegments,
                 bevelEnabled: this.config.bevelEnabled,
                 bevelThickness: this.config.bevelThickness,
@@ -406,7 +406,7 @@ export class HeartText {
         const textGeometry = new TextGeometry(line, {
             font: this.font,
             size: this.config.size,
-            height: this.config.height,
+            depth: this.config.height,
             curveSegments: this.config.curveSegments,
             bevelEnabled: this.config.bevelEnabled,
             bevelThickness: this.config.bevelThickness,
