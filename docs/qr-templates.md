@@ -55,6 +55,11 @@ Two independent protections are in place; keep both when editing templates:
    `document.readyState !== 'loading'`, and only fall back to a
    `DOMContentLoaded` listener while the document is still parsing. See
    `whenDomReady` in `public/templates/galaxy/js/sphere.js`.
+3. The Galaxy `initApp()` entry point is idempotent via
+   `window.__GALAXY_APP_INITIALIZED__`. Rocket Loader can replay a synthetic
+   `DOMContentLoaded` even after the native event; without this guard, Galaxy
+   creates a second WebGL renderer with placeholder textures over the correctly
+   configured renderer.
 
 The `galaxy` bootstrap also reads `window.__GALAXY_ID__` as a fallback for the
 `#id=` hash, because `index.html` strips that hash on `load` and a late-running
