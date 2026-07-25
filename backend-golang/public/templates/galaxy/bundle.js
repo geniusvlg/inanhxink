@@ -53352,6 +53352,11 @@ M\xE3i b\xEAn nhau!"></textarea>
   // main.js
   window.THREE = three_module_exports;
   function initApp() {
+    // Cloudflare Rocket Loader replays DOMContentLoaded. Keep app setup idempotent so
+    // a synthetic replay cannot create a second renderer over the configured one.
+    if (window.__GALAXY_APP_INITIALIZED__) return;
+    window.__GALAXY_APP_INITIALIZED__ = true;
+
     const helpIcon = document.querySelector(".help-icon");
     const helpPanel = document.querySelector(".help-panel");
     if (helpIcon && helpPanel) {
