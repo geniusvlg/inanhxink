@@ -47466,8 +47466,15 @@ M\xE3i b\xEAn nhau!"></textarea>
         this.applyAllChanges();
         controls.style.display = "none";
       });
-      window.addEventListener("DOMContentLoaded", () => {
-        const hash2 = window.location.hash;
+      const whenDomReady = (cb) => {
+        if (document.readyState === "loading") {
+          window.addEventListener("DOMContentLoaded", cb);
+        } else {
+          setTimeout(cb, 0);
+        }
+      };
+      whenDomReady(() => {
+        const hash2 = window.location.hash || (window.__GALAXY_ID__ ? "#id=" + window.__GALAXY_ID__ : "");
         const overlay = document.getElementById("flower-loading-overlay");
         if ((hash2.startsWith("#id=") || hash2.startsWith("#config=")) && overlay) {
           overlay.style.display = "block";

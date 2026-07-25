@@ -85,10 +85,12 @@ func injectScripts(html, subdomain, templateType string, templateData map[string
 
 	dataPayload, _ := json.Marshal(map[string]any{"template": templateType, "data": data})
 	subdomainJSON, _ := json.Marshal(subdomain)
+	// data-cfasync="false" opts these out of Cloudflare Rocket Loader, which would
+	// otherwise defer them until after DOMContentLoaded and break template bootstrap.
 	tag := fmt.Sprintf(
-		"<script>window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;</script>\n"+
+		"<script data-cfasync=\"false\">window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;</script>\n"+
 			"<link rel=\"stylesheet\" href=\"/templates/common/voice-player.css\">\n"+
-			"<script defer src=\"/templates/common/voice-player.js\"></script>",
+			"<script data-cfasync=\"false\" defer src=\"/templates/common/voice-player.js\"></script>",
 		string(subdomainJSON), string(dataPayload),
 	)
 	return strings.Replace(html, "</head>", tag+"\n</head>", 1)

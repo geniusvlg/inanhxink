@@ -1110,9 +1110,18 @@ export class CentralSphere {
             controls.style.display = 'none';
         });
 
-        // Khi load trang, nếu có config trong URL thì tự động render lại
-        window.addEventListener('DOMContentLoaded', () => {
-            const hash = window.location.hash;
+        // Khi load trang, nếu có config trong URL thì tự động render lại.
+        // Chạy ngay (sau khi initApp dựng xong flowerRing/particleSystem) nếu DOM đã ready —
+        // script có thể được thực thi sau DOMContentLoaded (vd. Cloudflare Rocket Loader).
+        const whenDomReady = (cb) => {
+            if (document.readyState === 'loading') {
+                window.addEventListener('DOMContentLoaded', cb);
+            } else {
+                setTimeout(cb, 0);
+            }
+        };
+        whenDomReady(() => {
+            const hash = window.location.hash || (window.__GALAXY_ID__ ? '#id=' + window.__GALAXY_ID__ : '');
             const overlay = document.getElementById('flower-loading-overlay');
             // Nếu là web con thì bật overlay ngay khi bắt đầu load
             if ((hash.startsWith('#id=') || hash.startsWith('#config=')) && overlay) {
