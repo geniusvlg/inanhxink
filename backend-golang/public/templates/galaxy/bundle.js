@@ -47500,12 +47500,49 @@ M\xE3i b\xEAn nhau!"></textarea>
             showRetryButton();
           }
         }, 8e3) : null;
+        function startMessageCountdown() {
+          if (window.__GALAXY_MESSAGE_COUNTDOWN_STARTED__) return;
+          const heartText2 = window.heartText;
+          const text = heartText2?.config?.text?.trim();
+          const letterBtn = document.getElementById("letter-btn");
+          if (!text || !letterBtn || !heartText2?.font) return;
+          window.__GALAXY_MESSAGE_COUNTDOWN_STARTED__ = true;
+          letterBtn.classList.add("auto-message");
+          const originalSize = heartText2.config.size;
+          const originalPosition = { ...heartText2.config.position };
+          const countdownSize = window.innerWidth <= 700 ? 20 : 36;
+          heartText2.setSize(countdownSize);
+          heartText2.setText("3");
+          heartText2.setPosition(0, 100, 0);
+          heartText2.show();
+          let messageText = text;
+          let remaining = 3;
+          const timer = setInterval(() => {
+            const configuredText = heartText2.config.text?.trim();
+            if (configuredText && !/^[0-3]$/.test(configuredText)) {
+              messageText = configuredText;
+            }
+            remaining -= 1;
+            heartText2.setText(String(remaining));
+            if (remaining === 0) {
+              clearInterval(timer);
+              setTimeout(() => {
+                heartText2.setSize(originalSize);
+                heartText2.setText(messageText);
+                heartText2.setPosition(originalPosition.x, originalPosition.y, originalPosition.z);
+                heartText2.hide();
+                letterBtn.click();
+              }, 300);
+            }
+          }, 1e3);
+        }
         function tryHideOverlay() {
           if (!isChildWeb || !overlay) return;
           if (readiness.text3d && readiness.images && readiness.heart3d) {
             if (overlayTimeout) clearTimeout(overlayTimeout);
             removeRetryButton();
             overlay.style.display = "none";
+            startMessageCountdown();
           }
         }
         function markImagesReady() {
@@ -47649,24 +47686,15 @@ M\xE3i b\xEAn nhau!"></textarea>
                 }, 1e3);
               }
               setTimeout(() => {
-                if (window.location.hash.includes("#id=") || window.location.hash.includes("#config=")) {
+                if (isChildWeb) {
                   const letterBtn = document.getElementById("letter-btn");
-                  const textContent = data.config.text3d?.text || (window.heartText?.config?.text || "");
+                  const textContent = data.config.text3d?.text || data.config.content || "";
                   if (letterBtn && (!textContent || textContent.trim() === "")) {
                     letterBtn.classList.add("hidden-when-empty");
                   }
                 }
               }, 1200);
-              setTimeout(() => {
-                const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-                const mobileHelp = document.getElementById("mobileQuickHelp");
-                const desktopHelp = document.getElementById("desktopQuickHelp");
-                if (isMobile && mobileHelp) {
-                  mobileHelp.classList.add("active");
-                } else if (!isMobile && desktopHelp) {
-                  desktopHelp.classList.add("active");
-                }
-              }, 200);
+
             }
           });
         } else if (hash2.startsWith("#config=")) {
@@ -47757,9 +47785,9 @@ M\xE3i b\xEAn nhau!"></textarea>
               }, 1e3);
             }
             setTimeout(() => {
-              if (window.location.hash.includes("#id=") || window.location.hash.includes("#config=")) {
+              if (isChildWeb) {
                 const letterBtn = document.getElementById("letter-btn");
-                const textContent = config.text3d?.text || (window.heartText?.config?.text || "");
+                const textContent = config.text3d?.text || config.content || "";
                 if (letterBtn && (!textContent || textContent.trim() === "")) {
                   letterBtn.classList.add("hidden-when-empty");
                 }
@@ -47791,16 +47819,7 @@ M\xE3i b\xEAn nhau!"></textarea>
                 if (overlay) overlay.style.display = "none";
               }, 1500);
             }
-            setTimeout(() => {
-              const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-              const mobileHelp = document.getElementById("mobileQuickHelp");
-              const desktopHelp = document.getElementById("desktopQuickHelp");
-              if (isMobile && mobileHelp) {
-                mobileHelp.classList.add("active");
-              } else if (!isMobile && desktopHelp) {
-                desktopHelp.classList.add("active");
-              }
-            }, 100);
+
           } catch (e) {
           }
         }
@@ -48928,7 +48947,7 @@ M\xE3i b\xEAn nhau!"></textarea>
       }
       const textContent = window.heartText.config.text || "";
       const normalizedText = textContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-      const lines = normalizedText.split("\n").filter((line) => line.trim() !== "");
+      const lines = window.heartText.displayLines?.filter((line) => line.trim() !== "") || normalizedText.split("\n").filter((line) => line.trim() !== "");
       let yPosition = 200;
       if (lines.length === 1) {
         yPosition = 330;
@@ -53073,8 +53092,31 @@ M\xE3i b\xEAn nhau!"></textarea>
       if (typeof newText === "string") {
         this.config.text = newText;
       }
-      const lines = this.config.text.split("\n");
-      const lineHeight = this.config.size * 1.2;
+      const isMobile = window.innerWidth <= 700;
+      const maxCharsPerLine = isMobile ? 24 : 36;
+      const wrappedLines = [];
+      this.config.text.trim().split(/\r?\n/).forEach((paragraph) => {
+        const words = paragraph.trim().split(/\s+/).filter(Boolean);
+        let currentLine = "";
+        words.forEach((word) => {
+          const candidate = currentLine ? `${currentLine} ${word}` : word;
+          if (currentLine && candidate.length > maxCharsPerLine) {
+            wrappedLines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = candidate;
+          }
+        });
+        if (currentLine) wrappedLines.push(currentLine);
+      });
+      const maxLines = 7;
+      const lines = wrappedLines.slice(0, maxLines);
+      if (wrappedLines.length > maxLines) {
+        lines[maxLines - 1] = wrappedLines.slice(maxLines - 1).join(" ");
+      }
+      this.displayLines = lines.length > 0 ? lines : [""];
+      const lineHeight = this.config.size * (isMobile ? 0.9 : 1.1);
+      const maxTextWidth = isMobile ? 160 : 380;
       lines.forEach((line, i) => {
         const textGeometry = new TextGeometry(line, {
           font: this.font,
@@ -53098,8 +53140,13 @@ M\xE3i b\xEAn nhau!"></textarea>
           transparent: true
         });
         const mesh = new Mesh(textGeometry, textMaterial);
+        const textScale = Math.min(1, maxTextWidth / Math.max(textWidth, 1));
+        mesh.scale.x = textScale;
+        mesh.scale.y = textScale;
+        mesh.userData.baseTextScale = textScale;
+        mesh.userData.lineHeight = lineHeight;
         mesh.position.set(
-          this.config.position.x - textWidth / 2,
+          this.config.position.x - textWidth * textScale / 2,
           this.config.position.y - i * lineHeight,
           this.config.position.z
         );
@@ -53109,6 +53156,16 @@ M\xE3i b\xEAn nhau!"></textarea>
         this.textGroup.add(mesh);
         this.textMeshes.push(mesh);
       });
+      if (this.textMeshes.length > 0) {
+        const sharedScale = Math.min(...this.textMeshes.map((mesh) => mesh.userData.baseTextScale || 1));
+        this.textMeshes.forEach((mesh) => {
+          const textWidth = mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x;
+          mesh.userData.baseTextScale = sharedScale;
+          mesh.scale.x = sharedScale;
+          mesh.scale.y = sharedScale;
+          mesh.position.x = this.config.position.x - textWidth * sharedScale / 2;
+        });
+      }
       if (!this._textLight) {
         const textLight = new SpotLight(16777215, 5, 480, Math.PI / 4, 0.5, 1);
         textLight.position.set(0, 510, 100);
@@ -53252,20 +53309,23 @@ M\xE3i b\xEAn nhau!"></textarea>
         case "none":
           this.textMeshes.forEach((mesh, idx) => {
             const textWidth = mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x;
+            const baseScale = mesh.userData.baseTextScale || 1;
+            const lineHeight = mesh.userData.lineHeight || this.config.size * 1.2;
             mesh.position.set(
-              this.config.position.x - textWidth / 2,
-              this.config.position.y - idx * this.config.size * 1.2,
+              this.config.position.x - textWidth * baseScale / 2,
+              this.config.position.y - idx * lineHeight,
               this.config.position.z
             );
             mesh.rotation.set(0, 0, 0);
-            mesh.scale.set(1, 1, this.config.height < 1 ? this.config.height : 1);
+            mesh.scale.set(baseScale, baseScale, this.config.height < 1 ? this.config.height : 1);
             mesh.material.opacity = 1;
             mesh.material.emissiveIntensity = this.config.emissiveIntensity;
           });
           break;
         case "float":
           this.textMeshes.forEach((mesh, idx) => {
-            const baseY = this.config.position.y - idx * this.config.size * 1.2;
+            const lineHeight = mesh.userData.lineHeight || this.config.size * 1.2;
+            const baseY = this.config.position.y - idx * lineHeight;
             mesh.position.y = baseY + Math.sin(time * 2 * this.config.effectSpeed) * (5 * this.config.effectIntensity);
             mesh.rotation.y = Math.sin(time * 0.5 * this.config.effectSpeed) * (0.1 * this.config.effectIntensity);
           });
@@ -53287,9 +53347,10 @@ M\xE3i b\xEAn nhau!"></textarea>
           break;
         case "pulse":
           this.textMeshes.forEach((mesh, idx) => {
-            const scale = 1 + Math.sin(time * 3 * this.config.effectSpeed) * 0.1 * this.config.effectIntensity;
-            const scaleZ = this.config.height < 1 ? this.config.height : scale;
-            mesh.scale.set(scale, scale, scaleZ);
+            const pulseScale = 1 + Math.sin(time * 3 * this.config.effectSpeed) * 0.1 * this.config.effectIntensity;
+            const baseScale = mesh.userData.baseTextScale || 1;
+            const scaleZ = this.config.height < 1 ? this.config.height : pulseScale;
+            mesh.scale.set(baseScale * pulseScale, baseScale * pulseScale, scaleZ);
           });
           break;
         case "glow":
@@ -53514,9 +53575,8 @@ M\xE3i b\xEAn nhau!"></textarea>
     const giftBtn = document.getElementById("gift-btn");
     if (giftBtn) {
       giftBtn.addEventListener("click", () => {
-        if (flowerRingSystem) {
-          if (!flowerRingSystem.isFlying) flowerRingSystem.triggerFlyingEffect();
-          else flowerRingSystem.toggleFlyingPause();
+        if (flowerRingSystem && !flowerRingSystem.isFlying) {
+          flowerRingSystem.triggerFlyingEffect();
         }
       });
     }
@@ -53545,28 +53605,10 @@ M\xE3i b\xEAn nhau!"></textarea>
                 onUpdate: () => window.cameraController.camera.lookAt(0, 20, 0)
               });
             }
-          } else {
-            if (typeof window.heartText.hide === "function") window.heartText.hide();
           }
         }
       });
     }
-    window.closeQuickHelp = function(type) {
-      const panel = document.getElementById(type + "QuickHelp");
-      if (panel) {
-        panel.classList.remove("active");
-        if (window.audioManager) window.audioManager.playOnly();
-      }
-    };
-    document.addEventListener("click", (event) => {
-      ["mobile", "desktop"].forEach((type) => {
-        const panel = document.getElementById(type + "QuickHelp");
-        if (panel?.classList.contains("active") && !panel.contains(event.target)) {
-          panel.classList.remove("active");
-          if (window.audioManager) window.audioManager.playOnly();
-        }
-      });
-    });
     const hash = window.location.hash;
     if (hash.startsWith("#id=") || hash.startsWith("#config=")) {
       document.body.classList.add("web-con");

@@ -8,7 +8,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 
 | Template type | Folder | Order form |
 |---|---|---|
-| `galaxy` | `galaxy` | Text lines plus up to 12 images |
+| `galaxy` | `galaxy` | Optional envelope message (max 150 characters, responsive display of up to 7 lines); opens automatically after a 3D post-load countdown shown above the planet and stays visible; plus up to 15 images |
 | `letterinspace` | `letterinspace` | Letter-in-space text form |
 | `loveletter` | `loveletter` | Letter title, hint, signoff, sender, receiver, content, up to 12 images |
 | `lovedays` | `lovedays` | Date, names, secret message, timeline, 2 avatars, up to 10 gallery images |
@@ -67,7 +67,9 @@ The `galaxy` bootstrap also reads `window.__GALAXY_ID__` as a fallback for the
 bundle would otherwise see an empty hash.
 
 Note that `public/templates/galaxy/bundle.js` is a committed build artifact with
-its own copy of `sphere.js` logic — fixes must be applied to both files.
+its own copy of `sphere.js` logic — fixes must be applied to both files. Galaxy
+references `styles.css` and `bundle.js` with a version query because Cloudflare
+caches them for four hours; bump the version whenever either asset changes.
 
 ## Galaxy Cold-Load Performance
 
@@ -79,7 +81,11 @@ for more than 10 seconds and cover the scene with duplicated photos. The loading
 overlay remains visible until images, 3D text, and the heart model are ready and
 the textured scene has rendered for two animation frames. An 8-second fail-safe
 reveals the best available scene if an asset or readiness event fails and shows
-a `Thử tải lại` button; successful late completion removes that button.
+a `Thử tải lại` button; successful late completion removes that button. On
+all devices, the gift button is visibly labeled `Ảnh bay`; it starts the
+flying-photo effect but does not pause or resume an effect already in progress.
+The old automatic mobile/desktop quick
+help modal has been removed; the question-mark help remains user-invoked.
 
 ## Adding A Template
 

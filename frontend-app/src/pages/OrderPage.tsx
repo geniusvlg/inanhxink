@@ -92,6 +92,7 @@ function OrderPage() {
   const AVATAR_SLOTS = 2;
   const GALLERY_SLOTS = 10;
   const QR_TEMPLATE_MAX_IMAGES = 12;
+  const GALAXY_MAX_IMAGES = 15;
   const BIRTHDAY_CAKE_MAX_IMAGES = 24;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
@@ -571,6 +572,16 @@ function OrderPage() {
         </div>
       )}
 
+      {templateType === 'galaxy' && (
+        <ContentEditor
+          value={content}
+          onChange={setContent}
+          label="Lời nhắn trong phong thư"
+          placeholder="Nhập lời nhắn sẽ hiện khi người xem mở phong thư..."
+          maxLength={150}
+        />
+      )}
+
       {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (
         <ContentEditor
           value={content}
@@ -1028,7 +1039,7 @@ function OrderPage() {
             <ImageUploader
               images={uploadedImages}
               onImagesChange={setUploadedImages}
-              maxImages={QR_TEMPLATE_MAX_IMAGES}
+              maxImages={templateType === 'galaxy' ? GALAXY_MAX_IMAGES : QR_TEMPLATE_MAX_IMAGES}
               onImageSelected={() => {}}
               initialPreviews={imagePreviews}
               onPreviewsChange={setImagePreviews}
