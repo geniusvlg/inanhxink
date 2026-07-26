@@ -1152,12 +1152,51 @@ export class CentralSphere {
                     }
                 }, 8000)
                 : null;
+            function startMessageCountdown() {
+                if (window.__GALAXY_MESSAGE_COUNTDOWN_STARTED__) return;
+                const heartText = window.heartText;
+                const text = heartText?.config?.text?.trim();
+                const letterBtn = document.getElementById('letter-btn');
+                if (!text || !letterBtn || !heartText?.font) return;
+
+                window.__GALAXY_MESSAGE_COUNTDOWN_STARTED__ = true;
+                letterBtn.classList.add('auto-message');
+                const originalSize = heartText.config.size;
+                const originalPosition = { ...heartText.config.position };
+                const countdownSize = window.innerWidth <= 700 ? 20 : 36;
+                heartText.setSize(countdownSize);
+                heartText.setText('3');
+                heartText.setPosition(0, 100, 0);
+                heartText.show();
+
+                let messageText = text;
+                let remaining = 3;
+                const timer = setInterval(() => {
+                    const configuredText = heartText.config.text?.trim();
+                    if (configuredText && !/^[0-3]$/.test(configuredText)) {
+                        messageText = configuredText;
+                    }
+                    remaining -= 1;
+                    heartText.setText(String(remaining));
+                    if (remaining === 0) {
+                        clearInterval(timer);
+                        setTimeout(() => {
+                            heartText.setSize(originalSize);
+                            heartText.setText(messageText);
+                            heartText.setPosition(originalPosition.x, originalPosition.y, originalPosition.z);
+                            heartText.hide();
+                            letterBtn.click();
+                        }, 300);
+                    }
+                }, 1000);
+            }
             function tryHideOverlay() {
                 if (!isChildWeb || !overlay) return;
                 if (readiness.text3d && readiness.images && readiness.heart3d) {
                     if (overlayTimeout) clearTimeout(overlayTimeout);
                     removeRetryButton();
                     overlay.style.display = 'none';
+                    startMessageCountdown();
                 }
             }
             function markImagesReady() {
@@ -1332,10 +1371,10 @@ export class CentralSphere {
 
                             // Ẩn letter-btn nếu text trống (chỉ ở web con) - chạy sau khi heartText đã sẵn sàng
                             setTimeout(() => {
-                                if (window.location.hash.includes('#id=') || window.location.hash.includes('#config=')) {
+                                if (isChildWeb) {
                                     const letterBtn = document.getElementById('letter-btn');
                                     // Kiểm tra từ config hoặc từ window.heartText
-                                    const textContent = data.config.text3d?.text || (window.heartText?.config?.text || '');
+                                    const textContent = data.config.text3d?.text || data.config.content || '';
                                     if (letterBtn && (!textContent || textContent.trim() === '')) {
                                         letterBtn.classList.add('hidden-when-empty');
                                     }
@@ -1343,18 +1382,7 @@ export class CentralSphere {
                             }, 1200); // Đợi lâu hơn để đảm bảo heartText đã khởi tạo
 
                             // Image loading owns overlay completion; do not reveal a partial scene.
-                            // Hiện dialog hướng dẫn nhanh sau khi load xong config
-                            setTimeout(() => {
-                                const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-                                const mobileHelp = document.getElementById('mobileQuickHelp');
-                                const desktopHelp = document.getElementById('desktopQuickHelp');
 
-                                if (isMobile && mobileHelp) {
-                                    mobileHelp.classList.add('active');
-                                } else if (!isMobile && desktopHelp) {
-                                    desktopHelp.classList.add('active');
-                                }
-                            }, 200); // Đợi 0.2 giây sau khi overlay tắt
                         }
                     });
             } else if (hash.startsWith('#config=')) {
@@ -1481,10 +1509,10 @@ export class CentralSphere {
 
                     // Ẩn letter-btn nếu text trống (chỉ ở web con) - chạy sau khi heartText đã sẵn sàng
                     setTimeout(() => {
-                        if (window.location.hash.includes('#id=') || window.location.hash.includes('#config=')) {
+                        if (isChildWeb) {
                             const letterBtn = document.getElementById('letter-btn');
                             // Kiểm tra từ config hoặc từ window.heartText
-                            const textContent = config.text3d?.text || (window.heartText?.config?.text || '');
+                            const textContent = config.text3d?.text || config.content || '';
                             if (letterBtn && (!textContent || textContent.trim() === '')) {
                                 letterBtn.classList.add('hidden-when-empty');
                             }
@@ -1523,18 +1551,7 @@ export class CentralSphere {
                         }, 1500);
                     }
 
-                    // Hiện dialog hướng dẫn nhanh ngay sau khi overlay tắt
-                    setTimeout(() => {
-                        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-                        const mobileHelp = document.getElementById('mobileQuickHelp');
-                        const desktopHelp = document.getElementById('desktopQuickHelp');
 
-                        if (isMobile && mobileHelp) {
-                            mobileHelp.classList.add('active');
-                        } else if (!isMobile && desktopHelp) {
-                            desktopHelp.classList.add('active');
-                        }
-                    }, 100); // Chỉ đợi 0.1 giây
                 } catch (e) {
                     // Nếu lỗi thì bỏ qua
                 }
@@ -2938,7 +2955,8 @@ export class CentralSphere {
         const textContent = window.heartText.config.text || '';
         // Xử lý các loại xuống dòng khác nhau (\n, \r\n, \r)
         const normalizedText = textContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const lines = normalizedText.split('\n').filter(line => line.trim() !== '');
+        const lines = window.heartText.displayLines?.filter(line => line.trim() !== '')
+            || normalizedText.split('\n').filter(line => line.trim() !== '');
 
 
         let yPosition = 200; // Vị trí mặc định

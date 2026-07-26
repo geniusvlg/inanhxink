@@ -6,7 +6,7 @@
     <title>Love Planet</title>
     <link rel="icon" type="image/x-icon" href="assets/images/planet.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260726-13">
     <script data-cfasync="false" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <!-- Dynamic data from backend via /api/site-data -->
@@ -52,6 +52,9 @@
                         var config = (data && data.template_data) ? data.template_data : {};
                         // Map our field names to what sphere.js expects
                         if (config.musicUrl && !config.audioUrl) config.audioUrl = config.musicUrl;
+                        if (!config.text3d && typeof config.content === 'string' && config.content.trim()) {
+                            config.text3d = { text: config.content.trim() };
+                        }
                         return new Response(
                             JSON.stringify({ success: true, config: config }),
                             { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -98,9 +101,9 @@
             <div class="section-divider"><h4>Điều khiển cơ bản</h4></div>
             <ul>
                 <li><span class="label-pc">[PC]</span> Click đúp chuột: Phát nhạc &amp; kích hoạt hiệu ứng camera</li>
-                <li><span class="label-pc">[PC]</span> ↑ Ấn phím mũi tên lên: Bật/Tắt hiệu ứng bay vòng ảnh</li>
+                <li><span class="label-pc">[PC]</span> Ấn icon hộp quà: Kích hoạt hiệu ứng bay vòng ảnh</li>
                 <li><span class="label-mobile">[Mobile]</span> Ấn 2 lần: Phát nhạc &amp; kích hoạt hiệu ứng camera</li>
-                <li><span class="label-mobile">[Mobile]</span> Ấn icon hộp quà: Bật/Tắt hiệu ứng bay vòng ảnh</li>
+                <li><span class="label-mobile">[Mobile]</span> Ấn icon hộp quà: Kích hoạt hiệu ứng bay vòng ảnh</li>
             </ul>
         </div>
         <div class="help-section">
@@ -118,36 +121,9 @@
     <div id="userDropdown" style="display:none;"></div>
     <div class="help-icon"><i class="fas fa-question-circle"></i></div>
 
-    <!-- Quick help: Mobile -->
-    <div class="quick-help-panel mobile-help" id="mobileQuickHelp">
-        <div class="quick-help-header">
-            <h3>📱 Hướng dẫn Mobile</h3>
-            <button class="quick-help-close-btn" onclick="closeQuickHelp('mobile')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="quick-help-content">
-            <div class="quick-help-section"><h4>📷 Hiệu ứng Camera</h4><p>Ấn 2 lần vào màn hình để kích hoạt</p></div>
-            <div class="quick-help-section"><h4>🌸 Hiệu ứng bay vòng ảnh</h4><p>Ấn vào "icon hộp quà" để bật/tắt</p></div>
-            <div class="quick-help-section"><h4>☄️ Mưa sao băng</h4><p>Tự động bật khi thiên hà có tính năng này</p></div>
-            <div class="quick-help-section"><h4>🎮 Điều khiển camera</h4><p>Vuốt để xoay, chụm/tách để phóng to/thu nhỏ</p></div>
-        </div>
-    </div>
-
-    <!-- Quick help: Desktop -->
-    <div class="quick-help-panel desktop-help" id="desktopQuickHelp">
-        <div class="quick-help-header">
-            <h3>💻 Hướng dẫn Desktop</h3>
-            <button class="quick-help-close-btn" onclick="closeQuickHelp('desktop')"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="quick-help-content">
-            <div class="quick-help-section"><h4>📷 Hiệu ứng Camera</h4><p>Click đúp chuột để kích hoạt</p></div>
-            <div class="quick-help-section"><h4>🌸 Hiệu ứng bay vòng ảnh</h4><p>↑ Ấn phím mũi tên lên để bật/tắt</p></div>
-            <div class="quick-help-section"><h4>☄️ Mưa sao băng</h4><p>Tự động bật khi thiên hà có tính năng này</p></div>
-            <div class="quick-help-section"><h4>🎮 Điều khiển camera</h4><p>Click và kéo để xoay, cuộn chuột để phóng to/thu nhỏ</p></div>
-        </div>
-    </div>
-
-    <button id="gift-btn" class="gift-btn" title="Hiệu ứng bay vòng ảnh">
+    <button id="gift-btn" class="gift-btn" title="Bấm để tạo hiệu ứng ảnh bay" aria-label="Bấm để tạo hiệu ứng ảnh bay">
         <img src="assets/images/gift.gif" alt="Gift" style="width:28px;height:28px;vertical-align:middle;">
+        <span>Ảnh bay</span>
     </button>
     <button id="letter-btn" class="letter-btn" title="Hiệu ứng thư tình">
         <img src="assets/images/letter.gif" alt="Letter" style="width:28px;height:28px;vertical-align:middle;">
@@ -173,7 +149,7 @@
             var tabletLandscape = window.innerWidth > 1024 && window.innerWidth <= 1380 && window.innerHeight < window.innerWidth;
             var surface = navigator.platform === 'Win32' && navigator.maxTouchPoints > 1;
             var hideOnDesktop = ((window.innerWidth > 1025 && window.innerHeight > window.innerWidth) || (window.innerWidth > 1380)) && !surface;
-            giftBtn.style.display = hideOnDesktop ? 'none' : (mobile || tabletLandscape || surface ? 'block' : 'none');
+            giftBtn.style.display = 'block';
             if (letterBtn) {
                 var hash = window.location.hash;
                 if (hash.indexOf('#config=') === 0 || hash.indexOf('#id=') === 0) {
@@ -204,7 +180,7 @@
     <audio id="bg-audio" style="display:none" loop></audio>
 
     <script data-cfasync="false" src="js/meteors.js"></script>
-    <script data-cfasync="false" src="bundle.js"></script>
+    <script data-cfasync="false" src="bundle.js?v=20260726-13"></script>
 
     <div id="flower-toast" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,0.92);color:#fff;font-size:13px;padding:7px 18px;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;"></div>
 </body>

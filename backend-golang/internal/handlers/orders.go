@@ -134,6 +134,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content, _ := body["content"].(string)
+	if resolvedType == "galaxy" && utf8.RuneCountInString(content) > 150 {
+		BadRequest(w, "Lời nhắn không được quá 150 ký tự")
+		return
+	}
 	imageUrls, _ := body["imageUrls"].([]any)
 	musicUrl, _ := body["musicUrl"].(string)
 	musicLink, _ := body["musicLink"].(string)
@@ -155,6 +159,9 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	templateData := map[string]any{"content": content}
 	if templateType == "letterinspace" || templateType == "galaxy" || templateType == "specialgift" {
 		templateData["texts"] = splitNonEmptyLines(content)
+	}
+	if templateType == "galaxy" && strings.TrimSpace(content) != "" {
+		templateData["text3d"] = map[string]any{"text": strings.TrimSpace(content)}
 	}
 	switch templateType {
 	case "loveletter":

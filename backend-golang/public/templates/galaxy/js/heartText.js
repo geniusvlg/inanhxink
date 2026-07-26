@@ -95,8 +95,31 @@ export class HeartText {
         if (typeof newText === 'string') {
             this.config.text = newText;
         }
-        const lines = this.config.text.split('\n');
-        const lineHeight = this.config.size * 1.2;
+        const isMobile = window.innerWidth <= 700;
+        const maxCharsPerLine = isMobile ? 24 : 36;
+        const wrappedLines = [];
+        this.config.text.trim().split(/\r?\n/).forEach(paragraph => {
+            const words = paragraph.trim().split(/\s+/).filter(Boolean);
+            let currentLine = '';
+            words.forEach(word => {
+                const candidate = currentLine ? `${currentLine} ${word}` : word;
+                if (currentLine && candidate.length > maxCharsPerLine) {
+                    wrappedLines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = candidate;
+                }
+            });
+            if (currentLine) wrappedLines.push(currentLine);
+        });
+        const maxLines = 7;
+        const lines = wrappedLines.slice(0, maxLines);
+        if (wrappedLines.length > maxLines) {
+            lines[maxLines - 1] = wrappedLines.slice(maxLines - 1).join(' ');
+        }
+        this.displayLines = lines.length > 0 ? lines : [''];
+        const lineHeight = this.config.size * (isMobile ? 0.9 : 1.1);
+        const maxTextWidth = isMobile ? 160 : 380;
         lines.forEach((line, i) => {
             const textGeometry = new TextGeometry(line, {
                 font: this.font,
@@ -120,8 +143,13 @@ export class HeartText {
                 transparent: true
             });
             const mesh = new THREE.Mesh(textGeometry, textMaterial);
+            const textScale = Math.min(1, maxTextWidth / Math.max(textWidth, 1));
+            mesh.scale.x = textScale;
+            mesh.scale.y = textScale;
+            mesh.userData.baseTextScale = textScale;
+            mesh.userData.lineHeight = lineHeight;
             mesh.position.set(
-                this.config.position.x - textWidth / 2,
+                this.config.position.x - (textWidth * textScale) / 2,
                 this.config.position.y - i * lineHeight,
                 this.config.position.z
             );
@@ -132,6 +160,16 @@ export class HeartText {
             this.textGroup.add(mesh);
             this.textMeshes.push(mesh);
         });
+        if (this.textMeshes.length > 0) {
+            const sharedScale = Math.min(...this.textMeshes.map(mesh => mesh.userData.baseTextScale || 1));
+            this.textMeshes.forEach(mesh => {
+                const textWidth = mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x;
+                mesh.userData.baseTextScale = sharedScale;
+                mesh.scale.x = sharedScale;
+                mesh.scale.y = sharedScale;
+                mesh.position.x = this.config.position.x - (textWidth * sharedScale) / 2;
+            });
+        }
         // Thêm ánh sáng riêng cho text và điều chỉnh vị trí ánh sáng theo text (chỉ 1 lần)
         if (!this._textLight) {
             const textLight = new THREE.SpotLight(0xffffff, 5, 480, Math.PI / 4, 0.5, 1);
@@ -300,20 +338,23 @@ export class HeartText {
             case 'none':
                 this.textMeshes.forEach((mesh, idx) => {
                     const textWidth = mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x;
+                    const baseScale = mesh.userData.baseTextScale || 1;
+                    const lineHeight = mesh.userData.lineHeight || this.config.size * 1.2;
                     mesh.position.set(
-                        this.config.position.x - textWidth / 2,
-                        this.config.position.y - idx * this.config.size * 1.2,
+                        this.config.position.x - (textWidth * baseScale) / 2,
+                        this.config.position.y - idx * lineHeight,
                         this.config.position.z
                     );
                     mesh.rotation.set(0, 0, 0);
-                    mesh.scale.set(1, 1, this.config.height < 1 ? this.config.height : 1);
+                    mesh.scale.set(baseScale, baseScale, this.config.height < 1 ? this.config.height : 1);
                     mesh.material.opacity = 1;
                     mesh.material.emissiveIntensity = this.config.emissiveIntensity;
                 });
                 break;
             case 'float':
                 this.textMeshes.forEach((mesh, idx) => {
-                    const baseY = this.config.position.y - idx * this.config.size * 1.2;
+                    const lineHeight = mesh.userData.lineHeight || this.config.size * 1.2;
+                    const baseY = this.config.position.y - idx * lineHeight;
                     mesh.position.y = baseY + Math.sin(time * 2 * this.config.effectSpeed) * (5 * this.config.effectIntensity);
                     mesh.rotation.y = Math.sin(time * 0.5 * this.config.effectSpeed) * (0.1 * this.config.effectIntensity);
                 });
@@ -335,9 +376,10 @@ export class HeartText {
                 break;
             case 'pulse':
                 this.textMeshes.forEach((mesh, idx) => {
-                    const scale = 1 + Math.sin(time * 3 * this.config.effectSpeed) * 0.1 * this.config.effectIntensity;
-                    const scaleZ = this.config.height < 1 ? this.config.height : scale;
-                    mesh.scale.set(scale, scale, scaleZ);
+                    const pulseScale = 1 + Math.sin(time * 3 * this.config.effectSpeed) * 0.1 * this.config.effectIntensity;
+                    const baseScale = mesh.userData.baseTextScale || 1;
+                    const scaleZ = this.config.height < 1 ? this.config.height : pulseScale;
+                    mesh.scale.set(baseScale * pulseScale, baseScale * pulseScale, scaleZ);
                 });
                 break;
             case 'glow':
