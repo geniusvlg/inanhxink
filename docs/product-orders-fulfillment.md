@@ -1,8 +1,25 @@
 # Product Orders and Fulfillment
 
-## Checkout Image Uploads
+## Checkout Image Uploads (customer-facing: Zalo, not in-app)
 
-Product checkout uploads customer images immediately to S3 under:
+As of commit `1b48f71` (2026-05-06, "Fix payment"), checkout **no longer lets
+customers upload images in the app**. `CheckoutPage.tsx` Step 2 ("Ghi chú")
+only shows a per-item note textarea plus a notice asking customers to send
+product photos via Zalo after placing the order, quoting the order code, up to
+`max_upload_images` photos:
+
+> Gửi ảnh qua Zalo sau khi đặt hàng. Tối đa {limit} ảnh — nhắn kèm mã đơn hàng
+> để shop xử lý đúng đơn.
+
+Admin then attaches the received photos to the order via
+`PATCH /api/admin/product-orders/:id/items` (see "Admin Fulfillment" below).
+
+The old in-checkout upload plumbing below is still present in the backend
+(and as dead/unused code in the frontend — `handleFileAdd`,
+`uploadProductImages`, etc. in `CheckoutPage.tsx`), kept in case this flow is
+re-enabled, but it is not exercised by the current UI:
+
+Product checkout used to upload customer images immediately to S3 under:
 
 ```text
 product-orders/temp/{cart_session_id}/
@@ -44,6 +61,10 @@ the CDN at response time.
 
 ## Payment and S3 Movement
 
+This section describes the legacy in-checkout upload path's backend behavior
+(see note above — the frontend no longer drives it, but the code path and S3
+lifecycle rules remain in place).
+
 Unpaid product-order images remain in `product-orders/temp/{cart_session_id}/`.
 They must not be moved to `paid/` at order creation time.
 
@@ -77,33 +98,39 @@ fulfillment and admin download.
 
 ## S3 Lifecycle
 
-Use S3 lifecycle rules for product-order image cleanup:
+Only `uploads/temp/` (QR order music/voice uploads, see
+`docs/qr-voice-recording.md`) currently needs a lifecycle rule:
 
-- `product-orders/temp/` expires after 1 day.
-- `product-orders/paid/` expires after 7 days.
+- `uploads/temp/` expires after 1 day.
+
+`product-orders/temp/` and `product-orders/paid/` **do not** currently have
+lifecycle rules. Since checkout no longer uploads customer images in-app (see
+"Checkout Image Uploads" above), nothing writes to those prefixes today. The
+upload endpoint and `temp/` → `paid/` move-on-payment code still exist and
+are not blocked, so if that flow is ever re-enabled (or called directly),
+re-add the `product-orders/temp/` (1 day) and `product-orders/paid/` (7 days)
+expiration rules at that time.
+
+Current S3 vendor is VNG Cloud vStorage (`S3_ENDPOINT` in `backend-golang/.env`).
+Its S3-compatible API returns blank `<Message>` fields on error responses,
+which crashes `aws-cli`'s own error-message enhancer with
+`TypeError: argument of type 'NoneType' is not a container or iterable` —
+this happens on **any** error (including harmless ones like "no lifecycle
+configured yet"), not just real failures. Passing `--region` (any value, it's
+ignored by the endpoint) avoids one known trigger of this bug on `s3api`
+calls, but `s3cmd` is more reliable for this vendor when inspecting
+error/edge-case responses (e.g. `s3cmd getlifecycle s3://inanhxink-prod`).
 
 Example AWS CLI command:
 
 ```bash
 AWS_ACCESS_KEY_ID="your_access_key" \
 AWS_SECRET_ACCESS_KEY="your_secret_key" \
-aws s3api put-bucket-lifecycle-configuration \
+aws --region us-east-1 s3api put-bucket-lifecycle-configuration \
   --bucket inanhxink-prod \
-  --endpoint-url https://s3-north1.viettelidc.com.vn \
+  --endpoint-url https://hcm04.vstorage.vngcloud.vn \
   --lifecycle-configuration '{
     "Rules": [
-      {
-        "ID": "ExpireProductTempUploadsAfter1Day",
-        "Status": "Enabled",
-        "Filter": { "Prefix": "product-orders/temp/" },
-        "Expiration": { "Days": 1 }
-      },
-      {
-        "ID": "ExpireProductPaidUploadsAfter7Days",
-        "Status": "Enabled",
-        "Filter": { "Prefix": "product-orders/paid/" },
-        "Expiration": { "Days": 7 }
-      },
       {
         "ID": "ExpireQRTempUploadsAfter1Day",
         "Status": "Enabled",
@@ -124,17 +151,22 @@ Admin can edit this number in the product form (`ProductItemsPage.tsx`). Checkou
 refreshes product metadata from `/api/products/:id` and uses the latest
 `max_upload_images`, so existing cart items still pick up admin changes.
 
-Frontend checkout behavior:
+Frontend checkout behavior (current, Zalo-based flow):
 
-- Shows `Thêm ảnh (current/limit)`.
-- Shows a helper note: `Tối đa {limit} ảnh cho sản phẩm này.`
-- Blocks adding more than the per-product limit.
+- Step 2 shows the Zalo notice with the per-product limit interpolated:
+  `Tối đa {limit} ảnh — nhắn kèm mã đơn hàng để shop xử lý đúng đơn.`
+- No in-app file picker or upload counter is shown — `max_upload_images` is
+  purely informational text telling the customer how many photos to send over
+  Zalo.
 
 Backend behavior:
 
 - `CreateProductOrder` validates each submitted item's `image_urls` count against
-  the current product `max_upload_images`.
-- This protects against users bypassing the frontend.
+  the current product `max_upload_images`. This still applies if `image_urls`
+  is populated by any caller (e.g. a future re-enabled upload UI, or direct API
+  use), even though the current checkout UI never submits any.
+- Admin-attached images via `PATCH /api/admin/product-orders/:id/items` are not
+  currently capped by `max_upload_images`.
 
 ## Shipping Fee
 

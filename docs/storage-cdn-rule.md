@@ -77,12 +77,16 @@ payloads.
 
 ## Product-order image prefixes
 
-Product order uploads are used for printing and handcrafted fulfillment:
+Product order uploads were used for printing and handcrafted fulfillment.
+Checkout no longer uploads customer images in-app (customers send photos via
+Zalo instead — see `docs/product-orders-fulfillment.md`), so nothing writes
+to these prefixes today. The backend upload endpoint and `temp/` → `paid/`
+move-on-payment code still exist, unblocked, in case this flow is re-enabled:
 
 | Prefix | Meaning | Lifecycle |
 |--------|---------|-----------|
-| `product-orders/temp/{cart_session_id}/` | Customer uploaded images before payment | expire after 1 day |
-| `product-orders/paid/{order_id}/` | Images moved after payment confirmation | expire after 7 days |
+| `product-orders/temp/{cart_session_id}/` | Customer uploaded images before payment | no rule currently applied (was: expire after 1 day) |
+| `product-orders/paid/{order_id}/` | Images moved after payment confirmation | no rule currently applied (was: expire after 7 days) |
 
 Unlike product catalog images, product-order customer uploads keep their original
 file bytes and format. They are not converted to WebP.
