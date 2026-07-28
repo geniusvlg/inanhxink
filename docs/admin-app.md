@@ -84,8 +84,11 @@ raw S3 URLs for edit/delete flows.
 }
 ```
 
-`max_upload_images` controls how many customer images can be uploaded for that
-product during checkout. The admin product form defaults it to `15`; checkout
+`max_upload_images` no longer gates an in-app checkout upload — checkout has
+no file picker (see `docs/product-orders-fulfillment.md`). It's shown to the
+customer as the max number of photos to send via Zalo after ordering, and
+still caps `image_urls` server-side in `CreateProductOrder` for any caller
+that does submit them. The admin product form defaults it to `15`; checkout
 also refreshes product metadata by ID so existing cart items pick up changes.
 
 ## Image Upload Flow

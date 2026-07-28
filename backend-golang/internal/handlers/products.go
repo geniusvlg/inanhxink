@@ -170,7 +170,10 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Every product view bumps the sold counter by 1 (best-effort; a failure
-	// here must not block serving the product).
+	// here must not block serving the product). trg_products_updated_at
+	// (V63) intentionally ignores sold_count-only changes so a view never
+	// bumps updated_at and reshuffles list ordering (which defaults to
+	// ORDER BY updated_at DESC).
 	var newSold int64
 	if err := config.DB.QueryRow(context.Background(),
 		`UPDATE products SET sold_count = sold_count + 1 WHERE id = $1 RETURNING sold_count`,

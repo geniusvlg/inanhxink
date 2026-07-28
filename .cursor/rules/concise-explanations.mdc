@@ -1,0 +1,17 @@
+---
+description: Keep explanations concise, not verbose
+alwaysApply: true
+---
+
+# Concise Explanations
+
+When explaining findings, root causes, or reasoning to the user (chat responses,
+not code comments), keep it short and to the point:
+
+- Lead with the answer/conclusion, not a long buildup.
+- Use short bullet points over long paragraphs.
+- Skip restating context the user already knows or already said.
+- Only include the detail needed to justify the next action — cut background
+  narration, hedging, and repeated caveats.
+- Prefer a few precise sentences over an exhaustive step-by-step narrative,
+  unless the user explicitly asks for a detailed walkthrough.
