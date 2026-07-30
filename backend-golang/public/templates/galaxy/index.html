@@ -6,7 +6,7 @@
     <title>Love Planet</title>
     <link rel="icon" type="image/x-icon" href="assets/images/planet.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css?v=20260726-13">
+    <link rel="stylesheet" href="styles.css?v=20260730-15">
     <script data-cfasync="false" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <!-- Dynamic data from backend via /api/site-data -->
@@ -179,8 +179,15 @@
 
     <audio id="bg-audio" style="display:none" loop></audio>
 
+    <!-- Shown whenever there is background music but it hasn't started playing yet
+         (browsers block programmatic autoplay with sound). Clicking it plays the
+         current track; it auto-hides as soon as playback actually starts. -->
+    <button id="music-start-btn" class="music-start-btn hidden" type="button">
+        <i class="fas fa-music"></i> Bấm để bật nhạc
+    </button>
+
     <script data-cfasync="false" src="js/meteors.js"></script>
-    <script data-cfasync="false" src="bundle.js?v=20260730-14"></script>
+    <script data-cfasync="false" src="bundle.js?v=20260730-15"></script>
 
     <div id="flower-toast" style="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:rgba(30,30,30,0.92);color:#fff;font-size:13px;padding:7px 18px;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;"></div>
 </body>

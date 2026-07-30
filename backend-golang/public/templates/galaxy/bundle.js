@@ -45432,6 +45432,7 @@ void main() {
           this.audio.load();
           this.isPlaying = false;
           this.isAudioLoaded = false;
+          this.showPlayPrompt();
         }).catch((error2) => {
           console.error("\u{1F3B5} Error setting audio URL:", error2);
           this.audio.src = this.defaultAudioUrl;
@@ -45446,6 +45447,7 @@ void main() {
       });
       this.audio.addEventListener("play", () => {
         this.isPlaying = true;
+        this.hidePlayPrompt();
       });
       this.audio.addEventListener("pause", () => {
         this.isPlaying = false;
@@ -45476,6 +45478,21 @@ void main() {
       } catch (error2) {
         console.error("\u{1F3B5} Error playing audio:", error2);
       }
+    }
+    showPlayPrompt() {
+      const btn = document.getElementById("music-start-btn");
+      if (!btn || !this.audio.paused) return;
+      btn.classList.remove("hidden");
+      if (!this._playPromptBound) {
+        this._playPromptBound = true;
+        btn.addEventListener("click", () => {
+          this.playOnly();
+        });
+      }
+    }
+    hidePlayPrompt() {
+      const btn = document.getElementById("music-start-btn");
+      if (btn) btn.classList.add("hidden");
     }
     // === PUBLIC METHODS ===
     /**

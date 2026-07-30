@@ -276,7 +276,14 @@ export class AudioManager {
                 this.audio.load();
                 this.isPlaying = false;
                 this.isAudioLoaded = false;
-                
+
+                // Mỗi lần đổi bài (kể cả bài mặc định lúc khởi tạo, hoặc bài
+                // tuỳ chỉnh của khách hàng nạp về sau từ site-data) audio bị
+                // reset (paused). Trình duyệt hầu hết chặn autoplay có âm
+                // thanh, nên thay vì cố gắng tự phát ngầm, hiển thị hẳn một
+                // nút để người dùng chủ động bấm bật nhạc.
+                this.showPlayPrompt();
+
             }).catch(error => {
                 console.error('🎵 Error setting audio URL:', error);
                 // Fallback to default
@@ -284,6 +291,30 @@ export class AudioManager {
                 this.currentAudioUrl = this.defaultAudioUrl;
             });
         }
+    }
+
+    /**
+     * Hiển thị nút "Bấm để bật nhạc" (thay vì cố autoplay ngầm, vốn hầu hết
+     * bị trình duyệt chặn khi có âm thanh). Nút tự ẩn khi audio bắt đầu phát,
+     * dù được bật qua chính nút này hay qua double-click/double-tap.
+     */
+    showPlayPrompt() {
+        const btn = document.getElementById('music-start-btn');
+        if (!btn || !this.audio.paused) return;
+
+        btn.classList.remove('hidden');
+
+        if (!this._playPromptBound) {
+            this._playPromptBound = true;
+            btn.addEventListener('click', () => {
+                this.playOnly();
+            });
+        }
+    }
+
+    hidePlayPrompt() {
+        const btn = document.getElementById('music-start-btn');
+        if (btn) btn.classList.add('hidden');
     }
 
     setupAudioEvents() {
@@ -297,6 +328,7 @@ export class AudioManager {
         // Xử lý sự kiện khi audio bắt đầu phát
         this.audio.addEventListener('play', () => {
             this.isPlaying = true;
+            this.hidePlayPrompt();
         });
 
         // Xử lý sự kiện khi audio tạm dừng
