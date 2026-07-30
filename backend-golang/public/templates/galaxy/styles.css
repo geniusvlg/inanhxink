@@ -1808,32 +1808,44 @@ select#textAppearEffect {
   }
 }
 
-/* "Bấm để bật nhạc" prompt — shown until the visitor explicitly starts music. */
-.music-start-btn {
+/* Tap-to-start gate — a floating button above the central scene (no dimming
+   overlay, page stays fully visible). Tapping it kicks off the intro
+   countdown + background music together in one user gesture. */
+.tap-to-start-btn {
   position: fixed;
   left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
+  top: 16%;
+  transform: translate(-50%, -50%);
   z-index: 100000;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
   border-radius: 999px;
-  background: rgba(12, 12, 18, 0.85);
+  background: rgba(12, 12, 18, 0.8);
   color: #fff;
   border: 1px solid #ff6b6b;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  font: 600 14px/1 Arial, sans-serif;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
+  font: 600 15px/1 Arial, sans-serif;
   cursor: pointer;
-  animation: musicStartPulse 2s ease-in-out infinite;
+  animation: tapToStartPulse 1.8s ease-in-out infinite;
 }
 
-.music-start-btn:active {
+.tap-to-start-btn i {
+  color: #ff6b6b;
+}
+
+.tap-to-start-btn:active {
   background: rgba(30, 30, 30, 0.9);
 }
 
-@keyframes musicStartPulse {
-  0%, 100% { box-shadow: 0 2px 10px rgba(255, 107, 107, 0.25); }
-  50% { box-shadow: 0 2px 18px rgba(255, 107, 107, 0.55); }
+@keyframes tapToStartPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 2px 14px rgba(255, 107, 107, 0.25); }
+  50% { transform: translate(-50%, -50%) scale(1.06); box-shadow: 0 2px 22px rgba(255, 107, 107, 0.6); }
+}
+
+@media (max-width: 700px) {
+  .tap-to-start-btn {
+    top: 14%;
+  }
 }

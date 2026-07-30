@@ -115,16 +115,32 @@
     <div class="polaroid polaroid-6"><img src="./images/dderhkan.v4d.jpeg" alt="Polaroid 6"></div>
     <div class="polaroid polaroid-7"><img src="./images/and5bcb2.i0s.jpeg" alt="Polaroid 7"></div>
     <div class="polaroid polaroid-8"><img src="./images/qvz5gq44.um2.jpeg" alt="Polaroid 8"></div>
+    <div class="polaroid polaroid-9"><img src="./images/5fhz0ver.gry.jpeg" alt="Polaroid 9"></div>
+    <div class="polaroid polaroid-10"><img src="./images/lzbnesb1.2ca.jpeg" alt="Polaroid 10"></div>
+    <div class="polaroid polaroid-11"><img src="./images/jyg2rqun.1fx.jpeg" alt="Polaroid 11"></div>
+    <div class="polaroid polaroid-12"><img src="./images/mzbnhhoq.tgu.jpeg" alt="Polaroid 12"></div>
+    <div class="polaroid polaroid-13"><img src="./images/mn41lj4p.eq0.jpeg" alt="Polaroid 13"></div>
+    <div class="polaroid polaroid-14"><img src="./images/dderhkan.v4d.jpeg" alt="Polaroid 14"></div>
+    <div class="polaroid polaroid-15"><img src="./images/and5bcb2.i0s.jpeg" alt="Polaroid 15"></div>
   </div>
 
   <div id="polaroidOverlay"></div>
 
   <div id="polaroidFullscreenOverlay">
+    <div class="fullscreen-heart-deco fh-1"><svg viewBox="0 0 32 32" width="30" height="30"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#FFB8C6"/></svg></div>
+    <div class="fullscreen-heart-deco fh-2"><svg viewBox="0 0 32 32" width="22" height="22"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#FFE0E8" stroke="#C0392B" stroke-width="1.5"/></svg></div>
+    <div class="fullscreen-heart-deco fh-3"><svg viewBox="0 0 32 32" width="24" height="24"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#E07090"/></svg></div>
+    <div class="fullscreen-heart-deco fh-4"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#FFCDD8"/></svg></div>
     <div class="fullscreen-content">
-      <img id="fullscreenPolaroidImg">
+      <div class="fullscreen-image-viewport">
+        <img id="fullscreenPolaroidImg" class="fullscreen-slide">
+        <img id="fullscreenPolaroidImgIncoming" class="fullscreen-slide" style="display:none;">
+        <div class="fullscreen-corner-heart"><svg viewBox="0 0 32 32" width="34" height="34"><path d="M16 29 C14 27, 2 18, 2 10 A7 7 0 0 1 16 7 A7 7 0 0 1 30 10 C30 18, 18 27, 16 29Z" fill="#E07090" stroke="#fff" stroke-width="1.5"/></svg></div>
+      </div>
       <div id="fullscreenPolaroidLabel"></div>
       <button id="closeFullscreenBtn">×</button>
-      <div class="fullscreen-arrow" title="Bấm để xem ảnh tiếp theo"></div>
+      <div class="fullscreen-arrow fullscreen-arrow-prev" title="Ảnh trước"></div>
+      <div class="fullscreen-arrow fullscreen-arrow-next" title="Ảnh tiếp theo"></div>
     </div>
   </div>
 

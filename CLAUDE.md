@@ -2,7 +2,7 @@
 
 ## Rules
 
-- **Never `git push` autonomously.** Always stop after committing locally. Let the user review and push themselves.
+- **Never `git commit` or `git push` autonomously.** Leave changes staged/unstaged in the working tree and let the user review, commit, and push themselves.
 - At the start of every conversation, call `mcp__serena__initial_instructions` to confirm the active project and list existing memories (call `mcp__serena__onboarding` only if none exist yet). This repo's Serena server is registered **per-project** as `serena`. A separate `oraios-serena` server is registered **globally** in this machine's Claude config and is shared with other, unrelated projects — its tools (`mcp__oraios-serena__*`) are not scoped to this repo (even similarly-named ones like `check_onboarding_performed`) and must not be used here.
 - Before working on a feature, skim the `docs/` folder for relevant docs (e.g. `docs/admin-app.md`, `docs/golang-backend.md`, `docs/feedback-feature.md`, `docs/claude-rules.md`); these are the source of truth for cross-cutting features and working conventions
 - When asked to "remember" something, persist it in **both** Serena memory **and** a relevant file in `docs/` (create one if no existing doc fits). Keep `docs/` in sync whenever a feature, schema, or architecture detail changes
