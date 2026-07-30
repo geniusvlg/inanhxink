@@ -1190,13 +1190,32 @@ export class CentralSphere {
                     }
                 }, 1000);
             }
+            // Cổng "Nhấn để bắt đầu": chờ một cử chỉ rõ ràng của người dùng rồi mới
+            // chạy countdown & bật nhạc nền cùng lúc (trình duyệt chặn autoplay có
+            // âm thanh nếu không có tương tác của người dùng).
+            function showTapToStart() {
+                const tapOverlay = document.getElementById('tap-to-start-overlay');
+                if (!tapOverlay) {
+                    // Không có overlay (fallback an toàn) -> giữ hành vi cũ.
+                    startMessageCountdown();
+                    if (window.audioManager?.playOnly) window.audioManager.playOnly();
+                    return;
+                }
+                tapOverlay.classList.remove('hidden');
+                const start = () => {
+                    tapOverlay.classList.add('hidden');
+                    startMessageCountdown();
+                    if (window.audioManager?.playOnly) window.audioManager.playOnly();
+                };
+                tapOverlay.addEventListener('click', start, { once: true });
+            }
             function tryHideOverlay() {
                 if (!isChildWeb || !overlay) return;
                 if (readiness.text3d && readiness.images && readiness.heart3d) {
                     if (overlayTimeout) clearTimeout(overlayTimeout);
                     removeRetryButton();
                     overlay.style.display = 'none';
-                    startMessageCountdown();
+                    showTapToStart();
                 }
             }
             function markImagesReady() {

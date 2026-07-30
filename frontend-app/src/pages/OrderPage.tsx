@@ -92,6 +92,7 @@ function OrderPage() {
   const AVATAR_SLOTS = 2;
   const GALLERY_SLOTS = 10;
   const QR_TEMPLATE_MAX_IMAGES = 12;
+  const LOVELETTER_MAX_IMAGES = 15;
   const GALAXY_MAX_IMAGES = 15;
   const BIRTHDAY_CAKE_MAX_IMAGES = 24;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
@@ -1039,7 +1040,13 @@ function OrderPage() {
             <ImageUploader
               images={uploadedImages}
               onImagesChange={setUploadedImages}
-              maxImages={templateType === 'galaxy' ? GALAXY_MAX_IMAGES : QR_TEMPLATE_MAX_IMAGES}
+              maxImages={
+                templateType === 'galaxy'
+                  ? GALAXY_MAX_IMAGES
+                  : templateType === 'loveletter'
+                  ? LOVELETTER_MAX_IMAGES
+                  : QR_TEMPLATE_MAX_IMAGES
+              }
               onImageSelected={() => {}}
               initialPreviews={imagePreviews}
               onPreviewsChange={setImagePreviews}

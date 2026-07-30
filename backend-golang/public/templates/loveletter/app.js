@@ -289,6 +289,22 @@ function handlePaperClick(e) {
 // ── Polaroids ─────────────────────────────────────────────────────────────────
 const imageSources = _dataSource.images;
 
+// Fully fetch + decode every gallery photo up-front (while the envelope/letter
+// animation is playing) so that paging through the fullscreen viewer later
+// (the fullscreen slider) is instant — otherwise the browser can still show a
+// brief "loading" flash decoding a full-resolution photo for the first time
+// it's painted at a larger size, even though the bytes are already cached.
+function preloadGalleryImages() {
+  imageSources.forEach(src => {
+    if (!src) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+    if (img.decode) img.decode().catch(() => {});
+  });
+}
+preloadGalleryImages();
+
 function renderImages() {
   document.querySelectorAll(".polaroid").forEach((card, i) => {
     if (imageSources[i]) {
@@ -311,36 +327,108 @@ function showPolaroids(show) {
   }
 }
 
-function showPolaroidFullscreen(imgSrc, label) {
-  const overlay = document.getElementById("polaroidFullscreenOverlay");
-  const img     = document.getElementById("fullscreenPolaroidImg");
-  const lbl     = document.getElementById("fullscreenPolaroidLabel");
-  if (overlay && img && lbl) {
-    img.src = imgSrc;
-    img.dataset.currentSrc = imgSrc;
-    lbl.textContent = label || "";
-    overlay.style.display = "flex";
-    setTimeout(() => { overlay.style.opacity = "1"; }, 10);
+// ── Fullscreen viewer: sequential slider (prev/next buttons + auto-advance) ──
+let fullscreenIndex   = 0;
+let autoSlideTimer    = null;
+const AUTO_SLIDE_MS   = 4000;
+const SLIDE_DURATION  = 400; // ms, keep in sync with the CSS transition below
+
+// Renders `imageSources[fullscreenIndex]` into the viewport with a
+// Tinder-style card swipe: the current photo flies off (rotated) in the swipe
+// direction while the next photo — already peeking from behind, slightly
+// scaled down — rises up to take its place. direction: 'next' | 'prev';
+// null/undefined swaps instantly (used the first time the viewer opens).
+function renderFullscreenSlide(direction) {
+  const current  = document.getElementById("fullscreenPolaroidImg");
+  const incoming = document.getElementById("fullscreenPolaroidImgIncoming");
+  const src = imageSources[fullscreenIndex];
+  if (!current || !incoming || !src) return;
+
+  if (!direction) {
+    current.style.transition = "none";
+    current.style.transform  = "scale(1) translateY(0) rotate(0deg)";
+    current.style.opacity    = "1";
+    current.style.zIndex     = "2";
+    current.src = src;
+    incoming.style.display = "none";
+    return;
   }
+
+  // Position the incoming card behind the current one, peeking slightly —
+  // just like the next card in a Tinder stack.
+  incoming.src = src;
+  incoming.style.transition = "none";
+  incoming.style.transform  = "scale(0.92) translateY(10px) rotate(0deg)";
+  incoming.style.opacity    = "0.85";
+  incoming.style.zIndex     = "1";
+  incoming.style.display    = "block";
+  // Force layout so the transition below actually animates from this state.
+  void incoming.offsetWidth;
+
+  const flyX      = direction === "next" ? "130%" : "-130%";
+  const flyRotate = direction === "next" ? 18 : -18;
+
+  current.style.zIndex      = "2";
+  current.style.transition  = `transform ${SLIDE_DURATION}ms ease, opacity ${SLIDE_DURATION}ms ease`;
+  incoming.style.transition = `transform ${SLIDE_DURATION}ms ease, opacity ${SLIDE_DURATION}ms ease`;
+
+  requestAnimationFrame(() => {
+    // Swipe the current card away like a rejected/liked Tinder card.
+    current.style.transform = `translateX(${flyX}) translateY(-6px) rotate(${flyRotate}deg)`;
+    current.style.opacity   = "0";
+    // The card behind rises up to become the new front card.
+    incoming.style.transform = "scale(1) translateY(0) rotate(0deg)";
+    incoming.style.opacity   = "1";
+  });
+
+  setTimeout(() => {
+    current.src = src;
+    current.style.transition = "none";
+    current.style.transform  = "scale(1) translateY(0) rotate(0deg)";
+    current.style.opacity    = "1";
+    incoming.style.display   = "none";
+  }, SLIDE_DURATION);
+}
+
+function goToSlide(newIndex, direction) {
+  if (!imageSources.length) return;
+  fullscreenIndex = ((newIndex % imageSources.length) + imageSources.length) % imageSources.length;
+  renderFullscreenSlide(direction);
+  if (autoSlideTimer) startAutoSlide(); // restart the timer so manual nav doesn't get cut short
+}
+
+function goNextSlide() { goToSlide(fullscreenIndex + 1, "next"); }
+function goPrevSlide() { goToSlide(fullscreenIndex - 1, "prev"); }
+
+function startAutoSlide() {
+  stopAutoSlide();
+  if (imageSources.length > 1) {
+    autoSlideTimer = setInterval(() => goToSlide(fullscreenIndex + 1, "next"), AUTO_SLIDE_MS);
+  }
+}
+
+function stopAutoSlide() {
+  if (autoSlideTimer) { clearInterval(autoSlideTimer); autoSlideTimer = null; }
+}
+
+function showPolaroidFullscreen(index, label) {
+  const overlay = document.getElementById("polaroidFullscreenOverlay");
+  const lbl     = document.getElementById("fullscreenPolaroidLabel");
+  if (!overlay) return;
+  fullscreenIndex = index || 0;
+  renderFullscreenSlide(null);
+  if (lbl) lbl.textContent = label || "";
+  overlay.style.display = "flex";
+  setTimeout(() => { overlay.style.opacity = "1"; }, 10);
+  startAutoSlide();
 }
 
 function hidePolaroidFullscreen() {
   const overlay = document.getElementById("polaroidFullscreenOverlay");
+  stopAutoSlide();
   if (overlay) {
     overlay.style.opacity = "0";
     setTimeout(() => { overlay.style.display = "none"; }, 300);
-  }
-}
-
-function showRandomPolaroid() {
-  const img = document.getElementById("fullscreenPolaroidImg");
-  if (img && imageSources.length > 1) {
-    const current = img.dataset.currentSrc;
-    let next;
-    do { next = imageSources[Math.floor(Math.random() * imageSources.length)]; }
-    while (next === current && imageSources.length > 1);
-    img.src = next;
-    img.dataset.currentSrc = next;
   }
 }
 
@@ -418,20 +506,21 @@ function init() {
   if (extractedPaper) extractedPaper.addEventListener("click", handlePaperClick);
 
   // Polaroid clicks
-  document.querySelectorAll(".polaroid").forEach(p => {
+  document.querySelectorAll(".polaroid").forEach((p, i) => {
     p.addEventListener("click", e => {
       e.stopPropagation();
       const img   = p.querySelector("img");
       const label = p.querySelector(".polaroid-label")?.innerText || "";
-      if (img?.src) showPolaroidFullscreen(img.src, label);
+      if (img?.src) showPolaroidFullscreen(i, label);
     });
   });
 
   const fsOverlay = document.getElementById("polaroidFullscreenOverlay");
   fsOverlay?.addEventListener("click", e => { if (e.target === fsOverlay) hidePolaroidFullscreen(); });
   document.getElementById("closeFullscreenBtn")?.addEventListener("click", hidePolaroidFullscreen);
-  document.querySelector(".fullscreen-arrow")?.addEventListener("click", e => { e.stopPropagation(); showRandomPolaroid(); });
-  document.getElementById("fullscreenPolaroidImg")?.addEventListener("click", e => { e.stopPropagation(); showRandomPolaroid(); });
+  document.querySelector(".fullscreen-arrow-next")?.addEventListener("click", e => { e.stopPropagation(); goNextSlide(); });
+  document.querySelector(".fullscreen-arrow-prev")?.addEventListener("click", e => { e.stopPropagation(); goPrevSlide(); });
+  document.getElementById("fullscreenPolaroidImg")?.addEventListener("click", e => { e.stopPropagation(); goNextSlide(); });
 
   const polaroidOverlay = document.getElementById("polaroidOverlay");
   polaroidOverlay?.addEventListener("click", e => {

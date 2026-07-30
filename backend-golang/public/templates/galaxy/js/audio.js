@@ -276,7 +276,7 @@ export class AudioManager {
                 this.audio.load();
                 this.isPlaying = false;
                 this.isAudioLoaded = false;
-                
+
             }).catch(error => {
                 console.error('🎵 Error setting audio URL:', error);
                 // Fallback to default

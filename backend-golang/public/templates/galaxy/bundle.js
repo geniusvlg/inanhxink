@@ -47536,13 +47536,28 @@ M\xE3i b\xEAn nhau!"></textarea>
             }
           }, 1e3);
         }
+        function showTapToStart() {
+          const tapOverlay = document.getElementById("tap-to-start-overlay");
+          if (!tapOverlay) {
+            startMessageCountdown();
+            if (window.audioManager?.playOnly) window.audioManager.playOnly();
+            return;
+          }
+          tapOverlay.classList.remove("hidden");
+          const start = () => {
+            tapOverlay.classList.add("hidden");
+            startMessageCountdown();
+            if (window.audioManager?.playOnly) window.audioManager.playOnly();
+          };
+          tapOverlay.addEventListener("click", start, { once: true });
+        }
         function tryHideOverlay() {
           if (!isChildWeb || !overlay) return;
           if (readiness.text3d && readiness.images && readiness.heart3d) {
             if (overlayTimeout) clearTimeout(overlayTimeout);
             removeRetryButton();
             overlay.style.display = "none";
-            startMessageCountdown();
+            showTapToStart();
           }
         }
         function markImagesReady() {

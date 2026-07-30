@@ -9,6 +9,10 @@
 - Prefer Serena symbolic tools (`get_symbols_overview`, `find_symbol`, `replace_symbol_body`, `insert_after_symbol`) over full file reads
 - Only fall back to `Read`/`Edit` for files with no symbols (HTML, CSS, plain text)
 
+## Git
+
+- Never run `git commit` (or `git push`) autonomously. Leave changes staged/unstaged in the working tree and let the user review and commit themselves.
+
 ## Database
 
 - Use singular table names for new database tables (for example, `product_transaction`, not `product_transactions`).
