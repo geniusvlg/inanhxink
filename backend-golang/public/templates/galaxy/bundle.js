@@ -49471,6 +49471,7 @@ M\xE3i b\xEAn nhau!"></textarea>
         ctx.arc(40, 40, 30, 0, Math.PI * 2);
         ctx.fill();
         const texture = new CanvasTexture(canvas);
+        texture.colorSpace = SRGBColorSpace;
         texture.minFilter = NearestFilter;
         texture.magFilter = NearestFilter;
         if (!texture.uuid) {
@@ -49548,6 +49549,7 @@ M\xE3i b\xEAn nhau!"></textarea>
         }
         ctx.putImageData(imageData, 0, 0);
         const processedTexture = new CanvasTexture(canvas);
+        processedTexture.colorSpace = SRGBColorSpace;
         processedTexture.minFilter = NearestFilter;
         processedTexture.magFilter = NearestFilter;
         if (!processedTexture.uuid) {
@@ -49872,6 +49874,7 @@ M\xE3i b\xEAn nhau!"></textarea>
         }
         ctx.putImageData(imageData, 0, 0);
         const processedTexture = new CanvasTexture(canvas);
+        processedTexture.colorSpace = SRGBColorSpace;
         processedTexture.minFilter = NearestFilter;
         processedTexture.magFilter = NearestFilter;
         this.disposeTextures();
@@ -49969,6 +49972,7 @@ M\xE3i b\xEAn nhau!"></textarea>
                   }
                   ctx.restore();
                   const processedTexture = new CanvasTexture(canvas);
+                  processedTexture.colorSpace = SRGBColorSpace;
                   processedTexture.minFilter = NearestFilter;
                   processedTexture.magFilter = NearestFilter;
                   if (!processedTexture.uuid) {
@@ -50200,6 +50204,7 @@ M\xE3i b\xEAn nhau!"></textarea>
                 }
                 ctx.putImageData(imageData, 0, 0);
                 const processedTexture = new CanvasTexture(canvas);
+                processedTexture.colorSpace = SRGBColorSpace;
                 processedTexture.minFilter = NearestFilter;
                 processedTexture.magFilter = NearestFilter;
                 if (texture.dispose) texture.dispose();

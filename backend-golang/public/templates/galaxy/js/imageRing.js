@@ -390,6 +390,7 @@ export class FlowerRingSystem {
             ctx.fill();
             
             const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
             texture.minFilter = THREE.NearestFilter;
             texture.magFilter = THREE.NearestFilter;
             
@@ -495,6 +496,7 @@ export class FlowerRingSystem {
             ctx.putImageData(imageData, 0, 0);
             
             const processedTexture = new THREE.CanvasTexture(canvas);
+            processedTexture.colorSpace = THREE.SRGBColorSpace;
             processedTexture.minFilter = THREE.NearestFilter;
             processedTexture.magFilter = THREE.NearestFilter;
             
@@ -921,6 +923,7 @@ export class FlowerRingSystem {
             ctx.putImageData(imageData, 0, 0);
             
             const processedTexture = new THREE.CanvasTexture(canvas);
+            processedTexture.colorSpace = THREE.SRGBColorSpace;
             processedTexture.minFilter = THREE.NearestFilter;
             processedTexture.magFilter = THREE.NearestFilter;
             
@@ -1037,6 +1040,7 @@ export class FlowerRingSystem {
                                 }
                                 ctx.restore();
                                 const processedTexture = new THREE.CanvasTexture(canvas);
+                                processedTexture.colorSpace = THREE.SRGBColorSpace;
                                 processedTexture.minFilter = THREE.NearestFilter;
                                 processedTexture.magFilter = THREE.NearestFilter;
                                 
@@ -1341,6 +1345,7 @@ export class FlowerRingSystem {
                             }
                             ctx.putImageData(imageData, 0, 0);
                             const processedTexture = new THREE.CanvasTexture(canvas);
+                            processedTexture.colorSpace = THREE.SRGBColorSpace;
                             processedTexture.minFilter = THREE.NearestFilter;
                             processedTexture.magFilter = THREE.NearestFilter;
                             if (texture.dispose) texture.dispose();
