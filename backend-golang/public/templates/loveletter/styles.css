@@ -671,6 +671,38 @@ body.card-open .polaroid-group {
   border: 8px solid #fce4ec;
 }
 
+/* Toggle for the auto-slide timer, docked just below the photo frame so it
+   never overlaps the image itself. */
+.auto-slide-toggle {
+  margin-top: 14px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 245, 247, 0.92);
+  border: 2px solid #f5bfcc;
+  color: #b1484a;
+  font: 600 12px/1 'Nunito', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(177, 72, 74, 0.35);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.auto-slide-toggle:hover {
+  background: #f5bfcc;
+  transform: scale(1.05);
+}
+
+.auto-slide-toggle::before {
+  content: '⏸ Tự động';
+}
+
+.auto-slide-toggle.is-paused::before {
+  content: '▶ Tự động';
+}
+
 /* A little heart "sticker" pinned to the frame, like washi tape on a photo. */
 .fullscreen-corner-heart {
   position: absolute;

@@ -328,10 +328,11 @@ function showPolaroids(show) {
 }
 
 // ── Fullscreen viewer: sequential slider (prev/next buttons + auto-advance) ──
-let fullscreenIndex   = 0;
-let autoSlideTimer    = null;
-const AUTO_SLIDE_MS   = 4000;
-const SLIDE_DURATION  = 400; // ms, keep in sync with the CSS transition below
+let fullscreenIndex    = 0;
+let autoSlideTimer     = null;
+let autoSlideEnabled   = true; // user-controlled via the toggle button
+const AUTO_SLIDE_MS    = 2200;
+const SLIDE_DURATION   = 400; // ms, keep in sync with the CSS transition below
 
 // Renders `imageSources[fullscreenIndex]` into the viewport with a
 // Tinder-style card swipe: the current photo flies off (rotated) in the swipe
@@ -394,7 +395,7 @@ function goToSlide(newIndex, direction) {
   if (!imageSources.length) return;
   fullscreenIndex = ((newIndex % imageSources.length) + imageSources.length) % imageSources.length;
   renderFullscreenSlide(direction);
-  if (autoSlideTimer) startAutoSlide(); // restart the timer so manual nav doesn't get cut short
+  if (autoSlideEnabled) startAutoSlide(); // restart the timer so manual nav doesn't get cut short
 }
 
 function goNextSlide() { goToSlide(fullscreenIndex + 1, "next"); }
@@ -402,13 +403,27 @@ function goPrevSlide() { goToSlide(fullscreenIndex - 1, "prev"); }
 
 function startAutoSlide() {
   stopAutoSlide();
-  if (imageSources.length > 1) {
+  if (autoSlideEnabled && imageSources.length > 1) {
     autoSlideTimer = setInterval(() => goToSlide(fullscreenIndex + 1, "next"), AUTO_SLIDE_MS);
   }
 }
 
 function stopAutoSlide() {
   if (autoSlideTimer) { clearInterval(autoSlideTimer); autoSlideTimer = null; }
+}
+
+function updateAutoSlideToggleBtn() {
+  const btn = document.getElementById("autoSlideToggleBtn");
+  if (!btn) return;
+  btn.classList.toggle("is-paused", !autoSlideEnabled);
+  btn.title = autoSlideEnabled ? "Tắt tự động chuyển ảnh" : "Bật tự động chuyển ảnh";
+}
+
+function toggleAutoSlide() {
+  autoSlideEnabled = !autoSlideEnabled;
+  updateAutoSlideToggleBtn();
+  if (autoSlideEnabled) startAutoSlide();
+  else stopAutoSlide();
 }
 
 function showPolaroidFullscreen(index, label) {
@@ -420,6 +435,7 @@ function showPolaroidFullscreen(index, label) {
   if (lbl) lbl.textContent = label || "";
   overlay.style.display = "flex";
   setTimeout(() => { overlay.style.opacity = "1"; }, 10);
+  updateAutoSlideToggleBtn();
   startAutoSlide();
 }
 
@@ -520,6 +536,7 @@ function init() {
   document.getElementById("closeFullscreenBtn")?.addEventListener("click", hidePolaroidFullscreen);
   document.querySelector(".fullscreen-arrow-next")?.addEventListener("click", e => { e.stopPropagation(); goNextSlide(); });
   document.querySelector(".fullscreen-arrow-prev")?.addEventListener("click", e => { e.stopPropagation(); goPrevSlide(); });
+  document.getElementById("autoSlideToggleBtn")?.addEventListener("click", e => { e.stopPropagation(); toggleAutoSlide(); });
   document.getElementById("fullscreenPolaroidImg")?.addEventListener("click", e => { e.stopPropagation(); goNextSlide(); });
 
   const polaroidOverlay = document.getElementById("polaroidOverlay");
