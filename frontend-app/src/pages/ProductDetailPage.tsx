@@ -4,6 +4,7 @@ import {
   getProductById,
   getProductReviews,
   createProductReview,
+  getProducts,
   type Product,
   type ProductReview,
   type ProductVariant,
@@ -168,6 +169,9 @@ export default function ProductDetailPage() {
   const [reviewFormError, setReviewFormError] = useState('');
   const [reviewFormSuccess, setReviewFormSuccess] = useState(false);
 
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -176,6 +180,25 @@ export default function ProductDetailPage() {
       .catch(() => setError('Không thể tải sản phẩm'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  // Same-category products, shown at the bottom of the page.
+  useEffect(() => {
+    const catIds = product?.categories?.map((c) => c.id) ?? [];
+    if (!product || catIds.length === 0) {
+      setRelatedProducts([]);
+      return;
+    }
+    let cancelled = false;
+    setRelatedLoading(true);
+    getProducts({ category_ids: catIds.join(','), limit: 13 })
+      .then((data) => {
+        if (cancelled) return;
+        setRelatedProducts(data.products.filter((p) => p.id !== product.id).slice(0, 12));
+      })
+      .catch(() => { if (!cancelled) setRelatedProducts([]); })
+      .finally(() => { if (!cancelled) setRelatedLoading(false); });
+    return () => { cancelled = true; };
+  }, [product]);
 
   const productIdNum = id ? Number(id) : 0;
 
@@ -465,6 +488,20 @@ export default function ProductDetailPage() {
               <p className="pd-desc">{product.description}</p>
             )}
 
+            {/* ── Danh mục (Categories) ── */}
+            {product.categories?.length > 0 && (
+              <div className="pd-categories">
+                <span className="pd-categories-label">Danh mục:</span>
+                <div className="pd-categories-list">
+                  {product.categories.map((cat) => (
+                    <Link key={cat.id} to={`/danh-muc/${cat.id}`} className="pd-category-chip">
+                      {cat.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* ── Phân loại (Variants) ── */}
             {hasVariants && (
               <div className="pd-variants">
@@ -689,6 +726,41 @@ export default function ProductDetailPage() {
             )}
           </div>
         </section>
+
+        {(relatedLoading || relatedProducts.length > 0) && (
+          <section className="pd-related" aria-labelledby="pd-related-heading">
+            <h2 id="pd-related-heading" className="pd-related-title">Sản phẩm cùng danh mục</h2>
+            {relatedProducts.length === 0 ? (
+              <p className="pd-related-loading">Đang tải sản phẩm liên quan…</p>
+            ) : (
+              <div className="pd-related-grid">
+                {relatedProducts.map((p) => (
+                  <Link key={p.id} to={`/product/${p.id}`} className="product-card product-card--link">
+                    <div className="product-card-img-wrap">
+                      <img
+                        className="product-card-img"
+                        src={getProductThumbnailUrl(p) ?? '/placeholder.png'}
+                        alt={p.name}
+                      />
+                      {p.is_best_seller && (
+                        <img
+                          className="product-card-best-seller-badge"
+                          src="/assets/images/feature/bestseller.png"
+                          alt="Best Seller"
+                        />
+                      )}
+                    </div>
+                    <div className="product-card-info">
+                      <div className="product-card-name">{p.name}</div>
+                      <ProductSoldCount count={p.sold_count} />
+                      <div className="product-card-price"><PriceTag product={p} /></div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
       <SiteFooter />
