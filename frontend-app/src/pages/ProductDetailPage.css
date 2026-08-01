@@ -1,3 +1,5 @@
+@import './HomePage.css';
+
 .pd-page {
   min-height: 100vh;
   background: #fff;
@@ -372,6 +374,43 @@
   }
 }
 
+/* ── Danh mục (Categories) ── */
+.pd-categories {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+}
+.pd-categories-label {
+  font-size: 0.9rem;
+  color: #374151;
+  flex-shrink: 0;
+}
+.pd-categories-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.pd-category-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid #fecdd3;
+  border-radius: 1rem;
+  background: #fff5f7;
+  color: #d9468b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.pd-category-chip:hover {
+  background: #ffe1eb;
+  border-color: #fe2c56;
+  transform: translateY(-1px);
+}
+
 /* ── Phân loại (Variants) ───────────────────────────────────────────────── */
 
 .pd-variants {
@@ -703,4 +742,37 @@
   .pd-reviews {
     max-width: none;
   }
+}
+
+/* ── Sản phẩm cùng danh mục (Related products) ── */
+.pd-related {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f3f4f6;
+}
+.pd-related-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1.25rem;
+}
+.pd-related-loading {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0;
+}
+.pd-related-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .pd-related-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .pd-related-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .pd-related-title { font-size: 1.1rem; }
 }
