@@ -1032,10 +1032,20 @@
 
   // Play background music
   var bgm = document.getElementById('bgMusic');
-  if (savedSettings && savedSettings.music) {
-      bgm.src = savedSettings.music;
+  var bgmMusicSrc = savedSettings && savedSettings.music;
+  if (bgmMusicSrc) {
+      bgm.src = bgmMusicSrc;
+  } else if (injectedData) {
+      // Real order with no purchased music (customer may have bought a voice
+      // recording instead — they're mutually exclusive, enforced server-side)
+      // — strip the default demo <source> so nothing plays underneath it.
+      var bgmSource = bgm.querySelector('source');
+      if (bgmSource) bgmSource.removeAttribute('src');
+      bgm.removeAttribute('src');
+      bgm.load();
   }
   function tryPlayMusic() {
+    if (!bgm.src && !bgm.currentSrc) return;
     bgm.play().then(function() {
       document.removeEventListener('click', tryPlayMusic);
       document.removeEventListener('touchstart', tryPlayMusic);

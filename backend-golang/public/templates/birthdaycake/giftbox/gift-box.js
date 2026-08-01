@@ -347,6 +347,12 @@
 						bgAudio.pause();
 					}
 
+					// Báo cho voice-player.js (lời nhắn giọng nói) biết hộp đã mở,
+					// vì bản ghi âm chỉ nên phát sau khi khách chạm mở hộp.
+					try {
+						window.dispatchEvent(new CustomEvent('inxk:giftbox-open'));
+					} catch (err) {}
+
 					launchBirthdayBalloons();
 					// Trì hoãn pháo hoa 500ms để trình duyệt tránh bị quá tải renderDOM cùng 1 lúc với bóng bay
 					setTimeout(launchBirthdayFireworks, 500);
