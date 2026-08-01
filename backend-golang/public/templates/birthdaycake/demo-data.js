@@ -27,25 +27,41 @@
     photoUrls = injectedData ? [] : fallbackData.photoBlobUrls;
   }
 
+  // For real customer orders (injectedData present), only use a music track the
+  // customer actually purchased — never fall back to the demo sample track.
+  // Customers can buy EITHER background music OR a voice recording (mutually
+  // exclusive, enforced server-side), so when there's no musicUrl, the page must
+  // stay silent by default and let the voice recording (played separately by
+  // /templates/common/voice-player.js) be heard clearly instead.
+  var resolvedMusicPath = injectedData
+    ? (data.musicPath || data.musicUrl || null)
+    : (data.musicPath || data.musicUrl || fallbackData.musicPath);
+
   data = Object.assign({}, fallbackData, data, {
     photoBlobUrls: photoUrls,
     customMusicUrl: data.customMusicUrl || data.musicUrl || null,
-    musicPath: data.musicPath || data.musicUrl || fallbackData.musicPath,
+    musicPath: resolvedMusicPath,
     finalGift: data.finalGift !== false,
     giftLanguage: data.giftLanguage || "vi"
   });
 
   function applyAudioSource(src) {
-    if (!src) return;
     ["audios", "letterSound"].forEach(function (id) {
       var audio = document.getElementById(id);
       if (!audio) return;
       var source = audio.querySelector("source");
-      if (source) {
-        source.src = src;
+      if (src) {
+        if (source) source.src = src;
+        audio.src = src;
+        audio.load();
+      } else {
+        // No purchased music for this order — strip the default HTML
+        // `<source>` (demo sample track) so nothing plays underneath a
+        // voice recording (or silently by default).
+        if (source) source.removeAttribute("src");
+        audio.removeAttribute("src");
+        audio.load();
       }
-      audio.src = src;
-      audio.load();
     });
   }
 

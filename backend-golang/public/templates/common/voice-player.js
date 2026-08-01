@@ -24,13 +24,20 @@
       voiceAudio = document.createElement('audio');
       voiceAudio.src = voiceUrl;
       voiceAudio.preload = 'metadata';
-      voiceAudio.autoplay = true;
       voiceAudio.loop = true;
       voiceAudio.playsInline = true;
       voiceAudio.id = 'inxk-voice-audio';
       container.appendChild(voiceAudio);
     }
     document.body.appendChild(container);
+
+    // Templates with a "gift box" reveal moment (currently: birthdaycake)
+    // dispatch 'inxk:giftbox-open' once the customer taps the box open.
+    // For those, the voice recording should stay silent until that happens
+    // instead of autoplaying immediately on page load.
+    var giftBoxEl = document.getElementById('gift-cube');
+    var deferVoiceUntilReveal = !!(voiceAudio && giftBoxEl);
+    var voiceRevealed = !deferVoiceUntilReveal;
 
     var isMuted = false;
 
@@ -40,6 +47,7 @@
 
     function playAvailableAudio() {
       var attempts = audioElements().filter(function (audio) {
+        if (audio === voiceAudio && !voiceRevealed) return false;
         return audio.src || audio.currentSrc;
       }).map(function (audio) {
         return audio.play();
@@ -87,6 +95,18 @@
       audioElements().forEach(function (audio) { audio.muted = isMuted; });
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    if (deferVoiceUntilReveal) {
+      window.addEventListener('inxk:giftbox-open', function onReveal() {
+        window.removeEventListener('inxk:giftbox-open', onReveal);
+        if (voiceRevealed) return;
+        voiceRevealed = true;
+        voiceAudio.muted = isMuted;
+        // Fires from within the box's own click/keydown handler, so this is
+        // still inside a user-gesture call stack and allowed to autoplay.
+        voiceAudio.play().catch(function () {});
+      });
+    }
 
     setMuted(false);
     tryAutoplay();

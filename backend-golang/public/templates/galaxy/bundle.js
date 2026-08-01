@@ -47636,6 +47636,14 @@ M\xE3i b\xEAn nhau!"></textarea>
                 window.audioManager.setAudioUrl(data.config.audioUrl);
               } else if ((!data.config.audioUrl || data.config.audioUrl === "") && data.config.selectedAudioFile && window.audioManager && window.audioManager.setAudioUrl) {
                 window.audioManager.setAudioUrl("assets/musics/" + data.config.selectedAudioFile);
+              } else if ((!data.config.audioUrl || data.config.audioUrl === "") && !data.config.selectedAudioFile && window.audioManager && window.audioManager.audio) {
+                // No music purchased for this order (customer may have bought
+                // a voice recording instead — mutually exclusive, enforced
+                // server-side) — silence the default sample track so the
+                // tap-to-start gate never plays it underneath the recording.
+                window.audioManager.audio.removeAttribute("src");
+                window.audioManager.audio.load();
+                window.audioManager.currentAudioUrl = null;
               }
               if (data.config.centralHeartEnabled !== void 0) {
                 setTimeout(() => {
@@ -47760,6 +47768,12 @@ M\xE3i b\xEAn nhau!"></textarea>
               window.audioManager.setAudioUrl(config.audioUrl);
             } else if ((!config.audioUrl || config.audioUrl === "") && config.selectedAudioFile && window.audioManager && window.audioManager.setAudioUrl) {
               window.audioManager.setAudioUrl("assets/musics/" + config.selectedAudioFile);
+            } else if ((!config.audioUrl || config.audioUrl === "") && !config.selectedAudioFile && window.audioManager && window.audioManager.audio) {
+              // No music purchased for this order — silence the default
+              // sample track (see matching fix in the #id= branch above).
+              window.audioManager.audio.removeAttribute("src");
+              window.audioManager.audio.load();
+              window.audioManager.currentAudioUrl = null;
             }
             if (config.text3d) {
               setTimeout(() => {
