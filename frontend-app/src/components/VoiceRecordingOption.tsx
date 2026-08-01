@@ -127,7 +127,15 @@ export default function VoiceRecordingOption({
         stopRecording();
       });
 
-      recorder.start(250);
+      // No timeslice here on purpose: Safari's MediaRecorder for `audio/mp4`
+      // writes each `dataavailable` chunk as a separate MP4 fragment, and the
+      // *first* fragment's duration/moov metadata doesn't account for later
+      // ones. Concatenating those chunks (as we do below) then produces an
+      // .m4a whose declared duration is too short, so some players — notably
+      // iOS Safari itself when replaying the finished recording — stop
+      // playback near that (wrong, truncated) point instead of the real end.
+      // Requesting a single, complete blob at `stop()` avoids the bug.
+      recorder.start();
       setIsRecording(true);
       timerRef.current = setInterval(() => {
         setElapsedSeconds(Math.min(
