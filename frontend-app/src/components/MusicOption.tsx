@@ -76,18 +76,33 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
           onChange={(e) => handleToggle(e.target.checked)}
         />
         <span className="music-label-text">
-          Thêm nhạc nền (TikTok / Instagram)
+          Thêm nhạc nền (TikTok)
         </span>
         <span className="music-price">+{musicPrice.toLocaleString('vi-VN')}đ</span>
       </label>
 
       {showInput && (
+        <>
+        <div className="music-guide">
+          <p className="music-guide-heading">🎵 Lấy link nhạc từ TikTok</p>
+          <ol className="music-guide-list">
+            <li>Mở app hoặc web TikTok, tìm video có bài nhạc bạn muốn.</li>
+            <li>Nhấn nút <strong>Chia sẻ</strong> (mũi tên) → <strong>Sao chép liên kết</strong>.</li>
+            <li>Dán link vào ô bên dưới rồi nhấn <strong>Kiểm tra</strong>.</li>
+          </ol>
+          <p className="music-guide-note">
+            Lưu ý: hiện chỉ hỗ trợ link TikTok. Video phải ở chế độ công khai (không phải tài khoản
+            riêng tư), và nhạc không quá 15MB (khoảng 10 phút). Khi hiện{' '}
+            <strong>“Nhạc đã sẵn sàng!”</strong> là đã tải nhạc thành công.
+          </p>
+        </div>
+
         <div className="music-link-input">
           <input
             type="text"
             value={rawUrl}
             onChange={(e) => handleUrlChange(e.target.value)}
-            placeholder="Dán link TikTok hoặc Instagram"
+            placeholder="Dán link TikTok"
             className={`music-input ${extractState === 'success' ? 'music-input--success' : ''} ${extractState === 'error' ? 'music-input--error' : ''}`}
             disabled={extractState === 'loading'}
           />
@@ -99,6 +114,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
             {extractState === 'loading' ? <span className="music-spinner" /> : extractState === 'success' ? '✓' : 'Kiểm tra'}
           </button>
         </div>
+        </>
       )}
 
       {extractState === 'success' && (
@@ -108,7 +124,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
         <p className="music-feedback music-feedback--error">{errorMsg}</p>
       )}
       {!qrName?.trim() && showInput && (
-        <p className="music-feedback music-feedback--error">Vui lòng nhập và kiểm tra tên QR trước khi tải nhạc.</p>
+        <p className="music-feedback music-feedback--error">Vui lòng nhập và kiểm tra tên QR ở đầu trang trước khi tải nhạc.</p>
       )}
     </div>
   );

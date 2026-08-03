@@ -49,7 +49,7 @@ const ADDON_PRICE_FIELDS: NumericFieldConfig[] = [
     placeholder: '10000',
     defaultValue: '10000',
     min: 0,
-    note: 'Phụ phí khi khách thêm nhạc nền TikTok/Instagram vào trang QR.',
+    note: 'Phụ phí khi khách thêm nhạc nền TikTok vào trang QR.',
   },
 ];
 
