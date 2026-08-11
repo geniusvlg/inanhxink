@@ -91,7 +91,11 @@ export const metadataApi = {
 
 export const productsApi = {
   list:      (type: string, page = 1, limit = 20) => api.get('/api/admin/products', { params: { type, page, limit } }),
-  checkName: (name: string, type: string) => api.post<{ success: boolean; available: boolean; message?: string }>('/api/admin/products/check-name', { name, type }),
+  checkName: (name: string, type: string, excludeId?: number) =>
+    api.post<{ success: boolean; available: boolean; message?: string }>(
+      '/api/admin/products/check-name',
+      { name, type, ...(excludeId != null ? { excludeId } : {}) },
+    ),
   reserve:   (name: string, type: string) => api.post<{ success: boolean; productId: number }>('/api/admin/products/reserve', { name, type }),
   create:    (data: unknown)             => api.post('/api/admin/products', data),
   update:    (id: number, data: unknown) => api.put(`/api/admin/products/${id}`, data),

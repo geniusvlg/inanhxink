@@ -24,6 +24,7 @@ const SHIPPING_FEE_KEY = 'product_shipping_fee';
 const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
 const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY, SHIPPING_THRESHOLD_KEY]);
 const VOICE_RECORDING_PRICE_KEY = 'voice_recording_price';
+const KEYCHAIN_ENABLED_KEY = 'keychain_enabled';
 
 interface NumericFieldConfig {
   key: string;
@@ -41,7 +42,7 @@ const ADDON_PRICE_FIELDS: NumericFieldConfig[] = [
     placeholder: '35000',
     defaultValue: '35000',
     min: 0,
-    note: 'Phụ phí khi khách chọn mua kèm móc khóa QR.',
+    note: 'Phụ phí khi khách chọn mua kèm móc khóa QR. Bỏ qua khi tuỳ chọn móc khóa đang tắt.',
   },
   {
     key: 'music_price',
@@ -170,6 +171,7 @@ export default function ConfigPage() {
       payload[VOICE_RECORDING_PRICE_KEY] = (Number.isFinite(voicePrice) && voicePrice >= 0)
         ? String(Math.round(voicePrice))
         : '10000';
+      payload[KEYCHAIN_ENABLED_KEY] = config[KEYCHAIN_ENABLED_KEY] === 'false' ? 'false' : 'true';
       for (const f of NUMERIC_FIELDS) {
         const v = Number(config[f.key]);
         payload[f.key] = (Number.isFinite(v) && v >= f.min) ? String(Math.round(v)) : f.defaultValue;
@@ -225,7 +227,8 @@ export default function ConfigPage() {
     () => Object.entries(config).filter(([k]) =>
       k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)
       && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k)
-      && k !== VOICE_RECORDING_PRICE_KEY && !KNOWN_OTHER_KEYS.has(k) && !DEPRECATED_KEYS.has(k),
+      && k !== VOICE_RECORDING_PRICE_KEY && k !== KEYCHAIN_ENABLED_KEY
+      && !KNOWN_OTHER_KEYS.has(k) && !DEPRECATED_KEYS.has(k),
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -395,6 +398,22 @@ export default function ConfigPage() {
             <div className="cfg-card-title">🎁 Phụ phí tuỳ chọn</div>
             <div className="cfg-card-sub">
               Giá các tuỳ chọn thêm mà khách có thể chọn khi đặt QR.
+            </div>
+          </div>
+          <div className="cfg-row">
+            <div>
+              <div className="cfg-row-title">Móc khóa quét QR</div>
+              <div className="cfg-row-sub">Tắt để ẩn tuỳ chọn “Mua móc khóa quét QR” trên form đặt QR</div>
+            </div>
+            <div className="cfg-row-actions">
+              <label className="cfg-toggle">
+                <input
+                  type="checkbox"
+                  checked={config[KEYCHAIN_ENABLED_KEY] !== 'false'}
+                  onChange={e => handleToggle(KEYCHAIN_ENABLED_KEY, e.target.checked)}
+                />
+                <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
+              </label>
             </div>
           </div>
           <div className="cfg-section">

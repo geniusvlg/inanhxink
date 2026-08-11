@@ -15,6 +15,108 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `birthday` | `birthday` | Birthday fields, no image uploader |
 | `birthdaycake` | `birthdaycake` | Letter title/body, cake inscription, and up to 24 photos |
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
+| `farewell` | `farewell` | Friend name, origin city, destination/date, farewell letter, and 1–8 stages each with an optional image and message |
+
+### Farewell / Bon Voyage
+
+A boarding pass opens the page. Pressing it hands the screen to a full-viewport
+globe: a sphere built from the order's photos, with the plane flying laps around
+it. The sphere turns to bring each memory to the front in turn while its caption
+reads out below, then the page lands on the arrival facts and a sealed airmail
+envelope. A skip button jumps straight there, and the replay button reseals the
+envelope and flies the whole thing again.
+
+The page is gated before and during the flight. The initial
+`body.is-gated` class limits the document to `100svh`, locks scrolling, and
+force-hides the landing content, so only the boarding pass is reachable before
+Start. During the tour `body.is-flying` keeps scrolling locked and everything
+after the globe stays `hidden`; landing removes both gates and adds
+`body.is-landed`, which removes the boarding pass from layout so the visitor
+cannot scroll backward into the initial stage. Tour length is one leg per
+configured stage — a 1s turn plus a hold.
+
+After arriving, the sealed envelope waits for the visitor to click or tap it;
+landing, skipping, and reduced-motion mode never open it automatically. The flap
+then folds up, the envelope fades, and the letter rises in its place. Both share
+one CSS grid cell, so opening never shifts the page. The flap is a
+`clip-path` triangle, so
+its fold shadow is a `drop-shadow` filter rather than a `box-shadow`, which
+would be clipped away, and it keeps its backface visible so it stays on screen
+while rotating past 90°.
+
+The sphere is plain CSS 3D — no WebGL and no third-party code. Tiles are spread
+over it with a Fibonacci spiral and parked with
+`rotateY(azimuth) rotateX(-elevation) translateZ(radius)`, which leaves each one
+facing outward; the inverse of that rotation is what turns a chosen memory to the
+front. A handful of stages would leave the ball looking empty, so their visuals
+repeat around it up to roughly fifteen tiles — the tour only visits the first
+pass through them, which is why its index is bounded by the stage count and not
+the tile count. Stages without an image use a travel-themed placeholder. Every
+tile carries two faces, a photo/placeholder and a plain back at
+`rotateY(180deg)`, because a single-sided tile shows a mirrored photo on the far
+side of the sphere.
+
+The plane orbits on its own tilted ring. It is counter-rotated out of both the
+ring's spin and its tilt so it always faces the viewer, then turned in 2D to
+point along its screen-space tangent. Its lap is clamped to the scene width, so
+on a narrow phone the orbit tightens rather than flying off the edge. Radius and
+tile size are recomputed on resize.
+
+`.globe-scene` must set `transform-style: preserve-3d` so the sphere and the
+orbit share one depth sort — without it the plane always paints on top. Even
+with that, the ball is a hollow shell of semi-transparent cards, so CSS cannot
+fully hide the plane through gaps; `spinPlane` fades `opacity` from the orbit's
+`cos(angle)` and sets `visibility: hidden` on the far half.
+
+New orders store `farewellStages` as an ordered array of 1–8
+`{ imageUrl, message }` objects. The image and the message are each optional
+and empty stages remain in the array; the template gives a fully empty stage a
+travel-themed visual and default message. Each active stage is also rendered in
+a dedicated memory panel below the sphere, showing its single image alongside
+the message. The message swaps in partway through each turn, not at the end,
+so it never describes the visual that has just left the front.
+
+For backward compatibility, `app.js` zips legacy `imageUrls` and
+`farewellCaptions` when `farewellStages` is absent, and also accepts the
+short-lived multi-image `imageUrls` array per stage from an earlier iteration
+(only the first URL is kept). New submissions still keep compact
+`imageUrls`/`farewellCaptions` alongside the stage objects for older readers
+and the final recap. Stage image URLs remain raw S3 values in JSONB;
+`rewriteTemplateDataCDN` rewrites nested `farewellStages[].imageUrl` values
+only when serving public data. Payment migration already walks nested JSON.
+
+Everything else on the page is derived from the two cities rather than asked for
+in the order form:
+
+- **Flight telemetry** — a fixed chip showing altitude and distance covered,
+  visible only while airborne. Altitude ramps over the first and last 12% of the
+  tour and cruises at 10.600 m in between.
+- **Flight status** — climbing, cruising, half way, descending, under the caption.
+- **Stage memory panel** — the current stage's image plus its message; empty
+  stages use the placeholder, while image-only or message-only stages preserve
+  the supplied content.
+- **Countdown** — days until `farewellDepartureDate`, on the boarding pass.
+- **Arrival section** — a passport stamp that thuds down on entry, great-circle
+  distance (haversine), estimated flight time (distance ÷ 850 km/h plus 36
+  minutes), and the time difference.
+- **Live dual clocks** — origin and destination time, refreshed every 20s. Offsets
+  come from the browser's IANA timezone data via `Intl.DateTimeFormat`, so
+  daylight saving stays correct without a lookup table. Destinations with no
+  timezone (`other`) hide the clocks and the distance facts.
+- **Recap grid** — every photo again with its caption, below the letter.
+
+There are no third-party dependencies. `prefers-reduced-motion` drops the stamp
+and the drifting clouds, and skips the flight entirely — the start button goes
+straight to the arrival and the letter, where the recap grid still carries every
+uploaded stage image and its optional message. Legacy orders with no stages take
+that same shortcut.
+
+Supported destination keys, each with an airport code, city, IANA timezone, and
+coordinates, are defined in `public/templates/farewell/app.js`; unknown values
+fall back to the generic `other` destination. Vietnamese origin cities map to
+real airport codes and coordinates for the boarding pass, defaulting to `VN` and
+Hanoi's position. The template row is seeded by
+`V64__seed_farewell_template.sql`.
 
 ## Shared Voice Player
 

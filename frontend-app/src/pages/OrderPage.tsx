@@ -11,12 +11,30 @@ import VoiceRecordingOption, { type VoiceRecording } from '../components/VoiceRe
 import TipSelector from '../components/TipSelector';
 import VoucherInput from '../components/VoucherInput';
 import ImageUploader from '../components/ImageUploader';
+import FarewellStagesEditor from '../components/FarewellStagesEditor';
 import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
-const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy']);
-const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday']);
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell']);
+
+const FAREWELL_DESTINATIONS = [
+  ['australia', 'Úc'],
+  ['usa', 'Hoa Kỳ'],
+  ['canada', 'Canada'],
+  ['uk', 'Anh'],
+  ['france', 'Pháp'],
+  ['germany', 'Đức'],
+  ['japan', 'Nhật Bản'],
+  ['korea', 'Hàn Quốc'],
+  ['singapore', 'Singapore'],
+  ['newzealand', 'New Zealand'],
+  ['netherlands', 'Hà Lan'],
+  ['other', 'Quốc gia khác'],
+] as const;
+const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday', 'farewell']);
+const DEFAULT_FAREWELL_STAGE_COUNT = 5;
+const MAX_FAREWELL_STAGES = 8;
 
 interface Voucher {
   code: string;
@@ -74,6 +92,16 @@ function OrderPage() {
   const [birthdayCakeLetterTitle, setBirthdayCakeLetterTitle] = useState('Gửi công chúa nhỏ của anh ❤️');
   const [birthdayCakeLetterBody, setBirthdayCakeLetterBody] = useState('');
   const [birthdayCakeInscription, setBirthdayCakeInscription] = useState('');
+  // Farewell fields
+  const [farewellFriendName, setFarewellFriendName] = useState('');
+  const [farewellFrom, setFarewellFrom] = useState('Việt Nam');
+  const [farewellDestination, setFarewellDestination] = useState('australia');
+  const [farewellDepartureDate, setFarewellDepartureDate] = useState('');
+  const [farewellMessage, setFarewellMessage] = useState('');
+  const [farewellSender, setFarewellSender] = useState('');
+  // Each stage owns three consecutive upload slots; messages are stage-indexed.
+  const [farewellStageCount, setFarewellStageCount] = useState(DEFAULT_FAREWELL_STAGE_COUNT);
+  const [farewellStageMessages, setFarewellStageMessages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -81,6 +109,7 @@ function OrderPage() {
   const [musicPrice, setMusicPrice] = useState(10000);
   const [voiceRecordingPrice, setVoiceRecordingPrice] = useState(10000);
   const [keychainPrice, setKeychainPrice] = useState(35000);
+  const [keychainEnabled, setKeychainEnabled] = useState(true);
 
   // Background upload tracking: slot index → { promise, cancelled }
   const bgUploads = useRef<Map<number, { promise: Promise<string | null>; cancelled: boolean }>>(new Map());
@@ -108,6 +137,10 @@ function OrderPage() {
       if (data.music_price) setMusicPrice(parseInt(data.music_price));
       if (data.voice_recording_price) setVoiceRecordingPrice(parseInt(data.voice_recording_price));
       if (data.keychain_price) setKeychainPrice(parseInt(data.keychain_price));
+      if (data.keychain_enabled === 'false') {
+        setKeychainEnabled(false);
+        setKeychainPurchased(false);
+      }
     }).catch(() => {});
   }, []);
 
@@ -136,6 +169,21 @@ function OrderPage() {
         if (d.birthdayCakeLetterTitle) setBirthdayCakeLetterTitle(d.birthdayCakeLetterTitle);
         if (d.birthdayCakeLetterBody) setBirthdayCakeLetterBody(d.birthdayCakeLetterBody);
         if (d.birthdayCakeInscription) setBirthdayCakeInscription(d.birthdayCakeInscription);
+        if (d.farewellFriendName) setFarewellFriendName(d.farewellFriendName);
+        if (d.farewellFrom) setFarewellFrom(d.farewellFrom);
+        if (d.farewellDestination) setFarewellDestination(d.farewellDestination);
+        if (d.farewellDepartureDate) setFarewellDepartureDate(d.farewellDepartureDate);
+        if (d.farewellMessage) setFarewellMessage(d.farewellMessage);
+        if (d.farewellSender) setFarewellSender(d.farewellSender);
+        if (d.farewellStageCount) {
+          setFarewellStageCount(Math.min(MAX_FAREWELL_STAGES, Math.max(1, Number(d.farewellStageCount))));
+        }
+        if (d.farewellStageMessages?.length) {
+          setFarewellStageMessages(d.farewellStageMessages);
+        } else if (d.farewellCaptions?.length) {
+          // Backward-compatible draft restore from the old photo-caption model.
+          setFarewellStageMessages(d.farewellCaptions);
+        }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
           // Convert base64 previews back to File objects
@@ -167,7 +215,7 @@ function OrderPage() {
     let subtotal = selectedTemplate ? selectedTemplate.price : 0;
     if (musicAdded) subtotal += musicPrice;
     if (voiceRecordingAdded) subtotal += voiceRecordingPrice;
-    if (keychainPurchased) subtotal += keychainPrice;
+    if (keychainEnabled && keychainPurchased) subtotal += keychainPrice;
     const tipAmount = selectedTip === 'custom' ? customTipAmount : (selectedTip || 0);
     subtotal += tipAmount;
     let total = subtotal;
@@ -272,6 +320,60 @@ function OrderPage() {
     });
   };
 
+  const handleFarewellStageCountChange = (count: number) => {
+    const nextCount = Math.min(MAX_FAREWELL_STAGES, Math.max(1, count));
+    if (nextCount < farewellStageCount) {
+      for (let slot = nextCount; slot < farewellStageCount; slot++) {
+        handleFileRemoved(slot);
+      }
+      setUploadedImages(prev => prev.slice(0, nextCount));
+      setImagePreviews(prev => prev.slice(0, nextCount));
+      setFarewellStageMessages(prev => prev.slice(0, nextCount));
+    }
+    setFarewellStageCount(nextCount);
+  };
+
+  const handleFarewellStageImage = (index: number, file: File, preview: string) => {
+    const previous = bgUploads.current.get(index);
+    if (previous) {
+      previous.cancelled = true;
+      bgUploads.current.delete(index);
+    }
+    setUploadedImages(prev => {
+      const next = [...prev];
+      next[index] = file;
+      return next;
+    });
+    setImagePreviews(prev => {
+      const next = [...prev];
+      next[index] = preview;
+      return next;
+    });
+    startUpload(index, file, qrName);
+  };
+
+  const handleFarewellStageImageRemoved = (index: number) => {
+    handleFileRemoved(index);
+    setUploadedImages(prev => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    setImagePreviews(prev => {
+      const next = [...prev];
+      next[index] = '';
+      return next;
+    });
+  };
+
+  const handleFarewellStageMessage = (index: number, message: string) => {
+    setFarewellStageMessages(prev => {
+      const next = [...prev];
+      next[index] = message;
+      return next;
+    });
+  };
+
   const updateImageSegment = (start: number, length: number, segment: (File | null)[]) => {
     const next = [...uploadedImages];
     for (let i = 0; i < length; i++) {
@@ -338,6 +440,14 @@ function OrderPage() {
       setBirthdayCakeLetterTitle('Gửi công chúa nhỏ của anh ❤️');
       setBirthdayCakeLetterBody('');
       setBirthdayCakeInscription('');
+      setFarewellFriendName('');
+      setFarewellFrom('Việt Nam');
+      setFarewellDestination('australia');
+      setFarewellDepartureDate('');
+      setFarewellMessage('');
+      setFarewellSender('');
+      setFarewellStageCount(DEFAULT_FAREWELL_STAGE_COUNT);
+      setFarewellStageMessages([]);
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
@@ -369,17 +479,29 @@ function OrderPage() {
       setError('Vui lòng tải ít nhất 1 ảnh cho Birthday Cake');
       return;
     }
+    if (templateType === 'farewell' && !farewellFriendName.trim()) {
+      setError('Vui lòng nhập tên người bạn sắp đi xa');
+      return;
+    }
+    if (templateType === 'farewell' && !farewellMessage.trim()) {
+      setError('Vui lòng nhập lời nhắn chia tay');
+      return;
+    }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
     if (voiceRecordingAdded && !voiceRecording) { setError('Vui lòng ghi âm lời nhắn trước khi thanh toán'); return; }
 
     setSubmitting(true);
     try {
       // Collect image URLs: await any still-in-progress background uploads
-      const realFiles = uploadedImages.filter(Boolean) as File[];
+      const submissionImages = templateType === 'farewell'
+        ? uploadedImages.slice(0, farewellStageCount)
+        : uploadedImages;
+      const realFiles = submissionImages.filter(Boolean) as File[];
       let imageUrls: string[] = [];
+      let imageUrlsBySlot: (string | null)[] = [];
       if (realFiles.length > 0) {
         const urlResults = await Promise.all(
-          uploadedImages.map((file, index) => {
+          submissionImages.map((file, index) => {
             if (!file) return Promise.resolve(null);
             const entry = bgUploads.current.get(index);
             if (entry) return entry.promise;
@@ -387,6 +509,7 @@ function OrderPage() {
             return uploadFiles([file], qrName).then(urls => urls[0]).catch(() => null);
           })
         );
+        imageUrlsBySlot = urlResults;
         imageUrls = urlResults.filter((u): u is string => !!u);
         // If any uploads failed, abort
         if (imageUrls.length < realFiles.length) {
@@ -416,7 +539,7 @@ function OrderPage() {
         musicAdded,
         voiceRecordingAdded,
         voiceRecordingUrl,
-        keychainPurchased,
+        keychainPurchased: keychainEnabled && keychainPurchased,
         tipAmount,
         voucherCode: voucher?.code,
         ...(templateType === 'loveletter' && {
@@ -460,6 +583,22 @@ function OrderPage() {
           birthdayCakeInscription: birthdayCakeInscription.trim(),
           birthdayCakeGiftLanguage: 'vi',
         }),
+        ...(templateType === 'farewell' && {
+          farewellFriendName: farewellFriendName.trim(),
+          farewellFrom: farewellFrom.trim(),
+          farewellDestination,
+          farewellDepartureDate,
+          farewellMessage: farewellMessage.trim(),
+          farewellSender: farewellSender.trim(),
+          farewellStages: Array.from({ length: farewellStageCount }, (_, index) => ({
+            imageUrl: imageUrlsBySlot[index] || '',
+            message: (farewellStageMessages[index] || '').trim(),
+          })),
+          // Keep the legacy arrays for existing readers and the final recap.
+          farewellCaptions: submissionImages
+            .map((file, i) => (file ? (farewellStageMessages[i] || '').trim() : null))
+            .filter((caption): caption is string => caption !== null),
+        }),
       });
 
       if (response.success) {
@@ -471,6 +610,9 @@ function OrderPage() {
             specialGiftNameLeft, specialGiftNameRight, specialGiftDayLabel,
             specialGiftTitle, birthdayCakeLetterTitle, birthdayCakeLetterBody,
             birthdayCakeInscription,
+            farewellFriendName, farewellFrom, farewellDestination,
+            farewellDepartureDate, farewellMessage, farewellSender,
+            farewellStageCount, farewellStageMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -802,6 +944,78 @@ function OrderPage() {
         </div>
       )}
 
+      {templateType === 'farewell' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người sắp đi xa</label>
+            <input
+              type="text"
+              value={farewellFriendName}
+              onChange={e => setFarewellFriendName(e.target.value)}
+              placeholder="Ví dụ: Nguyễn Thảo Vy"
+              maxLength={40}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Khởi hành từ</label>
+              <input
+                type="text"
+                value={farewellFrom}
+                onChange={e => setFarewellFrom(e.target.value)}
+                placeholder="Ví dụ: Hà Nội"
+                maxLength={30}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Điểm đến</label>
+              <select
+                value={farewellDestination}
+                onChange={e => setFarewellDestination(e.target.value)}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', background: '#fff' }}
+              >
+                {FAREWELL_DESTINATIONS.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày bay</label>
+            <input
+              type="date"
+              value={farewellDepartureDate}
+              onChange={e => setFarewellDepartureDate(e.target.value)}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời nhắn chia tay</label>
+            <textarea
+              value={farewellMessage}
+              onChange={e => setFarewellMessage(e.target.value)}
+              placeholder="Viết lời nhắn sẽ hiện ở cuối hành trình..."
+              rows={5}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ký tên</label>
+            <input
+              type="text"
+              value={farewellSender}
+              onChange={e => setFarewellSender(e.target.value)}
+              placeholder="Ví dụ: Hội bạn thân luôn nhớ cậu"
+              maxLength={60}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+
+        </div>
+      )}
+
       {templateType === 'lovedays' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
           <div>
@@ -1058,7 +1272,25 @@ function OrderPage() {
               disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
             />
           )}
+
         </>
+      )}
+
+      {templateType === 'farewell' && (
+        <FarewellStagesEditor
+          stageCount={farewellStageCount}
+          messages={farewellStageMessages}
+          images={uploadedImages}
+          previews={imagePreviews}
+          uploadStates={uploadStates}
+          disabled={!canUploadImages}
+          disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
+          onStageCountChange={handleFarewellStageCountChange}
+          onMessageChange={handleFarewellStageMessage}
+          onImageSelected={handleFarewellStageImage}
+          onImageRemoved={handleFarewellStageImageRemoved}
+          onRetry={handleRetry}
+        />
       )}
 
       <MusicOption
@@ -1078,16 +1310,18 @@ function OrderPage() {
         price={voiceRecordingPrice}
       />
 
-      <div className="keychain-option">
-        <label>
-          <input
-            type="checkbox"
-            checked={keychainPurchased}
-            onChange={(e) => setKeychainPurchased(e.target.checked)}
-          />
-          Mua móc khóa quét QR <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>+{keychainPrice.toLocaleString('en')}đ</span>
-        </label>
-      </div>
+      {keychainEnabled && (
+        <div className="keychain-option">
+          <label>
+            <input
+              type="checkbox"
+              checked={keychainPurchased}
+              onChange={(e) => setKeychainPurchased(e.target.checked)}
+            />
+            Mua móc khóa quét QR <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>+{keychainPrice.toLocaleString('en')}đ</span>
+          </label>
+        </div>
+      )}
 
       <TipSelector
         selectedTip={selectedTip}

@@ -396,6 +396,8 @@ function OrderCard({
     items[0]?.catalog_image?.trim()
     || items[0]?.image_urls?.[0];
   const isKeychain = order.order_type === 'qr_keychain';
+  // Shipped cards are scoped by ship date, so show that instead of the order date.
+  const shippedAt = order.fulfillment_stage === 'shipped' ? order.updated_at : undefined;
 
   const handleAdvanceClick = () => {
     if (next === 'shipped') setShowTracking(true);
@@ -429,9 +431,10 @@ function OrderCard({
               <span className="ff-card-label">Tên khách hàng:</span> {order.customer_name}
             </div>
             <div className="ff-card-date">
-              {new Date(order.created_at).toLocaleDateString('vi-VN')}
+              {shippedAt && <span className="ff-card-date-label">🚚 Giao: </span>}
+              {new Date(shippedAt ?? order.created_at).toLocaleDateString('vi-VN')}
               {' '}
-              {new Date(order.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+              {new Date(shippedAt ?? order.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
@@ -465,8 +468,8 @@ function OrderCard({
           {order.shipping_carrier && (
             <div className="ff-detail-row"><span>Đơn vị vận chuyển:</span><span>{order.shipping_carrier}</span></div>
           )}
-          {order.fulfillment_stage === 'shipped' && order.updated_at && (
-            <div className="ff-detail-row"><span>Ngày giao vận chuyển:</span><span>{new Date(order.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+          {shippedAt && (
+            <div className="ff-detail-row"><span>Ngày đặt:</span><span>{new Date(order.created_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
           )}
           {order.payment_method === 'cod' && (
             <>

@@ -123,19 +123,30 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /api/admin/products/check-name
+// Optional excludeId lets an edit-mode rename ignore the product being renamed.
 func CheckProductName(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Name string `json:"name"`
-		Type string `json:"type"`
+		Name      string `json:"name"`
+		Type      string `json:"type"`
+		ExcludeID *int   `json:"excludeId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" || body.Type == "" {
 		handlers.BadRequest(w, "name and type are required")
 		return
 	}
 	var id int
-	err := config.DB.QueryRow(context.Background(),
-		"SELECT id FROM products WHERE LOWER(name) = LOWER($1) AND type = $2 AND is_draft = false LIMIT 1",
-		body.Name, body.Type).Scan(&id)
+	var err error
+	if body.ExcludeID != nil {
+		err = config.DB.QueryRow(context.Background(),
+			`SELECT id FROM products
+			 WHERE LOWER(name) = LOWER($1) AND type = $2 AND is_draft = false AND id <> $3
+			 LIMIT 1`,
+			body.Name, body.Type, *body.ExcludeID).Scan(&id)
+	} else {
+		err = config.DB.QueryRow(context.Background(),
+			"SELECT id FROM products WHERE LOWER(name) = LOWER($1) AND type = $2 AND is_draft = false LIMIT 1",
+			body.Name, body.Type).Scan(&id)
+	}
 	if err == nil {
 		handlers.OK(w, map[string]any{"success": true, "available": false, "message": "Tên sản phẩm đã tồn tại"})
 		return
@@ -282,6 +293,32 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		"tiktok_url": true, "instagram_url": true,
 		"discount_price": true, "discount_from": true, "discount_to": true,
 		"max_upload_images": true, "sold_count": true,
+	}
+
+	if rawName, ok := body["name"].(string); ok {
+		name := strings.TrimSpace(rawName)
+		if name == "" {
+			handlers.BadRequest(w, "name required")
+			return
+		}
+		body["name"] = name
+		var conflictID int
+		var productType string
+		if t, ok := body["type"].(string); ok && t != "" {
+			productType = t
+		} else {
+			_ = tx.QueryRow(context.Background(),
+				"SELECT type FROM products WHERE id = $1", id).Scan(&productType)
+		}
+		err := tx.QueryRow(context.Background(),
+			`SELECT id FROM products
+			 WHERE LOWER(name) = LOWER($1) AND type = $2 AND is_draft = false AND id::text <> $3
+			 LIMIT 1`,
+			name, productType, id).Scan(&conflictID)
+		if err == nil {
+			handlers.BadRequest(w, "Tên sản phẩm đã tồn tại")
+			return
+		}
 	}
 
 	setClauses := []string{}

@@ -15,6 +15,13 @@ import (
 
 const maxMusicBytes = 15 * 1024 * 1024 // 15 MB
 
+// TikTok serves a JS anti-bot challenge page to yt-dlp's default HTTP
+// User-Agent (yt-dlp can't solve it and fails with "Unexpected response
+// from webpage request"), but serves the real page straight away to an
+// ordinary browser UA. Spoofing one here fixes TikTok links without any
+// other change; it's harmless for YouTube/other sources too.
+const musicDownloadUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+
 // POST /api/music/extract — downloads audio from a URL via yt-dlp and uploads to S3.
 func ExtractMusic(w http.ResponseWriter, r *http.Request) {
 	var body struct {
@@ -47,7 +54,7 @@ func downloadAndUploadMusic(url, qrName string) (string, error) {
 	defer os.RemoveAll(tmpDir)
 
 	outPattern := filepath.Join(tmpDir, "music.%(ext)s")
-	cmd := exec.Command("yt-dlp", "-x", "-o", outPattern, url)
+	cmd := exec.Command("yt-dlp", "--user-agent", musicDownloadUserAgent, "-x", "-o", outPattern, url)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("yt-dlp error: %s", string(out))
 	}

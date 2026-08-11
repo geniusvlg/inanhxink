@@ -159,6 +159,11 @@
   display: inline-block;
 }
 
+.ff-card-date-label {
+  color: #16a34a;
+  font-weight: 600;
+}
+
 .ff-card-amount {
   font-size: 0.82rem;
   font-weight: 700;

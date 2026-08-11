@@ -58,6 +58,23 @@ func rewriteTemplateDataCDN(data map[string]any) {
 			}
 		}
 	}
+	if stages, ok := data["farewellStages"].([]any); ok {
+		for _, item := range stages {
+			if stage, ok := item.(map[string]any); ok {
+				if imageURLs, ok := stage["imageUrls"].([]any); ok {
+					for i, item := range imageURLs {
+						if imageURL, ok := item.(string); ok {
+							imageURLs[i] = config.CdnStr(imageURL)
+						}
+					}
+				}
+				// Compatibility with the first single-image stage payload.
+				if imageURL, ok := stage["imageUrl"].(string); ok {
+					stage["imageUrl"] = config.CdnStr(imageURL)
+				}
+			}
+		}
+	}
 }
 
 // hostWithoutPort strips :port from r.Host (e.g. localhost:3001 → localhost).
