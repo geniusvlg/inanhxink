@@ -71,6 +71,7 @@
         'openLetterBtn',        // loveletter — envelope seal
         'start-button',         // letterinspace — start button
         'startBtn',             // birthday — tap-to-start button
+        'startJourney',         // farewell — boarding pass, starts the route
         'heartScreen',          // specialgift — tap the heart to open
         'tap-to-start-overlay'  // galaxy — tap-to-start button
       ];

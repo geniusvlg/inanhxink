@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eaf4ff">
+  <title>Bon Voyage ✈</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="is-gated">
+  <div class="sky" aria-hidden="true">
+    <span class="cloud cloud--1"></span>
+    <span class="cloud cloud--2"></span>
+    <span class="cloud cloud--3"></span>
+    <span class="cloud cloud--4"></span>
+  </div>
+
+  <!-- ─── Flight telemetry ─── -->
+  <div class="hud" id="hud" aria-hidden="true">
+    <div class="hud-readouts">
+      <div class="hud-item">
+        <span>Độ cao</span>
+        <strong id="hudAltitude">0 m</strong>
+      </div>
+      <div class="hud-item hud-item--right">
+        <span>Đã bay</span>
+        <strong id="hudDistance">0 km</strong>
+      </div>
+    </div>
+    <div class="hud-bar"><i id="hudBar"></i></div>
+  </div>
+
+  <!-- ─── Boarding pass ─── -->
+  <section class="intro" id="intro">
+    <p class="intro-eyebrow">Thẻ lên máy bay</p>
+
+    <div class="pass">
+      <div class="pass-main">
+        <div class="pass-route">
+          <div class="pass-port">
+            <b id="fromCode">HAN</b>
+            <span id="fromName">Việt Nam</span>
+          </div>
+          <svg class="pass-arc" viewBox="0 0 120 40" aria-hidden="true">
+            <path d="M6 32 Q60 -2 114 32" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 7" stroke-linecap="round"/>
+            <path class="pass-arc-plane" d="M60 4 l7 16 -7 -3 -7 3 z" fill="currentColor"/>
+          </svg>
+          <div class="pass-port pass-port--to">
+            <b id="toCode">HND</b>
+            <span id="toName">Nhật Bản</span>
+          </div>
+        </div>
+
+        <dl class="pass-meta">
+          <div><dt>Hành khách</dt><dd id="passName">—</dd></div>
+          <div><dt>Ngày bay</dt><dd id="passDate">—</dd></div>
+          <div><dt>Cổng</dt><dd id="passGate">—</dd></div>
+          <div><dt>Đếm ngược</dt><dd id="passCountdown">—</dd></div>
+        </dl>
+      </div>
+
+      <div class="pass-stub">
+        <span class="pass-stub-code" id="stubCode">HND</span>
+        <span class="pass-barcode" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <button class="cta" id="startJourney" type="button">
+      <span>Bắt đầu hành trình</span><b aria-hidden="true">↓</b>
+    </button>
+  </section>
+
+  <!-- ─── The flight: a sphere of memories, circled by the plane ─── -->
+  <section class="globe" id="globe" hidden>
+    <div class="globe-scene" id="globeScene">
+      <div class="globe-sphere" id="sphere"></div>
+      <div class="globe-orbit" id="orbit">
+        <div class="globe-arm" id="orbitArm">
+          <span class="globe-plane" id="orbitPlane">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5 L20.5 21 L12 17 L3.5 21 Z"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="globe-memory">
+      <div class="globe-memory-visual">
+        <img id="globeMemoryImage" alt="" hidden>
+        <div class="globe-memory-placeholder" id="globeMemoryPlaceholder" aria-hidden="true">
+          <span>✈</span>
+          <small>Kỷ niệm đang chờ</small>
+        </div>
+      </div>
+      <div class="globe-info">
+        <span class="globe-step" id="globeStep">Chặng 01</span>
+        <p class="globe-note" id="globeNote"></p>
+        <p class="globe-status" id="globeStatus"></p>
+      </div>
+    </div>
+
+    <button class="globe-skip" id="skipFlight" type="button">Bỏ qua, tới nơi ngay ↓</button>
+  </section>
+
+  <div class="landing" id="landing" hidden>
+
+  <!-- ─── Arrival ─── -->
+  <section class="arrival" id="arrival">
+    <div class="stamp" id="stamp" aria-hidden="true">
+      <span class="stamp-code" id="stampCode">HND</span>
+      <span class="stamp-city" id="stampCity">TOKYO</span>
+      <span class="stamp-date" id="stampDate">—</span>
+    </div>
+
+    <h2 class="arrival-title">Đã hạ cánh an toàn ở <span id="arrivalCity">Tokyo</span></h2>
+
+    <dl class="facts" id="facts">
+      <div><dt>Quãng đường</dt><dd id="factDistance">—</dd></div>
+      <div><dt>Thời gian bay</dt><dd id="factDuration">—</dd></div>
+      <div><dt>Lệch giờ</dt><dd id="factOffset">—</dd></div>
+    </dl>
+
+    <div class="clocks" id="clocks">
+      <div class="clock">
+        <b id="clockFrom">--:--</b>
+        <span id="clockFromLabel">Hà Nội</span>
+      </div>
+      <span class="clock-gap" aria-hidden="true"></span>
+      <div class="clock">
+        <b id="clockTo">--:--</b>
+        <span id="clockToLabel">Tokyo</span>
+      </div>
+    </div>
+    <p class="clocks-note" id="clocksNote"></p>
+  </section>
+
+  <!-- ─── The letter ─── -->
+  <section class="letter" id="letter">
+    <div class="letter-stage">
+      <button class="envelope" id="envelope" type="button" aria-expanded="false">
+        <span class="envelope-flap" aria-hidden="true"></span>
+        <span class="envelope-face">
+          <span class="envelope-mark">
+            <span class="envelope-par">Par avion</span>
+            <span class="envelope-stamp" id="envelopeStamp">HND</span>
+          </span>
+          <span class="envelope-address">
+            <span class="envelope-label">Gửi</span>
+            <b id="envelopeTo">—</b>
+            <span id="envelopeFrom">—</span>
+          </span>
+          <span class="envelope-open">Chạm để mở thư</span>
+        </span>
+      </button>
+
+      <div class="letter-paper is-sealed" id="letterPaper" hidden>
+        <p class="letter-eyebrow">Gửi người sắp bay xa</p>
+        <p class="letter-body" id="letterBody"></p>
+        <p class="letter-sign" id="letterSign"></p>
+        <button class="ghost-button" id="replayJourney" type="button">Bay lại hành trình ↺</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Recap ─── -->
+  <section class="recap" id="recap" hidden>
+    <h2 class="recap-title">Tất cả kỷ niệm</h2>
+    <div class="recap-grid" id="recapGrid"></div>
+  </section>
+
+  </div><!-- /landing -->
+
+  <script data-cfasync="false" src="./app.js" defer></script>
+</body>
+</html>

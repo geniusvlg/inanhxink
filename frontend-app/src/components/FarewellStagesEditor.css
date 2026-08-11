@@ -1,0 +1,244 @@
+.farewell-stages {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #dbe7f4;
+  border-radius: 0.85rem;
+  background: #f8fbff;
+}
+
+.farewell-stages__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.farewell-stages__heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #12263f;
+}
+
+.farewell-stages__heading p {
+  margin: 0.3rem 0 0;
+  max-width: 34rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.farewell-stages__heading label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.farewell-stages__heading select {
+  min-width: 4rem;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+}
+
+.farewell-stages__disabled {
+  margin: 0 0 0.8rem;
+  color: #dc2626;
+  font-size: 0.9rem;
+}
+
+.farewell-stages__list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.farewell-stage-card {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #dbe7f4;
+  border-radius: 0.75rem;
+}
+
+.farewell-stage-card__number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 9rem;
+  color: #2563cb;
+  background: #edf5ff;
+  border-right: 1px solid #dbe7f4;
+}
+
+.farewell-stage-card__number span {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.farewell-stage-card__number strong {
+  margin-top: 0.2rem;
+  font-size: 1.4rem;
+}
+
+.farewell-stage-card__content {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.9fr) minmax(13rem, 1.1fr);
+  gap: 0.9rem;
+  padding: 0.8rem;
+}
+
+.farewell-stage-card__image {
+  position: relative;
+  min-height: 8rem;
+  overflow: hidden;
+  border-radius: 0.6rem;
+  background: #edf3f9;
+}
+
+.farewell-stage-card__image > input {
+  display: none;
+}
+
+.farewell-stage-card__image img {
+  display: block;
+  width: 100%;
+  height: 8rem;
+  object-fit: cover;
+}
+
+.farewell-stage-card__pick {
+  width: 100%;
+  height: 100%;
+  min-height: 8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font: inherit;
+  font-size: 0.76rem;
+  color: #2563cb;
+  background: transparent;
+  border: 1px dashed #93b8e4;
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+
+.farewell-stage-card__pick span {
+  font-size: 1.4rem;
+}
+
+.farewell-stage-card__pick:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.farewell-stage-card__image-actions {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  display: flex;
+  gap: 0.3rem;
+}
+
+.farewell-stage-card__image-actions button,
+.farewell-stage-card__retry {
+  padding: 0.25rem 0.45rem;
+  font: inherit;
+  font-size: 0.7rem;
+  color: #1e3a5f;
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.farewell-stage-card__upload,
+.farewell-stage-card__retry {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+}
+
+.farewell-stage-card__upload {
+  padding: 0.25rem 0.45rem;
+  font-size: 0.7rem;
+  color: #92400e;
+  background: rgba(255, 251, 235, 0.94);
+  border-radius: 0.35rem;
+}
+
+.farewell-stage-card__upload.is-done {
+  color: #166534;
+  background: rgba(240, 253, 244, 0.94);
+}
+
+.farewell-stage-card__message {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.farewell-stage-card__message > span {
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.farewell-stage-card__message textarea {
+  width: 100%;
+  flex: 1;
+  min-height: 6.2rem;
+  padding: 0.65rem 0.75rem 1.35rem;
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  resize: vertical;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.55rem;
+  box-sizing: border-box;
+}
+
+.farewell-stage-card__message small {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.35rem;
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 620px) {
+  .farewell-stages {
+    padding: 0.75rem;
+  }
+
+  .farewell-stages__heading {
+    flex-direction: column;
+  }
+
+  .farewell-stage-card {
+    grid-template-columns: 3.3rem minmax(0, 1fr);
+  }
+
+  .farewell-stage-card__content {
+    grid-template-columns: 1fr;
+  }
+
+  .farewell-stage-card__image,
+  .farewell-stage-card__image img,
+  .farewell-stage-card__pick {
+    min-height: 6.5rem;
+    height: 6.5rem;
+  }
+}

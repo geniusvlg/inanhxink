@@ -42,7 +42,12 @@ WORKDIR /
 
 COPY --from=builder /server /server
 COPY backend-golang/public/ /public/
+COPY backend-golang/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 3001
 
-ENTRYPOINT ["/server"]
+# Re-checks yt-dlp for updates on every container start (see docker-entrypoint.sh),
+# since Docker layer caching can otherwise ship a stale "latest" binary for months.
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["/server"]

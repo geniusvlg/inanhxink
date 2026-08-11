@@ -202,7 +202,7 @@ func UpdateProductOrderStatus(w http.ResponseWriter, r *http.Request) {
 // fulfillment_status="" (omitted) means "new" = not yet started.
 // limit/offset are applied only for the "shipped" stage (default limit 30).
 // All in-progress stages show full history; the "shipped" stage is restricted to
-// orders created within the last 7 days so the column stays manageable.
+// orders modified within the last 3 days so the column stays manageable.
 func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	stage := q.Get("fulfillment_status")
@@ -219,11 +219,13 @@ func ListFulfillmentOrders(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 
-	// Shipped orders accumulate indefinitely, so only show the last 7 days there.
+	// Shipped orders accumulate indefinitely, so only show the last 3 days there.
 	// Every other stage shows full history so nothing in progress is hidden.
+	// Note: updated_at is a generic last-modified stamp, so an older order that is
+	// edited (or has its payment status changed) reappears here for another 3 days.
 	dateFilter := ""
 	if stage == "shipped" {
-		dateFilter = `AND updated_at >= NOW() - INTERVAL '7 days'`
+		dateFilter = `AND updated_at >= NOW() - INTERVAL '3 days'`
 	}
 
 	query := fmt.Sprintf(`

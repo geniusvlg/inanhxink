@@ -21,7 +21,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -32,6 +32,7 @@ var templateFolderMap = map[string]string{
 	"birthday":      "birthday",
 	"birthdaycake":  "birthdaycake",
 	"specialgift":   "specialgift",
+	"farewell":      "farewell",
 }
 
 func domain() string {
@@ -119,7 +120,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell"))
 		return
 	}
 
@@ -248,6 +249,63 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		} else {
 			templateData["photoBlobUrls"] = []any{}
 		}
+	case "farewell":
+		templateData["farewellFriendName"] = strOrDefault(body, "farewellFriendName", "")
+		templateData["farewellFrom"] = strOrDefault(body, "farewellFrom", "Việt Nam")
+		templateData["farewellDestination"] = strOrDefault(body, "farewellDestination", "other")
+		templateData["farewellDepartureDate"] = strOrDefault(body, "farewellDepartureDate", "")
+		templateData["farewellMessage"] = strOrDefault(body, "farewellMessage", content)
+		templateData["farewellSender"] = strOrDefault(body, "farewellSender", "")
+
+		// Explicit stages preserve sparse slots: an image, a message, both, or
+		// neither. Older clients can continue sending the arrays below.
+		if rawStages, ok := body["farewellStages"].([]any); ok {
+			stages := make([]map[string]any, 0, min(len(rawStages), 8))
+			deriveImages := len(imageUrls) == 0
+			for _, raw := range rawStages {
+				if len(stages) == 8 {
+					break
+				}
+				stage, ok := raw.(map[string]any)
+				if !ok {
+					continue
+				}
+				message, _ := stage["message"].(string)
+				message = strings.TrimSpace(message)
+				if utf8.RuneCountInString(message) > 140 {
+					message = string([]rune(message)[:140])
+				}
+
+				imageURL := ""
+				if s, ok := stage["imageUrl"].(string); ok {
+					imageURL = strings.TrimSpace(s)
+				} else if rawImages, ok := stage["imageUrls"].([]any); ok && len(rawImages) > 0 {
+					// Accept the multi-image experiment's payload; only the first image is kept now.
+					if s, ok := rawImages[0].(string); ok {
+						imageURL = strings.TrimSpace(s)
+					}
+				}
+
+				stages = append(stages, map[string]any{
+					"imageUrl": imageURL,
+					"message":  message,
+				})
+				if deriveImages && imageURL != "" {
+					imageUrls = append(imageUrls, imageURL)
+				}
+			}
+			templateData["farewellStages"] = stages
+		}
+
+		// Legacy captions are positional: index i belongs to imageUrls[i].
+		captions := []string{}
+		if raw, ok := body["farewellCaptions"].([]any); ok {
+			for _, item := range raw {
+				s, _ := item.(string)
+				captions = append(captions, strings.TrimSpace(s))
+			}
+		}
+		templateData["farewellCaptions"] = captions
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls
@@ -291,19 +349,25 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Get add-on prices from metadata
 	metaRows, err := config.DB.Query(context.Background(),
-		"SELECT key, value FROM metadata WHERE key IN ('music_price', 'voice_recording_price', 'keychain_price')")
+		"SELECT key, value FROM metadata WHERE key IN ('music_price', 'voice_recording_price', 'keychain_price', 'keychain_enabled')")
 	if err != nil {
 		InternalError(w, err)
 		return
 	}
 	defer metaRows.Close()
 	meta := map[string]float64{}
+	metaRaw := map[string]string{}
 	for metaRows.Next() {
 		var k, v string
 		metaRows.Scan(&k, &v) //nolint
+		metaRaw[k] = v
 		var n float64
 		fmt.Sscanf(v, "%f", &n)
 		meta[k] = n
+	}
+	// Admins can disable the keychain add-on; ignore it even if the client still sends it.
+	if metaRaw["keychain_enabled"] == "false" {
+		keychainPurchased = false
 	}
 	musicPrice := 0.0
 	if musicAdded {

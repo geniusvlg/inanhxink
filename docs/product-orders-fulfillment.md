@@ -203,9 +203,20 @@ the remaining balance is collected on delivery.
 The board shows **all** orders by default — there is no "Hôm nay" (today-only)
 toggle. The first three columns (`new`, `preparing`, `packing`) always show full
 history so nothing in progress is ever hidden. The **`shipped`
-("Đã giao vận chuyển")** column is restricted to orders **moved to shipped within
-the last 7 days** (`AND updated_at >= NOW() - INTERVAL '7 days'`) to keep an
+("Đã giao vận chuyển")** column is restricted to orders **modified within the last
+3 days** (`AND updated_at >= NOW() - INTERVAL '3 days'`) to keep an
 ever-growing column manageable; it still paginates 30 at a time via "Xem thêm".
+
+Caveat: `updated_at` is a generic last-modified stamp, not a ship date — payment
+status changes and admin edits bump it too (`admin/orders.go`,
+`admin/product_orders.go`, SePay webhook in `payments.go`). An older order that is
+edited therefore reappears in the shipped column for another 3 days. A dedicated
+`shipped_at` column would be needed to scope strictly by ship date.
+
+Because the column is scoped by that timestamp, cards in the `shipped` column
+show the **ship date** prefixed with 🚚 instead of the order date (the order date
+moves into the expanded card as "Ngày đặt"). Cards in the other three columns keep
+showing the order date.
 
 The filter lives in the Go handler `ListFulfillmentOrders`
 (`backend-golang/internal/handlers/admin/product_orders.go`). The old `today_only`

@@ -289,13 +289,17 @@ export default function ProductItemsPage({ type }: Props) {
     if (!name) return;
     setNameCheckState('checking');
     try {
-      const checkRes = await productsApi.checkName(name, type);
+      const checkRes = await productsApi.checkName(name, type, editing?.id);
       if (!checkRes.data.available) {
         setNameCheckState('taken');
         return;
       }
-      const reserveRes = await productsApi.reserve(name, type);
-      setReservedProductId(reserveRes.data.productId);
+      // Create flow: reserve a draft so later uploads have a product id.
+      // Edit flow: the product already exists — checking uniqueness is enough.
+      if (!editing) {
+        const reserveRes = await productsApi.reserve(name, type);
+        setReservedProductId(reserveRes.data.productId);
+      }
       setNameCheckState('available');
     } catch {
       setNameCheckState('idle');
@@ -409,7 +413,19 @@ export default function ProductItemsPage({ type }: Props) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editing && nameCheckState !== 'available') return;
+    const nextName = form.name?.trim() ?? '';
+    if (!nextName) {
+      alert('Vui lòng nhập tên sản phẩm');
+      return;
+    }
+    const nameChanged = !!editing && nextName.toLowerCase() !== (editing.name ?? '').trim().toLowerCase();
+    // Create always requires a checked name; edit only when the name actually changed.
+    if ((!editing || nameChanged) && nameCheckState !== 'available') {
+      alert(nameChanged
+        ? 'Vui lòng kiểm tra tên sản phẩm mới trước khi lưu'
+        : 'Vui lòng kiểm tra tên sản phẩm trước khi lưu');
+      return;
+    }
     setSaving(true);
     try {
       const productId = editing?.id ?? reservedProductId!;
@@ -417,6 +433,7 @@ export default function ProductItemsPage({ type }: Props) {
       const soldCount = Math.max(0, soldRaw === '' ? 0 : Number(soldRaw));
       await productsApi.update(productId, {
         ...form,
+        name: nextName,
         type,
         images: imageEntries,
         max_upload_images: Number(maxUploadImagesInput) > 0 ? Number(maxUploadImagesInput) : 15,
@@ -610,15 +627,21 @@ export default function ProductItemsPage({ type }: Props) {
                     className="form-input"
                     value={form.name ?? ''}
                     onChange={e => {
-                      setForm(f => ({ ...f, name: e.target.value }));
-                      if (!editing) setNameCheckState('idle');
+                      const value = e.target.value;
+                      setForm(f => ({ ...f, name: value }));
+                      if (!editing) {
+                        setNameCheckState('idle');
+                        return;
+                      }
+                      // Same name as before: no re-check needed. Otherwise force a check.
+                      const unchanged = value.trim().toLowerCase() === (editing.name ?? '').trim().toLowerCase();
+                      setNameCheckState(unchanged ? 'available' : 'idle');
                     }}
                     maxLength={50}
                     required
-                    disabled={!!editing}
                     style={{ flex: 1 }}
                   />
-                  {!editing && (
+                  {(!editing || (form.name ?? '').trim().toLowerCase() !== (editing.name ?? '').trim().toLowerCase()) && (
                     <button
                       type="button"
                       className="btn-secondary"
@@ -630,10 +653,12 @@ export default function ProductItemsPage({ type }: Props) {
                     </button>
                   )}
                 </div>
-                {!editing && nameCheckState === 'available' && (
+                {(!editing ||
+                  (form.name ?? '').trim().toLowerCase() !== (editing.name ?? '').trim().toLowerCase()) &&
+                  nameCheckState === 'available' && (
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#16a34a' }}>✓ Tên hợp lệ, có thể sử dụng</p>
                 )}
-                {!editing && nameCheckState === 'taken' && (
+                {nameCheckState === 'taken' && (
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#dc2626' }}>✗ Tên đã tồn tại, vui lòng chọn tên khác</p>
                 )}
               </div>
@@ -1134,7 +1159,18 @@ export default function ProductItemsPage({ type }: Props) {
 
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={closeModal}>Huỷ</button>
-                <button type="submit" className="btn-primary" disabled={saving || (!editing && nameCheckState !== 'available')}>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={
+                    saving ||
+                    nameCheckState === 'checking' ||
+                    nameCheckState === 'taken' ||
+                    ((!editing ||
+                      (form.name ?? '').trim().toLowerCase() !== (editing.name ?? '').trim().toLowerCase()) &&
+                      nameCheckState !== 'available')
+                  }
+                >
                   {saving ? 'Đang lưu...' : 'Lưu'}
                 </button>
               </div>

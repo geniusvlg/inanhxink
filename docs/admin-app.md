@@ -53,6 +53,12 @@ category only requires (1) a new admin wrapper page + sidebar entry, (2) a new
 public-facing page on the storefront, and (3) updating `ProductItemsPage`'s
 `type` union + `PAGE_TITLE` map.
 
+Product names are editable in create and edit. Creating a product still reserves
+a draft after "Kiểm tra"; renaming on edit only runs the uniqueness check
+(`POST /api/admin/products/check-name` with optional `excludeId`) and the update
+handler rejects a name already used by another non-draft product of the same
+type.
+
 Admin image previews use `admin-app/src/utils/assetUrl.ts` to render S3-backed
 assets through the CDN when configured. The underlying admin API values remain
 raw S3 URLs for edit/delete flows.
@@ -181,6 +187,18 @@ It also manages `voice_recording_price`, the optional QR voice-message add-on
 price in VND. The default is `10000`; `0` makes the add-on free. The Go backend
 reads this metadata value when the QR order is created and stores the charged
 price on the order, so changing the setting does not alter existing orders.
+
+The "🎁 Phụ phí tuỳ chọn" card holds the QR add-on settings:
+
+- `keychain_enabled`: toggle for the "Mua móc khóa quét QR" option on the order
+  form. Anything other than `false` counts as enabled (default `true`, seeded by
+  `V65__keychain_enabled_flag.sql`). When `false`, `OrderPage.tsx` hides the
+  checkbox and `CreateOrder` in `backend-golang/internal/handlers/orders.go`
+  forces `keychainPurchased` to false, so a crafted request cannot add the
+  keychain or its price. Existing paid keychain orders are unaffected and still
+  show on the fulfillment board.
+- `keychain_price` / `music_price`: add-on surcharges in VND. `keychain_price` is
+  ignored while `keychain_enabled` is `false`.
 
 ## S3 Folder Structure (Products)
 

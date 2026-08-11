@@ -110,6 +110,20 @@ pip3 install yt-dlp
 curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp
 ```
 
+**Docker image staleness:** the Dockerfile fetches the "latest" yt-dlp release
+at *build* time, but Docker/GHA layer caching means that layer can go
+unchanged (and therefore stale) across many rebuilds. `docker-entrypoint.sh`
+self-updates yt-dlp (`yt-dlp -U`, best-effort with a timeout) on every
+container start to avoid shipping a version that's months behind TikTok's/
+YouTube's latest anti-bot changes.
+
+**TikTok "Unexpected response from webpage request":** TikTok serves a JS
+anti-bot challenge to yt-dlp's default HTTP User-Agent (which yt-dlp's
+built-in challenge solver often can't clear), but serves the real page
+straight away to an ordinary browser UA. `downloadAndUploadMusic` in
+`internal/handlers/music.go` always passes `--user-agent` with a Chrome UA
+string to work around this — updating yt-dlp alone does not reliably fix it.
+
 ---
 
 ## Running locally
