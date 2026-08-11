@@ -64,8 +64,33 @@ func GetPublicURL(key string) string {
 	return fmt.Sprintf("%s/%s/%s", S3Endpoint, S3Bucket, key)
 }
 
+// maxImageDimension caps the longer side of uploaded photos before storage.
+// Phone cameras commonly shoot originals well above this (4000px+); template
+// pages preload/decode every gallery photo up front, and decoding many
+// full-resolution originals at once can exceed mobile Safari's per-tab
+// memory budget — the OS then kills the tab's content process, and Safari
+// silently reloads the page, which looks like the site "restarted" on its
+// own. 2400px is still sharp on any phone/QR-viewing screen.
+const maxImageDimension = 2400
+
+// downscaleIfNeeded resizes img so its longer side is at most maxImageDimension,
+// preserving aspect ratio. Images already within budget are returned unchanged.
+func downscaleIfNeeded(img image.Image) image.Image {
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	if w <= maxImageDimension && h <= maxImageDimension {
+		return img
+	}
+	if w >= h {
+		return imaging.Resize(img, maxImageDimension, 0, imaging.Lanczos)
+	}
+	return imaging.Resize(img, 0, maxImageDimension, imaging.Lanczos)
+}
+
 // UploadToS3 uploads buf to S3 under folder/filename and returns the raw S3 URL.
-// Images are converted to WebP (quality 90) unless noConvert=true (use for print-quality originals).
+// Images are converted to WebP (quality 90) and capped to maxImageDimension,
+// unless noConvert=true (use for print-quality originals, which must keep
+// their original resolution/format for the print pipeline).
 // Audio files are passed through unchanged.
 func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark, noConvert bool) (string, error) {
 	uploadBuf := buf
@@ -80,10 +105,16 @@ func UploadToS3(buf []byte, folder, originalname, mimetype string, watermark, no
 				return "", fmt.Errorf("decode image: %w", err)
 			}
 		} else {
-			img, _, err := image.Decode(bytes.NewReader(buf))
+			// Phone cameras store landscape pixel data plus an EXIF orientation
+			// tag telling viewers how to rotate it for display; the stdlib
+			// image.Decode ignores that tag. WebP has nowhere reliable to carry
+			// it onward, so if we don't bake the rotation into the pixels here,
+			// the photo comes out sideways/upside-down everywhere it's shown.
+			img, err := imaging.Decode(bytes.NewReader(buf), imaging.AutoOrientation(true))
 			if err != nil {
 				return "", fmt.Errorf("decode image: %w", err)
 			}
+			img = downscaleIfNeeded(img)
 			if watermark {
 				img, err = applyWatermark(img)
 				if err != nil {

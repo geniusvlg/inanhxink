@@ -6,6 +6,19 @@ The Go backend still uses WebP support for product catalog images and other
 standard uploads. Product-order customer images under `product-orders/` are an
 exception: they keep the original file bytes and extension for print quality.
 
+`config.UploadToS3` (`internal/config/s3.go`) always decodes with
+`imaging.Decode(..., imaging.AutoOrientation(true))`, not the stdlib
+`image.Decode` — phone photos store landscape pixel data plus an EXIF
+orientation tag telling viewers how to rotate it, and WebP has nowhere
+reliable to carry that tag onward, so skipping this bakes a sideways/upside-
+down photo into the output. It also caps the longer side to
+`maxImageDimension` (2400px) before encoding: template pages preload/decode
+every gallery photo up front, and letting camera originals (4000px+) through
+uncapped can exceed mobile Safari's per-tab memory budget, causing it to
+silently kill and reload the tab (looks like the page "restarted" on its
+own). Neither applies to the `noConvert` (print) path, which must keep the
+original resolution/bytes.
+
 ### 1. Install libwebp on the server
 
 The Go backend encodes standard uploaded images as WebP using
