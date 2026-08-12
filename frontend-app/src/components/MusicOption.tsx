@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { extractMusic } from '../services/api';
 import './MusicOption.css';
 
@@ -18,6 +18,17 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
   const [rawUrl, setRawUrl] = useState(musicLink || '');
   const [extractState, setExtractState] = useState<ExtractState>(musicLink ? 'success' : 'idle');
   const [errorMsg, setErrorMsg] = useState('');
+  // TikTok's anti-bot challenge can make this take 10+ seconds (server-side
+  // retries with backoff) — stage the "please wait" copy so it doesn't look
+  // stuck on a plain spinner the whole time.
+  const [loadingStage, setLoadingStage] = useState<0 | 1 | 2>(0);
+  const loadingTimers = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      loadingTimers.current.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
   useEffect(() => {
     setShowInput(musicAdded);
@@ -46,6 +57,12 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
     if (!rawUrl.trim()) return;
     setExtractState('loading');
     setErrorMsg('');
+    setLoadingStage(0);
+    loadingTimers.current.forEach((id) => window.clearTimeout(id));
+    loadingTimers.current = [
+      window.setTimeout(() => setLoadingStage(1), 5000),
+      window.setTimeout(() => setLoadingStage(2), 12000),
+    ];
     try {
       const resolvedUrl = await extractMusic(rawUrl.trim(), qrName);
       onMusicLinkChange(resolvedUrl);
@@ -55,6 +72,10 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       setErrorMsg(e.response?.data?.error || 'Không trích xuất được nhạc');
       setExtractState('error');
       onMusicLinkChange('');
+    } finally {
+      loadingTimers.current.forEach((id) => window.clearTimeout(id));
+      loadingTimers.current = [];
+      setLoadingStage(0);
     }
   };
 
@@ -117,6 +138,13 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
         </>
       )}
 
+      {extractState === 'loading' && loadingStage > 0 && (
+        <p className="music-feedback music-feedback--pending">
+          {loadingStage === 1
+            ? 'TikTok đang xử lý, có thể mất 10–15 giây. Vui lòng đợi thêm chút nhé...'
+            : 'Vẫn đang thử tải nhạc, xin đừng tắt trang hoặc bấm lại — sắp xong rồi...'}
+        </p>
+      )}
       {extractState === 'success' && (
         <p className="music-feedback music-feedback--success">Nhạc đã sẵn sàng!</p>
       )}
