@@ -349,19 +349,34 @@ body.is-flying .intro {
 .globe-scene {
   position: relative;
   flex: 0 0 auto;
-  /* Square and driven by whichever axis is tighter, so the box always closely
-     wraps the sphere instead of leaving a tall dead zone below it on wide or
-     short viewports. */
-  width: min(92vw, 58vh, 480px);
-  height: min(92vw, 58vh, 480px);
-  perspective: 1150px;
-  /* Without this the sphere and the orbit flatten into separate planes and the
-     plane paints over the tiles even on the far side of its lap. */
-  transform-style: preserve-3d;
+  /* Square, sized to the padded globe — 94vw overflowed the 16px side
+     padding and CSS3D's overflow:hidden then sheared off the right side. */
+  width: min(100%, 62vh, 520px);
+  aspect-ratio: 1;
+  height: auto;
+  overflow: visible;
 }
 
-/* A zero-sized anchor at the middle of the scene: everything hangs off it. */
-.globe-sphere,
+/* The sphere is rendered by THREE.CSS3DRenderer, which appends its own
+   camera-projected canvas here — it just needs to fill the scene so its
+   projection center lands on the box's center, matching the plane's orbit. */
+.globe-sphere {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+/* Own 3D context for the plane, so ancestor `perspective` does not wrap
+   (and clip) the CSS3D sphere. */
+.globe-orbit-space {
+  position: absolute;
+  inset: 0;
+  perspective: 1150px;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* A zero-sized anchor at the middle of the scene: the orbit hangs off it. */
 .globe-orbit,
 .globe-arm {
   position: absolute;
@@ -402,45 +417,22 @@ body.is-flying .intro {
   fill: var(--blue-deep);
 }
 
+/* Square CSS3D cards matching Special Gift's `.element` (208×208, ~4px
+   inset photo, rounded). Size comes from --tile so packing stays at
+   Special Gift's 208/800 tile-to-radius ratio as the globe scales. */
 .tile {
-  position: absolute;
-  width: var(--tile, 120px);
-  height: calc(var(--tile, 120px) * 1.25);
-  margin: calc(var(--tile, 120px) * -0.625) 0 0 calc(var(--tile, 120px) * -0.5);
-  transform-style: preserve-3d;
-}
-
-/* Two faces, so the far side of the sphere shows card backs, not mirrors. */
-.tile-face,
-.tile-back {
-  position: absolute;
-  inset: 0;
-  padding: 5px;
+  width: var(--tile, 52px);
+  height: var(--tile, 52px);
+  padding: 4px;
   background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.92);
   border-radius: 10px;
-  box-shadow: 0 10px 24px rgba(24, 68, 122, 0.16);
-  backface-visibility: hidden;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
+  pointer-events: none;
 }
 
-.tile-face {
-  opacity: 0.82;
-  transition: opacity 380ms ease, box-shadow 380ms ease;
-}
-
-.tile.is-front .tile-face {
-  opacity: 1;
-  box-shadow: 0 18px 40px rgba(24, 68, 122, 0.32);
-}
-
-.tile-back {
-  transform: rotateY(180deg);
-  background: repeating-linear-gradient(
-      -45deg,
-      rgba(59, 130, 246, 0.07) 0 6px,
-      rgba(255, 255, 255, 0) 6px 12px
-    ),
-    var(--card);
-  opacity: 0.7;
+.tile.is-front {
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.8), 0 10px 24px rgba(24, 68, 122, 0.28);
 }
 
 .tile img {
@@ -448,7 +440,7 @@ body.is-flying .intro {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #e4eefa;
 }
 
@@ -458,12 +450,12 @@ body.is-flying .intro {
   height: 100%;
   align-items: center;
   justify-content: center;
-  font-size: clamp(22px, 5vw, 36px);
+  font-size: clamp(12px, 3vw, 18px);
   color: var(--blue-deep);
   background:
     radial-gradient(circle at 68% 28%, rgba(255, 255, 255, 0.95) 0 12%, transparent 13%),
     linear-gradient(155deg, #d9ebff, #f8fbff 60%, #f4dfbd);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .globe-memory {

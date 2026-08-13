@@ -6,10 +6,13 @@
  * the front in turn, then the page lands on the arrival facts and the sealed
  * letter.
  *
- * The sphere is plain CSS 3D — no WebGL, no third-party code. Route facts
- * (distance, flight time, time difference, live clocks) are derived from the two
- * cities rather than asked for in the order form. Clocks go through the
- * browser's IANA timezone data so daylight saving stays correct.
+ * The photo sphere is rendered with three.js's CSS3DRenderer — the same
+ * technique the Special Gift template uses for its memory globe — so tiles
+ * sit on a real perspective camera (proper foreshortening, no DIY CSS
+ * transform math) instead of the old hand-rolled flat CSS 3D sphere. Route
+ * facts (distance, flight time, time difference, live clocks) are derived
+ * from the two cities rather than asked for in the order form. Clocks go
+ * through the browser's IANA timezone data so daylight saving stays correct.
  */
 (function () {
   'use strict';
@@ -40,8 +43,12 @@
   var TURN_MS = 1000;
   var HOLD_MS = 1500;
   var HOLD_MS_SHORT = 1050;
-  var SPHERE_MIN_TILES = 15;
-  var SPHERE_MAX_TILES = 26;
+  // Same fill counts and tile/radius ratio as Special Gift's gallery globe
+  // (170/199 CSS3D tiles, 208px cards on an 800-unit sphere).
+  var SPHERE_FILL_MOBILE = 170;
+  var SPHERE_FILL_DESKTOP = 199;
+  var SPHERE_CAMERA_FOV = 40;
+  var SPHERE_TILE_RATIO = 208 / 800;
 
   var DESTINATIONS = {
     australia:   { label: 'Úc',           code: 'SYD', city: 'Sydney',    tz: 'Australia/Sydney',  lat: -33.87, lon: 151.21 },
@@ -230,14 +237,6 @@
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
-  /** Shortest signed way around the circle, so the globe never spins the long way. */
-  function shortestTurn(from, to) {
-    var delta = (to - from) % 360;
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
-    return delta;
-  }
-
   function boot() {
     var globeEl = document.getElementById('globe');
     var sphereEl = document.getElementById('sphere');
@@ -266,8 +265,14 @@
     var distance = dest.lat === null ? null : haversine(origin, dest);
 
     var tiles = [];
+    var tourTiles = [];
     var radius = 0;
     var orbitRadius = 0;
+    var sphereScene = null;
+    var sphereCamera = null;
+    var sphereRenderer = null;
+    var sphereGroup = null;
+    var initialQuat = null;
     var memoryCount = stages.length;
     var holdMs = memoryCount > 8 ? HOLD_MS_SHORT : HOLD_MS;
     var legMs = TURN_MS + holdMs;
@@ -327,33 +332,39 @@
     }
 
     /**
-     * Spread tiles evenly over a sphere with a Fibonacci spiral, each parked on
-     * its own point facing outward. A handful of stages would leave the ball
-     * looking empty, so the stage visuals repeat until it reads as a sphere —
-     * the first pass through them is what the tour visits. Angles are kept so
-     * the tiles can be re-placed at a new radius when the viewport changes.
+     * Spread tiles evenly over a sphere with the same Fibonacci-sphere formula
+     * the Special Gift template uses for its memory globe, and render them
+     * with THREE.CSS3DObject/CSS3DRenderer. Customer photos are repeated
+     * across ~170/199 square cards (Special Gift's counts) so the ball reads
+     * as a dense globe rather than a handful of large portraits. Tiles are a
+     * single flat card — the far side is a mirror, same as theirs. The tour
+     * still visits each stage once, turning toward a well-spaced repeat of
+     * that photo instead of the first N Fibonacci points (which would all
+     * sit on the south pole of a 199-tile ball).
      */
     function buildSphere() {
       var count = stages.length;
-      if (!count) return;
+      if (!count || typeof THREE === 'undefined' || !THREE.CSS3DRenderer) return;
 
-      var slots = count >= SPHERE_MIN_TILES
-        ? count
-        : Math.min(SPHERE_MAX_TILES, count * Math.ceil(SPHERE_MIN_TILES / count));
-      var goldenAngle = 180 * (3 - Math.sqrt(5));
+      var slots = window.innerWidth < 768 ? SPHERE_FILL_MOBILE : SPHERE_FILL_DESKTOP;
+      if (slots < count) slots = count;
+
+      sphereCamera = new THREE.PerspectiveCamera(SPHERE_CAMERA_FOV, 1, 1, 6000);
+      sphereScene = new THREE.Scene();
+      sphereGroup = new THREE.Object3D();
+      sphereScene.add(sphereGroup);
+
+      var vector = new THREE.Vector3();
+      var spherical = new THREE.Spherical();
 
       for (var i = 0; i < slots; i++) {
-        // Pull the poles in a little; tiles sitting exactly on top read as flat.
-        var y = (slots === 1 ? 0 : 1 - (i / (slots - 1)) * 2) * 0.82;
+        var stageIndex = i % count;
+        var stage = stages[stageIndex];
+        var stageImage = stage.imageUrl || '';
 
         var tile = document.createElement('figure');
         tile.className = 'tile';
 
-        var face = document.createElement('span');
-        face.className = 'tile-face';
-        var stageIndex = i % count;
-        var stage = stages[stageIndex];
-        var stageImage = stage.imageUrl || '';
         if (stageImage) {
           var img = document.createElement('img');
           img.src = stageImage;
@@ -362,25 +373,80 @@
           img.onerror = function () {
             this.replaceWith(createTilePlaceholder());
           };
-          face.appendChild(img);
+          tile.appendChild(img);
         } else {
-          face.appendChild(createTilePlaceholder());
+          tile.appendChild(createTilePlaceholder());
         }
 
-        // A plain card back, so the far side of the sphere isn't a mirror image.
-        var back = document.createElement('span');
-        back.className = 'tile-back';
+        // Same phi/theta distribution as the Special Gift globe: evenly
+        // spaced points on a unit sphere, each looking outward from the
+        // center so the card faces the viewer rather than the sphere's core.
+        var phi = Math.acos(-1 + (2 * i) / slots);
+        var theta = Math.sqrt(slots * Math.PI) * phi;
 
-        tile.appendChild(face);
-        tile.appendChild(back);
-        sphereEl.appendChild(tile);
+        var object = new THREE.CSS3DObject(tile);
+        spherical.set(1, phi, theta);
+        object.position.setFromSpherical(spherical);
+        var direction = object.position.clone().normalize();
+        vector.copy(direction).multiplyScalar(2);
+
+        // object.lookAt() is degenerate right at the poles (direction ≈
+        // ±Y), where the default up vector (0,1,0) is parallel to the look
+        // direction — it produces an unpredictable, often upside-down roll.
+        // Fibonacci sphere point 0 lands exactly on a pole every time, and
+        // unlike Special Gift's ~200-tile ball (where that one odd tile is
+        // buried in the crowd), this tour deliberately parks every tile
+        // front-and-center in turn — so a broken pole tile would be glaring.
+        // Swap the up reference near the poles to keep lookAt well-defined.
+        if (Math.abs(direction.y) > 0.999) {
+          object.up.set(0, 0, 1);
+        }
+        object.lookAt(vector);
+
+        sphereGroup.add(object);
 
         tiles.push({
           el: tile,
-          azimuth: (goldenAngle * i) % 360,
-          elevation: Math.asin(clamp(y, -1, 1)) * (180 / Math.PI)
+          object: object,
+          direction: direction,
+          // The rotation that, applied to the whole group, brings this tile
+          // round to face the camera (parked on the +Z axis).
+          quat: new THREE.Quaternion().setFromUnitVectors(direction, new THREE.Vector3(0, 0, 1))
         });
       }
+
+      // Pick one well-spaced repeat of each stage so the tour travels
+      // around the globe instead of wobbling around the south pole.
+      tourTiles = [];
+      for (var m = 0; m < count; m++) {
+        var target = count <= 1
+          ? Math.floor(slots / 2)
+          : Math.round(m * (slots - 1) / (count - 1));
+        var best = m;
+        var bestDist = Math.abs(best - target);
+        for (var j = m; j < slots; j += count) {
+          var d = Math.abs(j - target);
+          if (d < bestDist) {
+            best = j;
+            bestDist = d;
+          }
+        }
+        tourTiles.push(tiles[best]);
+      }
+
+      initialQuat = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(-14 * Math.PI / 180, 24 * Math.PI / 180, 0, 'XYZ')
+      );
+
+      sphereRenderer = new THREE.CSS3DRenderer();
+      sphereRenderer.domElement.style.position = 'absolute';
+      sphereRenderer.domElement.style.top = '0';
+      sphereRenderer.domElement.style.left = '0';
+      sphereRenderer.domElement.style.pointerEvents = 'none';
+      // CSS3DRenderer defaults to overflow:hidden, which shears off tiles
+      // that perspective-scale past the box (the missing right side).
+      sphereRenderer.domElement.style.overflow = 'visible';
+      sphereEl.appendChild(sphereRenderer.domElement);
     }
 
     function createTilePlaceholder() {
@@ -390,26 +456,47 @@
       return placeholder;
     }
 
+    function renderGlobe() {
+      if (sphereRenderer && sphereScene && sphereCamera) {
+        sphereRenderer.render(sphereScene, sphereCamera);
+      }
+    }
+
     function layoutSphere() {
       var box = document.getElementById('globeScene').getBoundingClientRect();
       // The scene is now a tight square around the sphere, so leaning on the
       // shared side (they're equal) fills it far better than the old
       // width/height split did, which used to leave a dead zone below the ball.
-      radius = clamp(Math.min(box.width, box.height) * 0.4, 92, 210);
+      // 0.38 leaves room for tile size + CSS3D perspective scale so the
+      // silhouette stays inside the box (0.46 overflowed and got clipped).
+      var side = Math.min(box.width, box.height);
+      radius = side * 0.38;
       // Keep the plane's lap inside the scene, however narrow the screen is.
-      orbitRadius = Math.min(box.width / 2 - 22, radius * 1.45);
-      sphereEl.style.setProperty('--tile', Math.round(radius * 0.66) + 'px');
+      orbitRadius = Math.min(side / 2 - 22, radius * 1.45);
+      sphereEl.style.setProperty(
+        '--tile',
+        Math.max(28, Math.round(radius * SPHERE_TILE_RATIO)) + 'px'
+      );
+
+      if (!sphereRenderer || !sphereCamera) return;
+
+      var width = Math.max(1, Math.round(box.width));
+      var height = Math.max(1, Math.round(box.height));
+
+      sphereRenderer.setSize(width, height);
+      sphereCamera.aspect = width / height;
+      // Park the camera so one world unit renders as one CSS pixel at the
+      // sphere's center — the same relationship the Special Gift globe relies
+      // on — so tiles at "radius" line up with the plane's CSS-driven orbit.
+      var fovRad = (SPHERE_CAMERA_FOV * Math.PI) / 180;
+      sphereCamera.position.z = (height / 2) / Math.tan(fovRad / 2);
+      sphereCamera.updateProjectionMatrix();
 
       tiles.forEach(function (tile) {
-        tile.el.style.transform =
-          'rotateY(' + tile.azimuth + 'deg) rotateX(' + -tile.elevation + 'deg) ' +
-          'translateZ(' + Math.round(radius) + 'px)';
+        tile.object.position.copy(tile.direction).multiplyScalar(radius);
       });
-    }
 
-    /** The rotation that brings a tile round to face the viewer. */
-    function facing(tile) {
-      return { rx: tile.elevation, ry: -tile.azimuth };
+      renderGlobe();
     }
 
     function startFlight() {
@@ -478,16 +565,17 @@
       // The tour visits each memory once, not each tile — the sphere repeats
       // the photos to fill itself out.
       var index = clamp(Math.floor(elapsed / legMs), 0, memoryCount - 1);
-      if (!tiles[index]) return;
+      if (!tourTiles[index] || !sphereGroup) return;
 
       var local = elapsed - index * legMs;
-      var to = facing(tiles[index]);
-      var from = index === 0 ? { rx: -14, ry: 24 } : facing(tiles[index - 1]);
+      var toQuat = tourTiles[index].quat;
+      var fromQuat = index === 0 ? initialQuat : tourTiles[index - 1].quat;
       var t = easeInOut(clamp(local / TURN_MS, 0, 1));
 
-      var rx = from.rx + (to.rx - from.rx) * t;
-      var ry = from.ry + shortestTurn(from.ry, to.ry) * t;
-      sphereEl.style.transform = 'rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
+      // Spherical interpolation, so the whole rigid sphere arcs smoothly
+      // round to the next tile instead of wobbling through separate X/Y turns.
+      sphereGroup.quaternion.copy(fromQuat).slerp(toQuat, t);
+      renderGlobe();
 
       // Hand over once the incoming memory is most of the way round, so the
       // caption is never describing the photo that just left.
@@ -495,11 +583,11 @@
     }
 
     function showMemory(index) {
-      if (flight.front >= 0 && tiles[flight.front]) {
-        tiles[flight.front].el.classList.remove('is-front');
+      if (flight.front >= 0 && tourTiles[flight.front]) {
+        tourTiles[flight.front].el.classList.remove('is-front');
       }
       flight.front = index;
-      tiles[index].el.classList.add('is-front');
+      if (tourTiles[index]) tourTiles[index].el.classList.add('is-front');
 
       var stage = stages[index] || { imageUrl: '', message: '' };
       var memoryEl = document.querySelector('.globe-memory');

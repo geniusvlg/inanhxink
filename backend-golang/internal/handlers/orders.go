@@ -21,7 +21,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -33,6 +33,7 @@ var templateFolderMap = map[string]string{
 	"birthdaycake":  "birthdaycake",
 	"specialgift":   "specialgift",
 	"farewell":      "farewell",
+	"loveburst":     "loveburst",
 }
 
 func domain() string {
@@ -120,7 +121,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst"))
 		return
 	}
 
@@ -137,6 +138,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	content, _ := body["content"].(string)
 	if resolvedType == "galaxy" && utf8.RuneCountInString(content) > 150 {
 		BadRequest(w, "Lời nhắn không được quá 150 ký tự")
+		return
+	}
+	if resolvedType == "loveburst" && utf8.RuneCountInString(content) > 200 {
+		BadRequest(w, "Nội dung thư không được quá 200 ký tự")
 		return
 	}
 	imageUrls, _ := body["imageUrls"].([]any)
@@ -306,6 +311,27 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		templateData["farewellCaptions"] = captions
+	case "loveburst":
+		templateData["titleMessage"] = strOrDefault(body, "loveburstTitle", "Gửi bé iu 💖")
+		templateData["popupMessage"] = content
+		messages := make([]string, 0, 4)
+		if raw, ok := body["loveburstMessages"].([]any); ok {
+			for _, item := range raw {
+				if len(messages) == 4 {
+					break
+				}
+				s, _ := item.(string)
+				s = strings.TrimSpace(s)
+				if s == "" {
+					continue
+				}
+				if utf8.RuneCountInString(s) > 40 {
+					s = string([]rune(s)[:40])
+				}
+				messages = append(messages, s)
+			}
+		}
+		templateData["messages"] = messages
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls
