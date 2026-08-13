@@ -64,7 +64,7 @@ Browser → nginx (:443)
 **DB tables**: `templates`, `qr_codes` (JSONB `template_data`), `orders`, `vouchers`, `products`, `product_orders`, `categories`, `testimonials`, `banners`, and others added via Flyway migrations — use **singular** names for new tables (e.g. `product_transaction`, not `product_transactions`)
 
 **Template types** — mapping in `backend-golang/internal/handlers/orders.go` (`validTemplateTypes`, `templateFolderMap`):
-- `galaxy`, `loveletter`, `letterinspace`, `lovedays`, `birthday`, `birthdaycake`, `specialgift`, `farewell`
+- `galaxy`, `loveletter`, `letterinspace`, `lovedays`, `birthday`, `birthdaycake`, `specialgift`, `farewell`, `loveburst`
 - Adding a template: folder in `backend-golang/public/templates/` + entries in `validTemplateTypes`/`templateFolderMap` + DB row. See `docs/qr-templates.md`.
 
 **Key frontend files**: `OrderPage.tsx` (order form), `TemplatePreviewPage.tsx`, `QrCodePage.tsx`/`QrGeneratePage.tsx`, `services/api.ts` (Axios calls)

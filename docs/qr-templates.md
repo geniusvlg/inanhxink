@@ -16,6 +16,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `birthdaycake` | `birthdaycake` | Letter title/body, cake inscription, and up to 24 photos |
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
 | `farewell` | `farewell` | Friend name, origin city, destination/date, farewell letter, and 1–8 stages each with an optional image and message |
+| `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 
 ### Farewell / Bon Voyage
 
@@ -44,17 +45,16 @@ its fold shadow is a `drop-shadow` filter rather than a `box-shadow`, which
 would be clipped away, and it keeps its backface visible so it stays on screen
 while rotating past 90°.
 
-The sphere is plain CSS 3D — no WebGL and no third-party code. Tiles are spread
-over it with a Fibonacci spiral and parked with
-`rotateY(azimuth) rotateX(-elevation) translateZ(radius)`, which leaves each one
-facing outward; the inverse of that rotation is what turns a chosen memory to the
-front. A handful of stages would leave the ball looking empty, so their visuals
-repeat around it up to roughly fifteen tiles — the tour only visits the first
-pass through them, which is why its index is bounded by the stage count and not
-the tile count. Stages without an image use a travel-themed placeholder. Every
-tile carries two faces, a photo/placeholder and a plain back at
-`rotateY(180deg)`, because a single-sided tile shows a mirrored photo on the far
-side of the sphere.
+The photo sphere is rendered with three.js `CSS3DRenderer`, the same
+technique as the Special Gift gallery globe. Customer photos (1–8 stages)
+are repeated across ~170 square tiles on mobile and ~199 on desktop —
+Special Gift's counts — and spread with the same Fibonacci-sphere formula
+so the ball reads as a dense globe rather than a handful of large cards.
+Tiles are single-faced (the far side is a mirror, as in Special Gift).
+The tour still visits each stage once: it turns toward a well-spaced
+repeat of that stage's photo, not the first N Fibonacci points (which
+would cluster at the south pole on a 199-tile ball). Stages without an
+image use a travel-themed placeholder.
 
 The plane orbits on its own tilted ring. It is counter-rotated out of both the
 ring's spin and its tilt so it always faces the viewer, then turned in 2D to
@@ -117,6 +117,21 @@ fall back to the generic `other` destination. Vietnamese origin cities map to
 real airport codes and coordinates for the boarding pass, defaulting to `VN` and
 Hanoi's position. The template row is seeded by
 `V64__seed_farewell_template.sql`.
+
+## Love Burst
+
+A tap on the start ring launches a WebGL
+particle cloud that gathers into each order line in turn, then explodes into a
+CSS3D photo globe. Clicking the globe goes inside, then lifts a column of
+photos and reveals a sealed envelope; opening it types the letter beside the
+first gallery image. Shared voice/music playback is unchanged.
+
+Order JSON stores `messages` (1–4 short strings), `titleMessage`, `content` /
+`popupMessage`, and `imageUrls`. Background particle counts match the source
+site (80k mobile / 120k desktop, lower in in-app browsers). The starfield,
+galaxy disk, and shooting stars stay behind the globe after the text sequence.
+`prefers-reduced-motion` skips the particle-text sequence and goes straight to the globe.
+Seeded by `V66__seed_loveburst_template.sql`.
 
 ## Shared Voice Player
 

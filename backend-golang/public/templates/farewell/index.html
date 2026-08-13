@@ -77,11 +77,15 @@
   <section class="globe" id="globe" hidden>
     <div class="globe-scene" id="globeScene">
       <div class="globe-sphere" id="sphere"></div>
-      <div class="globe-orbit" id="orbit">
-        <div class="globe-arm" id="orbitArm">
-          <span class="globe-plane" id="orbitPlane">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5 L20.5 21 L12 17 L3.5 21 Z"/></svg>
-          </span>
+      <!-- Orbit lives in its own 3D context so the CSS3D sphere is not
+           nested under `perspective` (that clips the right side of the ball). -->
+      <div class="globe-orbit-space">
+        <div class="globe-orbit" id="orbit">
+          <div class="globe-arm" id="orbitArm">
+            <span class="globe-plane" id="orbitPlane">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5 L20.5 21 L12 17 L3.5 21 Z"/></svg>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -172,6 +176,8 @@
 
   </div><!-- /landing -->
 
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS3DRenderer.js"></script>
   <script data-cfasync="false" src="./app.js" defer></script>
 </body>
 </html>

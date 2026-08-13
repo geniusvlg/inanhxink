@@ -35,6 +35,7 @@ const FAREWELL_DESTINATIONS = [
 const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday', 'farewell']);
 const DEFAULT_FAREWELL_STAGE_COUNT = 5;
 const MAX_FAREWELL_STAGES = 8;
+const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
 
 interface Voucher {
   code: string;
@@ -102,6 +103,8 @@ function OrderPage() {
   // Each stage owns three consecutive upload slots; messages are stage-indexed.
   const [farewellStageCount, setFarewellStageCount] = useState(DEFAULT_FAREWELL_STAGE_COUNT);
   const [farewellStageMessages, setFarewellStageMessages] = useState<string[]>([]);
+  const [loveburstTitle, setLoveburstTitle] = useState('Gửi bé iu 💖');
+  const [loveburstMessages, setLoveburstMessages] = useState<string[]>(DEFAULT_LOVEBURST_MESSAGES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -183,6 +186,17 @@ function OrderPage() {
         } else if (d.farewellCaptions?.length) {
           // Backward-compatible draft restore from the old photo-caption model.
           setFarewellStageMessages(d.farewellCaptions);
+        }
+        if (d.loveburstTitle) setLoveburstTitle(d.loveburstTitle);
+        if (Array.isArray(d.loveburstMessages)) {
+          setLoveburstMessages(
+            Array.from({ length: 4 }, (_, i) => String(d.loveburstMessages[i] || '')),
+          );
+        } else if (typeof d.loveburstMessages === 'string') {
+          const restoredMessages = d.loveburstMessages.split('\n');
+          setLoveburstMessages(
+            Array.from({ length: 4 }, (_, i) => restoredMessages[i] || ''),
+          );
         }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
@@ -465,6 +479,13 @@ function OrderPage() {
       setError('Vui lòng chọn ngày bắt đầu');
       return;
     }
+    if (templateType === 'loveburst') {
+      const lines = loveburstMessages.map(s => s.trim()).filter(Boolean);
+      if (!lines.length) { setError('Vui lòng nhập ít nhất một câu lời nhắn hạt sáng'); return; }
+      if (lines.some(line => line.length > 40)) { setError('Mỗi câu lời nhắn tối đa 40 ký tự'); return; }
+      if (content.length > 200) { setError('Nội dung thư không được quá 200 ký tự'); return; }
+      if (!uploadedImages.some(Boolean)) { setError('Vui lòng tải lên ít nhất một ảnh'); return; }
+    }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
     }
@@ -599,6 +620,10 @@ function OrderPage() {
             .map((file, i) => (file ? (farewellStageMessages[i] || '').trim() : null))
             .filter((caption): caption is string => caption !== null),
         }),
+        ...(templateType === 'loveburst' && {
+          loveburstTitle: loveburstTitle.trim() || 'Gửi bé iu 💖',
+          loveburstMessages: loveburstMessages.map(s => s.trim()).filter(Boolean),
+        }),
       });
 
       if (response.success) {
@@ -613,6 +638,7 @@ function OrderPage() {
             farewellFriendName, farewellFrom, farewellDestination,
             farewellDepartureDate, farewellMessage, farewellSender,
             farewellStageCount, farewellStageMessages,
+            loveburstTitle, loveburstMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -725,13 +751,75 @@ function OrderPage() {
         />
       )}
 
+      {templateType === 'loveburst' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0 0.75rem' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tiêu đề popup</label>
+            <input
+              type="text"
+              value={loveburstTitle}
+              onChange={e => setLoveburstTitle(e.target.value)}
+              placeholder="Gửi bé iu 💖"
+              maxLength={50}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời nhắn hạt sáng</label>
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              {loveburstMessages.map((message, index) => (
+                <div key={index} style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={message}
+                    onChange={e => setLoveburstMessages(current => (
+                      current.map((value, messageIndex) => (
+                        messageIndex === index ? e.target.value : value
+                      ))
+                    ))}
+                    placeholder={`Câu ${index + 1}${index === 0 ? ' (ví dụ: Gửi Em 💖)' : ' (không bắt buộc)'}`}
+                    maxLength={40}
+                    aria-label={`Lời nhắn hạt sáng ${index + 1}`}
+                    style={{
+                      width: '100%',
+                      padding: '0.625rem 3.25rem 0.625rem 0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    right: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    fontSize: '0.75rem',
+                    pointerEvents: 'none',
+                  }}>
+                    {message.length}/40
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#6b7280' }}>
+              Tối đa 4 câu, mỗi câu 40 ký tự. Ô trống sẽ không hiển thị.
+            </p>
+          </div>
+          <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>
+            Viết nội dung bên dưới để hiển thị trong popup thư.
+          </p>
+        </div>
+      )}
+
       {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (
         <ContentEditor
           value={content}
           onChange={setContent}
-          label={templateType === 'specialgift' ? 'Nội dung thư' : undefined}
-          placeholder={templateType === 'specialgift' ? 'Nhập nội dung sẽ hiển thị trong popup thư...' : undefined}
-          maxLength={templateType === 'specialgift' ? 200 : undefined}
+          label={templateType === 'specialgift' || templateType === 'loveburst' ? 'Nội dung thư' : undefined}
+          placeholder={templateType === 'specialgift' || templateType === 'loveburst' ? 'Nhập nội dung sẽ hiển thị trong popup thư...' : undefined}
+          maxLength={templateType === 'specialgift' || templateType === 'loveburst' ? 200 : undefined}
         />
       )}
 
