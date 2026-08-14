@@ -140,8 +140,8 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "Lời nhắn không được quá 150 ký tự")
 		return
 	}
-	if resolvedType == "loveburst" && utf8.RuneCountInString(content) > 200 {
-		BadRequest(w, "Nội dung thư không được quá 200 ký tự")
+	if resolvedType == "loveburst" && utf8.RuneCountInString(content) > 400 {
+		BadRequest(w, "Nội dung thư không được quá 400 ký tự")
 		return
 	}
 	imageUrls, _ := body["imageUrls"].([]any)
