@@ -130,42 +130,37 @@ self-updates yt-dlp (`yt-dlp -U`, best-effort with a timeout) on every
 container start to avoid shipping a version that's months behind TikTok's/
 YouTube's latest anti-bot changes.
 
-**TikTok "Unexpected response from webpage request":** TikTok serves a JS
-anti-bot challenge to yt-dlp's default HTTP User-Agent (which yt-dlp's
-built-in challenge solver often can't clear), but serves the real page
-straight away to an ordinary browser UA. `downloadAndUploadMusic` in
-`internal/handlers/music.go` always passes `--user-agent` with a Chrome UA
-string to work around this — updating yt-dlp alone does not reliably fix it.
-Keep the UA version reasonably current; TikTok's check is sensitive to stale
-ones. This challenge is TikTok-side and changes without notice — if it starts
-failing again for *most*/*all* TikTok links, check for an open issue at
-[yt-dlp/yt-dlp](https://github.com/yt-dlp/yt-dlp/issues) before assuming
-something's broken locally; it's usually fixed upstream within days and
-`docker-entrypoint.sh`'s self-update picks it up automatically on next
-container restart.
+**TikTok extract (2026):** TikTok's public `/video/` HTML no longer includes
+`__UNIVERSAL_DATA_FOR_REHYDRATION__`, and yt-dlp's webpage extractor now often
+gets a "Site Maintenance" / JS-challenge page (`Unexpected response from
+webpage request`). `downloadAndUploadMusic` therefore:
+
+1. Parses the numeric post ID (including `/photo/` and `vm.tiktok.com` short
+   links). It warms a cookie session against `https://www.tiktok.com/` via
+   `curl` (Go's `net/http` TLS fingerprint is often 503'd with
+   `overload-protect`), then fetches `https://www.tiktok.com/embed/v2/<id>`.
+   That page still embeds `__FRONTITY_CONNECT_STATE__` with
+   `musicInfos.playUrl` (and a video URL fallback). The signed audio is
+   downloaded directly and uploaded to S3.
+2. If that fails, falls back to `yt-dlp --impersonate chrome` against the
+   **embed URL** (the `/video/` extractor now hits "Site Maintenance"). Older
+   yt-dlp builds without `--impersonate` automatically fall back to the
+   Chrome UA string.
+3. Photo posts are rewritten to `/video/<id>` only when the embed ID cannot
+   be parsed ([yt-dlp#15764](https://github.com/yt-dlp/yt-dlp/issues/15764)).
+
+Keep the UA in `music_tiktok.go` reasonably current. If *most* TikTok links
+start failing again, check [yt-dlp issues](https://github.com/yt-dlp/yt-dlp/issues)
+before assuming a local bug; `docker-entrypoint.sh` still self-updates yt-dlp
+on container start.
 
 The challenge is also flaky moment-to-moment — a link that fails once often
 succeeds seconds later with zero other change (observed: customers clicking
 "Kiểm tra" a second time routinely get through). `extractWithRetries` retries
-up to `musicExtractMaxAttempts` (3) times with a short backoff, but only when
-the failure looks like the anti-bot signature — a genuinely bad/unsupported
-URL fails fast instead of retrying pointlessly.
-
-**TikTok "photo" posts (slideshow + music, no video stream):** these resolve
-to a `/photo/<id>` URL that yt-dlp's TikTok extractor doesn't recognize at
-all (falls back to the generic extractor, errors "Unsupported URL" — see
-[yt-dlp#15764](https://github.com/yt-dlp/yt-dlp/issues/15764), still open).
-`downloadAndUploadMusic` detects this specific failure and retries against
-the equivalent `/video/<id>` URL (with its own anti-bot retries), which
-often still yields the post's audio track — confirmed working end-to-end in
-testing. If the rewrite still fails (or can't even be attempted, e.g. the
-URL didn't parse), the error is classified from whichever attempt actually
-ran last — `music.go` maps that to a short Vietnamese message via
-`friendlyYtDlpError` (anti-bot signature vs. generic fallback; there's
-deliberately no "unsupported photo post" message since the rewrite makes
-that case unreachable in practice — see the `git log` for this file if that
-logic needs revisiting). The full yt-dlp output is always logged server-side
-(`[music-extract] yt-dlp failed for ...`) for debugging.
+yt-dlp up to 3 times with a short backoff, but only when the failure looks
+like the anti-bot signature. Embed fetches similarly retry on 503 /
+"overload-protect". The full extract log is always written server-side
+(`[music-extract] ...`) for debugging.
 
 ---
 
