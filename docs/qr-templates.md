@@ -124,10 +124,12 @@ A tap on the start ring launches a WebGL
 particle cloud that gathers into each order line in turn, then explodes into a
 CSS3D photo globe. Clicking the globe goes inside, then lifts a column of
 photos and reveals a sealed envelope; opening it types the letter beside the
-first gallery image. Shared voice/music playback is unchanged.
+first gallery image. Gallery images start downloading as soon as the page
+boots (not when the globe appears). `musicUrl` is bound to `#bg-audio` and
+starts on the start-screen tap; the shared voice player still owns mute/unmute.
 
 Order JSON stores `messages` (1–4 short strings), `titleMessage`, `content` /
-`popupMessage`, and `imageUrls`. Background particle counts match the source
+`popupMessage`, `imageUrls`, and `musicUrl`. Background particle counts match the source
 site (80k mobile / 120k desktop, lower in in-app browsers). The starfield,
 galaxy disk, and shooting stars stay behind the globe after the text sequence.
 `prefers-reduced-motion` skips the particle-text sequence and goes straight to the globe.
