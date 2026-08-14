@@ -30,8 +30,42 @@
       messages: messages.length ? messages : (demo.messages || []),
       content: src.content || src.popupMessage || demo.content || '',
       imageUrls: images,
-      heartColor: src.heartColor || ''
+      heartColor: src.heartColor || '',
+      musicUrl: src.musicUrl || src.customMusicUrl || ''
     };
+  }
+
+  function galleryImageList(settings) {
+    if (settings.imageUrls.length) return settings.imageUrls;
+    return (window.__LOVEBURST_DEMO__ && window.__LOVEBURST_DEMO__.imageUrls) || [];
+  }
+
+  function galleryTileSize() {
+    var mobile = window.innerWidth < 768;
+    return Math.round((mobile ? 220 : 200) * Math.min(window.devicePixelRatio || 1, 3));
+  }
+
+  function preloadGalleryImages(settings) {
+    var images = galleryImageList(settings);
+    if (!images.length) return Promise.resolve({ images: [], map: {} });
+    var unique = [];
+    images.forEach(function (url) {
+      if (unique.indexOf(url) === -1) unique.push(url);
+    });
+    return Promise.all(unique.map(function (url) { return squareImage(url, galleryTileSize()); })).then(function (squared) {
+      var map = {};
+      unique.forEach(function (url, i) { map[url] = squared[i]; });
+      return { images: images, map: map };
+    });
+  }
+
+  function bindBackgroundMusic(settings) {
+    var audio = document.getElementById('bg-audio');
+    if (!audio || !settings.musicUrl) return;
+    audio.src = settings.musicUrl;
+    audio.loop = true;
+    audio.preload = 'auto';
+    audio.load();
   }
 
   function hideLoading() {
@@ -102,6 +136,8 @@
       e.preventDefault();
       triggered = true;
       wrap.classList.add('done');
+      var audio = document.getElementById('bg-audio');
+      if (audio && audio.src) audio.play().catch(function () {});
       setTimeout(function () { wrap.style.display = 'none'; }, 600);
       window.dispatchEvent(new Event('__textStart'));
     }
@@ -136,11 +172,15 @@
     });
   }
 
-  function initGallery(settings) {
+  function initGallery(settings, assets) {
     if (typeof THREE === 'undefined' || typeof TWEEN === 'undefined') return;
     var container = document.getElementById('sphere-container');
-    var images = settings.imageUrls.length ? settings.imageUrls : (window.__LOVEBURST_DEMO__.imageUrls || []);
-    if (!images.length) return;
+    var ready = (assets && assets.map) ? Promise.resolve(assets) : preloadGalleryImages(settings);
+
+    ready.then(function (prepared) {
+      var images = prepared.images;
+      var map = prepared.map;
+      if (!images.length) return;
 
     var ua = navigator.userAgent || '';
     var inApp = /Zalo|FBAN|FBAV|Instagram|Line|MicroMessenger/i.test(ua);
@@ -154,16 +194,6 @@
         layout.push({ phi: phi, theta: 2 * Math.PI * c / count });
       }
     }
-
-    var unique = [];
-    images.forEach(function (url) {
-      if (unique.indexOf(url) === -1) unique.push(url);
-    });
-    var tileSize = Math.round((mobile ? 220 : 200) * Math.min(window.devicePixelRatio || 1, 3));
-
-    Promise.all(unique.map(function (url) { return squareImage(url, tileSize); })).then(function (squared) {
-      var map = {};
-      unique.forEach(function (url, i) { map[url] = squared[i]; });
 
       var camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
       camera.position.z = 3000;
@@ -399,9 +429,13 @@
     });
   }
 
+  var bootSettings = readSettings();
+  window.loveburstData = bootSettings;
+  var galleryPreloadPromise = preloadGalleryImages(bootSettings);
+  bindBackgroundMusic(bootSettings);
+
   whenDomReady(function () {
-    var settings = readSettings();
-    window.loveburstData = settings;
+    var settings = bootSettings;
     createShootingStars();
     simulateLoading();
     setupStartClick();
@@ -410,7 +444,9 @@
     window.addEventListener('textMessagesComplete', function () {
       if (galleryReady) return;
       galleryReady = true;
-      initGallery(settings);
+      galleryPreloadPromise.then(function (assets) {
+        initGallery(settings, assets);
+      });
     });
   });
 })();

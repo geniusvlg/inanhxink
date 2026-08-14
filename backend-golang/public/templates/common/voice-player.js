@@ -73,7 +73,8 @@
         'startBtn',             // birthday — tap-to-start button
         'startJourney',         // farewell — boarding pass, starts the route
         'heartScreen',          // specialgift — tap the heart to open
-        'tap-to-start-overlay'  // galaxy — tap-to-start button
+        'tap-to-start-overlay', // galaxy — tap-to-start button
+        'start-wrap'            // loveburst — invitation jewel
       ];
       var clickRevealEl = null;
       if (!giftBoxEl) {
@@ -139,6 +140,19 @@
 
     // ── Background music only: original mute/unmute toggle for the page's
     //    own <audio> element(s) ───────────────────────────────────────────────
+    var hasSourcedAudio = audioElements().some(function (audio) {
+      return audio.src || audio.currentSrc;
+    });
+    if (musicUrl && !hasSourcedAudio) {
+      var musicAudio = document.createElement('audio');
+      musicAudio.id = 'inxk-bg-audio';
+      musicAudio.src = musicUrl;
+      musicAudio.loop = true;
+      musicAudio.playsInline = true;
+      musicAudio.preload = 'auto';
+      container.appendChild(musicAudio);
+    }
+
     var isMuted = false;
 
     function playAvailableAudio() {
