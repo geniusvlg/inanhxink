@@ -483,7 +483,7 @@ function OrderPage() {
       const lines = loveburstMessages.map(s => s.trim()).filter(Boolean);
       if (!lines.length) { setError('Vui lòng nhập ít nhất một câu lời nhắn hạt sáng'); return; }
       if (lines.some(line => line.length > 40)) { setError('Mỗi câu lời nhắn tối đa 40 ký tự'); return; }
-      if (content.length > 200) { setError('Nội dung thư không được quá 200 ký tự'); return; }
+      if (content.length > 400) { setError('Nội dung thư không được quá 400 ký tự'); return; }
       if (!uploadedImages.some(Boolean)) { setError('Vui lòng tải lên ít nhất một ảnh'); return; }
     }
     if (templateType === 'specialgift' && content.length > 200) {
@@ -819,7 +819,7 @@ function OrderPage() {
           onChange={setContent}
           label={templateType === 'specialgift' || templateType === 'loveburst' ? 'Nội dung thư' : undefined}
           placeholder={templateType === 'specialgift' || templateType === 'loveburst' ? 'Nhập nội dung sẽ hiển thị trong popup thư...' : undefined}
-          maxLength={templateType === 'specialgift' || templateType === 'loveburst' ? 200 : undefined}
+          maxLength={templateType === 'loveburst' ? 400 : templateType === 'specialgift' ? 200 : undefined}
         />
       )}
 

@@ -120,11 +120,12 @@ Hanoi's position. The template row is seeded by
 
 ## Love Burst
 
+The boot overlay is a circular heart-ring loader (not the original linear bar).
 A tap on the start ring launches a WebGL
 particle cloud that gathers into each order line in turn, then explodes into a
-CSS3D photo globe. Clicking the globe goes inside, then lifts a column of
-photos and reveals a sealed envelope; opening it types the letter beside the
-first gallery image. Gallery images start downloading as soon as the page
+CSS3D photo globe that auto-rotates (tap a photo to go inside). Clicking a photo goes inside, then lifts a column of
+photos and reveals a sealed envelope; opening it types the letter beside a
+slider of every uploaded photo. Gallery images start downloading as soon as the page
 boots (not when the globe appears). `musicUrl` is bound to `#bg-audio` and
 starts on the start-screen tap; the shared voice player still owns mute/unmute.
 

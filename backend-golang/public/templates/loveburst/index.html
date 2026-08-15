@@ -11,12 +11,35 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div id="loading-overlay">
-    <div class="loading-title">Đang chuẩn bị yêu thương...</div>
-    <div class="loading-heart">💕</div>
-    <div class="loading-text">Đang chuẩn bị quà tặng...</div>
-    <div class="loading-bar"><div class="loading-progress" id="loading-progress"></div></div>
-    <div class="loading-percent" id="loading-percent">0%</div>
+  <div id="loading-overlay" style="--load: 0">
+    <div class="load-stars" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="load-nebula" aria-hidden="true"></div>
+    <div class="load-stage">
+      <div class="load-ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <defs>
+            <linearGradient id="load-ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ff8fab"/>
+              <stop offset="50%" stop-color="#ff1493"/>
+              <stop offset="100%" stop-color="#ff69b4"/>
+            </linearGradient>
+          </defs>
+          <circle class="load-ring-track" cx="60" cy="60" r="52"></circle>
+          <circle class="load-ring-fill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <span class="load-spark s1"></span>
+        <span class="load-spark s2"></span>
+        <span class="load-spark s3"></span>
+        <div class="load-orb">
+          <span class="load-heart">♥</span>
+        </div>
+      </div>
+      <p class="load-kicker">Dành riêng cho em</p>
+      <h1 class="load-title">Yêu thương đang đến…</h1>
+      <p class="load-percent" id="loading-percent">0%</p>
+    </div>
   </div>
 
   <div id="start-wrap" role="button" tabindex="0" aria-label="Chạm để mở yêu thương">
@@ -51,8 +74,13 @@
       <button class="popup-close" id="popup-close-btn" type="button" aria-label="Đóng">&times;</button>
       <h2 class="popup-title" id="popup-title">Gửi bé iu 💖</h2>
       <div class="popup-content">
-        <div class="popup-image-container">
-          <img class="popup-image" id="popup-image" alt="">
+        <div class="popup-image-container" id="popup-image-container">
+          <div class="popup-slider" id="popup-slider">
+            <div class="popup-slider-track" id="popup-slider-track"></div>
+            <button class="popup-slider-nav prev" id="popup-slider-prev" type="button" aria-label="Ảnh trước">‹</button>
+            <button class="popup-slider-nav next" id="popup-slider-next" type="button" aria-label="Ảnh sau">›</button>
+          </div>
+          <div class="popup-slider-dots" id="popup-slider-dots"></div>
         </div>
         <div class="popup-message-container">
           <div class="popup-message" id="popup-message">

@@ -12,11 +12,14 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
   var GATHER_SPEED = isMobile ? 0.08 : 0.05;
   var HOLD_MS = isMobile ? 4000 : 3500;
   var DEPTH = isMobile ? 1 : 1.5;
-  var SIZE = isMobile ? 0.12 : 0.15;
+  var SIZE = isMobile ? 0.13 : 0.17;
 
   var scene, camera, renderer;
   var stars, galaxy, sparks, sparkMeta = [];
-  var textMesh, geometry;
+  var textMesh, textGlow, textBloom, geometry;
+  var twinkleIdx = [];
+  var twinklePhase = [];
+  var twinkleBase = [];
   var positions = new Float32Array(PARTICLE_COUNT * 3);
   var targets = new Float32Array(PARTICLE_COUNT * 3);
   var fireworks = [];
@@ -40,12 +43,29 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
     var x = c.getContext('2d');
     var g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
     g.addColorStop(0, 'rgba(255,255,255,1)');
-    g.addColorStop(0.3, 'rgba(255,255,255,0.95)');
-    g.addColorStop(0.5, 'rgba(255,255,255,0.6)');
-    g.addColorStop(0.7, 'rgba(255,200,220,0.15)');
+    g.addColorStop(0.1, 'rgba(255,240,250,1)');
+    g.addColorStop(0.26, 'rgba(255,105,180,0.95)');
+    g.addColorStop(0.48, 'rgba(255,20,147,0.5)');
+    g.addColorStop(0.72, 'rgba(255,20,147,0.14)');
     g.addColorStop(1, 'rgba(0,0,0,0)');
     x.fillStyle = g;
     x.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  }
+
+  function glowTexture() {
+    var c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 128;
+    var x = c.getContext('2d');
+    var g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, 'rgba(255,210,235,0.95)');
+    g.addColorStop(0.16, 'rgba(255,105,180,0.62)');
+    g.addColorStop(0.4, 'rgba(255,20,147,0.28)');
+    g.addColorStop(0.7, 'rgba(255,20,147,0.07)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = g;
+    x.fillRect(0, 0, 128, 128);
     return new THREE.CanvasTexture(c);
   }
 
@@ -132,11 +152,25 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    var map = spriteTexture();
+    var halo = glowTexture();
     textMesh = new THREE.Points(geometry, new THREE.PointsMaterial({
-      size: SIZE, map: spriteTexture(), vertexColors: true, transparent: true,
+      size: SIZE, map: map, vertexColors: true, transparent: true,
       opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending
     }));
     textMesh.position.set(0, 8, 0);
+    textGlow = new THREE.Points(geometry, new THREE.PointsMaterial({
+      size: SIZE * 4.8, map: halo, vertexColors: true, transparent: true,
+      opacity: 0.42, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    textBloom = new THREE.Points(geometry, new THREE.PointsMaterial({
+      size: SIZE * (isMobile ? 8.5 : 11), map: halo, vertexColors: true, transparent: true,
+      opacity: isMobile ? 0.16 : 0.22, depthWrite: false, blending: THREE.AdditiveBlending
+    }));
+    textGlow.position.copy(textMesh.position);
+    textBloom.position.copy(textMesh.position);
+    scene.add(textBloom);
+    scene.add(textGlow);
     scene.add(textMesh);
   }
 
@@ -239,6 +273,10 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
     var sy = sx;
     var ox = -w * sx / 2;
     var colors = geometry.attributes.color;
+    var twinkleCap = isMobile ? 1200 : 2200;
+    twinkleIdx = [];
+    twinklePhase = [];
+    twinkleBase = [];
     for (var p = 0; p < PARTICLE_COUNT; p++) {
       if (hits.length) {
         var hit = hits[Math.floor(Math.random() * hits.length)];
@@ -246,7 +284,27 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
         targets[p * 3 + 1] = -hit.y * sy + h * sy / 2;
         targets[p * 3 + 2] = (Math.random() - 0.5) * DEPTH;
         var mix = colorStart.clone().lerp(colorEnd, 1 - hit.b / 255);
-        colors.setXYZ(p, Math.min(1, mix.r * 1.15), mix.g, mix.b);
+        var roll = Math.random();
+        var r, g, b;
+        if (roll < 0.07) {
+          r = 1;
+          g = 0.78;
+          b = 0.92;
+        } else if (roll < 0.22) {
+          r = Math.min(1, mix.r * 1.32);
+          g = Math.min(1, mix.g * 1.22 + 0.12);
+          b = Math.min(1, mix.b * 1.12 + 0.08);
+        } else {
+          r = Math.min(1, mix.r * 1.16);
+          g = Math.min(1, mix.g * 1.06);
+          b = mix.b;
+        }
+        colors.setXYZ(p, r, g, b);
+        if (roll < 0.07 && twinkleIdx.length < twinkleCap) {
+          twinkleIdx.push(p);
+          twinklePhase.push(Math.random() * Math.PI * 2);
+          twinkleBase.push(r, g, b);
+        }
       } else {
         targets[p * 3] = 40 * (Math.random() - 0.5);
         targets[p * 3 + 1] = 15 * (Math.random() - 0.5);
@@ -255,6 +313,73 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
       }
     }
     colors.needsUpdate = true;
+  }
+
+  function syncTextGlow() {
+    if (!textMesh) return;
+    var pulse = exploding ? 0 : 0.5 + 0.5 * Math.sin(Date.now() * 0.0022);
+    if (textGlow) {
+      textGlow.position.copy(textMesh.position);
+      textGlow.rotation.copy(textMesh.rotation);
+      if (!exploding) {
+        textGlow.material.size = SIZE * (4.4 + 1.6 * pulse);
+        textGlow.material.opacity = 0.34 + 0.22 * pulse;
+      }
+    }
+    if (textBloom) {
+      textBloom.position.copy(textMesh.position);
+      textBloom.rotation.copy(textMesh.rotation);
+      if (!exploding) {
+        textBloom.material.size = SIZE * ((isMobile ? 8 : 10.5) + 2.4 * pulse);
+        textBloom.material.opacity = (isMobile ? 0.12 : 0.16) + 0.14 * pulse;
+      }
+    }
+  }
+
+  function shimmerText(t) {
+    if (!geometry || !twinkleIdx.length) return;
+    var colors = geometry.attributes.color;
+    for (var k = 0; k < twinkleIdx.length; k++) {
+      var tw = 0.45 + 0.55 * Math.max(0, Math.sin(t * 9 + twinklePhase[k]));
+      var bi = k * 3;
+      colors.setXYZ(
+        twinkleIdx[k],
+        twinkleBase[bi] + (1 - twinkleBase[bi]) * tw * 0.7,
+        twinkleBase[bi + 1] + (0.95 - twinkleBase[bi + 1]) * tw * 0.7,
+        twinkleBase[bi + 2] + (0.98 - twinkleBase[bi + 2]) * tw * 0.55
+      );
+    }
+    colors.needsUpdate = true;
+  }
+
+  function disposeHalo(mesh, dropMap) {
+    if (!mesh) return;
+    scene.remove(mesh);
+    if (mesh.material) {
+      if (dropMap && mesh.material.map) mesh.material.map.dispose();
+      mesh.material.dispose();
+    }
+  }
+
+  function disposeTextMeshes() {
+    disposeHalo(textBloom, false);
+    disposeHalo(textGlow, true);
+    textBloom = null;
+    textGlow = null;
+    if (textMesh) {
+      textMesh.visible = false;
+      scene.remove(textMesh);
+      if (textMesh.geometry) textMesh.geometry.dispose();
+      if (textMesh.material) {
+        if (textMesh.material.map) textMesh.material.map.dispose();
+        textMesh.material.dispose();
+      }
+      textMesh = null;
+    }
+    geometry = null;
+    twinkleIdx = [];
+    twinklePhase = [];
+    twinkleBase = [];
   }
 
   function Firework() {
@@ -353,23 +478,22 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
       if (!exploding) {
         textMesh.position.y = 8 + 1.5 * Math.sin(t * 1.5);
         textMesh.rotation.z = 0.03 * Math.sin(t * 0.8);
+        textMesh.material.size = SIZE * (1 + 0.1 * Math.sin(t * 2.4));
+        shimmerText(t);
       }
+      syncTextGlow();
       if (exploding && explodeAt) {
         var elapsed = now - explodeAt;
-        if (elapsed > 500) textMesh.material.opacity = 1 - Math.min(1, (elapsed - 500) / 1000);
+        if (elapsed > 500) {
+          var fadeOut = 1 - Math.min(1, (elapsed - 500) / 1000);
+          textMesh.material.opacity = fadeOut;
+          if (textGlow) textGlow.material.opacity = fadeOut * 0.42;
+          if (textBloom) textBloom.material.opacity = fadeOut * 0.18;
+        }
         if (elapsed > 1500) {
           exploding = false;
           textDone = true;
-          if (textMesh) {
-            textMesh.visible = false;
-            scene.remove(textMesh);
-            if (textMesh.geometry) textMesh.geometry.dispose();
-            if (textMesh.material) {
-              if (textMesh.material.map) textMesh.material.map.dispose();
-              textMesh.material.dispose();
-            }
-            textMesh = null;
-          }
+          disposeTextMeshes();
           window.dispatchEvent(new CustomEvent('textMessagesComplete'));
         }
       } else if (gatherAt && now - gatherAt > HOLD_MS) {
@@ -396,6 +520,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
       geometry.attributes.position.needsUpdate = true;
       textMesh.position.y = 8 + 0.6 * Math.sin(t * 0.8);
       textMesh.rotation.y += 0.0003;
+      textMesh.material.size = SIZE * (1 + 0.05 * Math.sin(t * 2));
+      shimmerText(t);
+      syncTextGlow();
     }
 
     if (sparks) {
