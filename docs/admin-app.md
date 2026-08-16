@@ -153,6 +153,7 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | GET | `/api/admin/product-orders/fulfillment?fulfillment_status=` | Paid product + QR keychain fulfillment board |
 | PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
 | GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
+| PATCH | `/api/admin/orders/:id/status` | Set QR `payment_status` / `keychain_delivery_status`. Marking paid uses the same SePay webhook activation (cancel siblings, upsert `qr_codes`, `MigrateQRUploads`). 409 if that QR name is already paid on another order |
 
 Fulfillment shipping step requires only the SPX `tracking_code` when moving
 product or QR-keychain orders to `shipped`. `shipping_carrier` is auto-set to

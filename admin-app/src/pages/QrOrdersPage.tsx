@@ -76,9 +76,12 @@ export default function OrdersPage() {
     try {
       await ordersApi.updateStatus(detail.id, { payment_status: editPayment });
       load(page);
+      setDetail(null);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      alert(axiosErr.response?.data?.error || 'Không thể cập nhật trạng thái thanh toán.');
     } finally {
       setSaving(false);
-      setDetail(null);
     }
   };
 
