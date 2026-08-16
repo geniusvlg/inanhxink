@@ -67,8 +67,15 @@ OrderPage → /payment/:qrName → PaymentPage.tsx
 2. Marks `orders.payment_status = 'paid'`.
 3. Cancels all other pending orders for same `qr_name` (advisory lock).
 4. Upserts into `qr_codes` table.
-5. Goroutine: `migrateQRUploads` — moves temp S3 files to permanent path.
+5. Goroutine: `MigrateQRUploads` — moves temp S3 files to permanent path.
 6. Sends notification via `notify.QROrderPaid`.
+
+Admin `PATCH /api/admin/orders/:id/status` with `payment_status: "paid"` runs
+the same activation (`ActivatePaidQROrder`) plus `MigrateQRUploads`. It also
+cancels sibling unpaid orders for that `qr_name` and marks their pending
+`qr_transaction` rows failed. If another order is already paid for the name,
+the request returns 409 with a Vietnamese message naming the QR and the
+existing paid order id.
 
 ### Optional voice recording
 

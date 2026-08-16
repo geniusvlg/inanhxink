@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -108,43 +109,74 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setClauses := []string{}
-	values := []any{}
-	i := 1
-	if body.PaymentStatus != "" {
-		setClauses = append(setClauses, fmt.Sprintf("payment_status = $%d", i))
-		values = append(values, body.PaymentStatus)
-		i++
-	}
-	if body.KeychainDeliveryStatus != "" {
-		setClauses = append(setClauses, fmt.Sprintf("keychain_delivery_status = $%d", i))
-		values = append(values, body.KeychainDeliveryStatus)
-		i++
-	}
-	if len(setClauses) == 0 {
+	if body.PaymentStatus == "" && body.KeychainDeliveryStatus == "" {
 		handlers.BadRequest(w, "payment_status or keychain_delivery_status is required")
 		return
 	}
-	values = append(values, id)
 
-	tx, err := config.DB.Begin(context.Background())
+	ctx := context.Background()
+	tx, err := config.DB.Begin(ctx)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
 	}
-	defer tx.Rollback(context.Background()) //nolint
+	defer tx.Rollback(ctx) //nolint
 
 	var prevPayment string
-	if err := tx.QueryRow(context.Background(),
+	if err := tx.QueryRow(ctx,
 		`SELECT payment_status FROM orders WHERE id = $1 FOR UPDATE`, id).Scan(&prevPayment); err != nil {
 		handlers.NotFound(w)
 		return
 	}
 
-	orderRows, err := tx.Query(context.Background(),
-		fmt.Sprintf("UPDATE orders SET %s, updated_at = NOW() WHERE id = $%d RETURNING *",
-			joinClauses(setClauses), len(values)),
-		values...)
+	orderID := handlers.IntParam(id, 0)
+	var act *handlers.ActivatedQROrder
+	if body.PaymentStatus == "paid" && prevPayment != "paid" {
+		act, err = handlers.ActivatePaidQROrder(ctx, tx, orderID, nil)
+		var already *handlers.QRNameAlreadyPaidError
+		if errors.As(err, &already) {
+			handlers.Conflict(w, fmt.Sprintf(
+				`Không thể đánh dấu đã thanh toán: tên QR "%s" đã được kích hoạt bởi đơn #%d.`,
+				already.QRName, already.ExistingOrderID))
+			return
+		}
+		if err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+		if body.KeychainDeliveryStatus != "" {
+			if _, err := tx.Exec(ctx,
+				`UPDATE orders SET keychain_delivery_status = $1, updated_at = NOW() WHERE id = $2`,
+				body.KeychainDeliveryStatus, id); err != nil {
+				handlers.InternalError(w, err)
+				return
+			}
+		}
+	} else {
+		setClauses := []string{}
+		values := []any{}
+		i := 1
+		if body.PaymentStatus != "" {
+			setClauses = append(setClauses, fmt.Sprintf("payment_status = $%d", i))
+			values = append(values, body.PaymentStatus)
+			i++
+		}
+		if body.KeychainDeliveryStatus != "" {
+			setClauses = append(setClauses, fmt.Sprintf("keychain_delivery_status = $%d", i))
+			values = append(values, body.KeychainDeliveryStatus)
+			i++
+		}
+		values = append(values, id)
+		if _, err := tx.Exec(ctx,
+			fmt.Sprintf("UPDATE orders SET %s, updated_at = NOW() WHERE id = $%d",
+				joinClauses(setClauses), len(values)),
+			values...); err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+	}
+
+	orderRows, err := tx.Query(ctx, "SELECT * FROM orders WHERE id = $1", id)
 	if err != nil {
 		handlers.InternalError(w, err)
 		return
@@ -155,56 +187,21 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If admin manually marks payment as paid, activate the QR code
-	if ps, ok := order["payment_status"].(string); ok && ps == "paid" {
-		if qrName, ok := order["qr_name"].(string); ok && qrName != "" {
-			fullUrl := qrName + "." + adminDomain()
-			templateType, _ := order["template_type"].(string)
-			if templateType == "" {
-				templateType = "galaxy"
-			}
-			tdJSON := "{}"
-			if td, ok := order["template_data"]; ok {
-				if b, err := json.Marshal(td); err == nil {
-					tdJSON = string(b)
-				}
-			}
-			content, _ := order["content"].(string)
-			templateID := order["template_id"]
-
-			var qrID int
-			tx.QueryRow(context.Background(), `
-				INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
-				VALUES ($1,$2,$3,$4,$5,$6)
-				ON CONFLICT (qr_name) DO UPDATE
-					SET full_url=EXCLUDED.full_url, content=EXCLUDED.content,
-						template_id=EXCLUDED.template_id, template_type=EXCLUDED.template_type,
-						template_data=EXCLUDED.template_data, updated_at=NOW()
-				RETURNING id`,
-				qrName, fullUrl, content, templateID, templateType, tdJSON,
-			).Scan(&qrID) //nolint
-			tx.Exec(context.Background(), "UPDATE orders SET qr_code_id = $1 WHERE id = $2", qrID, id) //nolint
-		}
-	}
-
-	if err := tx.Commit(context.Background()); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		handlers.InternalError(w, err)
 		return
 	}
 
-	if body.PaymentStatus == "paid" && prevPayment != "paid" {
-		oid := handlers.MapInt(order, "id")
-		if oid == 0 {
-			oid = handlers.IntParam(id, 0)
-		}
+	if act != nil {
+		go handlers.MigrateQRUploads(act.QRName, act.OrderID, act.TemplateData)
 		notify.QROrderPaid(notify.QROrderPaidDetail{
-			OrderID:       oid,
-			QRName:        handlers.MapStr(order, "qr_name"),
-			TemplateType:  handlers.MapStr(order, "template_type"),
-			CustomerName:  handlers.MapStr(order, "customer_name"),
-			CustomerEmail: handlers.MapStr(order, "customer_email"),
-			CustomerPhone: handlers.MapStr(order, "customer_phone"),
-			Total:         handlers.MapFloat64(order, "total_amount"),
+			OrderID:       act.OrderID,
+			QRName:        act.QRName,
+			TemplateType:  act.TemplateType,
+			CustomerName:  act.CustomerName,
+			CustomerEmail: act.CustomerEmail,
+			CustomerPhone: act.CustomerPhone,
+			Total:         act.Total,
 			Domain:        adminDomain(),
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -358,123 +359,53 @@ func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := config.DB.Begin(context.Background())
+	ctx := context.Background()
+	tx, err := config.DB.Begin(ctx)
 	if err != nil {
 		InternalError(w, err)
 		return
 	}
-	defer tx.Rollback(context.Background()) //nolint
+	defer tx.Rollback(ctx) //nolint
 
-	var qrName, content, templateType string
-	var templateID int
-	var templateDataRaw []byte
-	var keychainPurchased bool
-	var customerName, customerEmail, customerPhone string
-	var orderTotal float64
-	orderRow := tx.QueryRow(context.Background(),
-		`SELECT qr_name, content, template_id, template_type, template_data, keychain_purchased,
-			COALESCE(customer_name::text, ''), COALESCE(customer_email::text, ''), COALESCE(customer_phone::text, ''),
-			total_amount
-		 FROM orders WHERE id = $1 FOR UPDATE`, orderID)
-	if err := orderRow.Scan(&qrName, &content, &templateID, &templateType, &templateDataRaw, &keychainPurchased,
-		&customerName, &customerEmail, &customerPhone, &orderTotal); err != nil {
-		InternalError(w, err)
-		return
-	}
-
-	if _, err := tx.Exec(context.Background(), "SELECT pg_advisory_xact_lock(hashtext($1))", qrName); err != nil {
-		InternalError(w, err)
-		return
-	}
-
-	var existingPaidOrderID int
-	if err := tx.QueryRow(context.Background(), `
-		SELECT id FROM orders
-		WHERE qr_name = $1 AND payment_status = 'paid' AND id <> $2
-		LIMIT 1`, qrName, orderID).Scan(&existingPaidOrderID); err == nil {
-		tx.Exec(context.Background(), `
+	act, err := ActivatePaidQROrder(ctx, tx, orderID, &QRTxnPaidUpdate{
+		TxID:          txID,
+		SepayID:       payload.ID,
+		WebhookRaw:    webhookRaw,
+		ReferenceCode: payload.ReferenceCode,
+	})
+	if errors.Is(err, ErrQRNameAlreadyPaid) {
+		tx.Exec(ctx, `
 			UPDATE qr_transaction SET status = 'failed', sepay_transaction_id = $1,
 				updated_at = NOW(), webhook_payload = $2, reference_code = $3
 			WHERE id = $4`, payload.ID, string(webhookRaw), payload.ReferenceCode, txID) //nolint
-		tx.Exec(context.Background(), `
+		tx.Exec(ctx, `
 			UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
 			WHERE id = $1`, orderID) //nolint
-		if err := tx.Commit(context.Background()); err != nil {
+		if err := tx.Commit(ctx); err != nil {
 			InternalError(w, err)
 			return
 		}
 		OK(w, map[string]any{"success": true, "message": "Ignored: QR name already activated by another paid order"})
 		return
 	}
-
-	if _, err := tx.Exec(context.Background(), `
-		UPDATE qr_transaction SET status = 'paid', sepay_transaction_id = $1,
-			paid_at = NOW(), updated_at = NOW(), webhook_payload = $2, reference_code = $3
-		WHERE id = $4`, payload.ID, string(webhookRaw), payload.ReferenceCode, txID); err != nil {
-		InternalError(w, err)
-		return
-	}
-	keychainDeliveryStatus := (*string)(nil)
-	if keychainPurchased {
-		s := "processing"
-		keychainDeliveryStatus = &s
-	}
-	if _, err := tx.Exec(context.Background(),
-		"UPDATE orders SET payment_status = 'paid', keychain_delivery_status = $1, updated_at = NOW() WHERE id = $2",
-		keychainDeliveryStatus, orderID); err != nil {
+	if err != nil {
 		InternalError(w, err)
 		return
 	}
 
-	if _, err := tx.Exec(context.Background(), `
-		UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
-		WHERE qr_name = $1 AND id <> $2 AND payment_status <> 'paid'`, qrName, orderID); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		InternalError(w, err)
 		return
 	}
-
-	// Release in-memory reservation so the name is not seen as "reserved" anymore.
-	releaseReservation(qrName)
-	if _, err := tx.Exec(context.Background(), `
-		UPDATE qr_transaction SET status = 'failed', updated_at = NOW()
-		WHERE status = 'pending'
-		  AND order_id IN (
-			SELECT id FROM orders WHERE qr_name = $1 AND id <> $2 AND payment_status = 'cancelled'
-		  )`, qrName, orderID); err != nil {
-		InternalError(w, err)
-		return
-	}
-
-	fullUrl := qrName + "." + domain()
-	if templateType == "" {
-		templateType = "galaxy"
-	}
-	var qrID int
-	tx.QueryRow(context.Background(), `
-		INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
-		VALUES ($1,$2,$3,$4,$5,$6)
-		ON CONFLICT (qr_name) DO UPDATE
-			SET full_url=EXCLUDED.full_url, content=EXCLUDED.content,
-				template_id=EXCLUDED.template_id, template_type=EXCLUDED.template_type,
-				template_data=EXCLUDED.template_data, updated_at=NOW()
-		RETURNING id`,
-		qrName, fullUrl, content, templateID, templateType, string(templateDataRaw),
-	).Scan(&qrID) //nolint
-	tx.Exec(context.Background(), "UPDATE orders SET qr_code_id = $1 WHERE id = $2", qrID, orderID) //nolint
-
-	if err := tx.Commit(context.Background()); err != nil {
-		InternalError(w, err)
-		return
-	}
-	go migrateQRUploads(qrName, orderID, templateDataRaw)
+	go MigrateQRUploads(act.QRName, act.OrderID, act.TemplateData)
 	notify.QROrderPaid(notify.QROrderPaidDetail{
-		OrderID:       orderID,
-		QRName:        qrName,
-		TemplateType:  templateType,
-		CustomerName:  customerName,
-		CustomerEmail: customerEmail,
-		CustomerPhone: customerPhone,
-		Total:         orderTotal,
+		OrderID:       act.OrderID,
+		QRName:        act.QRName,
+		TemplateType:  act.TemplateType,
+		CustomerName:  act.CustomerName,
+		CustomerEmail: act.CustomerEmail,
+		CustomerPhone: act.CustomerPhone,
+		Total:         act.Total,
 		Domain:        domain(),
 	})
 	OK(w, map[string]any{"success": true, "message": "Payment confirmed"})
@@ -685,10 +616,152 @@ func handleProductOrderWebhook(w http.ResponseWriter, orderIDStr string, amount 
 	OK(w, map[string]any{"success": true, "message": "Product order payment confirmed"})
 }
 
-// migrateQRUploads moves confirmed images from uploads/temp/{qrName}/ to
+// ErrQRNameAlreadyPaid is returned when another order already owns this qr_name.
+var ErrQRNameAlreadyPaid = errors.New("qr name already activated by another paid order")
+
+// QRNameAlreadyPaidError names the conflicting paid order for admin messages.
+type QRNameAlreadyPaidError struct {
+	QRName          string
+	ExistingOrderID int
+}
+
+func (e *QRNameAlreadyPaidError) Error() string {
+	return fmt.Sprintf("qr name %s already activated by order %d", e.QRName, e.ExistingOrderID)
+}
+
+func (e *QRNameAlreadyPaidError) Is(target error) bool {
+	return target == ErrQRNameAlreadyPaid
+}
+
+// QRTxnPaidUpdate is optional SePay metadata applied to the pending qr_transaction.
+type QRTxnPaidUpdate struct {
+	TxID          int
+	SepayID       int
+	WebhookRaw    []byte
+	ReferenceCode string
+}
+
+// ActivatedQROrder is the paid-order snapshot used for migrate + notify.
+type ActivatedQROrder struct {
+	OrderID       int
+	QRName        string
+	TemplateType  string
+	TemplateData  []byte
+	CustomerName  string
+	CustomerEmail string
+	CustomerPhone string
+	Total         float64
+}
+
+// ActivatePaidQROrder applies the same side effects as the SePay QR webhook:
+// mark the order and its pending transaction paid, cancel sibling unpaid
+// orders, release the name reservation, and upsert qr_codes.
+// Caller must commit the transaction, then call MigrateQRUploads.
+func ActivatePaidQROrder(ctx context.Context, tx pgx.Tx, orderID int, txn *QRTxnPaidUpdate) (*ActivatedQROrder, error) {
+	var qrName, content, templateType string
+	var templateID int
+	var templateDataRaw []byte
+	var keychainPurchased bool
+	var customerName, customerEmail, customerPhone string
+	var orderTotal float64
+	if err := tx.QueryRow(ctx,
+		`SELECT qr_name, content, template_id, template_type, template_data, keychain_purchased,
+			COALESCE(customer_name::text, ''), COALESCE(customer_email::text, ''), COALESCE(customer_phone::text, ''),
+			total_amount
+		 FROM orders WHERE id = $1 FOR UPDATE`, orderID).Scan(
+		&qrName, &content, &templateID, &templateType, &templateDataRaw, &keychainPurchased,
+		&customerName, &customerEmail, &customerPhone, &orderTotal); err != nil {
+		return nil, err
+	}
+
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", qrName); err != nil {
+		return nil, err
+	}
+
+	var existingPaidOrderID int
+	if err := tx.QueryRow(ctx, `
+		SELECT id FROM orders
+		WHERE qr_name = $1 AND payment_status = 'paid' AND id <> $2
+		LIMIT 1`, qrName, orderID).Scan(&existingPaidOrderID); err == nil {
+		return nil, &QRNameAlreadyPaidError{QRName: qrName, ExistingOrderID: existingPaidOrderID}
+	}
+
+	if txn != nil && txn.TxID > 0 {
+		if _, err := tx.Exec(ctx, `
+			UPDATE qr_transaction SET status = 'paid', sepay_transaction_id = $1,
+				paid_at = NOW(), updated_at = NOW(), webhook_payload = $2, reference_code = $3
+			WHERE id = $4`, txn.SepayID, string(txn.WebhookRaw), txn.ReferenceCode, txn.TxID); err != nil {
+			return nil, err
+		}
+	} else if _, err := tx.Exec(ctx, `
+		UPDATE qr_transaction SET status = 'paid', paid_at = COALESCE(paid_at, NOW()), updated_at = NOW()
+		WHERE order_id = $1 AND status = 'pending'`, orderID); err != nil {
+		return nil, err
+	}
+
+	keychainDeliveryStatus := (*string)(nil)
+	if keychainPurchased {
+		s := "processing"
+		keychainDeliveryStatus = &s
+	}
+	if _, err := tx.Exec(ctx,
+		"UPDATE orders SET payment_status = 'paid', keychain_delivery_status = $1, updated_at = NOW() WHERE id = $2",
+		keychainDeliveryStatus, orderID); err != nil {
+		return nil, err
+	}
+
+	if _, err := tx.Exec(ctx, `
+		UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
+		WHERE qr_name = $1 AND id <> $2 AND payment_status <> 'paid'`, qrName, orderID); err != nil {
+		return nil, err
+	}
+
+	releaseReservation(qrName)
+	if _, err := tx.Exec(ctx, `
+		UPDATE qr_transaction SET status = 'failed', updated_at = NOW()
+		WHERE status = 'pending'
+		  AND order_id IN (
+			SELECT id FROM orders WHERE qr_name = $1 AND id <> $2 AND payment_status = 'cancelled'
+		  )`, qrName, orderID); err != nil {
+		return nil, err
+	}
+
+	if templateType == "" {
+		templateType = "galaxy"
+	}
+	var qrID int
+	if err := tx.QueryRow(ctx, `
+		INSERT INTO qr_codes (qr_name, full_url, content, template_id, template_type, template_data)
+		VALUES ($1,$2,$3,$4,$5,$6)
+		ON CONFLICT (qr_name) DO UPDATE
+			SET full_url=EXCLUDED.full_url, content=EXCLUDED.content,
+				template_id=EXCLUDED.template_id, template_type=EXCLUDED.template_type,
+				template_data=EXCLUDED.template_data, updated_at=NOW()
+		RETURNING id`,
+		qrName, qrName+"."+domain(), content, templateID, templateType, string(templateDataRaw),
+	).Scan(&qrID); err != nil {
+		return nil, err
+	}
+	if _, err := tx.Exec(ctx, "UPDATE orders SET qr_code_id = $1 WHERE id = $2", qrID, orderID); err != nil {
+		return nil, err
+	}
+
+	return &ActivatedQROrder{
+		OrderID:       orderID,
+		QRName:        qrName,
+		TemplateType:  templateType,
+		TemplateData:  templateDataRaw,
+		CustomerName:  customerName,
+		CustomerEmail: customerEmail,
+		CustomerPhone: customerPhone,
+		Total:         orderTotal,
+	}, nil
+}
+
+// MigrateQRUploads moves confirmed images from uploads/temp/{qrName}/ to
 // uploads/{qrName}/, then updates both orders and qr_codes with permanent URLs.
 // Runs in a goroutine — errors are logged but never surface to the client.
-func migrateQRUploads(qrName string, orderID int, templateDataRaw []byte) {
+func MigrateQRUploads(qrName string, orderID int, templateDataRaw []byte) {
 	rewritten, copiedKeys, err := config.RewriteTemplateDataURLs(
 		templateDataRaw,
 		"uploads/temp/"+qrName+"/",

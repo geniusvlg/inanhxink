@@ -10,8 +10,9 @@
    deletion, and re-recording without uploading anything.
 4. When the customer clicks **Thanh toán**, the recording is uploaded to
    `uploads/temp/{qrName}/` and attached to the pending order.
-5. After payment is confirmed, `migrateQRUploads` moves it to
-   `uploads/{qrName}/` and updates the order and live QR template data.
+5. After payment is confirmed (SePay webhook or admin mark-paid),
+   `MigrateQRUploads` moves it to `uploads/{qrName}/` and updates the order
+   and live QR template data.
 
 The `uploads/temp/` S3 lifecycle rule expires unpaid temporary files after one
 day.
