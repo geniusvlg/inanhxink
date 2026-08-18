@@ -166,6 +166,8 @@ func main() {
 				r.Patch("/{id}/fulfillment", adminHandlers.UpdateQRKeychainFulfillment)
 			})
 
+			r.Delete("/qr-names/{qrName}", adminHandlers.ReleaseQRName)
+
 			r.Route("/product-orders", func(r chi.Router) {
 				r.Get("/", adminHandlers.ListProductOrders)
 				r.Get("/fulfillment", adminHandlers.ListFulfillmentOrders)

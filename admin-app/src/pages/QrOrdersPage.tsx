@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { ordersApi } from '../services/api';
+import { ordersApi, qrNamesApi } from '../services/api';
 import { type Order } from '../types';
 import '../components/Layout.css';
 
@@ -11,6 +11,10 @@ const PAYMENT_LABEL: Record<string, string> = {
   failed:    'Thất bại',
   refunded:  'Hoàn tiền',
   cancelled: 'Đã huỷ',
+};
+
+const RELEASED_STYLE: React.CSSProperties = {
+  background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5', fontSize: '0.7rem',
 };
 
 const PAYMENT_STYLE: Record<string, React.CSSProperties> = {
@@ -49,6 +53,9 @@ export default function OrdersPage() {
   const [detail, setDetail]           = useState<Order | null>(null);
   const [editPayment, setEditPayment] = useState('');
   const [saving, setSaving]           = useState(false);
+  const [release, setRelease]         = useState<Order | null>(null);
+  const [releaseConfirm, setReleaseConfirm] = useState('');
+  const [releasing, setReleasing]     = useState(false);
   const LIMIT = 20;
 
   const load = useCallback((p: number) => {
@@ -85,6 +92,28 @@ export default function OrdersPage() {
     }
   };
 
+  const openRelease = (o: Order) => {
+    setRelease(o);
+    setReleaseConfirm('');
+  };
+
+  const handleRelease = async () => {
+    if (!release || releaseConfirm.trim().toLowerCase() !== release.qr_name) return;
+    setReleasing(true);
+    try {
+      const res = await qrNamesApi.release(release.qr_name);
+      setRelease(null);
+      setDetail(null);
+      load(page);
+      alert(res.data.message);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      alert(axiosErr.response?.data?.error || 'Không thể thu hồi tên QR.');
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / LIMIT);
 
   return (
@@ -105,14 +134,21 @@ export default function OrdersPage() {
                 <tr>
                   <th>ID</th><th>QR Name</th><th>Khách hàng</th>
                   <th>Template</th><th>Tổng tiền</th>
-                  <th>Thanh toán</th><th>Ngày tạo</th>
+                  <th>Thanh toán</th><th>Ngày tạo</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map(o => (
                   <tr key={o.id} style={{ cursor: 'pointer' }} onClick={() => openDetail(o)}>
                     <td>{o.id}</td>
-                    <td><code>{o.qr_name}</code></td>
+                    <td>
+                      <code>{o.qr_name}</code>
+                      {o.qr_name_released_at && (
+                        <div style={{ marginTop: '0.25rem' }}>
+                          <Badge label="Đã thu hồi tên" style={RELEASED_STYLE} />
+                        </div>
+                      )}
+                    </td>
                     <td>
                       <div>{o.customer_name}</div>
                       <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{o.customer_phone}</div>
@@ -121,6 +157,18 @@ export default function OrdersPage() {
                     <td>{o.total_amount?.toLocaleString('vi-VN')}đ</td>
                     <td><PaymentBadge status={o.payment_status} /></td>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleString('vi-VN', { day: '2-digit', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td>
+                      {!o.qr_name_released_at && (
+                        <button
+                          className="btn-secondary"
+                          title={`Thu hồi tên QR "${o.qr_name}" để người khác đặt lại`}
+                          style={{ padding: '0.25rem 0.55rem', color: '#b91c1c' }}
+                          onClick={e => { e.stopPropagation(); openRelease(o); }}
+                        >
+                          🗑
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -178,10 +226,63 @@ export default function OrdersPage() {
 
               </tbody>
             </table>
+            <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
+              {detail.qr_name_released_at ? (
+                <span style={{ fontSize: '0.8rem', color: '#b91c1c' }}>
+                  Tên QR đã thu hồi {new Date(detail.qr_name_released_at).toLocaleString('vi-VN')}
+                </span>
+              ) : (
+                <button
+                  className="btn-secondary"
+                  style={{ color: '#b91c1c' }}
+                  onClick={() => openRelease(detail)}
+                >
+                  🗑 Thu hồi tên QR
+                </button>
+              )}
+              <span style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn-secondary" onClick={() => setDetail(null)}>Đóng</button>
+                <button className="btn-primary" onClick={handleSaveStatus} disabled={saving}>
+                  {saving ? 'Đang lưu...' : 'Cập nhật'}
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {release && (
+        <div className="modal-overlay" onClick={() => setRelease(null)}>
+          <div className="modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <h2 className="modal-title">Thu hồi tên QR</h2>
+            <p style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6 }}>
+              Tên <code>{release.qr_name}</code> sẽ được trả về để khách khác đặt lại. Hành động này{' '}
+              <strong>không thể hoàn tác</strong>:
+            </p>
+            <ul style={{ fontSize: '0.85rem', color: '#475569', lineHeight: 1.7, paddingLeft: '1.2rem' }}>
+              <li>Xoá trang <code>{release.qr_name}.inanhxink.com</code> và toàn bộ nội dung QR</li>
+              <li>Xoá tất cả ảnh, nhạc và ghi âm của tên này trên S3</li>
+              <li>Đơn hàng vẫn được giữ lại để đối chiếu doanh thu</li>
+            </ul>
+            <label className="form-label" style={{ marginTop: '0.75rem' }}>
+              Nhập <code>{release.qr_name}</code> để xác nhận
+            </label>
+            <input
+              className="form-input"
+              value={releaseConfirm}
+              autoFocus
+              placeholder={release.qr_name}
+              onChange={e => setReleaseConfirm(e.target.value)}
+            />
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setDetail(null)}>Đóng</button>
-              <button className="btn-primary" onClick={handleSaveStatus} disabled={saving}>
-                {saving ? 'Đang lưu...' : 'Cập nhật'}
+              <button className="btn-secondary" onClick={() => setRelease(null)}>Huỷ</button>
+              <button
+                className="btn-primary"
+                style={{ background: '#dc2626' }}
+                disabled={releasing || releaseConfirm.trim().toLowerCase() !== release.qr_name}
+                onClick={handleRelease}
+              >
+                {releasing ? 'Đang thu hồi...' : 'Thu hồi tên QR'}
               </button>
             </div>
           </div>

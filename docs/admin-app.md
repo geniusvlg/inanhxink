@@ -154,10 +154,36 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 | PATCH | `/api/admin/product-orders/:id/items` | Admin edits product order images/notes and customer phone/address |
 | GET | `/api/admin/orders/search?code=` | Admin searches paid fulfillment orders by invoice/QR code, customer name, or phone |
 | PATCH | `/api/admin/orders/:id/status` | Set QR `payment_status` / `keychain_delivery_status`. Marking paid uses the same SePay webhook activation (cancel siblings, upsert `qr_codes`, `MigrateQRUploads`). 409 if that QR name is already paid on another order |
+| DELETE | `/api/admin/qr-names/:qrName` | Release a QR name for reuse — deletes the `qr_codes` row and the name's S3 objects, stamps `qr_name_released_at` on its orders |
 
 Fulfillment shipping step requires only the SPX `tracking_code` when moving
 product or QR-keychain orders to `shipped`. `shipping_carrier` is auto-set to
 `SPX` by the backend.
+
+## Releasing A QR Name
+
+`QrOrdersPage.tsx` has a 🗑 button per row (and in the detail modal) that frees a
+QR name so another customer can buy it. It opens a confirm dialog that requires
+typing the QR name, then calls `DELETE /api/admin/qr-names/:qrName`
+(`ReleaseQRName` in `backend-golang/internal/handlers/admin/qr_names.go`).
+
+The handler takes the same advisory lock as payment activation, then:
+
+1. Stamps `orders.qr_name_released_at = NOW()` and clears `qr_code_id` for every
+   order still holding the name.
+2. Deletes the `qr_codes` row — the UNIQUE constraint behind availability checks.
+3. Clears the 5-minute in-memory reservation so the name is instantly bookable.
+4. Deletes every S3 object under `uploads/{qrName}/` and `uploads/temp/{qrName}/`
+   via `config.DeleteS3Prefix`.
+
+Orders are **kept** for accounting; they just no longer own the name. Released
+orders are skipped by the paid-conflict check, sibling cancellation, and the
+public `GET /api/payments/qr/:qrName` lookup, and can never be marked paid again
+(409 with a Vietnamese message). Rows whose name was released show an
+"Đã thu hồi tên" badge.
+
+Effects the admin should expect: `{qrName}.inanhxink.com` stops resolving and the
+customer's uploaded photos, music, and voice recording are permanently gone.
 
 ## Page Visibility And Order
 

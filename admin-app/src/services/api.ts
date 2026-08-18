@@ -49,6 +49,19 @@ export const ordersApi = {
     api.patch(`/api/admin/orders/${id}/status`, data),
 };
 
+export const qrNamesApi = {
+  /** Frees a QR name for reuse: deletes its qr_codes row and S3 images, keeps orders. */
+  release: (qrName: string) =>
+    api.delete<{
+      success: boolean;
+      qrName: string;
+      ordersReleased: number;
+      qrCodeDeleted: boolean;
+      s3Deleted: number;
+      message: string;
+    }>(`/api/admin/qr-names/${encodeURIComponent(qrName)}`),
+};
+
 export const productOrdersApi = {
   list: (params?: Record<string, string | number>) => api.get('/api/admin/product-orders', { params }),
   get:  (id: number)  => api.get(`/api/admin/product-orders/${id}`),

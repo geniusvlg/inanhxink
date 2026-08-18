@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
@@ -633,6 +634,10 @@ func (e *QRNameAlreadyPaidError) Is(target error) bool {
 	return target == ErrQRNameAlreadyPaid
 }
 
+// ErrQRNameReleased is returned when an admin released this order's qr_name for
+// reuse, so the order must never re-claim the name.
+var ErrQRNameReleased = errors.New("qr name was released for reuse")
+
 // QRTxnPaidUpdate is optional SePay metadata applied to the pending qr_transaction.
 type QRTxnPaidUpdate struct {
 	TxID          int
@@ -664,14 +669,21 @@ func ActivatePaidQROrder(ctx context.Context, tx pgx.Tx, orderID int, txn *QRTxn
 	var keychainPurchased bool
 	var customerName, customerEmail, customerPhone string
 	var orderTotal float64
+	var releasedAt *time.Time
 	if err := tx.QueryRow(ctx,
 		`SELECT qr_name, content, template_id, template_type, template_data, keychain_purchased,
 			COALESCE(customer_name::text, ''), COALESCE(customer_email::text, ''), COALESCE(customer_phone::text, ''),
-			total_amount
+			total_amount, qr_name_released_at
 		 FROM orders WHERE id = $1 FOR UPDATE`, orderID).Scan(
 		&qrName, &content, &templateID, &templateType, &templateDataRaw, &keychainPurchased,
-		&customerName, &customerEmail, &customerPhone, &orderTotal); err != nil {
+		&customerName, &customerEmail, &customerPhone, &orderTotal, &releasedAt); err != nil {
 		return nil, err
+	}
+
+	// The name was handed back to the pool; re-activating would silently steal it
+	// from whoever bought it next.
+	if releasedAt != nil {
+		return nil, ErrQRNameReleased
 	}
 
 	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", qrName); err != nil {
@@ -681,7 +693,7 @@ func ActivatePaidQROrder(ctx context.Context, tx pgx.Tx, orderID int, txn *QRTxn
 	var existingPaidOrderID int
 	if err := tx.QueryRow(ctx, `
 		SELECT id FROM orders
-		WHERE qr_name = $1 AND payment_status = 'paid' AND id <> $2
+		WHERE qr_name = $1 AND payment_status = 'paid' AND qr_name_released_at IS NULL AND id <> $2
 		LIMIT 1`, qrName, orderID).Scan(&existingPaidOrderID); err == nil {
 		return nil, &QRNameAlreadyPaidError{QRName: qrName, ExistingOrderID: existingPaidOrderID}
 	}
@@ -712,7 +724,8 @@ func ActivatePaidQROrder(ctx context.Context, tx pgx.Tx, orderID int, txn *QRTxn
 
 	if _, err := tx.Exec(ctx, `
 		UPDATE orders SET payment_status = 'cancelled', updated_at = NOW()
-		WHERE qr_name = $1 AND id <> $2 AND payment_status <> 'paid'`, qrName, orderID); err != nil {
+		WHERE qr_name = $1 AND id <> $2 AND payment_status <> 'paid'
+		  AND qr_name_released_at IS NULL`, qrName, orderID); err != nil {
 		return nil, err
 	}
 
@@ -721,7 +734,9 @@ func ActivatePaidQROrder(ctx context.Context, tx pgx.Tx, orderID int, txn *QRTxn
 		UPDATE qr_transaction SET status = 'failed', updated_at = NOW()
 		WHERE status = 'pending'
 		  AND order_id IN (
-			SELECT id FROM orders WHERE qr_name = $1 AND id <> $2 AND payment_status = 'cancelled'
+			SELECT id FROM orders
+			WHERE qr_name = $1 AND id <> $2 AND payment_status = 'cancelled'
+			  AND qr_name_released_at IS NULL
 		  )`, qrName, orderID); err != nil {
 		return nil, err
 	}
@@ -818,10 +833,11 @@ func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 
 	// A qr_name can own several orders (re-orders, siblings cancelled at activation).
 	// The paid one wins even when a later order exists, otherwise the customer is
-	// asked to pay again for a QR they already own.
+	// asked to pay again for a QR they already own. Orders whose name an admin
+	// released no longer own it, so they are skipped entirely.
 	orderRow := config.DB.QueryRow(context.Background(), `
 		SELECT id, total_amount, payment_status, qr_name
-		FROM orders WHERE qr_name = $1
+		FROM orders WHERE qr_name = $1 AND qr_name_released_at IS NULL
 		ORDER BY (payment_status = 'paid') DESC, created_at DESC
 		LIMIT 1`, qrName)
 	var orderID int
