@@ -140,6 +140,11 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 				already.QRName, already.ExistingOrderID))
 			return
 		}
+		if errors.Is(err, handlers.ErrQRNameReleased) {
+			handlers.Conflict(w,
+				"Không thể đánh dấu đã thanh toán: tên QR của đơn này đã bị thu hồi để người khác đặt lại.")
+			return
+		}
 		if err != nil {
 			handlers.InternalError(w, err)
 			return

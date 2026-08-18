@@ -174,10 +174,16 @@ CGO_ENABLED=1 go run ./cmd/server
 
 ## QR payment ownership
 
-Customer uploads go to `uploads/{qrName}/` before payment. When a payment webhook
-marks an order as paid, the Go backend serializes activation for that QR name,
-cancels other unpaid orders with the same `qr_name`, and prunes the shared S3
-folder so only objects referenced by the paid order's `template_data` remain.
+Customer uploads go to `uploads/temp/{qrName}/` before payment. When a payment
+webhook marks an order as paid, the Go backend serializes activation for that QR
+name, cancels other unpaid orders with the same `qr_name`, and moves the objects
+referenced by the paid order's `template_data` to the permanent
+`uploads/{qrName}/` folder, deleting the temp originals.
+
+An admin can hand a name back to the pool with
+`DELETE /api/admin/qr-names/{qrName}`, which deletes the `qr_codes` row plus both
+S3 folders (`config.DeleteS3Prefix`) and sets `orders.qr_name_released_at`.
+Released orders are ignored by every ownership check — see `docs/admin-app.md`.
 
 QR voice messages use `POST /api/upload/voice`, which accepts one browser-recorded
 audio file up to 5 MB under `uploads/temp/{qrName}/`. `CreateOrder` validates the

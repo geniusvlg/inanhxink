@@ -261,6 +261,40 @@ func moveS3TempURL(rawURL, origin, srcKeyPrefix, dstFolder string) (newURL, srcK
 	return GetPublicURL(dstKey), key, true
 }
 
+// DeleteS3Prefix deletes every object under keyPrefix and returns how many were
+// removed. Pass a trailing slash ("uploads/anhyeuem/") so sibling folders sharing
+// the same stem are not swept up. A listing failure aborts and is returned;
+// individual delete failures are logged by DeleteS3Objects.
+func DeleteS3Prefix(keyPrefix string) (int, error) {
+	if keyPrefix == "" {
+		return 0, nil
+	}
+	deleted := 0
+	var token *string
+	for {
+		out, err := S3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
+			Bucket:            aws.String(S3Bucket),
+			Prefix:            aws.String(keyPrefix),
+			ContinuationToken: token,
+		})
+		if err != nil {
+			return deleted, fmt.Errorf("S3 list %s: %w", keyPrefix, err)
+		}
+		keys := make([]string, 0, len(out.Contents))
+		for _, obj := range out.Contents {
+			if obj.Key != nil {
+				keys = append(keys, *obj.Key)
+			}
+		}
+		DeleteS3Objects(keys)
+		deleted += len(keys)
+		if out.IsTruncated == nil || !*out.IsTruncated || out.NextContinuationToken == nil {
+			return deleted, nil
+		}
+		token = out.NextContinuationToken
+	}
+}
+
 // DeleteS3Objects deletes a list of S3 keys best-effort (errors are logged, not returned).
 func DeleteS3Objects(keys []string) {
 	for _, key := range keys {

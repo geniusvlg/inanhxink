@@ -80,12 +80,29 @@ existing paid order id.
 ### Resolving a qr_name to one order
 
 A `qr_name` can own several `orders` rows — the customer re-ordered, or a
-sibling was cancelled during activation. `GetPaymentByQR` therefore orders by
+sibling was cancelled during activation. `GetPaymentByQR` therefore skips rows
+with `qr_name_released_at IS NOT NULL` and orders by
 `(payment_status = 'paid') DESC, created_at DESC` instead of `created_at` alone.
 
 Without the paid-first sort, a cancelled order created *after* the paid one
 shadows it, and `/tao-ma-qr` tells the customer "Đơn hàng chưa được thanh toán"
 for a QR they already own.
+
+### Releasing a name for reuse
+
+`orders.qr_name_released_at` (migration `V68`) marks an order that an admin
+stripped of its QR name so another customer could buy it. The row stays for
+accounting and is excluded from every ownership path:
+
+- the paid-conflict check in `ActivatePaidQROrder`
+- sibling cancellation and the matching `qr_transaction` failure update
+- the public `GetPaymentByQR` lookup
+
+`ActivatePaidQROrder` also refuses to activate a released order at all,
+returning `ErrQRNameReleased` (409 in admin), so a late webhook or a second
+mark-paid cannot steal the name back from its new owner.
+
+See `docs/admin-app.md` → "Releasing A QR Name" for the endpoint and S3 cleanup.
 
 ### Optional voice recording
 

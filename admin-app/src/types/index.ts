@@ -26,6 +26,8 @@ export interface Order {
   subtotal: number;
   total_amount: number;
   voucher_code: string | null;
+  /** Set when an admin freed the qr_name for reuse; the order is kept for accounting only. */
+  qr_name_released_at: string | null;
   created_at: string;
   updated_at: string;
 }

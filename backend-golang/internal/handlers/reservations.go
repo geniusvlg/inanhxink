@@ -52,6 +52,12 @@ func releaseReservation(qrName string) {
 	qrReservations.Delete(qrName)
 }
 
+// ReleaseQRNameReservation drops the lock from outside this package, so an admin
+// releasing a name makes it available immediately instead of after the TTL.
+func ReleaseQRNameReservation(qrName string) {
+	releaseReservation(qrName)
+}
+
 // PruneExpiredReservations removes stale entries; call periodically from main.
 func PruneExpiredReservations() {
 	now := time.Now()
