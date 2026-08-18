@@ -48,7 +48,7 @@ OrderPage → /payment/:qrName → PaymentPage.tsx
 | Method | Route | Handler |
 |--------|-------|---------|
 | `POST` | `/api/payments` | `CreatePayment` |
-| `GET` | `/api/payments/qr/:qrName` | `GetPaymentByQR` |
+| `GET` | `/api/payments/qr/:qrName` | `GetPaymentByQR` — resolves the paid order first, newest otherwise |
 | `POST` | `/api/payments/webhook/qr` | `QRPaymentWebhook` |
 | `POST` | `/api/payments/checkout` | `CreateCheckout` (SePay Checkout redirect flow) |
 
@@ -76,6 +76,16 @@ cancels sibling unpaid orders for that `qr_name` and marks their pending
 `qr_transaction` rows failed. If another order is already paid for the name,
 the request returns 409 with a Vietnamese message naming the QR and the
 existing paid order id.
+
+### Resolving a qr_name to one order
+
+A `qr_name` can own several `orders` rows — the customer re-ordered, or a
+sibling was cancelled during activation. `GetPaymentByQR` therefore orders by
+`(payment_status = 'paid') DESC, created_at DESC` instead of `created_at` alone.
+
+Without the paid-first sort, a cancelled order created *after* the paid one
+shadows it, and `/tao-ma-qr` tells the customer "Đơn hàng chưa được thanh toán"
+for a QR they already own.
 
 ### Optional voice recording
 

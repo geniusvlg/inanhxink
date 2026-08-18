@@ -816,9 +816,14 @@ func GetPaymentByOrder(w http.ResponseWriter, r *http.Request) {
 func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 	qrName := chi.URLParam(r, "qrName")
 
+	// A qr_name can own several orders (re-orders, siblings cancelled at activation).
+	// The paid one wins even when a later order exists, otherwise the customer is
+	// asked to pay again for a QR they already own.
 	orderRow := config.DB.QueryRow(context.Background(), `
 		SELECT id, total_amount, payment_status, qr_name
-		FROM orders WHERE qr_name = $1 ORDER BY created_at DESC LIMIT 1`, qrName)
+		FROM orders WHERE qr_name = $1
+		ORDER BY (payment_status = 'paid') DESC, created_at DESC
+		LIMIT 1`, qrName)
 	var orderID int
 	var totalAmount float64
 	var paymentStatus, orderQRName string
