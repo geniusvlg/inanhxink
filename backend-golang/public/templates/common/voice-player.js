@@ -1,80 +1,264 @@
 (function () {
   'use strict';
 
+  function parseVolume(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return 1;
+    if (n < 0) return 0;
+    if (n > 1) return 1;
+    return n;
+  }
+
+  var MUSIC_IDS = {
+    'bg-audio': true,
+    'inxk-bg-audio': true,
+    audios: true,
+    bgMusic: true,
+    audio: true
+  };
+  var EXCLUDE_IDS = {
+    'inxk-voice-audio': true,
+    letterSound: true,
+    audioPreview: true
+  };
+
+  // iOS Safari ignores HTMLMediaElement.volume. A GainNode is the only way
+  // to honour musicVolume there. Never call load() from the mutation
+  // observer — that loop froze pages. CORS is set once per element, and
+  // MediaElementSource is created only after a user gesture.
+  var audioCtx = null;
+  var gainNodes = typeof WeakMap === 'function' ? new WeakMap() : null;
+  var routeFailed = typeof WeakMap === 'function' ? new WeakMap() : null;
+  var prepared = typeof WeakSet === 'function' ? new WeakSet() : null;
+  var userGestured = false;
+  var applying = false;
+
+  function ensureAudioContext() {
+    var Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    if (!audioCtx) {
+      try { audioCtx = new Ctor(); } catch (e) { return null; }
+    }
+    if (audioCtx.state === 'suspended') {
+      try { audioCtx.resume(); } catch (e) {}
+    }
+    return audioCtx;
+  }
+
+  function prepareMusicElement(audio) {
+    if (!audio || (prepared && prepared.has(audio))) return;
+    if (prepared) prepared.add(audio);
+    audio.loop = true;
+    audio.playsInline = true;
+    if (!audio.crossOrigin) audio.crossOrigin = 'anonymous';
+  }
+
+  function gainFor(audio) {
+    if (!gainNodes || !routeFailed) return null;
+    if (!userGestured) return null;
+    if (routeFailed.get(audio)) return null;
+    if (gainNodes.has(audio)) {
+      ensureAudioContext();
+      return gainNodes.get(audio);
+    }
+    if (!audio.crossOrigin) {
+      routeFailed.set(audio, true);
+      return null;
+    }
+    var ctx = ensureAudioContext();
+    if (!ctx) {
+      routeFailed.set(audio, true);
+      return null;
+    }
+    try {
+      var source = ctx.createMediaElementSource(audio);
+      var gain = ctx.createGain();
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      gainNodes.set(audio, gain);
+      return gain;
+    } catch (e) {
+      routeFailed.set(audio, true);
+      return null;
+    }
+  }
+
   function initVoicePlayer() {
     var rootData = window.dataFromSubdomain;
     var data = rootData && rootData.data ? rootData.data : {};
     var voiceUrl = data.voiceRecordingUrl;
     var musicUrl = data.musicUrl;
+    var musicVolume = parseVolume(data.musicVolume);
     if ((!voiceUrl && !musicUrl) || document.getElementById('inxk-voice-player')) return;
 
+    var needsGain = musicVolume < 1;
     var container = document.createElement('div');
     container.id = 'inxk-voice-player';
 
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'inxk-voice-button';
+    var muteButton = document.createElement('button');
+    muteButton.type = 'button';
+    muteButton.className = 'inxk-voice-button inxk-voice-button--mute';
+    muteButton.hidden = !musicUrl || !!document.getElementById('musicBtn');
 
-    container.appendChild(button);
+    var replayButton = document.createElement('button');
+    replayButton.type = 'button';
+    replayButton.className = 'inxk-voice-button inxk-voice-button--replay';
+    replayButton.setAttribute('aria-label', 'Nghe lại lời nhắn giọng nói');
+    replayButton.innerHTML =
+      '<span class="inxk-voice-icon" aria-hidden="true">🔁</span>' +
+      '<span class="inxk-voice-label">Nghe lại lời nhắn</span>';
+    replayButton.hidden = true;
+
+    if (musicUrl) container.appendChild(muteButton);
+    if (voiceUrl) container.appendChild(replayButton);
+    document.body.appendChild(container);
+
     var voiceAudio = null;
     if (voiceUrl) {
       voiceAudio = document.createElement('audio');
       voiceAudio.src = voiceUrl;
       voiceAudio.preload = 'metadata';
-      // Voice messages play once per listen, not on loop — the button lets
-      // the customer hear it again as many times as they like.
       voiceAudio.loop = false;
       voiceAudio.playsInline = true;
+      voiceAudio.volume = 1;
       voiceAudio.id = 'inxk-voice-audio';
       container.appendChild(voiceAudio);
     }
-    document.body.appendChild(container);
 
     function audioElements() {
       return Array.prototype.slice.call(document.querySelectorAll('audio'));
     }
 
-    // ── Voice recording: single "Nghe lại lời nhắn" (replay) button ──────────
-    // Every template has its own "reveal" moment (open the gift box, open the
-    // envelope, tap to start, fill the heart, etc). The voice recording should
-    // stay silent until that reveal happens, then play once; the button lets
-    // the customer hear it again afterwards, any number of times.
+    function isMusicAudio(audio) {
+      if (!audio || audio === voiceAudio) return false;
+      if (EXCLUDE_IDS[audio.id]) return false;
+      if (MUSIC_IDS[audio.id]) return true;
+      return false;
+    }
+
+    function musicAudioElements() {
+      return audioElements().filter(isMusicAudio);
+    }
+
+    var musicMuted = false;
+
+    function applyMusicGain() {
+      if (applying) return;
+      applying = true;
+      try {
+        musicAudioElements().forEach(function (audio) {
+          prepareMusicElement(audio);
+          var gain = needsGain ? gainFor(audio) : null;
+          if (gain) {
+            gain.gain.value = musicMuted ? 0 : musicVolume;
+            audio.muted = musicMuted;
+            try { audio.volume = 1; } catch (e) {}
+            return;
+          }
+          audio.muted = musicMuted;
+          try { audio.volume = musicMuted ? 0 : musicVolume; } catch (e) {}
+        });
+      } finally {
+        applying = false;
+      }
+    }
+
+    if (musicUrl) {
+      var existingMusic = musicAudioElements();
+      if (existingMusic.length === 0) {
+        var musicAudio = document.createElement('audio');
+        musicAudio.id = 'inxk-bg-audio';
+        prepareMusicElement(musicAudio);
+        musicAudio.src = musicUrl;
+        musicAudio.preload = 'auto';
+        container.appendChild(musicAudio);
+      } else {
+        existingMusic.forEach(function (audio) {
+          prepareMusicElement(audio);
+          if (!(audio.src || audio.currentSrc)) {
+            audio.src = musicUrl;
+            audio.preload = 'auto';
+          }
+        });
+      }
+    }
+
+    function playMusic() {
+      applyMusicGain();
+      return Promise.all(musicAudioElements().map(function (audio) {
+        if (!(audio.src || audio.currentSrc)) return Promise.resolve();
+        return audio.play();
+      }));
+    }
+
+    function setMuted(muted) {
+      musicMuted = muted;
+      muteButton.classList.toggle('is-muted', muted);
+      muteButton.setAttribute('aria-pressed', muted ? 'true' : 'false');
+      muteButton.setAttribute('aria-label', muted ? 'Bật nhạc nền' : 'Tắt nhạc nền');
+      muteButton.innerHTML =
+        '<span class="inxk-voice-icon" aria-hidden="true">' + (muted ? '🔇' : '🔊') + '</span>' +
+        '<span class="inxk-voice-label">' + (muted ? 'Bật nhạc' : 'Tắt nhạc') + '</span>';
+      applyMusicGain();
+    }
+
+    var unlockEvents = ['click', 'touchstart', 'keydown'];
+    function unlockMusic() {
+      playMusic().then(removeMusicUnlockListeners).catch(function () {});
+    }
+    function addMusicUnlockListeners() {
+      unlockEvents.forEach(function (eventName) {
+        document.addEventListener(eventName, unlockMusic, { once: true });
+      });
+    }
+    function removeMusicUnlockListeners() {
+      unlockEvents.forEach(function (eventName) {
+        document.removeEventListener(eventName, unlockMusic);
+      });
+    }
+
+    function tryAutoplayMusic() {
+      if (!musicUrl) return;
+      playMusic().then(removeMusicUnlockListeners).catch(function () {
+        addMusicUnlockListeners();
+      });
+    }
+
+    if (musicUrl) {
+      muteButton.addEventListener('click', function () {
+        setMuted(!musicMuted);
+        if (!musicMuted) tryAutoplayMusic();
+      });
+      setMuted(false);
+      tryAutoplayMusic();
+    }
+
     if (voiceAudio) {
-      button.classList.add('inxk-voice-button--replay');
-      button.setAttribute('aria-label', 'Nghe lại lời nhắn giọng nói');
-      button.innerHTML =
-        '<span class="inxk-voice-icon" aria-hidden="true">🔁</span>' +
-        '<span class="inxk-voice-label">Nghe lại lời nhắn</span>';
-
-      var voiceRevealed = false;
-
       function playVoiceFromStart() {
         voiceAudio.muted = false;
+        voiceAudio.volume = 1;
         try { voiceAudio.currentTime = 0; } catch (e) {}
+        playMusic().catch(function () {});
         voiceAudio.play().catch(function () {});
       }
 
+      var voiceRevealed = false;
       function revealVoice() {
         if (voiceRevealed) return;
         voiceRevealed = true;
-        button.hidden = false;
+        replayButton.hidden = false;
         playVoiceFromStart();
       }
 
-      // birthdaycake's gift-box.js dispatches this once the box is opened
-      // (its own tap/drag gesture handling is too involved to duplicate here).
       var giftBoxEl = document.getElementById('gift-cube');
-
-      // Other templates' reveal action is a plain click/tap on one element —
-      // watch it directly instead of touching each template's own script.
       var CLICK_REVEAL_IDS = [
-        'openLetterBtn',        // loveletter — envelope seal
-        'start-button',         // letterinspace — start button
-        'startBtn',             // birthday — tap-to-start button
-        'startJourney',         // farewell — boarding pass, starts the route
-        'heartScreen',          // specialgift — tap the heart to open
-        'tap-to-start-overlay', // galaxy — tap-to-start button
-        'start-wrap'            // loveburst — invitation jewel
+        'openLetterBtn',
+        'start-button',
+        'startBtn',
+        'startJourney',
+        'heartScreen',
+        'tap-to-start-overlay',
+        'start-wrap'
       ];
       var clickRevealEl = null;
       if (!giftBoxEl) {
@@ -83,36 +267,24 @@
           if (candidate) { clickRevealEl = candidate; break; }
         }
       }
-
-      // lovedays — reveal isn't a single tap, it's the heart filling up over
-      // several clicks, which then adds an "open" class to the message
-      // overlay. Watch for that instead.
       var lovedaysOverlayEl = (!giftBoxEl && !clickRevealEl)
         ? document.getElementById('messageOverlay')
         : null;
 
       if (giftBoxEl) {
-        button.hidden = true;
         window.addEventListener('inxk:giftbox-open', function onReveal() {
           window.removeEventListener('inxk:giftbox-open', onReveal);
-          // Fires from within the box's own click/keydown handler, so this
-          // is still inside a user-gesture call stack and allowed to autoplay.
           revealVoice();
         });
       } else if (clickRevealEl) {
-        button.hidden = true;
         var onRevealInteract = function () {
           clickRevealEl.removeEventListener('click', onRevealInteract);
           clickRevealEl.removeEventListener('touchstart', onRevealInteract);
           revealVoice();
         };
         clickRevealEl.addEventListener('click', onRevealInteract);
-        // Some templates call preventDefault() on their own touchstart
-        // handler for this element, which suppresses the synthetic click —
-        // listen for touchstart too so mobile still triggers the reveal.
         clickRevealEl.addEventListener('touchstart', onRevealInteract);
       } else if (lovedaysOverlayEl) {
-        button.hidden = true;
         var overlayObserver = new MutationObserver(function () {
           if (lovedaysOverlayEl.classList.contains('open')) {
             overlayObserver.disconnect();
@@ -121,93 +293,36 @@
         });
         overlayObserver.observe(lovedaysOverlayEl, { attributes: true, attributeFilter: ['class'] });
       } else {
-        // No known reveal moment on this page — try to play right away; if
-        // the browser blocks autoplay, fall back to the first tap anywhere.
-        var unlockEvents = ['click', 'touchstart', 'keydown'];
-        function unlockVoice() {
-          revealVoice();
-        }
-        voiceAudio.play().then(function () { voiceRevealed = true; }).catch(function () {
+        replayButton.hidden = false;
+        voiceAudio.play().then(function () {
+          voiceRevealed = true;
+        }).catch(function () {
           unlockEvents.forEach(function (eventName) {
-            document.addEventListener(eventName, unlockVoice, { once: true });
+            document.addEventListener(eventName, revealVoice, { once: true });
           });
         });
       }
 
-      button.addEventListener('click', playVoiceFromStart);
-      return;
+      replayButton.addEventListener('click', playVoiceFromStart);
     }
 
-    // ── Background music only: original mute/unmute toggle for the page's
-    //    own <audio> element(s) ───────────────────────────────────────────────
-    var hasSourcedAudio = audioElements().some(function (audio) {
-      return audio.src || audio.currentSrc;
+    ['pointerdown', 'touchstart', 'keydown'].forEach(function (eventName) {
+      document.addEventListener(eventName, function onFirstGesture() {
+        document.removeEventListener(eventName, onFirstGesture);
+        userGestured = true;
+        applyMusicGain();
+      }, true);
     });
-    if (musicUrl && !hasSourcedAudio) {
-      var musicAudio = document.createElement('audio');
-      musicAudio.id = 'inxk-bg-audio';
-      musicAudio.src = musicUrl;
-      musicAudio.loop = true;
-      musicAudio.playsInline = true;
-      musicAudio.preload = 'auto';
-      container.appendChild(musicAudio);
-    }
-
-    var isMuted = false;
-
-    function playAvailableAudio() {
-      var attempts = audioElements().filter(function (audio) {
-        return audio.src || audio.currentSrc;
-      }).map(function (audio) {
-        return audio.play();
-      });
-      return Promise.all(attempts);
-    }
-
-    function setMuted(muted) {
-      isMuted = muted;
-      audioElements().forEach(function (audio) { audio.muted = muted; });
-      button.classList.toggle('is-muted', muted);
-      button.setAttribute('aria-pressed', muted ? 'true' : 'false');
-      button.setAttribute('aria-label', muted ? 'Bật âm thanh' : 'Tắt âm thanh');
-      button.innerHTML =
-        '<span class="inxk-voice-icon" aria-hidden="true">' + (muted ? '🔇' : '🔊') + '</span>' +
-        '<span class="inxk-voice-label">' + (muted ? 'Bật âm' : 'Tắt âm') + '</span>';
-    }
-
-    function tryAutoplay() {
-      playAvailableAudio().then(removeUnlockListeners).catch(function () {
-        addUnlockListeners();
-      });
-    }
-
-    button.addEventListener('click', function () {
-      setMuted(!isMuted);
-      if (!isMuted) tryAutoplay();
-    });
-
-    var unlockEvents = ['click', 'touchstart', 'keydown'];
-    function unlockAudio() {
-      playAvailableAudio().then(removeUnlockListeners).catch(function () {});
-    }
-    function addUnlockListeners() {
-      unlockEvents.forEach(function (eventName) {
-        document.addEventListener(eventName, unlockAudio, { once: true });
-      });
-    }
-    function removeUnlockListeners() {
-      unlockEvents.forEach(function (eventName) {
-        document.removeEventListener(eventName, unlockAudio);
-      });
-    }
 
     var observer = new MutationObserver(function () {
-      audioElements().forEach(function (audio) { audio.muted = isMuted; });
+      applyMusicGain();
+      if (musicUrl) muteButton.hidden = !!document.getElementById('musicBtn');
     });
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    setMuted(false);
-    tryAutoplay();
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+    document.addEventListener('play', function (event) {
+      if (event.target !== voiceAudio) applyMusicGain();
+    }, true);
+    applyMusicGain();
   }
 
   if (document.readyState === 'loading') {

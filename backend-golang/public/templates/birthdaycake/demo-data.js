@@ -29,10 +29,9 @@
 
   // For real customer orders (injectedData present), only use a music track the
   // customer actually purchased — never fall back to the demo sample track.
-  // Customers can buy EITHER background music OR a voice recording (mutually
-  // exclusive, enforced server-side), so when there's no musicUrl, the page must
-  // stay silent by default and let the voice recording (played separately by
-  // /templates/common/voice-player.js) be heard clearly instead.
+  // When there's no musicUrl, the page stays silent on the music channel and
+  // lets the shared voice player (`/templates/common/voice-player.js`) handle
+  // any recorded message. Music and voice can be used together.
   var resolvedMusicPath = injectedData
     ? (data.musicPath || data.musicUrl || null)
     : (data.musicPath || data.musicUrl || fallbackData.musicPath);

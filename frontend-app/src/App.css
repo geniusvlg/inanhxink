@@ -127,6 +127,43 @@
   padding: 0.75rem 0;
 }
 
+.qr-audio-addons {
+  margin-bottom: 1.5rem;
+}
+
+.qr-audio-addons .music-option,
+.qr-audio-addons .voice-recording-option {
+  margin-bottom: 0.75rem;
+}
+
+.qr-audio-addons-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #ffb3c1;
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, #fff5f7 0%, #ffe4e8 100%);
+  color: #9f1239;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.qr-audio-addons-badge {
+  flex-shrink: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #fe2c56;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
 .keychain-option label {
   display: inline-flex;
   align-items: center;

@@ -13,6 +13,8 @@ interface VoiceRecordingOptionProps {
   onToggle: (added: boolean) => void;
   recording: VoiceRecording | null;
   onRecordingChange: (recording: VoiceRecording | null) => void;
+  onRecordingStart?: () => void;
+  onRecordingStateChange?: (active: boolean) => void;
   price: number;
 }
 
@@ -38,6 +40,8 @@ export default function VoiceRecordingOption({
   onToggle,
   recording,
   onRecordingChange,
+  onRecordingStart,
+  onRecordingStateChange,
   price,
 }: VoiceRecordingOptionProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -88,6 +92,12 @@ export default function VoiceRecordingOption({
     }
 
     try {
+      onRecordingStart?.();
+      document.querySelectorAll('audio').forEach(audio => {
+        audio.pause();
+        try { audio.currentTime = 0; } catch { /* ignore */ }
+      });
+      onRecordingStateChange?.(true);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
       recorderRef.current = recorder;
@@ -105,6 +115,7 @@ export default function VoiceRecordingOption({
         stream.getTracks().forEach(track => track.stop());
         streamRef.current = null;
         setIsRecording(false);
+        onRecordingStateChange?.(false);
 
         const durationSeconds = Math.min(
           MAX_RECORDING_SECONDS,
@@ -145,6 +156,7 @@ export default function VoiceRecordingOption({
       }, 250);
       stopTimerRef.current = setTimeout(stopRecording, MAX_RECORDING_SECONDS * 1000);
     } catch (err) {
+      onRecordingStateChange?.(false);
       const permissionDenied = err instanceof DOMException
         && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
       setError(permissionDenied
@@ -157,6 +169,7 @@ export default function VoiceRecordingOption({
     if (!checked) {
       stopRecording();
       onRecordingChange(null);
+      onRecordingStateChange?.(false);
       setError('');
     }
     onToggle(checked);
@@ -176,12 +189,14 @@ export default function VoiceRecordingOption({
 
       {added && (
         <div className="voice-recording-panel">
-          <p className="voice-recording-hint">Ghi tối đa 30 giây. Bạn có thể nghe lại trước khi thanh toán.</p>
+          <p className="voice-recording-hint">
+            Ghi tối đa {MAX_RECORDING_SECONDS} giây. Tắt nhạc nền khi ghi — nghe lại bản mix bên dưới sau khi xong.
+          </p>
 
           {isRecording ? (
             <div className="voice-recording-active">
               <span className="voice-recording-dot" aria-hidden="true" />
-              <strong>Đang ghi {elapsedSeconds}/30 giây</strong>
+              <strong>Đang ghi {elapsedSeconds}/{MAX_RECORDING_SECONDS} giây</strong>
               <button type="button" className="voice-recording-stop" onClick={stopRecording}>
                 Dừng ghi
               </button>

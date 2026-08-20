@@ -156,10 +156,6 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	customerName, _ := body["customerName"].(string)
 	customerEmail, _ := body["customerEmail"].(string)
 	customerPhone, _ := body["customerPhone"].(string)
-	if musicAdded && voiceRecordingAdded {
-		BadRequest(w, "Chỉ được chọn nhạc nền hoặc lời nhắn giọng nói")
-		return
-	}
 
 	// Build template_data
 	templateData := map[string]any{"content": content}
@@ -352,6 +348,11 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if resolvedMusicUrl != "" {
 		templateData["musicUrl"] = resolvedMusicUrl
+		musicVolume := 1.0
+		if raw, ok := body["musicVolume"]; ok && raw != nil {
+			musicVolume = math.Min(1, math.Max(0, toFloat(raw)))
+		}
+		templateData["musicVolume"] = musicVolume
 	}
 	voiceRecordingURL = strings.TrimSpace(voiceRecordingURL)
 	if voiceRecordingAdded {

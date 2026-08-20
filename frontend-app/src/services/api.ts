@@ -80,9 +80,13 @@ export const uploadVoiceRecording = async (file: File, qrName: string): Promise<
 };
 
 // Music extraction
-export const extractMusic = async (url: string, qrName?: string): Promise<string> => {
+export const extractMusic = async (
+  url: string,
+  qrName?: string,
+): Promise<{ url: string; previewUrl: string }> => {
   const response = await api.post('/api/music/extract', { url, qrName });
-  return response.data.url as string;
+  const resolved = response.data.url as string;
+  return { url: resolved, previewUrl: (response.data.previewUrl as string) || resolved };
 };
 
 // Metadata / config

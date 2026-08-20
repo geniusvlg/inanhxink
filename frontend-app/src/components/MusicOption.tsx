@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { extractMusic } from '../services/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import './MusicOption.css';
 
 interface MusicOptionProps {
@@ -9,11 +10,12 @@ interface MusicOptionProps {
   onMusicLinkChange: (link: string) => void;
   qrName?: string;
   musicPrice?: number;
+  previewLocked?: boolean;
 }
 
 type ExtractState = 'idle' | 'loading' | 'success' | 'error';
 
-function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, qrName, musicPrice = 10000 }: MusicOptionProps) {
+function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, qrName, musicPrice = 10000, previewLocked = false }: MusicOptionProps) {
   const [showInput, setShowInput] = useState(musicAdded);
   const [rawUrl, setRawUrl] = useState(musicLink || '');
   const [extractState, setExtractState] = useState<ExtractState>(musicLink ? 'success' : 'idle');
@@ -22,11 +24,14 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
   // retries with backoff) — stage the "please wait" copy so it doesn't look
   // stuck on a plain spinner the whole time.
   const [loadingStage, setLoadingStage] = useState<0 | 1 | 2>(0);
+  const [playingPreview, setPlayingPreview] = useState(false);
+  const previewAudioRef = useRef<HTMLAudioElement>(null);
   const loadingTimers = useRef<number[]>([]);
 
   useEffect(() => {
     return () => {
       loadingTimers.current.forEach((id) => window.clearTimeout(id));
+      previewAudioRef.current?.pause();
     };
   }, []);
 
@@ -36,11 +41,18 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       setRawUrl('');
       setExtractState('idle');
       setErrorMsg('');
+      setPlayingPreview(false);
     } else if (musicLink) {
       setRawUrl(musicLink);
       setExtractState('success');
     }
   }, [musicAdded, musicLink]);
+
+  useEffect(() => {
+    if (!previewLocked) return;
+    previewAudioRef.current?.pause();
+    setPlayingPreview(false);
+  }, [previewLocked]);
 
   const handleToggle = (checked: boolean) => {
     onMusicToggle(checked);
@@ -50,6 +62,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       setRawUrl('');
       setExtractState('idle');
       setErrorMsg('');
+      setPlayingPreview(false);
     }
   };
 
@@ -64,8 +77,8 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       window.setTimeout(() => setLoadingStage(2), 12000),
     ];
     try {
-      const resolvedUrl = await extractMusic(rawUrl.trim(), qrName);
-      onMusicLinkChange(resolvedUrl);
+      const extracted = await extractMusic(rawUrl.trim(), qrName);
+      onMusicLinkChange(extracted.url);
       setExtractState('success');
     } catch (err) {
       const e = err as { response?: { data?: { error?: string } } };
@@ -85,6 +98,33 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       setExtractState('idle');
       setErrorMsg('');
       onMusicLinkChange('');
+      setPlayingPreview(false);
+    }
+  };
+
+  const stopPreview = () => {
+    const audio = previewAudioRef.current;
+    audio?.pause();
+    try { if (audio) audio.currentTime = 0; } catch { /* ignore */ }
+    setPlayingPreview(false);
+  };
+
+  const handlePreviewToggle = async () => {
+    if (playingPreview) {
+      stopPreview();
+      return;
+    }
+    const audio = previewAudioRef.current;
+    if (!audio) return;
+    document.querySelectorAll('audio').forEach(other => {
+      if (other !== audio) other.pause();
+    });
+    try {
+      try { audio.currentTime = 0; } catch { /* ignore */ }
+      await audio.play();
+      setPlayingPreview(true);
+    } catch {
+      stopPreview();
     }
   };
 
@@ -146,7 +186,27 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
         </p>
       )}
       {extractState === 'success' && (
-        <p className="music-feedback music-feedback--success">Nhạc đã sẵn sàng!</p>
+        <>
+          <p className="music-feedback music-feedback--success">Nhạc đã sẵn sàng!</p>
+          <div className="music-player">
+            <audio
+              ref={previewAudioRef}
+              src={resolveAssetUrl(musicLink)}
+              preload="metadata"
+              playsInline
+              onEnded={stopPreview}
+              onPause={() => setPlayingPreview(false)}
+            />
+            <button
+              type="button"
+              className="music-player-play"
+              onClick={handlePreviewToggle}
+              disabled={previewLocked}
+            >
+              {previewLocked ? 'Đang ghi âm — nhạc đã tắt' : playingPreview ? 'Dừng' : 'Nghe thử nhạc nền'}
+            </button>
+          </div>
+        </>
       )}
       {extractState === 'error' && (
         <p className="music-feedback music-feedback--error">{errorMsg}</p>
