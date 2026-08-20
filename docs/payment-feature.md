@@ -109,8 +109,10 @@ See `docs/admin-app.md` → "Releasing A QR Name" for the endpoint and S3 cleanu
 - `OrderPage` can record one voice message of up to 30 seconds with the browser
   `MediaRecorder` API. The recording stays as an in-memory Blob for local replay
   and is uploaded only when the customer submits the order.
-- Background music and a voice message are mutually exclusive. Selecting either
-  option clears the other, and `CreateOrder` rejects requests that select both.
+- Background music and a voice message can be selected together. The order page
+  previews the mix and stores `template_data.musicVolume` (0–1) so the live QR
+  page uses the same background level. `CreateOrder` charges both add-ons when
+  both are selected.
 - `POST /api/upload/voice` accepts one audio file up to 5 MB and stores it under
   `uploads/temp/{qrName}/`. `CreateOrder` validates that the raw S3 URL belongs
   to that QR name before adding it to `template_data.voiceRecordingUrl`.

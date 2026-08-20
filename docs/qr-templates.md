@@ -144,12 +144,17 @@ and playback flow.
 Every active template receives the shared
 `public/templates/common/voice-player.js` and `.css` assets through
 `handlers/templateserve.go`. When `template_data.voiceRecordingUrl` or
-`musicUrl` is present, audio starts automatically and the page shows a fixed
-mute/unmute button. Voice recordings loop through the shared player; existing
-template background-audio elements remain template-owned but are controlled by
-the shared mute button. Galaxy's `#bg-audio` element also loops its selected
-background music continuously. If browser autoplay policy blocks sound, playback starts
-on the visitor's first tap, click, or key press anywhere on the template.
+`musicUrl` is present, the shared player starts audio and shows controls: a
+music mute button when background music exists, and a replay button after a
+voice recording has been revealed. Voice plays once at the template's reveal
+moment (not on loop); music loops at `template_data.musicVolume` (0–1, default
+1) and keeps that level while the voice plays. Existing template background-audio
+elements remain template-owned but follow the shared mute/volume when they
+use a known music element id. Letter cues such as birthday cake `#letterSound`
+are left alone. Galaxy's
+`#bg-audio` element also loops its selected background music continuously. If
+browser autoplay policy blocks sound, playback starts on the visitor's first
+tap, click, or key press anywhere on the template.
 
 Template implementations do not need their own voice-message code. Public
 template data is CDN-rewritten before it is injected into

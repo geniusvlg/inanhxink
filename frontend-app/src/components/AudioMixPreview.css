@@ -1,0 +1,60 @@
+.audio-mix-preview {
+  margin: -0.5rem 0 1.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #fecdd3;
+  border-radius: 0.75rem;
+  background: #fff7f8;
+}
+
+.audio-mix-preview audio {
+  display: none;
+}
+
+.audio-mix-preview-hint {
+  margin: 0 0 0.75rem;
+  color: #6b7280;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.audio-mix-preview-volume {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.audio-mix-preview-volume input[type='range'] {
+  flex: 1;
+  accent-color: #fe2c56;
+  min-width: 0;
+}
+
+.audio-mix-preview-volume strong {
+  min-width: 2.75rem;
+  color: #be123c;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.audio-mix-preview-play {
+  margin-top: 0.75rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #fe2c56;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.audio-mix-preview-play:hover:not(:disabled) {
+  background: #e01e45;
+}
+
+.audio-mix-preview-play:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

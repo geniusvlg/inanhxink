@@ -453,44 +453,62 @@ let backgroundMusic = null;
 let musicStarted    = false;
 let musicMuted      = false;
 
+function musicVolumeFromOrder() {
+  var data = (window.dataFromSubdomain && window.dataFromSubdomain.data) || window.siteData || {};
+  var n = Number(data.musicVolume);
+  if (!isFinite(n)) return 1;
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
+}
+
+function sharedMuteButton() {
+  return document.querySelector("#inxk-voice-player .inxk-voice-button--mute");
+}
+
+function syncMusicBtn() {
+  const btn = document.getElementById("musicBtn");
+  if (!btn) return;
+  const shared = sharedMuteButton();
+  const muted = shared ? shared.classList.contains("is-muted") : musicMuted;
+  btn.classList.toggle("muted", !!muted);
+}
+
 function setupBackgroundMusic() {
   const src = _dataSource.song;
   if (!src) return;
-  backgroundMusic = new Audio(src);
+  backgroundMusic = document.getElementById("bg-audio") || document.createElement("audio");
+  backgroundMusic.id = "bg-audio";
   backgroundMusic.loop = true;
-  backgroundMusic.volume = 0;
+  backgroundMusic.playsInline = true;
+  backgroundMusic.hidden = true;
+  if (!backgroundMusic.parentNode) document.body.appendChild(backgroundMusic);
+  if (!(backgroundMusic.getAttribute("src") || backgroundMusic.currentSrc)) {
+    backgroundMusic.src = src;
+  }
 }
 
 function startMusicFadeIn() {
   if (!backgroundMusic || musicStarted) return;
   musicStarted = true;
-  const target = 0.8, steps = 60, dur = 3000;
-  let vol = 0;
-  backgroundMusic.play()
-    .then(() => {
-      const iv = setInterval(() => {
-        if (musicMuted) { clearInterval(iv); return; }
-        vol = Math.min(vol + target / steps, target);
-        backgroundMusic.volume = vol;
-        if (vol >= target) clearInterval(iv);
-      }, dur / steps);
-    })
-    .catch(e => console.log("Music blocked:", e));
+  try { backgroundMusic.volume = musicMuted ? 0 : musicVolumeFromOrder(); } catch (e) {}
+  backgroundMusic.play().catch(e => console.log("Music blocked:", e));
 }
 
 function toggleMusic() {
-  const btn = document.getElementById("musicBtn");
   if (!backgroundMusic) return;
-  musicMuted = !musicMuted;
-  if (musicMuted) {
-    backgroundMusic.volume = 0;
-    btn?.classList.add("muted");
-  } else {
-    backgroundMusic.volume = 0.8;
-    btn?.classList.remove("muted");
-    // If user unmutes before music started, start it now
-    if (!musicStarted) startMusicFadeIn();
+  const shared = sharedMuteButton();
+  if (shared) {
+    shared.click();
+    syncMusicBtn();
+    if (!shared.classList.contains("is-muted") && !musicStarted) startMusicFadeIn();
+    return;
   }
+  musicMuted = !musicMuted;
+  backgroundMusic.muted = musicMuted;
+  try { backgroundMusic.volume = musicMuted ? 0 : musicVolumeFromOrder(); } catch (e) {}
+  syncMusicBtn();
+  if (!musicMuted && !musicStarted) startMusicFadeIn();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -512,6 +530,11 @@ function init() {
 
   // Music toggle button
   document.getElementById("musicBtn")?.addEventListener("click", toggleMusic);
+  const sharedMute = sharedMuteButton();
+  if (sharedMute) {
+    new MutationObserver(syncMusicBtn).observe(sharedMute, { attributes: true, attributeFilter: ["class"] });
+    syncMusicBtn();
+  }
 
   // Envelope seal click → open/close envelope
   if (openLetterBtn) openLetterBtn.addEventListener("click", handleEnvelopeClick);

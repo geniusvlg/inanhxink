@@ -162,3 +162,30 @@
   color: #b45309;
 }
 
+.music-player {
+  margin-top: 0.5rem;
+}
+
+.music-player audio {
+  display: none;
+}
+
+.music-player-play {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #fe2c56;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.music-player-play:hover:not(:disabled) {
+  background: #e01e45;
+}
+
+.music-player-play:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+

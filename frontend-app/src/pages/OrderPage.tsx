@@ -8,6 +8,7 @@ import ContentEditor from '../components/ContentEditor';
 import LetterInSpaceForm from '../components/LetterInSpaceForm';
 import MusicOption from '../components/MusicOption';
 import VoiceRecordingOption, { type VoiceRecording } from '../components/VoiceRecordingOption';
+import AudioMixPreview from '../components/AudioMixPreview';
 import TipSelector from '../components/TipSelector';
 import VoucherInput from '../components/VoucherInput';
 import ImageUploader from '../components/ImageUploader';
@@ -36,6 +37,8 @@ const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday',
 const DEFAULT_FAREWELL_STAGE_COUNT = 5;
 const MAX_FAREWELL_STAGES = 8;
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
+const DEFAULT_MUSIC_VOLUME = 1;
+const DEFAULT_MIX_MUSIC_VOLUME = 0.4;
 
 interface Voucher {
   code: string;
@@ -58,6 +61,10 @@ function OrderPage() {
   const [content, setContent] = useState('');
   const [musicAdded, setMusicAdded] = useState(false);
   const [musicLink, setMusicLink] = useState('');
+  const [musicVolume, setMusicVolume] = useState(DEFAULT_MUSIC_VOLUME);
+  const [musicVolumeTouched, setMusicVolumeTouched] = useState(false);
+  const [mixResetToken, setMixResetToken] = useState(0);
+  const [voiceIsRecording, setVoiceIsRecording] = useState(false);
   const [voiceRecordingAdded, setVoiceRecordingAdded] = useState(false);
   const [voiceRecording, setVoiceRecording] = useState<VoiceRecording | null>(null);
   const [keychainPurchased, setKeychainPurchased] = useState(false);
@@ -160,6 +167,10 @@ function OrderPage() {
         if (d.content) setContent(d.content);
         if (d.musicAdded) setMusicAdded(d.musicAdded);
         if (d.musicLink) setMusicLink(d.musicLink);
+        if (typeof d.musicVolume === 'number') {
+          setMusicVolume(Math.min(1, Math.max(0, d.musicVolume)));
+          setMusicVolumeTouched(true);
+        }
         if (d.keychainPurchased) setKeychainPurchased(d.keychainPurchased);
         if (d.selectedTip !== undefined) setSelectedTip(d.selectedTip);
         if (d.customTipAmount) setCustomTipAmount(d.customTipAmount);
@@ -275,18 +286,34 @@ function OrderPage() {
 
   const handleMusicToggle = (added: boolean) => {
     setMusicAdded(added);
-    if (added) {
-      setVoiceRecordingAdded(false);
-      setVoiceRecording(null);
+    if (!added) {
+      setMusicLink('');
+      setMusicVolumeTouched(false);
+      setMusicVolume(DEFAULT_MUSIC_VOLUME);
+      setMixResetToken(token => token + 1);
+      return;
+    }
+    if (!musicVolumeTouched && voiceRecordingAdded) {
+      setMusicVolume(DEFAULT_MIX_MUSIC_VOLUME);
     }
   };
 
   const handleVoiceRecordingToggle = (added: boolean) => {
     setVoiceRecordingAdded(added);
-    if (added) {
-      setMusicAdded(false);
-      setMusicLink('');
+    if (!added) {
+      setVoiceRecording(null);
+      if (!musicVolumeTouched) setMusicVolume(DEFAULT_MUSIC_VOLUME);
+      setMixResetToken(token => token + 1);
+      return;
     }
+    if (!musicVolumeTouched && musicAdded) {
+      setMusicVolume(DEFAULT_MIX_MUSIC_VOLUME);
+    }
+  };
+
+  const handleMusicVolumeChange = (next: number) => {
+    setMusicVolumeTouched(true);
+    setMusicVolume(next);
   };
 
   const startUpload = (index: number, file: File, name: string) => {
@@ -426,6 +453,9 @@ function OrderPage() {
       setContent('');
       setMusicAdded(false);
       setMusicLink('');
+      setMusicVolume(DEFAULT_MUSIC_VOLUME);
+      setMusicVolumeTouched(false);
+      setMixResetToken(token => token + 1);
       setVoiceRecordingAdded(false);
       setVoiceRecording(null);
       setKeychainPurchased(false);
@@ -558,6 +588,7 @@ function OrderPage() {
         imageUrls,
         musicUrl: musicLink || undefined,
         musicAdded,
+        musicVolume: musicAdded ? musicVolume : undefined,
         voiceRecordingAdded,
         voiceRecordingUrl,
         keychainPurchased: keychainEnabled && keychainPurchased,
@@ -630,7 +661,7 @@ function OrderPage() {
         try {
           sessionStorage.setItem('orderFormDraft', JSON.stringify({
             selectedTemplate, qrName, qrNameValid, qrUrl, content,
-            musicAdded, musicLink, keychainPurchased, selectedTip,
+            musicAdded, musicLink, musicVolume, keychainPurchased, selectedTip,
             customTipAmount, voucher, specialGiftDate,
             specialGiftNameLeft, specialGiftNameRight, specialGiftDayLabel,
             specialGiftTitle, birthdayCakeLetterTitle, birthdayCakeLetterBody,
@@ -1381,22 +1412,43 @@ function OrderPage() {
         />
       )}
 
-      <MusicOption
-        musicAdded={musicAdded}
-        onMusicToggle={handleMusicToggle}
-        musicLink={musicLink}
-        onMusicLinkChange={setMusicLink}
-        qrName={qrName}
-        musicPrice={musicPrice}
-      />
+      <div className="qr-audio-addons">
+        <p className="qr-audio-addons-hint">
+          <span className="qr-audio-addons-badge">Đặc biệt</span>
+          Nhạc nền tạo cảm xúc, giọng nói chạm đến trái tim — chọn cả hai để món quà trọn vẹn nhất.
+        </p>
 
-      <VoiceRecordingOption
-        added={voiceRecordingAdded}
-        onToggle={handleVoiceRecordingToggle}
-        recording={voiceRecording}
-        onRecordingChange={setVoiceRecording}
-        price={voiceRecordingPrice}
-      />
+        <MusicOption
+          musicAdded={musicAdded}
+          onMusicToggle={handleMusicToggle}
+          musicLink={musicLink}
+          onMusicLinkChange={setMusicLink}
+          previewLocked={voiceIsRecording}
+          qrName={qrName}
+          musicPrice={musicPrice}
+        />
+
+        <VoiceRecordingOption
+          added={voiceRecordingAdded}
+          onToggle={handleVoiceRecordingToggle}
+          recording={voiceRecording}
+          onRecordingChange={setVoiceRecording}
+          onRecordingStart={() => setMixResetToken(token => token + 1)}
+          onRecordingStateChange={setVoiceIsRecording}
+          price={voiceRecordingPrice}
+        />
+      </div>
+
+      {musicAdded && musicLink && (
+        <AudioMixPreview
+          musicUrl={resolveAssetUrl(musicLink)}
+          voiceFile={voiceRecordingAdded ? voiceRecording?.file ?? null : null}
+          volume={musicVolume}
+          onVolumeChange={handleMusicVolumeChange}
+          resetToken={mixResetToken}
+          playLocked={voiceIsRecording}
+        />
+      )}
 
       {keychainEnabled && (
         <div className="keychain-option">

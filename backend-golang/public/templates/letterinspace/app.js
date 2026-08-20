@@ -367,27 +367,20 @@ if (bgAudio && songUrl) bgAudio.src = songUrl;
 function initAudio() {
     if (!bgAudio || isAudioInited) return;
     bgAudio.loop = true;
-    bgAudio.volume = 0;
     bgAudio.addEventListener('error', () => isAudioAllowed = false);
     bgAudio.addEventListener('canplaythrough', () => isAudioAllowed = true);
     bgAudio.addEventListener('loadeddata', () => isAudioAllowed = true);
     isAudioInited = true;
 }
 
-function playAudio(targetVolume = 0.7, duration = 3000) {
+function playAudio() {
     if (!isAudioAllowed || !bgAudio) return;
-    if (bgAudio.fadeInterval) clearInterval(bgAudio.fadeInterval);
-    bgAudio.volume = 0;
+    if (bgAudio.fadeInterval) {
+        clearInterval(bgAudio.fadeInterval);
+        bgAudio.fadeInterval = null;
+    }
     bgAudio.play().then(() => {
         isPlaying = true;
-        const step = targetVolume / (duration / 50);
-        bgAudio.fadeInterval = setInterval(() => {
-            if (bgAudio.volume < targetVolume) {
-                bgAudio.volume = Math.min(bgAudio.volume + step, targetVolume);
-            } else {
-                clearInterval(bgAudio.fadeInterval);
-            }
-        }, 50);
     }).catch(() => {
         isAudioAllowed = false;
         isPlaying = false;

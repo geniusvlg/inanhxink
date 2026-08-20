@@ -951,7 +951,7 @@
 </div>
 
 <!-- ============ SHARED AUDIO ============ -->
-<audio id="bgMusic" loop preload="auto">
+<audio id="bgMusic" loop preload="auto" crossorigin="anonymous">
   <source src="https://cdn.shopify.com/s/files/1/0757/9700/4572/files/0210.MP3?v=1770658101" type="audio/mpeg">
 </audio>
 
@@ -1036,9 +1036,8 @@
   if (bgmMusicSrc) {
       bgm.src = bgmMusicSrc;
   } else if (injectedData) {
-      // Real order with no purchased music (customer may have bought a voice
-      // recording instead — they're mutually exclusive, enforced server-side)
-      // — strip the default demo <source> so nothing plays underneath it.
+      // Real order with no purchased music — strip the default demo
+      // <source> so nothing plays underneath a voice recording.
       var bgmSource = bgm.querySelector('source');
       if (bgmSource) bgmSource.removeAttribute('src');
       bgm.removeAttribute('src');

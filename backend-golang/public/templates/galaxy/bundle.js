@@ -47637,10 +47637,8 @@ M\xE3i b\xEAn nhau!"></textarea>
               } else if ((!data.config.audioUrl || data.config.audioUrl === "") && data.config.selectedAudioFile && window.audioManager && window.audioManager.setAudioUrl) {
                 window.audioManager.setAudioUrl("assets/musics/" + data.config.selectedAudioFile);
               } else if ((!data.config.audioUrl || data.config.audioUrl === "") && !data.config.selectedAudioFile && window.audioManager && window.audioManager.audio) {
-                // No music purchased for this order (customer may have bought
-                // a voice recording instead — mutually exclusive, enforced
-                // server-side) — silence the default sample track so the
-                // tap-to-start gate never plays it underneath the recording.
+                // No music purchased for this order — silence the default
+                // sample track so a voice recording (if any) is not covered.
                 window.audioManager.audio.removeAttribute("src");
                 window.audioManager.audio.load();
                 window.audioManager.currentAudioUrl = null;

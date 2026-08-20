@@ -23,9 +23,12 @@
   var audio = null;
   if (musicSrc) {
     audio = document.createElement('audio');
+    audio.id = 'bg-audio';
     audio.src = musicSrc;
     audio.loop = true;
     audio.hidden = true;
+    audio.crossOrigin = 'anonymous';
+    audio.playsInline = true;
     document.body.appendChild(audio);
     var tryPlay = function () {
       if (audio && audio.paused) {

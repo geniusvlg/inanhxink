@@ -188,8 +188,9 @@ Released orders are ignored by every ownership check — see `docs/admin-app.md`
 QR voice messages use `POST /api/upload/voice`, which accepts one browser-recorded
 audio file up to 5 MB under `uploads/temp/{qrName}/`. `CreateOrder` validates the
 raw S3 URL, applies the server-side `voice_recording_price`, and stores it as
-`template_data.voiceRecordingUrl`; payment activation moves it to the permanent
-QR folder.
+`template_data.voiceRecordingUrl`. Music and voice may be selected together;
+`template_data.musicVolume` (0–1) is stored when music is present. Payment
+activation moves the recording to the permanent QR folder.
 
 ## Pay2S webhook discovery
 

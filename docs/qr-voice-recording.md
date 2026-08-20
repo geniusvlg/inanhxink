@@ -2,15 +2,19 @@
 
 ## Customer flow
 
-1. On the QR order page, the customer chooses either background music or a
-   voice recording. These options are mutually exclusive.
+1. On the QR order page, the customer can add background music, a voice
+   recording, or both.
 2. Voice is recorded in the mobile/desktop browser with `MediaRecorder`, with a
    maximum duration of 30 seconds.
 3. The recording remains an in-memory browser `Blob`, allowing replay,
    deletion, and re-recording without uploading anything.
-4. When the customer clicks **Thanh toán**, the recording is uploaded to
+4. When music is ready, the order page shows **Nghe thử** plus an **Âm lượng
+   nhạc nền** slider. If a recording exists too, preview plays both: music
+   loops at the chosen volume. Voice plays once at full volume. The same mix
+   is stored for the live QR page.
+5. When the customer clicks **Thanh toán**, the recording is uploaded to
    `uploads/temp/{qrName}/` and attached to the pending order.
-5. After payment is confirmed (SePay webhook or admin mark-paid),
+6. After payment is confirmed (SePay webhook or admin mark-paid),
    `MigrateQRUploads` moves it to `uploads/{qrName}/` and updates the order
    and live QR template data.
 
@@ -20,14 +24,18 @@ day.
 ## Pricing and persistence
 
 - Admin configures the add-on through `voice_recording_price` in
-  **Admin → Cấu hình → Ghi âm giọng nói cho QR**.
+  **Admin → Cấu hình → Ghi âm giọng nói cho QR**. Music remains a separate
+  add-on (`music_price`). Selecting both charges both.
 - `CreateOrder` calculates the price server-side. Browser totals are display
   only.
 - `orders` snapshots `voice_recording_added`, `voice_recording_url`, and
   `voice_recording_price`.
 - `template_data.voiceRecordingUrl` stores the raw S3 URL.
-- Public template responses rewrite that URL to the CDN; the database and admin
-  APIs retain the raw S3 URL.
+- `template_data.musicVolume` stores the chosen background volume as a 0–1
+  number (default `1` when omitted). It is not an asset URL and is not CDN
+  rewritten.
+- Public template responses rewrite audio URLs to the CDN; the database and
+  admin APIs retain raw S3 URLs.
 
 Schema changes are in `backend-golang/database/V61__qr_voice_recording.sql`.
 
@@ -40,8 +48,8 @@ Schema changes are in `backend-golang/database/V61__qr_voice_recording.sql`.
 - Limits the upload to 5 MB.
 - Validates the QR name and rejects an already activated name.
 
-`CreateOrder` verifies that the submitted URL belongs to
-`uploads/temp/{qrName}/` and rejects requests selecting both music and voice.
+`CreateOrder` verifies that the submitted voice URL belongs to
+`uploads/temp/{qrName}/`. Music and voice may both be present.
 
 ## Template playback
 
@@ -50,11 +58,24 @@ All QR templates receive the shared assets:
 - `backend-golang/public/templates/common/voice-player.js`
 - `backend-golang/public/templates/common/voice-player.css`
 
-When `voiceRecordingUrl` or `musicUrl` exists:
+When `voiceRecordingUrl` and/or `musicUrl` exists:
 
-- Playback is attempted automatically.
-- Voice recordings loop.
-- A fixed button controls mute/unmute.
+- Background music loops at `musicVolume` (0–1). A mute button controls music
+  only (hidden on templates that already have `#musicBtn`: Love Letter, Love
+  Days).
+- The shared player only touches known background elements: `#bg-audio`,
+  `#inxk-bg-audio`, `#audios`, `#bgMusic`, `#audio`. Birthday cake
+  `#letterSound` is left at full volume.
+- Voice recordings play once at the template reveal moment (open letter, gift
+  box, tap-to-start, …), at full volume. A **Nghe lại lời nhắn** button
+  replays afterwards.
+- Music keeps playing at `musicVolume` while the voice plays; there is no
+  automatic ducking.
+- iOS Safari ignores `audio.volume`. A reduced `musicVolume` is applied with a
+  Web Audio `GainNode` after the first tap, on elements that have
+  `crossOrigin="anonymous"`. Templates set that on their music `<audio>` tags.
+  Routing is skipped when `musicVolume === 1`. Failures fall back to
+  `audio.volume`.
 - If the browser blocks sound autoplay, playback begins after the visitor's
   first tap, click, or key press anywhere on the page.
 

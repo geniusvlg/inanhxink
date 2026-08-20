@@ -39,7 +39,11 @@ func ExtractMusic(w http.ResponseWriter, r *http.Request) {
 		JSON(w, 400, map[string]any{"success": false, "error": err.Error()})
 		return
 	}
-	OK(w, map[string]any{"success": true, "url": uploadedURL})
+	OK(w, map[string]any{
+		"success":    true,
+		"url":        uploadedURL,
+		"previewUrl": config.CdnStr(uploadedURL),
+	})
 }
 
 func downloadAndUploadMusic(url, qrName string) (string, error) {
