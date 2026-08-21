@@ -63,19 +63,19 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
 - Background music loops at `musicVolume` (0–1). A mute button controls music
   only (hidden on templates that already have `#musicBtn`: Love Letter, Love
   Days).
-- The shared player only touches known background elements: `#bg-audio`,
-  `#inxk-bg-audio`, `#audios`, `#bgMusic`, `#audio`. Birthday cake
+- The shared player preloads music and voice into one Web Audio graph and
+  mixes them to a single output: music through a GainNode at `musicVolume`,
+  voice at full level. That avoids iOS Safari fighting two `<audio>` tags
+  (which ignored the saved music volume). If decode/CORS fails, it falls back
+  to the HTML audio elements.
+- The shared player only touches known background HTML elements as fallback:
+  `#bg-audio`, `#inxk-bg-audio`, `#audios`, `#bgMusic`, `#audio`. Birthday cake
   `#letterSound` is left at full volume.
 - Voice recordings play once at the template reveal moment (open letter, gift
   box, tap-to-start, …), at full volume. A **Nghe lại lời nhắn** button
   replays afterwards.
 - Music keeps playing at `musicVolume` while the voice plays; there is no
   automatic ducking.
-- iOS Safari ignores `audio.volume`. A reduced `musicVolume` is applied with a
-  Web Audio `GainNode` after the first tap, on elements that have
-  `crossOrigin="anonymous"`. Templates set that on their music `<audio>` tags.
-  Routing is skipped when `musicVolume === 1`. Failures fall back to
-  `audio.volume`.
 - If the browser blocks sound autoplay, playback begins after the visitor's
   first tap, click, or key press anywhere on the page.
 

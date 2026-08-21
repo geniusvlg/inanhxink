@@ -132,20 +132,28 @@
       obs.observe(overlay, { attributes: true, attributeFilter: ['class'] });
     }
 
-    function activate(e) {
+    function activate() {
       if (triggered) return;
-      e.preventDefault();
       triggered = true;
       wrap.classList.add('done');
-      var audio = document.getElementById('bg-audio');
-      if (audio && audio.src) audio.play().catch(function () {});
+      if (typeof window.__inxkPlayBackgroundMusic === 'function') {
+        window.__inxkPlayBackgroundMusic();
+      } else {
+        var audio = document.getElementById('bg-audio');
+        if (audio && audio.src) audio.play().catch(function () {});
+      }
       setTimeout(function () { wrap.style.display = 'none'; }, 600);
       window.dispatchEvent(new Event('__textStart'));
     }
 
+    // Capture fires before the shared voice player starts audio on bubble
+    // touchstart. audio.play() on some phones aborts remaining listeners,
+    // which left Love Burst waiting for a second tap.
+    wrap.addEventListener('pointerdown', activate, true);
+    wrap.addEventListener('touchstart', activate, { capture: true, passive: true });
     wrap.addEventListener('click', activate);
     wrap.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') activate(e);
+      if (e.key === 'Enter' || e.key === ' ') activate();
     });
   }
 

@@ -18,7 +18,7 @@ import { startBuyNowCheckout, useCart } from '../contexts/CartContext';
 import { getProductThumbnailUrl } from '../utils/productImage';
 import './ProductDetailPage.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const CDN_URL      = import.meta.env.VITE_CDN_URL || '';
 const S3_ORIGIN    = `https://s3-north1.viettelidc.com.vn/${import.meta.env.VITE_S3_BUCKET || 'inanhxink-prod'}`;
 const resolveUrl   = (url: string) => {
