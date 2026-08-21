@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const CDN_URL = (import.meta.env.VITE_CDN_URL as string | undefined) || 'https://cdn.inanhxink.com';
 const S3_HOSTS = [
   'https://hcm04.vstorage.vngcloud.vn/',

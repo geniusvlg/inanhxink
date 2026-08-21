@@ -12,7 +12,7 @@ import './SiteHeader.css';
 const SEARCH_DEBOUNCE_MS = 300;
 const SUGGEST_LIMIT = 8;
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const CDN_URL = import.meta.env.VITE_CDN_URL || '';
 const S3_ORIGIN = `https://s3-north1.viettelidc.com.vn/${import.meta.env.VITE_S3_BUCKET || 'inanhxink-prod'}`;
 const resolveThumb = (url: string | undefined) => {

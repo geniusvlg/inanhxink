@@ -20,7 +20,7 @@ import { getProductThumbnailUrl } from '../utils/productImage';
 import CategoryRail from '../components/CategoryRail';
 import './HomePage.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 function imageSrc(url: string | null | undefined): string {
   if (!url) return '/placeholder.png';
