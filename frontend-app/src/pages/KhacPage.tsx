@@ -12,7 +12,7 @@ import ProductSoldCount from '../components/ProductSoldCount';
 import { getProductThumbnailUrl } from '../utils/productImage';
 import './KhacPage.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const CDN_URL      = import.meta.env.VITE_CDN_URL || '';
 const S3_ORIGIN    = `https://s3-north1.viettelidc.com.vn/${import.meta.env.VITE_S3_BUCKET || 'inanhxink-prod'}`;
 const resolveUrl   = (url: string) => {
