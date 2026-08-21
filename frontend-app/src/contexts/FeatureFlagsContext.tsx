@@ -182,7 +182,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   const [flags, setFlags] = useState<FeatureFlags>(DEFAULTS);
 
   useEffect(() => {
-    const apiBase = import.meta.env.VITE_API_URL || '';
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001';
     axios.get<{ success: boolean; config: Record<string, string> }>(`${apiBase}/api/metadata`)
       .then(res => {
         const c = res.data.config ?? {};
