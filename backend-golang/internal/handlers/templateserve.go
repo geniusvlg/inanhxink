@@ -90,7 +90,7 @@ func injectScripts(html, subdomain, templateType string, templateData map[string
 	tag := fmt.Sprintf(
 		"<script data-cfasync=\"false\">window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;</script>\n"+
 			"<link rel=\"stylesheet\" href=\"/templates/common/voice-player.css\">\n"+
-			"<script data-cfasync=\"false\" defer src=\"/templates/common/voice-player.js\"></script>",
+			"<script data-cfasync=\"false\" defer src=\"/templates/common/voice-player.js?v=20260821-6\"></script>",
 		string(subdomainJSON), string(dataPayload),
 	)
 	return strings.Replace(html, "</head>", tag+"\n</head>", 1)

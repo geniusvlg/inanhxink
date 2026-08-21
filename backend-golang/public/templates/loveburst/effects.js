@@ -322,16 +322,16 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
       textGlow.position.copy(textMesh.position);
       textGlow.rotation.copy(textMesh.rotation);
       if (!exploding) {
-        textGlow.material.size = SIZE * (4.4 + 1.6 * pulse);
-        textGlow.material.opacity = 0.34 + 0.22 * pulse;
+        textGlow.material.size = SIZE * (2 + 0.4 * pulse);
+        textGlow.material.opacity = 0.08 + 0.04 * pulse;
       }
     }
     if (textBloom) {
       textBloom.position.copy(textMesh.position);
       textBloom.rotation.copy(textMesh.rotation);
       if (!exploding) {
-        textBloom.material.size = SIZE * ((isMobile ? 8 : 10.5) + 2.4 * pulse);
-        textBloom.material.opacity = (isMobile ? 0.12 : 0.16) + 0.14 * pulse;
+        textBloom.material.size = SIZE * ((isMobile ? 3.2 : 4.2) + 0.6 * pulse);
+        textBloom.material.opacity = (isMobile ? 0.015 : 0.025) + 0.015 * pulse;
       }
     }
   }
@@ -487,8 +487,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
         if (elapsed > 500) {
           var fadeOut = 1 - Math.min(1, (elapsed - 500) / 1000);
           textMesh.material.opacity = fadeOut;
-          if (textGlow) textGlow.material.opacity = fadeOut * 0.42;
-          if (textBloom) textBloom.material.opacity = fadeOut * 0.18;
+          if (textGlow) textGlow.material.opacity = fadeOut * 0.1;
+          if (textBloom) textBloom.material.opacity = fadeOut * (isMobile ? 0.02 : 0.035);
         }
         if (elapsed > 1500) {
           exploding = false;
@@ -570,17 +570,22 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.m
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+    if (window.__LOVEBURST_START_REQUESTED__) startMessages();
   }
 
-  window.addEventListener('__textStart', function () {
+  function startMessages() {
+    window.__LOVEBURST_START_REQUESTED__ = true;
     if (started) return;
+    if (!geometry) return;
     started = true;
     if (reduced || !PARTICLE_COUNT) {
       window.dispatchEvent(new CustomEvent('textMessagesComplete'));
       return;
     }
     beginMessages();
-  }, { once: true });
+  }
+
+  window.addEventListener('__textStart', startMessages);
 
   function boot() {
     if (document.readyState === 'loading') {

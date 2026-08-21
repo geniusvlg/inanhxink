@@ -22,10 +22,8 @@
     audioPreview: true
   };
 
-  // iOS Safari ignores HTMLMediaElement.volume. A GainNode is the only way
-  // to honour musicVolume there. Never call load() from the mutation
-  // observer — that loop froze pages. CORS is set once per element, and
-  // MediaElementSource is created only after a user gesture.
+  // Mix music + voice through one AudioContext. Two HTMLAudioElements fight
+  // on iOS Safari (volume is ignored, one stream ducks the other).
   var audioCtx = null;
   var gainNodes = typeof WeakMap === 'function' ? new WeakMap() : null;
   var routeFailed = typeof WeakMap === 'function' ? new WeakMap() : null;
@@ -39,10 +37,39 @@
     if (!audioCtx) {
       try { audioCtx = new Ctor(); } catch (e) { return null; }
     }
-    if (audioCtx.state === 'suspended') {
-      try { audioCtx.resume(); } catch (e) {}
-    }
     return audioCtx;
+  }
+
+  function unlockWebAudio() {
+    var ctx = ensureAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      try { ctx.resume(); } catch (e) {}
+    }
+    if (ctx.__inxkUnlocked) return;
+    try {
+      var buffer = ctx.createBuffer(1, 1, ctx.sampleRate || 22050);
+      var src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      src.start(0);
+      ctx.__inxkUnlocked = true;
+    } catch (e) {}
+  }
+
+  function decodeUrl(url) {
+    return fetch(url, { mode: 'cors', credentials: 'omit' }).then(function (res) {
+      if (!res.ok) throw new Error('audio fetch failed');
+      return res.arrayBuffer();
+    }).then(function (ab) {
+      var ctx = ensureAudioContext();
+      if (!ctx) throw new Error('no audio context');
+      return new Promise(function (resolve, reject) {
+        var copy = ab.slice(0);
+        var ret = ctx.decodeAudioData(copy, resolve, reject);
+        if (ret && typeof ret.then === 'function') ret.then(resolve, reject);
+      });
+    });
   }
 
   function prepareMusicElement(audio) {
@@ -66,10 +93,7 @@
       return null;
     }
     var ctx = ensureAudioContext();
-    if (!ctx) {
-      routeFailed.set(audio, true);
-      return null;
-    }
+    if (!ctx || ctx.state !== 'running') return null;
     try {
       var source = ctx.createMediaElementSource(audio);
       var gain = ctx.createGain();
@@ -116,8 +140,9 @@
     var voiceAudio = null;
     if (voiceUrl) {
       voiceAudio = document.createElement('audio');
+      voiceAudio.crossOrigin = 'anonymous';
       voiceAudio.src = voiceUrl;
-      voiceAudio.preload = 'metadata';
+      voiceAudio.preload = 'auto';
       voiceAudio.loop = false;
       voiceAudio.playsInline = true;
       voiceAudio.volume = 1;
@@ -141,8 +166,65 @@
     }
 
     var musicMuted = false;
+    var musicBuffer = null;
+    var voiceBuffer = null;
+    var musicGain = null;
+    var musicSource = null;
+    var voiceSource = null;
+
+    function mixerAvailable() {
+      if (!ensureAudioContext()) return false;
+      if (musicUrl && !musicBuffer) return false;
+      if (voiceUrl && !voiceBuffer) return false;
+      return !!(musicBuffer || voiceBuffer);
+    }
+
+    function silenceHtmlAudio() {
+      audioElements().forEach(function (audio) {
+        try { audio.pause(); } catch (e) {}
+        audio.muted = true;
+      });
+    }
+
+    function ensureMixerGraph() {
+      var ctx = ensureAudioContext();
+      if (!ctx || musicGain) return;
+      musicGain = ctx.createGain();
+      musicGain.gain.value = musicMuted ? 0 : musicVolume;
+      musicGain.connect(ctx.destination);
+    }
+
+    function startMusicSource() {
+      var ctx = ensureAudioContext();
+      if (!ctx || !musicBuffer || musicSource) return;
+      ensureMixerGraph();
+      musicSource = ctx.createBufferSource();
+      musicSource.buffer = musicBuffer;
+      musicSource.loop = true;
+      musicSource.connect(musicGain);
+      musicSource.start(0);
+    }
+
+    function startVoiceSource() {
+      var ctx = ensureAudioContext();
+      if (!ctx || !voiceBuffer) return;
+      if (voiceSource) {
+        try { voiceSource.stop(); } catch (e) {}
+        try { voiceSource.disconnect(); } catch (e) {}
+        voiceSource = null;
+      }
+      voiceSource = ctx.createBufferSource();
+      voiceSource.buffer = voiceBuffer;
+      voiceSource.connect(ctx.destination);
+      voiceSource.onended = function () { voiceSource = null; };
+      voiceSource.start(0);
+    }
 
     function applyMusicGain() {
+      if (musicGain) {
+        musicGain.gain.value = musicMuted ? 0 : musicVolume;
+        return;
+      }
       if (applying) return;
       applying = true;
       try {
@@ -181,15 +263,45 @@
           }
         });
       }
+      decodeUrl(musicUrl).then(function (buf) { musicBuffer = buf; }).catch(function () {});
+    }
+    if (voiceUrl) {
+      decodeUrl(voiceUrl).then(function (buf) { voiceBuffer = buf; }).catch(function () {});
+    }
+
+    function startAllMusic() {
+      return Promise.all(musicAudioElements().map(function (audio) {
+        if (!(audio.src || audio.currentSrc)) return Promise.resolve();
+        return audio.play().catch(function () {});
+      }));
+    }
+
+    function playMix(withVoice) {
+      unlockWebAudio();
+      if (mixerAvailable()) {
+        ensureMixerGraph();
+        applyMusicGain();
+        silenceHtmlAudio();
+        if (musicUrl) startMusicSource();
+        if (withVoice) startVoiceSource();
+        removeMusicUnlockListeners();
+        return Promise.resolve();
+      }
+      applyMusicGain();
+      var playing = startAllMusic();
+      if (withVoice && voiceAudio) {
+        voiceAudio.muted = false;
+        try { voiceAudio.currentTime = 0; } catch (e) {}
+        voiceAudio.play().catch(function () {});
+      }
+      addMusicUnlockListeners();
+      return playing;
     }
 
     function playMusic() {
-      applyMusicGain();
-      return Promise.all(musicAudioElements().map(function (audio) {
-        if (!(audio.src || audio.currentSrc)) return Promise.resolve();
-        return audio.play();
-      }));
+      return playMix(false);
     }
+    window.__inxkPlayBackgroundMusic = playMusic;
 
     function setMuted(muted) {
       musicMuted = muted;
@@ -202,9 +314,10 @@
       applyMusicGain();
     }
 
-    var unlockEvents = ['click', 'touchstart', 'keydown'];
+    var unlockEvents = ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'];
     function unlockMusic() {
-      playMusic().then(removeMusicUnlockListeners).catch(function () {});
+      userGestured = true;
+      playMix(voiceRevealed);
     }
     function addMusicUnlockListeners() {
       unlockEvents.forEach(function (eventName) {
@@ -219,15 +332,16 @@
 
     function tryAutoplayMusic() {
       if (!musicUrl) return;
-      playMusic().then(removeMusicUnlockListeners).catch(function () {
-        addMusicUnlockListeners();
-      });
+      addMusicUnlockListeners();
     }
+
+    var voiceRevealed = false;
 
     if (musicUrl) {
       muteButton.addEventListener('click', function () {
+        var turningOn = musicMuted;
         setMuted(!musicMuted);
-        if (!musicMuted) tryAutoplayMusic();
+        if (turningOn && !musicSource) playMix(false);
       });
       setMuted(false);
       tryAutoplayMusic();
@@ -235,16 +349,14 @@
 
     if (voiceAudio) {
       function playVoiceFromStart() {
-        voiceAudio.muted = false;
-        voiceAudio.volume = 1;
-        try { voiceAudio.currentTime = 0; } catch (e) {}
-        playMusic().catch(function () {});
-        voiceAudio.play().catch(function () {});
+        playMix(true);
       }
 
-      var voiceRevealed = false;
       function revealVoice() {
-        if (voiceRevealed) return;
+        if (voiceRevealed) {
+          playMix(true);
+          return;
+        }
         voiceRevealed = true;
         replayButton.hidden = false;
         playVoiceFromStart();
@@ -294,34 +406,27 @@
         overlayObserver.observe(lovedaysOverlayEl, { attributes: true, attributeFilter: ['class'] });
       } else {
         replayButton.hidden = false;
-        voiceAudio.play().then(function () {
-          voiceRevealed = true;
-        }).catch(function () {
-          unlockEvents.forEach(function (eventName) {
-            document.addEventListener(eventName, revealVoice, { once: true });
-          });
+        unlockEvents.forEach(function (eventName) {
+          document.addEventListener(eventName, revealVoice, { once: true });
         });
       }
 
       replayButton.addEventListener('click', playVoiceFromStart);
     }
 
-    ['pointerdown', 'touchstart', 'keydown'].forEach(function (eventName) {
+    ['pointerdown', 'touchstart', 'touchend', 'keydown'].forEach(function (eventName) {
       document.addEventListener(eventName, function onFirstGesture() {
         document.removeEventListener(eventName, onFirstGesture);
         userGestured = true;
-        applyMusicGain();
+        playMix(false);
       }, true);
     });
 
     var observer = new MutationObserver(function () {
-      applyMusicGain();
+      if (!mixerAvailable()) applyMusicGain();
       if (musicUrl) muteButton.hidden = !!document.getElementById('musicBtn');
     });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
-    document.addEventListener('play', function (event) {
-      if (event.target !== voiceAudio) applyMusicGain();
-    }, true);
     applyMusicGain();
   }
 
