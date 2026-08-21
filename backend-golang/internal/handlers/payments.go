@@ -106,6 +106,72 @@ func publicBaseURL() string {
 	return "https://" + d
 }
 
+// QR bank-transfer content is INXK{orderID}Q{qrName} (e.g. INXK196Q122611).
+// The Q separator is required because qr_name may be all digits; without it
+// INXK196122611 is indistinguishable from order 196122611.
+const qrPaymentCodeSep = "Q"
+
+var qrPayCodeRe = regexp.MustCompile(`(?i)INXK\s*(\d+)\s*[A-Za-z_-]`)
+
+func qrPaymentCode(orderID int, qrName string) string {
+	return fmt.Sprintf("INXK%d%s%s", orderID, qrPaymentCodeSep, qrName)
+}
+
+func paymentCodeFromQRURL(qrURL, fallback string) string {
+	u, err := url.Parse(qrURL)
+	if err != nil {
+		return fallback
+	}
+	if des := strings.TrimSpace(u.Query().Get("des")); des != "" {
+		return des
+	}
+	return fallback
+}
+
+// parseQRPaymentOrderID extracts the order id from transfer content.
+// New codes: INXK196Q122611. Legacy letter names: INXK42anhyeuem.
+// All-digit legacy codes (INXK196122611) return ok=false; the webhook
+// falls back to matching pending rows by full payment code.
+func parseQRPaymentOrderID(content string) (int, bool) {
+	m := qrPayCodeRe.FindStringSubmatch(content)
+	if len(m) < 2 {
+		return 0, false
+	}
+	id, err := strconv.Atoi(m[1])
+	return id, err == nil && id > 0
+}
+
+func lookupPendingQROrderID(content string) (int, error) {
+	var id int
+	err := config.DB.QueryRow(context.Background(), `
+		SELECT o.id
+		FROM orders o
+		JOIN qr_transaction t ON t.order_id = o.id AND t.status = 'pending'
+		WHERE o.payment_status = 'pending'
+		  AND (
+		    $1 ILIKE '%' || ('INXK' || o.id::text || 'Q' || o.qr_name) || '%'
+		    OR $1 ILIKE '%' || ('INXK' || o.id::text || o.qr_name) || '%'
+		  )
+		ORDER BY
+		  CASE WHEN $1 ILIKE '%' || ('INXK' || o.id::text || 'Q' || o.qr_name) || '%' THEN 0 ELSE 1 END,
+		  length('INXK' || o.id::text || o.qr_name) DESC,
+		  o.id DESC
+		LIMIT 1`, content).Scan(&id)
+	return id, err
+}
+
+func resolveQRWebhookOrderID(content string) (int, error) {
+	if id, ok := parseQRPaymentOrderID(content); ok {
+		var pending int
+		err := config.DB.QueryRow(context.Background(),
+			"SELECT id FROM qr_transaction WHERE order_id = $1 AND status = 'pending'", id).Scan(&pending)
+		if err == nil {
+			return id, nil
+		}
+	}
+	return lookupPendingQROrderID(content)
+}
+
 // POST /api/payments/product-checkout — signed SePay Checkout for a product_order.
 func CreateProductCheckout(w http.ResponseWriter, r *http.Request) {
 	merchantID := sepayMerchantID()
@@ -200,7 +266,7 @@ func CreateCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	amount := int(math.Round(totalAmount))
-	invoiceNo := fmt.Sprintf("INXK%d%s", body.OrderID, qrName)
+	invoiceNo := qrPaymentCode(body.OrderID, qrName)
 	baseURL := publicBaseURL()
 
 	fields := map[string]string{
@@ -253,7 +319,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	var txID int
 	var txQRURL string
 	if err := existRow.Scan(&txID, &txQRURL); err == nil {
-		paymentCode := fmt.Sprintf("INXK%d%s", orderID, qrName)
+		paymentCode := paymentCodeFromQRURL(txQRURL, qrPaymentCode(orderID, qrName))
 		OK(w, map[string]any{
 			"success": true,
 			"payment": map[string]any{
@@ -270,7 +336,7 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	amount := int(math.Round(totalAmount))
-	paymentCode := fmt.Sprintf("INXK%d%s", orderID, qrName)
+	paymentCode := qrPaymentCode(orderID, qrName)
 	qrURL := fmt.Sprintf(
 		"https://qr.sepay.vn/img?acc=%s&bank=%s&amount=%d&des=%s&template=compact",
 		url.QueryEscape(sepayAccountNo()),
@@ -339,13 +405,11 @@ func QRPaymentWebhook(w http.ResponseWriter, r *http.Request) {
 
 	webhookRaw, _ := json.Marshal(payload)
 
-	re := regexp.MustCompile(`(?i)INXK(\d+)`)
-	match := re.FindStringSubmatch(payload.Content)
-	if match == nil {
+	orderID, err := resolveQRWebhookOrderID(payload.Content)
+	if err != nil {
 		OK(w, map[string]any{"success": true, "message": "No matching order code found in content"})
 		return
 	}
-	orderID, _ := strconv.Atoi(match[1])
 
 	txRow := config.DB.QueryRow(context.Background(),
 		"SELECT id, amount FROM qr_transaction WHERE order_id = $1 AND status = 'pending'", orderID)
@@ -848,7 +912,7 @@ func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fullUrl := orderQRName + "." + domain()
-	paymentCode := fmt.Sprintf("INXK%d%s", orderID, orderQRName)
+	paymentCode := qrPaymentCode(orderID, orderQRName)
 
 	txRows, err := config.DB.Query(context.Background(), `
 		SELECT id, amount, status, payment_qr_url, paid_at, created_at
@@ -858,6 +922,9 @@ func GetPaymentByQR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tx, _ := CollectOne(txRows)
+	if tx != nil {
+		paymentCode = paymentCodeFromQRURL(MapStr(tx, "payment_qr_url"), paymentCode)
+	}
 
 	var paymentResp any
 	if tx != nil {

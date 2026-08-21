@@ -1415,7 +1415,7 @@ function OrderPage() {
       <div className="qr-audio-addons">
         <p className="qr-audio-addons-hint">
           <span className="qr-audio-addons-badge">Đặc biệt</span>
-          Nhạc nền tạo cảm xúc, giọng nói chạm đến trái tim — chọn cả hai để món quà trọn vẹn nhất.
+          Bạn có thể chọn nhạc nền và thêm lời nhắn bằng giọng nói cùng lúc. Để lời nhắn chạm đến trái tim của người thương
         </p>
 
         <MusicOption

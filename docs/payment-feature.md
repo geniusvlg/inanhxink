@@ -59,7 +59,22 @@ OrderPage → /payment/:qrName → PaymentPage.tsx
 
 ### Payment code format
 
-`INXK{orderID}{qrName}` — e.g. `INXK42anhyeuem`
+`INXK{orderID}Q{qrName}` — e.g. `INXK42Qanhyeuem`, `INXK196Q122611`.
+
+The `Q` separator is required because `qr_name` may be all digits. The old
+format `INXK{orderID}{qrName}` turned order `196` + name `122611` into
+`INXK196122611`, which the webhook regex `INXK(\d+)` read as order
+`196122611`.
+
+Webhook matching:
+
+1. Prefer `INXK{id}Q…` (and legacy letter names `INXK42anhyeuem`).
+2. Fall back to pending `qr_transaction` rows whose full code
+   (`INXK{id}Q{qrName}` or legacy `INXK{id}{qrName}`) appears in the transfer
+   content — so already-issued QRs like `INXK196122611` still confirm.
+
+Existing pending QR images keep the `des=` already encoded in
+`payment_qr_url`; the payment page displays that value, not a regenerated code.
 
 ### On webhook confirm
 
