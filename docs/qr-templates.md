@@ -17,6 +17,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
 | `farewell` | `farewell` | Friend name, origin city, destination/date, farewell letter, and 1–8 stages each with an optional image and message |
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
+| `snowheart` | `snowheart` | Up to five short messages revealed one by one inside a heart formed from snow |
 
 ### Farewell / Bon Voyage
 
@@ -135,6 +136,24 @@ site (80k mobile / 120k desktop, lower in in-app browsers). The starfield,
 galaxy disk, and shooting stars stay behind the globe after the text sequence.
 `prefers-reduced-motion` skips the particle-text sequence and goes straight to the globe.
 Seeded by `V66__seed_loveburst_template.sql`.
+
+## Snow Heart
+
+A full-screen Three.js winter scene opens on falling snow and photo flakes.
+Soft shooting stars periodically cross the deep-blue background.
+An animated heart invitation, matching Love Burst's tap affordance, makes the
+required interaction explicit. Tapping it starts the original reveal sequence:
+the camera descends, snow spirals upward into a beating heart, and the configured
+`candyTexts` wrap around it as rotating text rings. Orbit controls remain
+enabled after reveal.
+
+Order JSON stores `candyTexts`, up to 12 optional raw-S3 `imageUrls`, and the
+shared optional `musicUrl` and voice fields. Each message is limited to 60
+characters. Uploaded photos are downscaled client-side for GPU efficiency and
+orbit outside the rotating text rings after the reveal; public responses rewrite
+their URLs to the CDN. The authorized template source and its four PNG particle
+assets are kept locally; Three.js 0.157 and its controls/post-processing modules
+load from jsDelivr. Seeded by `V68__seed_snowheart_template.sql`.
 
 ## Shared Voice Player
 

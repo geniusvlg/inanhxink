@@ -21,7 +21,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -34,6 +34,7 @@ var templateFolderMap = map[string]string{
 	"specialgift":   "specialgift",
 	"farewell":      "farewell",
 	"loveburst":     "loveburst",
+	"snowheart":     "snowheart",
 }
 
 func domain() string {
@@ -121,7 +122,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst, snowheart"))
 		return
 	}
 
@@ -144,7 +145,34 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "Nội dung thư không được quá 400 ký tự")
 		return
 	}
+	if resolvedType == "snowheart" {
+		rawMessages, _ := body["snowheartMessages"].([]any)
+		if len(rawMessages) > 5 {
+			BadRequest(w, "Snow Heart cần từ 1 đến 5 câu lời nhắn")
+			return
+		}
+		nonEmptyMessages := 0
+		for _, item := range rawMessages {
+			text, _ := item.(string)
+			text = strings.TrimSpace(text)
+			if text != "" {
+				nonEmptyMessages++
+			}
+			if utf8.RuneCountInString(text) > 60 {
+				BadRequest(w, "Mỗi câu Snow Heart tối đa 60 ký tự")
+				return
+			}
+		}
+		if nonEmptyMessages == 0 {
+			BadRequest(w, "Snow Heart cần từ 1 đến 5 câu lời nhắn")
+			return
+		}
+	}
 	imageUrls, _ := body["imageUrls"].([]any)
+	if resolvedType == "snowheart" && len(imageUrls) > 12 {
+		BadRequest(w, "Snow Heart hỗ trợ tối đa 12 ảnh")
+		return
+	}
 	musicUrl, _ := body["musicUrl"].(string)
 	musicLink, _ := body["musicLink"].(string)
 	musicAdded, _ := body["musicAdded"].(bool)
@@ -328,6 +356,20 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		templateData["messages"] = messages
+	case "snowheart":
+		messages := make([]string, 0, 5)
+		if raw, ok := body["snowheartMessages"].([]any); ok {
+			for _, item := range raw {
+				if len(messages) == 5 {
+					break
+				}
+				text, _ := item.(string)
+				if text = strings.TrimSpace(text); text != "" {
+					messages = append(messages, text)
+				}
+			}
+		}
+		templateData["candyTexts"] = messages
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls

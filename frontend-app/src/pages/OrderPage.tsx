@@ -17,7 +17,7 @@ import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
-const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell']);
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart']);
 
 const FAREWELL_DESTINATIONS = [
   ['australia', 'Úc'],
@@ -37,6 +37,7 @@ const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday',
 const DEFAULT_FAREWELL_STAGE_COUNT = 5;
 const MAX_FAREWELL_STAGES = 8;
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
+const DEFAULT_SNOWHEART_MESSAGES = ['Em có biết không', 'giữa hàng triệu bông tuyết', 'trái tim anh vẫn luôn', 'tìm thấy một người duy nhất', 'đó chính là em ♥'];
 const DEFAULT_MUSIC_VOLUME = 1;
 const DEFAULT_MIX_MUSIC_VOLUME = 0.4;
 
@@ -112,6 +113,7 @@ function OrderPage() {
   const [farewellStageMessages, setFarewellStageMessages] = useState<string[]>([]);
   const [loveburstTitle, setLoveburstTitle] = useState('Gửi bé iu 💖');
   const [loveburstMessages, setLoveburstMessages] = useState<string[]>(DEFAULT_LOVEBURST_MESSAGES);
+  const [snowheartMessages, setSnowheartMessages] = useState<string[]>(DEFAULT_SNOWHEART_MESSAGES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -207,6 +209,11 @@ function OrderPage() {
           const restoredMessages = d.loveburstMessages.split('\n');
           setLoveburstMessages(
             Array.from({ length: 4 }, (_, i) => restoredMessages[i] || ''),
+          );
+        }
+        if (Array.isArray(d.snowheartMessages)) {
+          setSnowheartMessages(
+            Array.from({ length: 5 }, (_, i) => String(d.snowheartMessages[i] || '')),
           );
         }
         if (d.imagePreviews?.length) {
@@ -516,6 +523,11 @@ function OrderPage() {
       if (content.length > 400) { setError('Nội dung thư không được quá 400 ký tự'); return; }
       if (!uploadedImages.some(Boolean)) { setError('Vui lòng tải lên ít nhất một ảnh'); return; }
     }
+    if (templateType === 'snowheart') {
+      const lines = snowheartMessages.map(s => s.trim()).filter(Boolean);
+      if (!lines.length) { setError('Vui lòng nhập ít nhất một câu lời nhắn Snow Heart'); return; }
+      if (lines.some(line => line.length > 60)) { setError('Mỗi câu Snow Heart tối đa 60 ký tự'); return; }
+    }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
     }
@@ -655,6 +667,9 @@ function OrderPage() {
           loveburstTitle: loveburstTitle.trim() || 'Gửi bé iu 💖',
           loveburstMessages: loveburstMessages.map(s => s.trim()).filter(Boolean),
         }),
+        ...(templateType === 'snowheart' && {
+          snowheartMessages: snowheartMessages.map(s => s.trim()).filter(Boolean),
+        }),
       });
 
       if (response.success) {
@@ -669,7 +684,7 @@ function OrderPage() {
             farewellFriendName, farewellFrom, farewellDestination,
             farewellDepartureDate, farewellMessage, farewellSender,
             farewellStageCount, farewellStageMessages,
-            loveburstTitle, loveburstMessages,
+            loveburstTitle, loveburstMessages, snowheartMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -841,6 +856,50 @@ function OrderPage() {
           <p style={{ color: '#6b7280', fontSize: '0.9rem', margin: 0 }}>
             Viết nội dung bên dưới để hiển thị trong popup thư.
           </p>
+        </div>
+      )}
+
+      {templateType === 'snowheart' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời nhắn trong trái tim tuyết</label>
+            <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#6b7280' }}>
+              Nhập tối đa 5 câu. Sau khi chạm, các câu sẽ xoay thành những vòng chữ quanh trái tim tuyết.
+            </p>
+          </div>
+          {snowheartMessages.map((text, index) => (
+            <div key={index} style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={text}
+                onChange={e => setSnowheartMessages(current => (
+                  current.map((value, messageIndex) => messageIndex === index ? e.target.value : value)
+                ))}
+                placeholder={`Câu ${index + 1}${index === 0 ? ' (bắt buộc)' : ' (không bắt buộc)'}`}
+                maxLength={60}
+                aria-label={`Lời nhắn Snow Heart ${index + 1}`}
+                style={{
+                  width: '100%',
+                  padding: '0.625rem 3.25rem 0.625rem 0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <span style={{
+                position: 'absolute',
+                right: '0.75rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#9ca3af',
+                fontSize: '0.75rem',
+                pointerEvents: 'none',
+              }}>
+                {text.length}/60
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1370,26 +1429,36 @@ function OrderPage() {
               />
             </>
           ) : (
-            <ImageUploader
-              images={uploadedImages}
-              onImagesChange={setUploadedImages}
-              maxImages={
-                templateType === 'galaxy'
-                  ? GALAXY_MAX_IMAGES
-                  : templateType === 'loveletter'
-                  ? LOVELETTER_MAX_IMAGES
-                  : QR_TEMPLATE_MAX_IMAGES
-              }
-              onImageSelected={() => {}}
-              initialPreviews={imagePreviews}
-              onPreviewsChange={setImagePreviews}
-              onNewFiles={handleNewFiles}
-              onFileRemoved={handleFileRemoved}
-              onRetry={handleRetry}
-              uploadStates={uploadStates}
-              disabled={!canUploadImages}
-              disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
-            />
+            <>
+              {templateType === 'snowheart' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh xoay quanh lời nhắn
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {QR_TEMPLATE_MAX_IMAGES} ảnh)
+                  </span>
+                </p>
+              )}
+              <ImageUploader
+                images={uploadedImages}
+                onImagesChange={setUploadedImages}
+                maxImages={
+                  templateType === 'galaxy'
+                    ? GALAXY_MAX_IMAGES
+                    : templateType === 'loveletter'
+                    ? LOVELETTER_MAX_IMAGES
+                    : QR_TEMPLATE_MAX_IMAGES
+                }
+                onImageSelected={() => {}}
+                initialPreviews={imagePreviews}
+                onPreviewsChange={setImagePreviews}
+                onNewFiles={handleNewFiles}
+                onFileRemoved={handleFileRemoved}
+                onRetry={handleRetry}
+                uploadStates={uploadStates}
+                disabled={!canUploadImages}
+                disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
+              />
+            </>
           )}
 
         </>
