@@ -181,7 +181,9 @@ the image slider. Its title and paper use the Snow Heart blue palette, and the
 letter content types in one character at a time (reduced-motion mode shows it
 immediately). Keyboard users can focus the canvas and press Enter or Space.
 Voice playback continues to start from the initial invitation tap, not from the
-letter action.
+letter action. Snow Heart binds music to the shared `#bg-audio` element and
+starts it through `window.__inxkPlayBackgroundMusic`, so simultaneous music and
+voice use the same saved-volume Web Audio mix as the other QR templates.
 
 ## Shared Voice Player
 

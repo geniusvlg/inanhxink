@@ -43,45 +43,27 @@ const LetterTitle =
   window.dataFromSubdomain.data.letterTitle.trim()
     ? window.dataFromSubdomain.data.letterTitle.trim()
     : "Gửi đến bạn";
-// Logic âm thanh giống y hệt galaxy template
-let echoheartAudio = null;
-let audioInitialized = false;
-function playEchoheartAudio() {
-  if (!audioInitialized) {
-    const musicUrl =
-      window.dataFromSubdomain &&
-      window.dataFromSubdomain.data &&
-      (window.dataFromSubdomain.data.musicUrl || window.dataFromSubdomain.data.music)
-        ? (window.dataFromSubdomain.data.musicUrl || window.dataFromSubdomain.data.music)
-        : "";
+const SnowheartMusicUrl =
+  window.dataFromSubdomain &&
+  window.dataFromSubdomain.data &&
+  (window.dataFromSubdomain.data.musicUrl || window.dataFromSubdomain.data.music)
+    ? window.dataFromSubdomain.data.musicUrl ||
+      window.dataFromSubdomain.data.music
+    : "";
+const backgroundAudio = document.getElementById("bg-audio");
+if (backgroundAudio && SnowheartMusicUrl) {
+  backgroundAudio.src = SnowheartMusicUrl;
+  backgroundAudio.loop = true;
+  backgroundAudio.preload = "auto";
+}
 
-    if (!musicUrl) {
-      audioInitialized = true;
-      return;
-    }
-
-    echoheartAudio = new Audio(musicUrl);
-    echoheartAudio.loop = true;
-    echoheartAudio.volume = 0.7;
-
-    // Handle audio errors gracefully
-    echoheartAudio.addEventListener("error", (e) => {
-      console.log("Audio file not found or cannot be loaded:", musicUrl);
-      echoheartAudio = null;
-    });
-
-    audioInitialized = true;
+function playSnowheartMusic() {
+  if (typeof window.__inxkPlayBackgroundMusic === "function") {
+    window.__inxkPlayBackgroundMusic();
+    return;
   }
-
-  if (echoheartAudio) {
-    // Only play if user has interacted and audio is ready
-    const playPromise = echoheartAudio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((error) => {
-        // Auto-play was prevented, user needs to interact first
-        console.log("Audio play prevented, waiting for user interaction");
-      });
-    }
+  if (backgroundAudio && backgroundAudio.src) {
+    backgroundAudio.play().catch(() => {});
   }
 }
 const letterDialog = document.getElementById("snowheart-letter-dialog");
@@ -2353,8 +2335,7 @@ function activateEffects(e) {
     !heartbeatEnabled)
   ) {
     if ((heartbeatEnabled = true)) {
-      // Phát âm thanh giống y hệt galaxy template
-      playEchoheartAudio();
+      playSnowheartMusic();
     }
     null === ribbonRevealStart &&
       ((ribbonRevealStart = clock.getElapsedTime()),
