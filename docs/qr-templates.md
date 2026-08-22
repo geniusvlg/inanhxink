@@ -19,6 +19,17 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages revealed one by one inside a heart formed from snow |
 
+Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
+and loads its blocking `app.js` at the end of the body. Do not defer that script
+behind another `/api/site-data` request: on a slow iPhone connection the shared
+audio player can otherwise receive the first tap before the envelope click
+handler exists, forcing the visitor to tap twice.
+
+Letter in Space keeps Three.js and `app.js` out of Cloudflare Rocket Loader and
+handles its start button in capture phase on `pointerdown`/`touchstart`. This
+ensures its visual transition starts before shared audio playback can suppress
+Safari's later synthetic `click`.
+
 ### Farewell / Bon Voyage
 
 A boarding pass opens the page. Pressing it hands the screen to a full-viewport
@@ -205,6 +216,14 @@ Three independent protections are in place; keep all of them when editing templa
    `DOMContentLoaded` even after the native event; without this guard, Galaxy
    creates a second WebGL renderer with placeholder textures over the correctly
    configured renderer.
+
+Click-only start controls that share an element with the voice player use
+idempotent, capture-phase `pointerdown`/`touchstart` handlers so their visual
+action begins before iOS Safari starts audio. Galaxy, Love Letter, Letter in
+Space, Farewell, Love Burst, Special Gift, and Snow Heart follow this pattern.
+Special Gift remains non-interactive until its eight-second intro finishes;
+Snow Heart queues an early tap until its module has installed the canvas reveal
+listener.
 
 The `galaxy` bootstrap also reads `window.__GALAXY_ID__` as a fallback for the
 `#id=` hash, because `index.html` strips that hash on `load` and a late-running
