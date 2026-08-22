@@ -113,7 +113,7 @@
     var data = rootData && rootData.data ? rootData.data : {};
     var voiceUrl = data.voiceRecordingUrl;
     var musicUrl = data.musicUrl;
-    var musicVolume = parseVolume(data.musicVolume, voiceUrl && musicUrl ? 0.03 : 1);
+    var musicVolume = parseVolume(data.musicVolume, voiceUrl && musicUrl ? 0.04 : 1);
     if ((!voiceUrl && !musicUrl) || document.getElementById('inxk-voice-player')) return;
 
     var needsGain = musicVolume < 1;
@@ -408,10 +408,12 @@
         });
       } else if (clickRevealEl) {
         var onRevealInteract = function () {
+          clickRevealEl.removeEventListener('pointerdown', onRevealInteract);
           clickRevealEl.removeEventListener('click', onRevealInteract);
           clickRevealEl.removeEventListener('touchstart', onRevealInteract);
           revealVoice();
         };
+        clickRevealEl.addEventListener('pointerdown', onRevealInteract);
         clickRevealEl.addEventListener('click', onRevealInteract);
         clickRevealEl.addEventListener('touchstart', onRevealInteract);
       } else if (lovedaysOverlayEl) {

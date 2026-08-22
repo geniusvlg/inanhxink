@@ -10,7 +10,7 @@ func TestResolveMusicVolume(t *testing.T) {
 		wantVolume float64
 	}{
 		{name: "music only defaults to full volume", wantVolume: 1},
-		{name: "music and voice default to three percent", hasVoice: true, wantVolume: 0.03},
+		{name: "music and voice default to four percent", hasVoice: true, wantVolume: 0.04},
 		{name: "explicit volume overrides mixed default", hasVoice: true, raw: 0.1, wantVolume: 0.1},
 		{name: "explicit zero is preserved", hasVoice: true, raw: 0.0, wantVolume: 0},
 		{name: "negative volume is clamped", raw: -0.5, wantVolume: 0},

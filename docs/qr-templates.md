@@ -197,7 +197,7 @@ Every active template receives the shared
 music mute button when background music exists, and a replay button after a
 voice recording has been revealed. Voice plays once at the template's reveal
 moment (not on loop); music loops at `template_data.musicVolume` (0–1, default
-0.03 with voice and 1 for music-only) and keeps that level while the voice
+0.04 with voice and 1 for music-only) and keeps that level while the voice
 plays. Existing template background-audio elements remain template-owned but
 follow the shared mute/volume when they
 use a known music element id. Letter cues such as birthday cake `#letterSound`

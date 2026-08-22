@@ -457,9 +457,9 @@ function musicVolumeFromOrder() {
   var data = (window.dataFromSubdomain && window.dataFromSubdomain.data) || window.siteData || {};
   var n = Number(data.musicVolume);
   if (data.musicVolume === undefined || data.musicVolume === null || data.musicVolume === "") {
-    return data.musicUrl && data.voiceRecordingUrl ? 0.03 : 1;
+    return data.musicUrl && data.voiceRecordingUrl ? 0.04 : 1;
   }
-  if (!isFinite(n)) return data.musicUrl && data.voiceRecordingUrl ? 0.03 : 1;
+  if (!isFinite(n)) return data.musicUrl && data.voiceRecordingUrl ? 0.04 : 1;
   if (n < 0) return 0;
   if (n > 1) return 1;
   return n;
