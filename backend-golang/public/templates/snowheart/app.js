@@ -2245,6 +2245,8 @@ fadeObjects.push(streamHeart),
     passive: !0,
     capture: !0,
   });
+window.__INXK_SNOWHEART_READY__ = true;
+window.dispatchEvent(new Event("inxk:snowheart-ready"));
 let lastTouchEnd = 0;
 document.addEventListener(
   "touchend",

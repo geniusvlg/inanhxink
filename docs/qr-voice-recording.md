@@ -10,8 +10,8 @@
    deletion, and re-recording without uploading anything.
 4. When music is ready, the order page shows **Nghe thử** plus an **Âm lượng
    nhạc nền** slider. If a recording exists too, preview plays both: music
-   loops at the chosen volume. Voice plays once at full volume. The same mix
-   is stored for the live QR page.
+   defaults to 4% and loops at the chosen volume. Voice plays once at full
+   volume. The same mix is stored for the live QR page.
 5. When the customer clicks **Thanh toán**, the recording is uploaded to
    `uploads/temp/{qrName}/` and attached to the pending order.
 6. After payment is confirmed (SePay webhook or admin mark-paid),
@@ -32,8 +32,8 @@ day.
   `voice_recording_price`.
 - `template_data.voiceRecordingUrl` stores the raw S3 URL.
 - `template_data.musicVolume` stores the chosen background volume as a 0–1
-  number (default `1` when omitted). It is not an asset URL and is not CDN
-  rewritten.
+  number. When omitted, it defaults to `0.04` if voice recording is also
+  selected, otherwise `1`. It is not an asset URL and is not CDN rewritten.
 - Public template responses rewrite audio URLs to the CDN; the database and
   admin APIs retain raw S3 URLs.
 
@@ -74,8 +74,9 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
 - Voice recordings play once at the template reveal moment (open letter, gift
   box, tap-to-start, …), at full volume. A **Nghe lại lời nhắn** button
   replays afterwards.
-- Music keeps playing at `musicVolume` while the voice plays; there is no
-  automatic ducking.
+- Music keeps playing at the saved `musicVolume` while the voice plays. When
+  the voice finishes, music rises to at least 50% (a higher saved volume is
+  preserved). Replaying the voice restores the saved mix for its duration.
 - If the browser blocks sound autoplay, playback begins after the visitor's
   first tap, click, or key press anywhere on the page.
 

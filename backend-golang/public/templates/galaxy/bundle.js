@@ -47544,11 +47544,16 @@ M\xE3i b\xEAn nhau!"></textarea>
             return;
           }
           tapOverlay.classList.remove("hidden");
+          let started = false;
           const start = () => {
+            if (started) return;
+            started = true;
             tapOverlay.classList.add("hidden");
             startMessageCountdown();
             if (window.audioManager?.playOnly) window.audioManager.playOnly();
           };
+          tapOverlay.addEventListener("pointerdown", start, { once: true, capture: true });
+          tapOverlay.addEventListener("touchstart", start, { once: true, capture: true, passive: true });
           tapOverlay.addEventListener("click", start, { once: true });
         }
         function tryHideOverlay() {

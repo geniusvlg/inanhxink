@@ -171,6 +171,12 @@
     var musicGain = null;
     var musicSource = null;
     var voiceSource = null;
+    var activeMusicVolume = musicVolume;
+
+    function finishVoicePlayback() {
+      activeMusicVolume = Math.max(musicVolume, 0.5);
+      applyMusicGain();
+    }
 
     function mixerAvailable() {
       if (!ensureAudioContext()) return false;
@@ -190,7 +196,7 @@
       var ctx = ensureAudioContext();
       if (!ctx || musicGain) return;
       musicGain = ctx.createGain();
-      musicGain.gain.value = musicMuted ? 0 : musicVolume;
+      musicGain.gain.value = musicMuted ? 0 : activeMusicVolume;
       musicGain.connect(ctx.destination);
     }
 
@@ -209,20 +215,28 @@
       var ctx = ensureAudioContext();
       if (!ctx || !voiceBuffer) return;
       if (voiceSource) {
+        voiceSource.onended = null;
         try { voiceSource.stop(); } catch (e) {}
         try { voiceSource.disconnect(); } catch (e) {}
         voiceSource = null;
       }
-      voiceSource = ctx.createBufferSource();
-      voiceSource.buffer = voiceBuffer;
-      voiceSource.connect(ctx.destination);
-      voiceSource.onended = function () { voiceSource = null; };
-      voiceSource.start(0);
+      activeMusicVolume = musicVolume;
+      applyMusicGain();
+      var source = ctx.createBufferSource();
+      voiceSource = source;
+      source.buffer = voiceBuffer;
+      source.connect(ctx.destination);
+      source.onended = function () {
+        if (voiceSource !== source) return;
+        voiceSource = null;
+        finishVoicePlayback();
+      };
+      source.start(0);
     }
 
     function applyMusicGain() {
       if (musicGain) {
-        musicGain.gain.value = musicMuted ? 0 : musicVolume;
+        musicGain.gain.value = musicMuted ? 0 : activeMusicVolume;
         return;
       }
       if (applying) return;
@@ -232,18 +246,20 @@
           prepareMusicElement(audio);
           var gain = needsGain ? gainFor(audio) : null;
           if (gain) {
-            gain.gain.value = musicMuted ? 0 : musicVolume;
+            gain.gain.value = musicMuted ? 0 : activeMusicVolume;
             audio.muted = musicMuted;
             try { audio.volume = 1; } catch (e) {}
             return;
           }
           audio.muted = musicMuted;
-          try { audio.volume = musicMuted ? 0 : musicVolume; } catch (e) {}
+          try { audio.volume = musicMuted ? 0 : activeMusicVolume; } catch (e) {}
         });
       } finally {
         applying = false;
       }
     }
+
+    if (voiceAudio) voiceAudio.addEventListener('ended', finishVoicePlayback);
 
     if (musicUrl) {
       var existingMusic = musicAudioElements();
@@ -278,6 +294,7 @@
 
     function playMix(withVoice) {
       unlockWebAudio();
+      if (withVoice) activeMusicVolume = musicVolume;
       if (mixerAvailable()) {
         ensureMixerGraph();
         applyMusicGain();

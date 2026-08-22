@@ -536,8 +536,13 @@ function init() {
     syncMusicBtn();
   }
 
-  // Envelope seal click → open/close envelope
-  if (openLetterBtn) openLetterBtn.addEventListener("click", handleEnvelopeClick);
+  // Start the visual action before shared audio's bubble-phase touch handler.
+  // iOS Safari can suppress the synthetic click after audio begins.
+  if (openLetterBtn) {
+    openLetterBtn.addEventListener("pointerdown", handleEnvelopeClick, true);
+    openLetterBtn.addEventListener("touchstart", handleEnvelopeClick, { capture: true, passive: true });
+    openLetterBtn.addEventListener("click", handleEnvelopeClick);
+  }
 
   // Paper / label click → open/close card (or open envelope if it was already open)
   const letterLabel = document.getElementById("letterLabel");

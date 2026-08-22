@@ -391,6 +391,9 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if resolvedMusicUrl != "" {
 		templateData["musicUrl"] = resolvedMusicUrl
 		musicVolume := 1.0
+		if voiceRecordingAdded {
+			musicVolume = 0.04
+		}
 		if raw, ok := body["musicVolume"]; ok && raw != nil {
 			musicVolume = math.Min(1, math.Max(0, toFloat(raw)))
 		}
