@@ -39,7 +39,7 @@ const MAX_FAREWELL_STAGES = 8;
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
 const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
-const DEFAULT_MIX_MUSIC_VOLUME = 0.04;
+const DEFAULT_MIX_MUSIC_VOLUME = 0.03;
 
 interface Voucher {
   code: string;
@@ -1544,6 +1544,7 @@ function OrderPage() {
         <AudioMixPreview
           musicUrl={resolveAssetUrl(musicLink)}
           voiceFile={voiceRecordingAdded ? voiceRecording?.file ?? null : null}
+          voiceEnabled={voiceRecordingAdded}
           volume={musicVolume}
           onVolumeChange={handleMusicVolumeChange}
           resetToken={mixResetToken}

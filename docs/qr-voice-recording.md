@@ -8,10 +8,12 @@
    maximum duration of 30 seconds.
 3. The recording remains an in-memory browser `Blob`, allowing replay,
    deletion, and re-recording without uploading anything.
-4. When music is ready, the order page shows **Nghe thử** plus an **Âm lượng
-   nhạc nền** slider. If a recording exists too, preview plays both: music
-   defaults to 4% and loops at the chosen volume. Voice plays once at full
-   volume. The same mix is stored for the live QR page.
+4. When music is ready, the order page shows **Nghe thử**. Selecting the voice
+   recording add-on also reveals minus/plus **Âm lượng nhạc nền** buttons that
+   change the exact percentage by 1% per press; music-only orders do not show
+   these mix controls. With both selected, music defaults to 3% and loops at
+   the chosen volume. Voice plays once at full volume. The same mix is stored
+   for the live QR page.
 5. When the customer clicks **Thanh toán**, the recording is uploaded to
    `uploads/temp/{qrName}/` and attached to the pending order.
 6. After payment is confirmed (SePay webhook or admin mark-paid),
@@ -32,10 +34,15 @@ day.
   `voice_recording_price`.
 - `template_data.voiceRecordingUrl` stores the raw S3 URL.
 - `template_data.musicVolume` stores the chosen background volume as a 0–1
-  number. When omitted, it defaults to `0.04` if voice recording is also
+  number. When omitted, it defaults to `0.03` if voice recording is also
   selected, otherwise `1`. It is not an asset URL and is not CDN rewritten.
 - Public template responses rewrite audio URLs to the CDN; the database and
   admin APIs retain raw S3 URLs.
+- `V69__normalize_mixed_audio_volume.sql` sets existing `qr_codes` and `orders`
+  containing both `musicUrl` and `voiceRecordingUrl` to `musicVolume: 0.03`.
+  This intentionally normalizes all existing mixed-audio records, including
+  those that previously stored a different explicit volume. Choices submitted
+  after the migration remain preserved.
 
 Schema changes are in `backend-golang/database/V61__qr_voice_recording.sql`.
 
@@ -63,6 +70,9 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
 - Background music loops at `musicVolume` (0–1). A mute button controls music
   only (hidden on templates that already have `#musicBtn`: Love Letter, Love
   Days).
+- Legacy live QR data that has both music and voice but no `musicVolume` falls
+  back to 3%; music-only data falls back to 100%. Any stored explicit volume is
+  preserved.
 - The shared player preloads music and voice into one Web Audio graph and
   mixes them to a single output: music through a GainNode at `musicVolume`,
   voice at full level. That avoids iOS Safari fighting two `<audio>` tags

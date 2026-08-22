@@ -456,7 +456,10 @@ let musicMuted      = false;
 function musicVolumeFromOrder() {
   var data = (window.dataFromSubdomain && window.dataFromSubdomain.data) || window.siteData || {};
   var n = Number(data.musicVolume);
-  if (!isFinite(n)) return 1;
+  if (data.musicVolume === undefined || data.musicVolume === null || data.musicVolume === "") {
+    return data.musicUrl && data.voiceRecordingUrl ? 0.03 : 1;
+  }
+  if (!isFinite(n)) return data.musicUrl && data.voiceRecordingUrl ? 0.03 : 1;
   if (n < 0) return 0;
   if (n > 1) return 1;
   return n;
