@@ -19,6 +19,17 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages revealed one by one inside a heart formed from snow |
 
+Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
+and loads its blocking `app.js` at the end of the body. Do not defer that script
+behind another `/api/site-data` request: on a slow iPhone connection the shared
+audio player can otherwise receive the first tap before the envelope click
+handler exists, forcing the visitor to tap twice.
+
+Letter in Space keeps Three.js and `app.js` out of Cloudflare Rocket Loader and
+handles its start button in capture phase on `pointerdown`/`touchstart`. This
+ensures its visual transition starts before shared audio playback can suppress
+Safari's later synthetic `click`.
+
 ### Farewell / Bon Voyage
 
 A boarding pass opens the page. Pressing it hands the screen to a full-viewport
@@ -148,12 +159,29 @@ the camera descends, snow spirals upward into a beating heart, and the configure
 enabled after reveal.
 
 Order JSON stores `candyTexts`, up to 12 optional raw-S3 `imageUrls`, and the
-shared optional `musicUrl` and voice fields. Each message is limited to 60
-characters. Uploaded photos are downscaled client-side for GPU efficiency and
-orbit outside the rotating text rings after the reveal; public responses rewrite
-their URLs to the CDN. The authorized template source and its four PNG particle
-assets are kept locally; Three.js 0.157 and its controls/post-processing modules
-load from jsDelivr. Seeded by `V68__seed_snowheart_template.sql`.
+shared optional `musicUrl` and voice fields. All five message inputs initialize
+empty, and each message is limited to 60 characters. Sentence one starts on
+the innermost ring, with each following sentence placed farther outward and
+revealed in that order. Uploaded photos are downscaled client-side for GPU
+efficiency and orbit outside the rotating text rings after the reveal; public
+responses rewrite their URLs to the CDN. The authorized template source and its
+four PNG particle assets are kept locally; Three.js 0.157 and its
+controls/post-processing modules load from jsDelivr. Seeded by
+`V68__seed_snowheart_template.sql`.
+
+The heart scene is composited after the main photo scene with a cleared depth
+buffer, so snowflakes forming the heart always remain visually above orbiting
+photos.
+
+Snow Heart also accepts an optional `content` letter of up to 400 characters
+and an optional `letterTitle` of up to 50 characters. When present, the formed
+snow heart becomes clickable after the reveal. Clicking or tapping the heart
+displays a text-only Love Burst-style letter dialog; Snow Heart does not include
+the image slider. Its title and paper use the Snow Heart blue palette, and the
+letter content types in one character at a time (reduced-motion mode shows it
+immediately). Keyboard users can focus the canvas and press Enter or Space.
+Voice playback continues to start from the initial invitation tap, not from the
+letter action.
 
 ## Shared Voice Player
 
@@ -205,6 +233,14 @@ Three independent protections are in place; keep all of them when editing templa
    `DOMContentLoaded` even after the native event; without this guard, Galaxy
    creates a second WebGL renderer with placeholder textures over the correctly
    configured renderer.
+
+Click-only start controls that share an element with the voice player use
+idempotent, capture-phase `pointerdown`/`touchstart` handlers so their visual
+action begins before iOS Safari starts audio. Galaxy, Love Letter, Letter in
+Space, Farewell, Love Burst, Special Gift, and Snow Heart follow this pattern.
+Special Gift remains non-interactive until its eight-second intro finishes;
+Snow Heart queues an early tap until its module has installed the canvas reveal
+listener.
 
 The `galaxy` bootstrap also reads `window.__GALAXY_ID__` as a fallback for the
 `#id=` hash, because `index.html` strips that hash on `load` and a late-running

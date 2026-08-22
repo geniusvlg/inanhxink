@@ -147,16 +147,10 @@
     </div>
   </div>
 
-<script>
-  var _sub = window.__SUBDOMAIN__ || '';
-  fetch('/api/site-data' + (_sub ? '?sub=' + _sub : ''))
-    .then(function(r) { return r.json(); })
-    .then(function(data) { window.siteData = (data && data.template_data) ? data.template_data : {}; })
-    .catch(function() { window.siteData = null; })
-    .finally(function() {
-      var s = document.createElement('script');
-      s.src = './app.js';
-      document.body.appendChild(s);
-    });
+<script data-cfasync="false">
+  window.siteData = window.dataFromSubdomain && window.dataFromSubdomain.data
+    ? window.dataFromSubdomain.data
+    : null;
 </script>
+<script data-cfasync="false" src="./app.js?v=20260822-1"></script>
 </body></html>

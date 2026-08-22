@@ -876,10 +876,10 @@
 </head>
 <body>
 <!-- Three.js and related libraries via CDN -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/TrackballControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS3DRenderer.js"></script>
+<script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+<script data-cfasync="false" src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+<script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/TrackballControls.js"></script>
+<script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS3DRenderer.js"></script>
 
 <!-- ============ SCREEN 1: HEART ============ -->
 <div id="heartScreen">
@@ -892,7 +892,7 @@
   <canvas id="pinkboard"></canvas>
   <canvas id="explodeCanvas"></canvas>
   <div class="white-flash" id="whiteFlash"></div>
-  <div class="tap-hint" id="tapHint" onclick="startExplode()">Chạm để mở bất ngờ ❤️</div>
+  <div class="tap-hint" id="tapHint">Chạm để mở bất ngờ ❤️</div>
   <div class="person left" id="personLeft">
     <img src="images/boy.png" alt="Anh iu">
     <span>Anh iu</span>
@@ -956,10 +956,10 @@
 </audio>
 
 <!-- ============ DEMO DATA ============ -->
-<script src="demo-data.js"></script>
+<script data-cfasync="false" src="demo-data.js"></script>
 
 <!-- ============ HEART SCREEN SCRIPTS ============ -->
-<script>
+<script data-cfasync="false">
   // Load settings from injected order data first, then demo-data.js/localStorage.
   var injectedData = (window.dataFromSubdomain && window.dataFromSubdomain.data) || null;
   var savedSettings = injectedData ? {
@@ -1510,16 +1510,26 @@
 
   // ==================== TAP HINT + EXPLODE TRANSITION ====================
   var explodeTriggered = false;
+  var heartReady = false;
+  var heartScreen = document.getElementById('heartScreen');
+  heartScreen.style.pointerEvents = 'none';
+
   function triggerExplode() {
-      if (explodeTriggered) return;
+      if (!heartReady || explodeTriggered) return;
       explodeTriggered = true;
       startExplode();
   }
 
+  // Capture starts the visual transition before shared audio playback. On
+  // iOS Safari, starting audio during touchstart can suppress the later click.
+  heartScreen.addEventListener('pointerdown', triggerExplode, true);
+  heartScreen.addEventListener('touchstart', triggerExplode, { capture: true, passive: true });
+  heartScreen.addEventListener('click', triggerExplode);
+
   setTimeout(function() {
+    heartReady = true;
+    heartScreen.style.pointerEvents = '';
     document.getElementById('tapHint').classList.add('show');
-    document.getElementById('heartScreen').addEventListener('click', triggerExplode);
-    document.getElementById('heartScreen').addEventListener('touchend', triggerExplode);
     setTimeout(triggerExplode, 15000);
   }, 8000);
 
@@ -1673,7 +1683,7 @@
 </script>
 
 <!-- ============ GALLERY SCREEN SCRIPT ============ -->
-<script>
+<script data-cfasync="false">
   var galleryInitialized = false;
 
   function initGallery() {

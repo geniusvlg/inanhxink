@@ -145,7 +145,16 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "Nội dung thư không được quá 400 ký tự")
 		return
 	}
+	if resolvedType == "snowheart" && utf8.RuneCountInString(content) > 400 {
+		BadRequest(w, "Nội dung thư không được quá 400 ký tự")
+		return
+	}
 	if resolvedType == "snowheart" {
+		letterTitle, _ := body["snowheartLetterTitle"].(string)
+		if utf8.RuneCountInString(letterTitle) > 50 {
+			BadRequest(w, "Tiêu đề thư không được quá 50 ký tự")
+			return
+		}
 		rawMessages, _ := body["snowheartMessages"].([]any)
 		if len(rawMessages) > 5 {
 			BadRequest(w, "Snow Heart cần từ 1 đến 5 câu lời nhắn")
@@ -357,6 +366,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 		templateData["messages"] = messages
 	case "snowheart":
+		templateData["letterTitle"] = strOrDefault(body, "snowheartLetterTitle", "")
 		messages := make([]string, 0, 5)
 		if raw, ok := body["snowheartMessages"].([]any); ok {
 			for _, item := range raw {
@@ -391,6 +401,9 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if resolvedMusicUrl != "" {
 		templateData["musicUrl"] = resolvedMusicUrl
 		musicVolume := 1.0
+		if voiceRecordingAdded {
+			musicVolume = 0.04
+		}
 		if raw, ok := body["musicVolume"]; ok && raw != nil {
 			musicVolume = math.Min(1, math.Max(0, toFloat(raw)))
 		}

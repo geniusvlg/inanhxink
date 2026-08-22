@@ -137,11 +137,11 @@
 
   <audio id="audio" loop crossorigin="anonymous"></audio>
 
-  <script>
+  <script data-cfasync="false">
     // Data is injected by the backend as window.dataFromSubdomain
     var _data = (window.dataFromSubdomain && window.dataFromSubdomain.data) || {};
     window.siteData = _data;
   </script>
-  <script src="./app.js"></script>
+  <script data-cfasync="false" src="./app.js"></script>
 </body>
 </html>

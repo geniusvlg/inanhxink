@@ -293,7 +293,16 @@
     watchReveals();
 
     envelope.addEventListener('click', openEnvelope);
-    document.getElementById('startJourney').addEventListener('click', startFlight);
+    var journeyStarted = false;
+    var startJourneyButton = document.getElementById('startJourney');
+    function startJourneyOnce() {
+      if (journeyStarted) return;
+      journeyStarted = true;
+      startFlight();
+    }
+    startJourneyButton.addEventListener('pointerdown', startJourneyOnce, true);
+    startJourneyButton.addEventListener('touchstart', startJourneyOnce, { capture: true, passive: true });
+    startJourneyButton.addEventListener('click', startJourneyOnce);
     document.getElementById('skipFlight').addEventListener('click', function () {
       endFlight();
     });

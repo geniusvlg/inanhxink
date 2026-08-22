@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <title>Snow Heart</title>
-  <link rel="stylesheet" href="/templates/snowheart/styles.css">
-  <script type="importmap">
+  <link rel="stylesheet" href="/templates/snowheart/styles.css?v=20260823-5">
+  <script data-cfasync="false" type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js"
@@ -30,8 +30,24 @@
     </div>
   </div>
 
+  <p id="snowheart-letter-hint" hidden>Chạm vào trái tim để mở thư</p>
+
+  <div
+    id="snowheart-letter-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="snowheart-letter-title"
+    hidden
+  >
+    <article class="snowheart-letter-card">
+      <button id="snowheart-letter-close" type="button" aria-label="Đóng lá thư">&times;</button>
+      <h2 id="snowheart-letter-title">Gửi đến bạn</h2>
+      <p id="snowheart-letter-content"></p>
+    </article>
+  </div>
+
   <script data-cfasync="false" src="/templates/snowheart/demo-data.js"></script>
-  <script data-cfasync="false" type="module" src="/templates/snowheart/app.js"></script>
-  <script data-cfasync="false" src="/templates/snowheart/start-overlay.js"></script>
+  <script data-cfasync="false" type="module" src="/templates/snowheart/app.js?v=20260823-6"></script>
+  <script data-cfasync="false" src="/templates/snowheart/start-overlay.js?v=20260822-1"></script>
 </body>
 </html>

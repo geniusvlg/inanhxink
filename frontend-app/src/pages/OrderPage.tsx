@@ -37,9 +37,9 @@ const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday',
 const DEFAULT_FAREWELL_STAGE_COUNT = 5;
 const MAX_FAREWELL_STAGES = 8;
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
-const DEFAULT_SNOWHEART_MESSAGES = ['Em có biết không', 'giữa hàng triệu bông tuyết', 'trái tim anh vẫn luôn', 'tìm thấy một người duy nhất', 'đó chính là em ♥'];
+const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
-const DEFAULT_MIX_MUSIC_VOLUME = 0.4;
+const DEFAULT_MIX_MUSIC_VOLUME = 0.04;
 
 interface Voucher {
   code: string;
@@ -113,6 +113,7 @@ function OrderPage() {
   const [farewellStageMessages, setFarewellStageMessages] = useState<string[]>([]);
   const [loveburstTitle, setLoveburstTitle] = useState('Gửi bé iu 💖');
   const [loveburstMessages, setLoveburstMessages] = useState<string[]>(DEFAULT_LOVEBURST_MESSAGES);
+  const [snowheartLetterTitle, setSnowheartLetterTitle] = useState('');
   const [snowheartMessages, setSnowheartMessages] = useState<string[]>(DEFAULT_SNOWHEART_MESSAGES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -215,6 +216,9 @@ function OrderPage() {
           setSnowheartMessages(
             Array.from({ length: 5 }, (_, i) => String(d.snowheartMessages[i] || '')),
           );
+        }
+        if (typeof d.snowheartLetterTitle === 'string') {
+          setSnowheartLetterTitle(d.snowheartLetterTitle);
         }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
@@ -527,6 +531,8 @@ function OrderPage() {
       const lines = snowheartMessages.map(s => s.trim()).filter(Boolean);
       if (!lines.length) { setError('Vui lòng nhập ít nhất một câu lời nhắn Snow Heart'); return; }
       if (lines.some(line => line.length > 60)) { setError('Mỗi câu Snow Heart tối đa 60 ký tự'); return; }
+      if (snowheartLetterTitle.length > 50) { setError('Tiêu đề thư không được quá 50 ký tự'); return; }
+      if (content.length > 400) { setError('Nội dung thư không được quá 400 ký tự'); return; }
     }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
@@ -668,6 +674,7 @@ function OrderPage() {
           loveburstMessages: loveburstMessages.map(s => s.trim()).filter(Boolean),
         }),
         ...(templateType === 'snowheart' && {
+          snowheartLetterTitle: snowheartLetterTitle.trim(),
           snowheartMessages: snowheartMessages.map(s => s.trim()).filter(Boolean),
         }),
       });
@@ -684,7 +691,7 @@ function OrderPage() {
             farewellFriendName, farewellFrom, farewellDestination,
             farewellDepartureDate, farewellMessage, farewellSender,
             farewellStageCount, farewellStageMessages,
-            loveburstTitle, loveburstMessages, snowheartMessages,
+            loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -901,6 +908,31 @@ function OrderPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {templateType === 'snowheart' && (
+        <>
+          <div style={{ margin: '1rem 0 0.75rem' }}>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Tiêu đề thư <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={snowheartLetterTitle}
+              onChange={e => setSnowheartLetterTitle(e.target.value)}
+              placeholder="Ví dụ: Gửi đến người anh yêu 💖"
+              maxLength={50}
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <ContentEditor
+            value={content}
+            onChange={setContent}
+            label="Nội dung thư (không bắt buộc)"
+            placeholder="Nhập nội dung lá thư sẽ mở ra từ trái tim tuyết..."
+            maxLength={400}
+          />
+        </>
       )}
 
       {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (

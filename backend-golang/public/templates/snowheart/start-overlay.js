@@ -3,12 +3,16 @@
 
   var startWrap = document.getElementById('start-wrap');
   var started = false;
+  var startRequested = false;
 
   function start() {
     if (started) return;
 
     var canvas = document.querySelector('canvas');
-    if (!canvas) return;
+    if (!canvas || !window.__INXK_SNOWHEART_READY__) {
+      startRequested = true;
+      return;
+    }
 
     started = true;
     startWrap.classList.add('done');
@@ -23,6 +27,12 @@
     }, 600);
   }
 
+  window.addEventListener('inxk:snowheart-ready', function () {
+    if (startRequested) start();
+  }, { once: true });
+
+  startWrap.addEventListener('pointerdown', start, true);
+  startWrap.addEventListener('touchstart', start, { capture: true, passive: true });
   startWrap.addEventListener('click', start);
   startWrap.addEventListener('keydown', function (event) {
     if (event.key === 'Enter' || event.key === ' ') {

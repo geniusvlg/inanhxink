@@ -432,10 +432,13 @@ function createLoadingStars() {
 const startButton = document.getElementById('start-button');
 const loadingScreen = document.getElementById('loading-screen');
 const canvasElement = document.getElementById('threejs-canvas');
+let startTriggered = false;
 
 document.addEventListener('DOMContentLoaded', createLoadingStars);
 
 function handleStartClick() {
+    if (startTriggered) return;
+    startTriggered = true;
     if (startButton) startButton.classList.add('clicked');
     setTimeout(() => {
         if (loadingScreen) loadingScreen.classList.add('fade-out');
@@ -453,4 +456,10 @@ function handleStartClick() {
     }, 1000);
 }
 
-if (startButton) startButton.addEventListener('click', handleStartClick);
+if (startButton) {
+    // Capture runs before the shared voice player's bubble-phase touch handler.
+    // Starting audio on iOS Safari can otherwise suppress the synthetic click.
+    startButton.addEventListener('pointerdown', handleStartClick, true);
+    startButton.addEventListener('touchstart', handleStartClick, { capture: true, passive: true });
+    startButton.addEventListener('click', handleStartClick);
+}
