@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './AudioMixPreview.css';
 
 interface AudioMixPreviewProps {
   musicUrl: string;
   voiceFile: File | null;
+  voiceEnabled?: boolean;
   volume: number;
   onVolumeChange: (volume: number) => void;
   resetToken?: number;
@@ -15,7 +16,7 @@ function clampVolume(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-function VolumeSlider({
+function VolumeStepper({
   value,
   labelledBy,
   onChange,
@@ -24,63 +25,36 @@ function VolumeSlider({
   labelledBy: string;
   onChange: (volume: number) => void;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef(false);
   const percent = Math.round(clampVolume(value) * 100);
-
-  const setFromClientX = (clientX: number) => {
-    const track = trackRef.current;
-    if (!track) return;
-    const rect = track.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    onChange(clampVolume((clientX - rect.left) / rect.width));
-  };
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    draggingRef.current = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setFromClientX(event.clientX);
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return;
-    setFromClientX(event.clientX);
-  };
-
-  const stopDragging = () => {
-    draggingRef.current = false;
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
-      event.preventDefault();
-      onChange(clampVolume(value - 0.05));
-    }
-    if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      onChange(clampVolume(value + 0.05));
-    }
+  const setPercent = (nextPercent: number) => {
+    onChange(clampVolume(nextPercent / 100));
   };
 
   return (
     <div
-      ref={trackRef}
-      className="audio-mix-preview-slider"
-      role="slider"
-      tabIndex={0}
+      className="audio-mix-preview-stepper"
+      role="group"
       aria-labelledby={labelledBy}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={percent}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={stopDragging}
-      onPointerCancel={stopDragging}
-      onKeyDown={handleKeyDown}
     >
-      <div className="audio-mix-preview-slider-fill" style={{ width: `${percent}%` }} />
-      <div className="audio-mix-preview-slider-thumb" style={{ left: `${percent}%` }} />
+      <button
+        type="button"
+        className="audio-mix-preview-stepper-button"
+        aria-label="Giảm âm lượng nhạc nền 1%"
+        disabled={percent <= 0}
+        onClick={() => setPercent(percent - 1)}
+      >
+        −
+      </button>
+      <strong aria-live="polite">{percent}%</strong>
+      <button
+        type="button"
+        className="audio-mix-preview-stepper-button"
+        aria-label="Tăng âm lượng nhạc nền 1%"
+        disabled={percent >= 100}
+        onClick={() => setPercent(percent + 1)}
+      >
+        +
+      </button>
     </div>
   );
 }
@@ -88,6 +62,7 @@ function VolumeSlider({
 export default function AudioMixPreview({
   musicUrl,
   voiceFile,
+  voiceEnabled = false,
   volume,
   onVolumeChange,
   resetToken = 0,
@@ -234,7 +209,6 @@ export default function AudioMixPreview({
     onVolumeChange(clamped);
   };
 
-  const percent = Math.round(clampVolume(volume) * 100);
   const hasVoice = Boolean(voiceObjectUrl);
 
   return (
@@ -255,15 +229,16 @@ export default function AudioMixPreview({
         </p>
       )}
 
-      <div className="audio-mix-preview-volume">
-        <span id="audio-mix-volume-label">Âm lượng nhạc nền</span>
-        <VolumeSlider
-          value={clampVolume(volume)}
-          labelledBy="audio-mix-volume-label"
-          onChange={handleVolumeChange}
-        />
-        <strong>{percent}%</strong>
-      </div>
+      {voiceEnabled && (
+        <div className="audio-mix-preview-volume">
+          <span id="audio-mix-volume-label">Âm lượng nhạc nền</span>
+          <VolumeStepper
+            value={clampVolume(volume)}
+            labelledBy="audio-mix-volume-label"
+            onChange={handleVolumeChange}
+          />
+        </div>
+      )}
 
       <button
         type="button"

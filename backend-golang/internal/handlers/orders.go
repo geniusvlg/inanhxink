@@ -400,14 +400,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if resolvedMusicUrl != "" {
 		templateData["musicUrl"] = resolvedMusicUrl
-		musicVolume := 1.0
-		if voiceRecordingAdded {
-			musicVolume = 0.04
-		}
-		if raw, ok := body["musicVolume"]; ok && raw != nil {
-			musicVolume = math.Min(1, math.Max(0, toFloat(raw)))
-		}
-		templateData["musicVolume"] = musicVolume
+		templateData["musicVolume"] = resolveMusicVolume(voiceRecordingAdded, body["musicVolume"])
 	}
 	voiceRecordingURL = strings.TrimSpace(voiceRecordingURL)
 	if voiceRecordingAdded {
@@ -747,4 +740,15 @@ func parsePublicOrderItems(raw string) []OrderItem {
 		}
 	}
 	return items
+}
+
+func resolveMusicVolume(voiceRecordingAdded bool, raw any) float64 {
+	volume := 1.0
+	if voiceRecordingAdded {
+		volume = 0.03
+	}
+	if raw != nil {
+		volume = math.Min(1, math.Max(0, toFloat(raw)))
+	}
+	return volume
 }

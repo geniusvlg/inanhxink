@@ -1,9 +1,10 @@
 (function () {
   'use strict';
 
-  function parseVolume(value) {
+  function parseVolume(value, fallback) {
+    if (value === undefined || value === null || value === '') return fallback;
     var n = Number(value);
-    if (!isFinite(n)) return 1;
+    if (!isFinite(n)) return fallback;
     if (n < 0) return 0;
     if (n > 1) return 1;
     return n;
@@ -112,7 +113,7 @@
     var data = rootData && rootData.data ? rootData.data : {};
     var voiceUrl = data.voiceRecordingUrl;
     var musicUrl = data.musicUrl;
-    var musicVolume = parseVolume(data.musicVolume);
+    var musicVolume = parseVolume(data.musicVolume, voiceUrl && musicUrl ? 0.03 : 1);
     if ((!voiceUrl && !musicUrl) || document.getElementById('inxk-voice-player')) return;
 
     var needsGain = musicVolume < 1;
