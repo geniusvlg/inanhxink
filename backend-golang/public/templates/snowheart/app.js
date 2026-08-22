@@ -30,6 +30,19 @@ const PhotoUrls = (
 )
   .filter((url) => typeof url === "string" && url.trim())
   .slice(0, 12);
+const LetterContent =
+  window.dataFromSubdomain &&
+  window.dataFromSubdomain.data &&
+  typeof window.dataFromSubdomain.data.content === "string"
+    ? window.dataFromSubdomain.data.content.trim()
+    : "";
+const LetterTitle =
+  window.dataFromSubdomain &&
+  window.dataFromSubdomain.data &&
+  typeof window.dataFromSubdomain.data.letterTitle === "string" &&
+  window.dataFromSubdomain.data.letterTitle.trim()
+    ? window.dataFromSubdomain.data.letterTitle.trim()
+    : "Gửi đến bạn";
 // Logic âm thanh giống y hệt galaxy template
 let echoheartAudio = null;
 let audioInitialized = false;
@@ -71,6 +84,84 @@ function playEchoheartAudio() {
     }
   }
 }
+const letterDialog = document.getElementById("snowheart-letter-dialog");
+const letterCloseButton = document.getElementById("snowheart-letter-close");
+const letterTitleNode = document.getElementById("snowheart-letter-title");
+const letterContentNode = document.getElementById("snowheart-letter-content");
+const letterHint = document.getElementById("snowheart-letter-hint");
+let letterTransitionTimer = null;
+let letterTypeTimer = null;
+let snowheartLetterReady = false;
+
+function openSnowheartLetter(event) {
+  event?.stopPropagation();
+  if (
+    !LetterContent ||
+    !snowheartLetterReady ||
+    !letterDialog ||
+    !letterContentNode
+  ) {
+    return;
+  }
+  clearTimeout(letterTransitionTimer);
+  clearTimeout(letterTypeTimer);
+  if (letterTitleNode) letterTitleNode.textContent = LetterTitle;
+  letterContentNode.textContent = "";
+  letterContentNode.classList.add("is-typing");
+  letterDialog.hidden = false;
+  requestAnimationFrame(() => {
+    letterDialog.classList.add("is-visible");
+    letterCloseButton?.focus();
+  });
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    letterContentNode.textContent = LetterContent;
+    letterContentNode.classList.remove("is-typing");
+    return;
+  }
+  const characters = Array.from(LetterContent);
+  let characterIndex = 0;
+  const typeNextCharacter = () => {
+    if (characterIndex >= characters.length) {
+      letterContentNode.classList.remove("is-typing");
+      letterTypeTimer = null;
+      return;
+    }
+    letterContentNode.textContent += characters[characterIndex];
+    characterIndex += 1;
+    letterTypeTimer = window.setTimeout(typeNextCharacter, 30);
+  };
+  letterTypeTimer = window.setTimeout(typeNextCharacter, 350);
+}
+
+function closeSnowheartLetter() {
+  if (!letterDialog || letterDialog.hidden) return;
+  clearTimeout(letterTypeTimer);
+  letterTypeTimer = null;
+  letterContentNode?.classList.remove("is-typing");
+  letterDialog.classList.remove("is-visible");
+  letterTransitionTimer = window.setTimeout(() => {
+    letterDialog.hidden = true;
+    renderer.domElement.focus();
+  }, 350);
+}
+
+letterCloseButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  closeSnowheartLetter();
+});
+letterDialog?.addEventListener("click", (event) => {
+  if (event.target === letterDialog) closeSnowheartLetter();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && letterDialog && !letterDialog.hidden) {
+    closeSnowheartLetter();
+  }
+  if (event.key === "Tab" && letterDialog && !letterDialog.hidden) {
+    event.preventDefault();
+    letterCloseButton?.focus();
+  }
+});
+
 let cameraAnimationStart = null;
 const CAMERA_ANIMATION_DURATION = 5;
 let CAMERA_START_POSITION = { x: 0, y: 90, z: 30 };
@@ -114,8 +205,9 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const composerMain = new EffectComposer(renderer),
   renderPassMain = new RenderPass(scene, camera);
 (renderPassMain.clear = !1), composerMain.addPass(renderPassMain);
-const composerHeart = new EffectComposer(renderer);
-composerHeart.addPass(new RenderPass(heartScene, camera));
+const composerHeart = new EffectComposer(renderer),
+  renderPassHeart = new RenderPass(heartScene, camera);
+(renderPassHeart.clear = !1), composerHeart.addPass(renderPassHeart);
 scene.add(new THREE.AmbientLight(16777215, 0.6));
 const p1 = new THREE.PointLight(16777215, 1.2);
 p1.position.set(10, 10, 10), scene.add(p1);
@@ -870,7 +962,7 @@ for (let i = 0; i < RING_COUNT; i++) {
     }),
     ringMesh = new THREE.Mesh(ringGeo, ringMatLine);
   ringMesh.rotation.x = Math.PI;
-  const initRad = RING_START_RADIUS - 1.8 * i;
+  const initRad = RING_START_RADIUS - RING_SPACING * (RING_COUNT - 1 - i);
   (ringMesh.userData.radius = initRad),
     (ringMesh.userData.phase = Math.random() * Math.PI * 2);
   ringMesh.userData.appearDelay = i * RING_APPEAR_INTERVAL;
@@ -967,6 +1059,66 @@ const HEART_OFFSET_Y = 10;
 [staticHeart, bottomHeart, staticTopHeart, staticBottomHeart].forEach((obj) => {
   obj && (obj.position.y += 10);
 });
+const snowheartRaycaster = new THREE.Raycaster();
+const snowheartPointer = new THREE.Vector2();
+const snowheartPointerStart = new THREE.Vector2();
+snowheartRaycaster.params.Points.threshold = 2.5;
+
+function isSnowheartPointerHit(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  snowheartPointer.set(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  heartScene.updateMatrixWorld(true);
+  snowheartRaycaster.setFromCamera(snowheartPointer, camera);
+  return snowheartRaycaster.intersectObjects(
+    heartLayers.filter((layer) => layer && layer.visible),
+    false
+  ).length > 0;
+}
+
+function enableSnowheartLetter() {
+  if (!LetterContent || snowheartLetterReady) return;
+  snowheartLetterReady = true;
+  renderer.domElement.tabIndex = 0;
+  renderer.domElement.setAttribute("role", "button");
+  renderer.domElement.setAttribute(
+    "aria-label",
+    "Mở lá thư trong trái tim tuyết"
+  );
+  renderer.domElement.classList.add("snowheart-letter-ready");
+  if (letterHint) letterHint.hidden = false;
+}
+
+renderer.domElement.addEventListener("pointerdown", (event) => {
+  snowheartPointerStart.set(event.clientX, event.clientY);
+});
+renderer.domElement.addEventListener("pointerup", (event) => {
+  if (!snowheartLetterReady || (letterDialog && !letterDialog.hidden)) return;
+  const dragDistance = snowheartPointerStart.distanceTo(
+    new THREE.Vector2(event.clientX, event.clientY)
+  );
+  if (dragDistance <= 12 && isSnowheartPointerHit(event)) {
+    openSnowheartLetter(event);
+  }
+});
+renderer.domElement.addEventListener("pointermove", (event) => {
+  if (!snowheartLetterReady) return;
+  renderer.domElement.style.cursor = isSnowheartPointerHit(event)
+    ? "pointer"
+    : "grab";
+});
+renderer.domElement.addEventListener("keydown", (event) => {
+  if (
+    snowheartLetterReady &&
+    (event.key === "Enter" || event.key === " ")
+  ) {
+    event.preventDefault();
+    openSnowheartLetter(event);
+  }
+});
+
 function createOrnamentTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 256;
@@ -1529,10 +1681,10 @@ function animate() {
   if (
     (controls.update(),
     renderer.clear(),
-    composerHeart.render(),
+    composerMain.render(),
     renderer.clearDepth(),
     (renderer.autoClear = !1),
-    composerMain.render(),
+    composerHeart.render(),
     (renderer.autoClear = !0),
     hiddenTopCount < MAX_TOP_HIDE)
   ) {
@@ -1705,7 +1857,8 @@ function animate() {
           floatingSnowflakes.visible = !0;
         }
       }),
-      now - revealStart > 0.7 * (STAGE.HEART + 1) && (revealStart = null)),
+      now - revealStart > 0.7 * (STAGE.HEART + 1) &&
+        ((revealStart = null), enableSnowheartLetter())),
     null !== cameraAnimationStart)
   ) {
     const elapsed = now - cameraAnimationStart,

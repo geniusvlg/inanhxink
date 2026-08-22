@@ -220,12 +220,155 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Arial,sans-
   50% { opacity: 1; transform: translateY(-50%) scale(1.16); }
 }
 
+#snowheart-letter-hint {
+  position: fixed;
+  top: clamp(24px, 8vh, 68px);
+  left: 50%;
+  z-index: 210;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(183, 229, 255, .35);
+  border-radius: 999px;
+  color: rgba(231, 248, 255, .9);
+  font-size: 13px;
+  letter-spacing: .03em;
+  pointer-events: none;
+  background: rgba(7, 37, 72, .52);
+  box-shadow: 0 8px 24px rgba(0, 16, 48, .38), 0 0 18px rgba(82, 182, 239, .15);
+  backdrop-filter: blur(9px);
+  transform: translateX(-50%);
+  animation: snowheartHintPulse 2.2s ease-in-out infinite;
+}
+
+canvas.snowheart-letter-ready:focus-visible {
+  outline: 2px solid rgba(206, 241, 255, .9);
+  outline-offset: -4px;
+}
+
+@keyframes snowheartHintPulse {
+  0%, 100% { opacity: .68; }
+  50% { opacity: 1; }
+}
+
+#snowheart-letter-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  padding: 20px;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, .7);
+  backdrop-filter: blur(5px);
+  transition: opacity .5s ease;
+}
+
+#snowheart-letter-dialog[hidden] {
+  display: none;
+}
+
+#snowheart-letter-dialog.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.snowheart-letter-card {
+  position: relative;
+  box-sizing: border-box;
+  width: min(500px, 90vw);
+  max-height: 85vh;
+  padding: 25px 30px 30px;
+  overflow-y: auto;
+  border-radius: 20px;
+  color: #29475b;
+  background: linear-gradient(145deg, #f7fcff, #e7f5ff, #f2f9ff);
+  box-shadow: 0 25px 80px rgba(0, 20, 52, .5), inset 0 0 48px rgba(111, 196, 239, .1);
+  transform: scale(.3) translateY(40px);
+  transition: transform .7s cubic-bezier(.175, .885, .32, 1.275);
+}
+
+#snowheart-letter-dialog.is-visible .snowheart-letter-card {
+  transform: translateY(0) scale(1);
+}
+
+#snowheart-letter-title {
+  margin: 0 36px 20px;
+  color: #247fb9;
+  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(36, 127, 185, .18);
+}
+
+#snowheart-letter-content {
+  margin: 0;
+  min-height: 100px;
+  max-height: 55vh;
+  padding: 15px;
+  overflow-y: auto;
+  border-left: 3px solid rgba(74, 161, 210, .45);
+  border-radius: 0 10px 10px 0;
+  color: #29475b;
+  font-family: "Segoe Print", "Bradley Hand", cursive;
+  font-size: clamp(15px, 3vw, 17px);
+  font-style: italic;
+  line-height: 1.8;
+  overflow-wrap: break-word;
+  background: rgba(255, 255, 255, .62);
+  white-space: pre-wrap;
+}
+
+#snowheart-letter-content.is-typing::after {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  content: "";
+  vertical-align: -.12em;
+  background: #2f7eae;
+  animation: snowheartTypeCursor .7s steps(1) infinite;
+}
+
+@keyframes snowheartTypeCursor {
+  50% { opacity: 0; }
+}
+
+#snowheart-letter-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  color: #386d8e;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  background: rgba(73, 155, 202, .12);
+}
+
+#snowheart-letter-close:hover,
+#snowheart-letter-close:focus-visible {
+  color: #174f75;
+  outline: 2px solid rgba(58, 145, 194, .5);
+  background: rgba(73, 155, 202, .22);
+}
+
 @media (max-width: 480px), (max-height: 420px) {
   #start-wrap { bottom: 22px; transform: translateX(-50%) scale(.88); }
   .start-jewel { width: 118px; height: 90px; }
   .start-heart { font-size: 66px; }
   .start-orbit { width: 108px; height: 54px; }
   .start-invitation { min-width: 235px; padding: 10px 39px 11px 18px; }
+  #snowheart-letter-hint { top: 18px; font-size: 12px; }
+  .snowheart-letter-card { padding: 40px 24px 30px; }
+  #snowheart-letter-content { font-size: 16px; line-height: 1.75; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -235,7 +378,12 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;font-family:Arial,sans-
   .start-heart,
   .start-glint,
   .start-invitation::before,
-  .start-hint {
+  .start-hint,
+  #snowheart-letter-hint {
     animation: none !important;
+  }
+  .snowheart-letter-card,
+  #snowheart-letter-dialog {
+    transition: none !important;
   }
 }

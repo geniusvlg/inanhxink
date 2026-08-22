@@ -7,6 +7,8 @@ window.dataFromSubdomain = window.dataFromSubdomain || {
       'trái tim anh vẫn luôn',
       'tìm thấy một người duy nhất',
       'đó chính là em ♥'
-    ]
+    ],
+    letterTitle: 'Gửi đến người anh yêu 💖',
+    content: 'Giữa mùa đông đầy tuyết, cảm ơn em đã luôn là điều ấm áp nhất trong trái tim anh.'
   }
 };
