@@ -190,8 +190,9 @@ audio file up to 5 MB under `uploads/temp/{qrName}/`. `CreateOrder` validates th
 raw S3 URL, applies the server-side `voice_recording_price`, and stores it as
 `template_data.voiceRecordingUrl`. Music and voice may be selected together;
 `template_data.musicVolume` (0–1) is stored when music is present, defaulting
-to 3% when voice is also selected and 100% for music-only. Migration V69
-normalizes existing mixed-audio QR and order snapshots to 3%. Payment activation
+to 4% when voice is also selected and 100% for music-only. Migration V69 first
+normalized existing mixed-audio snapshots to 3%; V70 raises every existing
+mixed-audio QR and order snapshot to the current 4% default. Payment activation
 moves the recording to the permanent QR folder.
 
 ## Pay2S webhook discovery

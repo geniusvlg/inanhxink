@@ -745,7 +745,7 @@ func parsePublicOrderItems(raw string) []OrderItem {
 func resolveMusicVolume(voiceRecordingAdded bool, raw any) float64 {
 	volume := 1.0
 	if voiceRecordingAdded {
-		volume = 0.03
+		volume = 0.04
 	}
 	if raw != nil {
 		volume = math.Min(1, math.Max(0, toFloat(raw)))
