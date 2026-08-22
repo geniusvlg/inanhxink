@@ -70,7 +70,9 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
   to the HTML audio elements.
 - The shared player only touches known background HTML elements as fallback:
   `#bg-audio`, `#inxk-bg-audio`, `#audios`, `#bgMusic`, `#audio`. Birthday cake
-  `#letterSound` is left at full volume.
+  `#letterSound` is left at full volume. Snow Heart uses `#bg-audio` and calls
+  `window.__inxkPlayBackgroundMusic`; it must not create an independent
+  JavaScript `Audio` object or hardcode music volume.
 - Voice recordings play once at the template reveal moment (open letter, gift
   box, tap-to-start, …), at full volume. A **Nghe lại lời nhắn** button
   replays afterwards.
