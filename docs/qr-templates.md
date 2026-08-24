@@ -13,11 +13,11 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `loveletter` | `loveletter` | Letter title, hint, signoff, sender, receiver, content, up to 12 images |
 | `lovedays` | `lovedays` | Date, names, secret message, timeline, 2 avatars, up to 10 gallery images |
 | `birthday` | `birthday` | Birthday fields, no image uploader |
-| `birthdaycake` | `birthdaycake` | Letter title/body, cake inscription, and up to 24 photos |
+| `birthdaycake` | `birthdaycake` | Letter title/body, cake inscription, and up to 15 photos |
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
 | `farewell` | `farewell` | Friend name, origin city, destination/date, farewell letter, and 1–8 stages each with an optional image and message |
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
-| `snowheart` | `snowheart` | Up to five short messages revealed one by one inside a heart formed from snow |
+| `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
 
 Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
 and loads its blocking `app.js` at the end of the body. Do not defer that script
@@ -158,7 +158,7 @@ the camera descends, snow spirals upward into a beating heart, and the configure
 `candyTexts` wrap around it as rotating text rings. Orbit controls remain
 enabled after reveal.
 
-Order JSON stores `candyTexts`, up to 12 optional raw-S3 `imageUrls`, and the
+Order JSON stores `candyTexts`, up to 15 optional raw-S3 `imageUrls`, and the
 shared optional `musicUrl` and voice fields. All five message inputs initialize
 empty, and each message is limited to 60 characters. Sentence one starts on
 the innermost ring, with each following sentence placed farther outward and

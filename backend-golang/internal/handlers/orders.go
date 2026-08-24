@@ -178,8 +178,12 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	imageUrls, _ := body["imageUrls"].([]any)
-	if resolvedType == "snowheart" && len(imageUrls) > 12 {
-		BadRequest(w, "Snow Heart hỗ trợ tối đa 12 ảnh")
+	if resolvedType == "snowheart" && len(imageUrls) > 15 {
+		BadRequest(w, "Snow Heart hỗ trợ tối đa 15 ảnh")
+		return
+	}
+	if resolvedType == "birthdaycake" && len(imageUrls) > 15 {
+		BadRequest(w, "Birthday Cake hỗ trợ tối đa 15 ảnh")
 		return
 	}
 	musicUrl, _ := body["musicUrl"].(string)
