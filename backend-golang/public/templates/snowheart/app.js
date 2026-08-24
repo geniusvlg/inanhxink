@@ -29,7 +29,7 @@ const PhotoUrls = (
     : []
 )
   .filter((url) => typeof url === "string" && url.trim())
-  .slice(0, 12);
+  .slice(0, 15);
 const LetterContent =
   window.dataFromSubdomain &&
   window.dataFromSubdomain.data &&

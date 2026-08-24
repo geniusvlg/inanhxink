@@ -136,7 +136,8 @@ function OrderPage() {
   const QR_TEMPLATE_MAX_IMAGES = 12;
   const LOVELETTER_MAX_IMAGES = 15;
   const GALAXY_MAX_IMAGES = 15;
-  const BIRTHDAY_CAKE_MAX_IMAGES = 24;
+  const BIRTHDAY_CAKE_MAX_IMAGES = 15;
+  const SNOWHEART_MAX_IMAGES = 15;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
   const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
@@ -1466,7 +1467,7 @@ function OrderPage() {
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
                   Ảnh xoay quanh lời nhắn
                   <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
-                    (không bắt buộc, tối đa {QR_TEMPLATE_MAX_IMAGES} ảnh)
+                    (không bắt buộc, tối đa {SNOWHEART_MAX_IMAGES} ảnh)
                   </span>
                 </p>
               )}
@@ -1478,6 +1479,8 @@ function OrderPage() {
                     ? GALAXY_MAX_IMAGES
                     : templateType === 'loveletter'
                     ? LOVELETTER_MAX_IMAGES
+                    : templateType === 'snowheart'
+                    ? SNOWHEART_MAX_IMAGES
                     : QR_TEMPLATE_MAX_IMAGES
                 }
                 onImageSelected={() => {}}
