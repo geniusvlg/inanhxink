@@ -12,6 +12,7 @@ import (
 	_ "image/png"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,9 +28,10 @@ import (
 )
 
 var (
-	S3Client   *s3.Client
-	S3Endpoint string
-	S3Bucket   string
+	S3Client        *s3.Client
+	S3PresignClient *s3.PresignClient
+	S3Endpoint      string
+	S3Bucket        string
 )
 
 var imageMimes = map[string]bool{
@@ -57,11 +59,52 @@ func InitS3() {
 		Credentials:  aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
 		UsePathStyle: true,
 	})
+	S3PresignClient = s3.NewPresignClient(S3Client)
 }
 
 // GetPublicURL returns the raw S3 URL for a given key (stored in DB as-is).
 func GetPublicURL(key string) string {
 	return fmt.Sprintf("%s/%s/%s", S3Endpoint, S3Bucket, key)
+}
+
+type PresignedUpload struct {
+	URL       string
+	PublicURL string
+	Headers   map[string]string
+}
+
+// PresignPutObject creates a short-lived browser upload URL while keeping S3
+// credentials server-side. Callers must validate the object key and metadata.
+func PresignPutObject(ctx context.Context, key, contentType string) (*PresignedUpload, error) {
+	if S3PresignClient == nil {
+		return nil, fmt.Errorf("S3 presign client is not initialized")
+	}
+
+	result, err := S3PresignClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(S3Bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+		ACL:         s3types.ObjectCannedACLPublicRead,
+	}, func(options *s3.PresignOptions) {
+		options.Expires = 5 * time.Minute
+	})
+	if err != nil {
+		return nil, fmt.Errorf("presign S3 upload: %w", err)
+	}
+
+	headers := make(map[string]string, len(result.SignedHeader)+1)
+	for name, values := range result.SignedHeader {
+		if strings.EqualFold(name, "host") || len(values) == 0 {
+			continue
+		}
+		headers[http.CanonicalHeaderKey(name)] = values[0]
+	}
+	headers["Content-Type"] = contentType
+	return &PresignedUpload{
+		URL:       result.URL,
+		PublicURL: GetPublicURL(key),
+		Headers:   headers,
+	}, nil
 }
 
 // maxImageDimension caps the longer side of uploaded photos before storage.

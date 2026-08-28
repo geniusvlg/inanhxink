@@ -54,7 +54,7 @@ Schema changes are in `backend-golang/database/V61__qr_voice_recording.sql`.
 
 - Accepts one browser audio file.
 - Allows MP4/M4A, WebM/Opus, Ogg/Opus, MP3, or WAV MIME types.
-- Limits the upload to 5 MB.
+- Limits the upload to 10 MB.
 - Validates the QR name and rejects an already activated name.
 
 `CreateOrder` verifies that the submitted voice URL belongs to

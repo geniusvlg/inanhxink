@@ -43,8 +43,8 @@ function FarewellStagesEditor({
       alert('Vui lòng chọn file ảnh');
       return;
     }
-    if (file.size > 7 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 7MB');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Kích thước ảnh không được vượt quá 10MB');
       return;
     }
 

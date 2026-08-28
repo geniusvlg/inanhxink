@@ -37,7 +37,9 @@ function ImageUploader({
   disabledReason,
 }: ImageUploaderProps) {
   const [previews, setPreviews] = useState<string[]>(initialPreviews || []);
+  const [showSlowUploadMessage, setShowSlowUploadMessage] = useState(false);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const hasUploadingImages = Object.values(uploadStates).some(state => state === 'uploading');
 
   // Keep local previews synced when parent provides new slices
   useEffect(() => {
@@ -53,6 +55,14 @@ function ImageUploader({
     }
   }, [images, onImageSelected]);
 
+  useEffect(() => {
+    setShowSlowUploadMessage(false);
+    if (!hasUploadingImages) return;
+
+    const timer = window.setTimeout(() => setShowSlowUploadMessage(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [hasUploadingImages]);
+
   const handleFileChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
     const file = event.target.files?.[0];
@@ -63,8 +73,8 @@ function ImageUploader({
       return;
     }
 
-    if (file.size > 7 * 1024 * 1024) {
-      alert('Kích thước ảnh không được vượt quá 7MB');
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Kích thước ảnh không được vượt quá 10MB');
       return;
     }
 
@@ -74,17 +84,16 @@ function ImageUploader({
     }
     newImages[index] = file;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const newPreviews = [...previews];
-      while (newPreviews.length <= index) {
-        newPreviews.push('');
-      }
-      newPreviews[index] = reader.result as string;
-      setPreviews(newPreviews);
-      onPreviewsChange?.(newPreviews);
-    };
-    reader.readAsDataURL(file);
+    const newPreviews = [...previews];
+    while (newPreviews.length <= index) {
+      newPreviews.push('');
+    }
+    if (newPreviews[index]?.startsWith('blob:')) {
+      URL.revokeObjectURL(newPreviews[index]);
+    }
+    newPreviews[index] = URL.createObjectURL(file);
+    setPreviews(newPreviews);
+    onPreviewsChange?.(newPreviews);
 
     onImagesChange(newImages);
     onNewFiles?.([{ index, file }]);
@@ -122,7 +131,7 @@ function ImageUploader({
     if (selectedFiles.length === 0) return;
 
     // Validate each file with the same rules as single-slot upload:
-    // must be an image and must not exceed 7MB.
+    // must be an image and must not exceed 10MB.
     const files: File[] = [];
     let hasNonImage = false;
     let hasOversized = false;
@@ -131,7 +140,7 @@ function ImageUploader({
         hasNonImage = true;
         return;
       }
-      if (file.size > 7 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         hasOversized = true;
         return;
       }
@@ -142,7 +151,7 @@ function ImageUploader({
       alert('Vui lòng chỉ chọn file ảnh');
     }
     if (hasOversized) {
-      alert('Kích thước mỗi ảnh không được vượt quá 7MB. Các ảnh quá lớn đã bị bỏ qua.');
+      alert('Kích thước mỗi ảnh không được vượt quá 10MB. Các ảnh quá lớn đã bị bỏ qua.');
     }
 
     if (files.length === 0) {
@@ -167,23 +176,14 @@ function ImageUploader({
     const newImages: (File | null)[] = [...images];
     const newPreviews: string[] = [...previews];
 
-    let loadedCount = 0;
     filesToAdd.forEach((file, fileIndex) => {
       const slotIndex = emptySlots[fileIndex];
       newImages[slotIndex] = file;
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviews[slotIndex] = reader.result as string;
-        loadedCount++;
-        if (loadedCount === filesToAdd.length) {
-          setPreviews(newPreviews);
-          onPreviewsChange?.(newPreviews);
-        }
-      };
-      reader.readAsDataURL(file);
+      newPreviews[slotIndex] = URL.createObjectURL(file);
     });
 
+    setPreviews(newPreviews);
+    onPreviewsChange?.(newPreviews);
     onImagesChange(newImages);
     onNewFiles?.(filesToAdd.map((file, fileIndex) => ({ index: emptySlots[fileIndex], file })));
 
@@ -215,6 +215,11 @@ function ImageUploader({
           Chọn tối đa {maxImages} ảnh một lần
         </span>
       </label>
+      {showSlowUploadMessage && (
+        <p className="image-upload-slow-message" role="status" aria-live="polite">
+          Ảnh vẫn đang được tải lên. Vui lòng chờ thêm một chút và không đóng trang.
+        </p>
+      )}
 
       <div className="image-upload-grid">
         {Array.from({ length: maxImages }).map((_, index) => (

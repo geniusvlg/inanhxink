@@ -174,19 +174,42 @@ CGO_ENABLED=1 go run ./cmd/server
 
 ## QR payment ownership
 
-Customer uploads go to `uploads/temp/{qrName}/` before payment. When a payment
-webhook marks an order as paid, the Go backend serializes activation for that QR
-name, cancels other unpaid orders with the same `qr_name`, and moves the objects
-referenced by the paid order's `template_data` to the permanent
-`uploads/{qrName}/` folder, deleting the temp originals.
+QR images are auto-oriented, capped at 2400 px, and converted to WebP quality 97
+in the browser. QR images and voice recordings then use
+`POST /api/upload/qr/presign` to obtain a five-minute presigned PUT URL and upload
+directly to VNG S3 under `uploads/temp/{qrName}/`; S3 credentials never reach the
+browser. If browser conversion, signing, CORS, or the direct PUT fails, the
+frontend falls back to the existing backend upload endpoints. `CreateOrder`
+accepts image and voice URLs only from that QR name's raw-S3 temporary prefix.
+
+The VNG bucket must allow browser CORS `PUT` requests from the storefront origins
+with the `Content-Type` and `x-amz-acl` headers:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://inanhxink.com", "http://localhost:5173"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["content-type", "x-amz-acl"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+When a payment webhook marks an order as paid, the Go backend serializes
+activation for that QR name, cancels other unpaid orders with the same
+`qr_name`, and moves the objects referenced by the paid order's `template_data`
+to the permanent `uploads/{qrName}/` folder, deleting the temp originals.
 
 An admin can hand a name back to the pool with
 `DELETE /api/admin/qr-names/{qrName}`, which deletes the `qr_codes` row plus both
 S3 folders (`config.DeleteS3Prefix`) and sets `orders.qr_name_released_at`.
 Released orders are ignored by every ownership check — see `docs/admin-app.md`.
 
-QR voice messages use `POST /api/upload/voice`, which accepts one browser-recorded
-audio file up to 5 MB under `uploads/temp/{qrName}/`. `CreateOrder` validates the
+QR voice messages upload directly with a presigned URL when possible;
+`POST /api/upload/voice` remains the fallback and accepts one browser-recorded
+audio file up to 10 MB under `uploads/temp/{qrName}/`. `CreateOrder` validates the
 raw S3 URL, applies the server-side `voice_recording_price`, and stores it as
 `template_data.voiceRecordingUrl`. Music and voice may be selected together;
 `template_data.musicVolume` (0–1) is stored when music is present, defaulting

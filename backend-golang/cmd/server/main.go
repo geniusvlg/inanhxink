@@ -64,6 +64,7 @@ func main() {
 	// ── File upload ─────────────────────────────────────────────────────────
 	r.Post("/api/upload", handlers.Upload)
 	r.Post("/api/upload/voice", handlers.UploadVoiceRecording)
+	r.Post("/api/upload/qr/presign", handlers.SignQRUpload)
 
 	// ── Site data (subdomain routing) ───────────────────────────────────────
 	r.Get("/api/site-data", handlers.SiteData)
