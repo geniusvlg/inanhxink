@@ -59,7 +59,7 @@ export const getQrCodeByName = async (qrName: string) => {
 };
 
 // File upload
-export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
+const uploadFilesViaBackend = async (files: File[], qrName?: string): Promise<string[]> => {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
   const url = qrName ? `/api/upload?prefix=${encodeURIComponent('uploads/temp/' + qrName)}` : '/api/upload';
@@ -69,7 +69,116 @@ export const uploadFiles = async (files: File[], qrName?: string): Promise<strin
   return response.data.urls as string[];
 };
 
-export const uploadVoiceRecording = async (file: File, qrName: string): Promise<string> => {
+type QRUploadKind = 'image' | 'voice';
+
+interface QRUploadSignature {
+  uploadUrl: string;
+  publicUrl: string;
+  headers: Record<string, string>;
+}
+
+const requestQRUploadSignature = async (
+  file: File,
+  qrName: string,
+  kind: QRUploadKind,
+): Promise<QRUploadSignature> => {
+  const response = await api.post('/api/upload/qr/presign', {
+    qrName,
+    kind,
+    contentType: file.type,
+    size: file.size,
+  });
+  return response.data as QRUploadSignature;
+};
+
+const uploadDirectlyToS3 = async (
+  file: File,
+  qrName: string,
+  kind: QRUploadKind,
+): Promise<string> => {
+  const signature = await requestQRUploadSignature(file, qrName, kind);
+  const response = await fetch(signature.uploadUrl, {
+    method: 'PUT',
+    headers: signature.headers,
+    body: file,
+  });
+  if (!response.ok) {
+    throw new Error(`Direct S3 upload failed with status ${response.status}`);
+  }
+  return signature.publicUrl;
+};
+
+const loadImage = async (file: File): Promise<HTMLImageElement> => {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = objectUrl;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
+
+const prepareQRImage = async (file: File): Promise<File> => {
+  const maxDimension = 2400;
+  const source = await loadImage(file);
+  const scale = Math.min(1, maxDimension / Math.max(source.naturalWidth, source.naturalHeight));
+  const width = Math.max(1, Math.round(source.naturalWidth * scale));
+  const height = Math.max(1, Math.round(source.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Canvas is unavailable');
+  }
+  context.drawImage(source, 0, 0, width, height);
+
+  try {
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        result => result ? resolve(result) : reject(new Error('WebP conversion is unavailable')),
+        'image/webp',
+        0.97,
+      );
+    });
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'qr-image';
+    return new File([blob], `${baseName}.webp`, { type: 'image/webp' });
+  } finally {
+    // Release the large canvas backing store promptly on memory-constrained phones.
+    canvas.width = 1;
+    canvas.height = 1;
+    source.src = '';
+  }
+};
+
+let qrImageProcessingQueue: Promise<void> = Promise.resolve();
+
+const prepareQRImageQueued = (file: File): Promise<File> => {
+  const task = qrImageProcessingQueue.then(() => prepareQRImage(file));
+  qrImageProcessingQueue = task.then(() => undefined, () => undefined);
+  return task;
+};
+
+export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
+  if (!qrName) {
+    return uploadFilesViaBackend(files);
+  }
+  return Promise.all(files.map(async file => {
+    try {
+      // Decode/resize one photo at a time; direct S3 PUTs may still run concurrently.
+      const prepared = await prepareQRImageQueued(file);
+      return await uploadDirectlyToS3(prepared, qrName, 'image');
+    } catch (error) {
+      console.warn('Direct QR image upload failed; using backend fallback.', error);
+      const urls = await uploadFilesViaBackend([file], qrName);
+      return urls[0];
+    }
+  }));
+};
+
+const uploadVoiceRecordingViaBackend = async (file: File, qrName: string): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('qrName', qrName);
@@ -77,6 +186,15 @@ export const uploadVoiceRecording = async (file: File, qrName: string): Promise<
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data.url as string;
+};
+
+export const uploadVoiceRecording = async (file: File, qrName: string): Promise<string> => {
+  try {
+    return await uploadDirectlyToS3(file, qrName, 'voice');
+  } catch (error) {
+    console.warn('Direct QR voice upload failed; using backend fallback.', error);
+    return uploadVoiceRecordingViaBackend(file, qrName);
+  }
 };
 
 // Music extraction

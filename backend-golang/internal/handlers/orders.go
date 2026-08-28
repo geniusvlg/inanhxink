@@ -96,7 +96,11 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	qrNameLowerEarly := strings.ToLower(qrName)
+	qrNameLowerEarly := strings.ToLower(strings.TrimSpace(qrName))
+	if !voiceQRNameRe.MatchString(qrNameLowerEarly) {
+		BadRequest(w, "QR name must be lowercase letters, numbers, dashes, or underscores only")
+		return
+	}
 
 	// Try to acquire the in-memory lock. If another user submitted an order for
 	// this name first, reject immediately with a clear message.
@@ -178,6 +182,11 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	imageUrls, _ := body["imageUrls"].([]any)
+	expectedImagePrefix := config.GetPublicURL("uploads/temp/" + qrNameLowerEarly + "/")
+	if !validQRImageURLs(body, expectedImagePrefix) {
+		BadRequest(w, "Ảnh không hợp lệ hoặc không thuộc tên QR này")
+		return
+	}
 	if resolvedType == "snowheart" && len(imageUrls) > 15 {
 		BadRequest(w, "Snow Heart hỗ trợ tối đa 15 ảnh")
 		return
@@ -744,6 +753,67 @@ func parsePublicOrderItems(raw string) []OrderItem {
 		}
 	}
 	return items
+}
+
+func validQRImageURLs(body map[string]any, expectedPrefix string) bool {
+	validURL := func(raw any) bool {
+		value, ok := raw.(string)
+		if !ok {
+			return false
+		}
+		value = strings.TrimSpace(value)
+		return value == "" || strings.HasPrefix(value, expectedPrefix)
+	}
+
+	for _, key := range []string{
+		"loveDaysAvatarFrom",
+		"loveDaysAvatarTo",
+		"specialGiftAvatarLeft",
+		"specialGiftAvatarRight",
+	} {
+		if raw, exists := body[key]; exists && !validURL(raw) {
+			return false
+		}
+	}
+
+	for _, key := range []string{
+		"imageUrls",
+		"loveDaysGalleryImages",
+		"specialGiftGalleryImages",
+		"popupImages",
+		"photoBlobUrls",
+	} {
+		raw, exists := body[key]
+		if !exists {
+			continue
+		}
+		urls, ok := raw.([]any)
+		if !ok {
+			return false
+		}
+		for _, url := range urls {
+			if !validURL(url) {
+				return false
+			}
+		}
+	}
+
+	if rawStages, exists := body["farewellStages"]; exists {
+		stages, ok := rawStages.([]any)
+		if !ok {
+			return false
+		}
+		for _, rawStage := range stages {
+			stage, ok := rawStage.(map[string]any)
+			if !ok {
+				return false
+			}
+			if rawURL, exists := stage["imageUrl"]; exists && !validURL(rawURL) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func resolveMusicVolume(voiceRecordingAdded bool, raw any) float64 {

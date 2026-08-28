@@ -273,6 +273,9 @@ function OrderPage() {
   const resetImageUploads = () => {
     bgUploads.current.forEach(entry => { entry.cancelled = true; });
     bgUploads.current.clear();
+    imagePreviews.forEach(preview => {
+      if (preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+    });
     setUploadStates({});
     setUploadedImages([]);
     setImagePreviews([]);

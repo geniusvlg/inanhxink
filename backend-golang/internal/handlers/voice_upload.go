@@ -13,7 +13,7 @@ import (
 	"inanhxink/backend-golang/internal/config"
 )
 
-const maxVoiceRecordingSize = 5 * 1024 * 1024
+const maxVoiceRecordingSize = 10 * 1024 * 1024
 
 var (
 	voiceQRNameRe = regexp.MustCompile(`^[a-z0-9_-]+$`)
@@ -34,7 +34,7 @@ func UploadVoiceRecording(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxVoiceRecordingSize); err != nil {
 		JSON(w, http.StatusRequestEntityTooLarge, map[string]any{
 			"success": false,
-			"error":   "Bản ghi âm vượt quá giới hạn 5 MB",
+			"error":   "Bản ghi âm vượt quá giới hạn 10 MB",
 		})
 		return
 	}
@@ -82,7 +82,7 @@ func UploadVoiceRecording(w http.ResponseWriter, r *http.Request) {
 	if len(buf) > maxVoiceRecordingSize {
 		JSON(w, http.StatusRequestEntityTooLarge, map[string]any{
 			"success": false,
-			"error":   "Bản ghi âm vượt quá giới hạn 5 MB",
+			"error":   "Bản ghi âm vượt quá giới hạn 10 MB",
 		})
 		return
 	}

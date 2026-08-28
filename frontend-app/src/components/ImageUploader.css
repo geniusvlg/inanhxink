@@ -39,6 +39,17 @@
   cursor: not-allowed;
 }
 
+.image-upload-slow-message {
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #fcd34d;
+  border-radius: 0.5rem;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
 .image-upload-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
