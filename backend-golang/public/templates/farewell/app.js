@@ -1,15 +1,12 @@
 /**
  * Bon Voyage — a boarding pass, a flight around a sphere of memories, a letter.
  *
- * Pressing the pass hands the screen over to a 3D globe built from the order's
- * photos. The plane circles it while the sphere turns to bring each memory to
- * the front in turn, then the page lands on the arrival facts and the sealed
- * letter.
+ * Pressing the pass first opens Love Burst's 3D photo sphere. Tapping the
+ * sphere then moves through the order's individual memory stages before the
+ * page lands on the arrival facts and the sealed letter.
  *
- * The photo sphere is rendered with three.js's CSS3DRenderer — the same
- * technique the Special Gift template uses for its memory globe — so tiles
- * sit on a real perspective camera (proper foreshortening, no DIY CSS
- * transform math) instead of the old hand-rolled flat CSS 3D sphere. Route
+ * The photo sphere copies Love Burst's CSS3DRenderer, Tween assembly, fixed
+ * tile sizing, camera, radius, and automatic rotation. Route
  * facts (distance, flight time, time difference, live clocks) are derived
  * from the two cities rather than asked for in the order form. Clocks go
  * through the browser's IANA timezone data so daylight saving stays correct.
@@ -22,7 +19,7 @@
   var DEMO = {
     farewellFriendName: 'Minh Anh',
     farewellFrom: 'Hà Nội',
-    farewellDestination: 'australia',
+    farewellDestination: 'Sydney',
     farewellDepartureDate: '2026-09-15',
     farewellMessage:
       'Cậu đi nhé. Nhớ ăn uống đủ bữa, nhớ mặc ấm, và nhớ gọi về khi thấy nhớ nhà.\n\n' +
@@ -37,18 +34,12 @@
   var CRUISE_ALTITUDE = 10600;
   var CRUISE_SPEED = 850;
 
-  // One lap of the plane around the globe, and the pacing of the memory tour.
+  // Pacing of each memory stage.
   var ORBIT_PERIOD = 7600;
   var ORBIT_TILT = -20;
   var TURN_MS = 1000;
   var HOLD_MS = 1500;
   var HOLD_MS_SHORT = 1050;
-  // Same fill counts and tile/radius ratio as Special Gift's gallery globe
-  // (170/199 CSS3D tiles, 208px cards on an 800-unit sphere).
-  var SPHERE_FILL_MOBILE = 170;
-  var SPHERE_FILL_DESKTOP = 199;
-  var SPHERE_CAMERA_FOV = 40;
-  var SPHERE_TILE_RATIO = 208 / 800;
 
   var DESTINATIONS = {
     australia:   { label: 'Úc',           code: 'SYD', city: 'Sydney',    tz: 'Australia/Sydney',  lat: -33.87, lon: 151.21 },
@@ -107,8 +98,21 @@
     for (var i = 0; i < ORIGINS.length; i++) {
       if (plain.indexOf(ORIGINS[i][0]) !== -1) return ORIGINS[i][1];
     }
-    // Unknown city: keep what the buyer typed, but fly from Hanoi for the maths.
-    return { code: 'VN', city: name, lat: 21.03, lon: 105.85 };
+    return { code: 'VN', city: name };
+  }
+
+  function airportCode(name) {
+    var letters = deaccent(name).replace(/[^a-z]/g, '').toUpperCase();
+    return (letters.slice(0, 3) || 'INT');
+  }
+
+  function resolveDestination(raw) {
+    var known = DESTINATIONS[raw];
+    if (known && raw !== 'other') {
+      return { label: known.label, code: known.code, city: known.city || known.label };
+    }
+    var name = !raw || raw === 'other' ? 'Miền đất mới' : raw;
+    return { label: name, code: airportCode(name), city: name };
   }
 
   function hashCode(text) {
@@ -240,19 +244,21 @@
   function boot() {
     var globeEl = document.getElementById('globe');
     var sphereEl = document.getElementById('sphere');
-    var orbitEl = document.getElementById('orbit');
-    var armEl = document.getElementById('orbitArm');
-    var planeEl = document.getElementById('orbitPlane');
     var landingEl = document.getElementById('landing');
     var hud = document.getElementById('hud');
-    if (!globeEl || !sphereEl || !landingEl) return;
+    var sphereStage = document.getElementById('sphereStage');
+    var memoryStage = document.getElementById('memoryStage');
+    var armEl = document.getElementById('orbitArm');
+    var planeEl = document.getElementById('orbitPlane');
+    if (!globeEl || !sphereEl || !landingEl || !sphereStage ||
+        !memoryStage || !armEl || !planeEl) return;
 
     var friendName = pick('farewellFriendName', 'Người bạn thân');
     var fromName = pick('farewellFrom', 'Việt Nam');
     var origin = resolveOrigin(fromName);
-    var destKey = pick('farewellDestination', 'other');
-    var dest = DESTINATIONS[destKey] || DESTINATIONS.other;
+    var dest = resolveDestination(pick('farewellDestination', ''));
     var departure = parseDate(pick('farewellDepartureDate', ''));
+    var letterText = pick('farewellMessage', 'Chúc cậu một hành trình thật rực rỡ.');
     var stages = normalizeStages(
       pickList('farewellStages'),
       pickList('imageUrls'),
@@ -262,31 +268,38 @@
       .map(function (stage) { return stage.imageUrl; })
       .filter(function (url) { return Boolean(url); });
     var gate = (hashCode(friendName) % 24) + 1;
-    var distance = dest.lat === null ? null : haversine(origin, dest);
+    var distance = null;
 
-    var tiles = [];
-    var tourTiles = [];
-    var radius = 0;
-    var orbitRadius = 0;
+    var sphereObjects = [];
+    var sphereTargets = [];
+    var sphereInnerTargets = [];
     var sphereScene = null;
     var sphereCamera = null;
     var sphereRenderer = null;
-    var sphereGroup = null;
-    var initialQuat = null;
+    var sphereControls = null;
+    var sphereTransform = null;
+    var sphereReady = false;
+    var sphereHasAssembled = false;
+    var sphereIsEntering = false;
+    var sphereBuildPromise = null;
+    var orbitRadius = 0;
     var memoryCount = stages.length;
     var holdMs = memoryCount > 8 ? HOLD_MS_SHORT : HOLD_MS;
     var legMs = TURN_MS + holdMs;
     var tourMs = Math.max(1, memoryCount) * legMs;
     var flight = { raf: 0, startedAt: 0, running: false, front: -1 };
+    var spherePreview = { raf: 0, startedAt: 0, running: false };
 
     var envelope = document.getElementById('envelope');
     var letterPaper = document.getElementById('letterPaper');
     var envelopeOpen = false;
     var envelopeHideTimer = null;
     var letterHideTimer = null;
+    var letterRaiseTimer = null;
+    var letterOpenTimer = null;
 
     fillBoardingPass();
-    buildSphere();
+    sphereBuildPromise = buildSphere();
     fillArrival();
     buildRecap();
     startClocks();
@@ -298,7 +311,7 @@
     function startJourneyOnce() {
       if (journeyStarted) return;
       journeyStarted = true;
-      startFlight();
+      showSphereStage();
     }
     startJourneyButton.addEventListener('pointerdown', startJourneyOnce, true);
     startJourneyButton.addEventListener('touchstart', startJourneyOnce, { capture: true, passive: true });
@@ -306,15 +319,17 @@
     document.getElementById('skipFlight').addEventListener('click', function () {
       endFlight();
     });
+    sphereEl.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        enterSphere();
+      }
+    });
     document.getElementById('replayJourney').addEventListener('click', function () {
       sealEnvelope();
       landingEl.hidden = true;
       window.scrollTo(0, 0);
-      startFlight();
-    });
-
-    window.addEventListener('resize', function () {
-      if (flight.running) layoutSphere();
+      showSphereStage();
     });
 
     function fillBoardingPass() {
@@ -326,193 +341,239 @@
       document.getElementById('passName').textContent = friendName;
       document.getElementById('passDate').textContent = formatDate(departure);
       document.getElementById('passGate').textContent = (gate < 10 ? '0' : '') + gate;
+      document.getElementById('boardFlight').textContent = 'BV ' + (100 + ((gate * 37) % 800));
+      document.getElementById('boardSeat').textContent =
+        (gate < 10 ? '0' : '') + gate + 'ABCDEF'.charAt(gate % 6);
       document.getElementById('passCountdown').textContent = countdownText(departure);
       document.getElementById('envelopeStamp').textContent = dest.code;
       document.getElementById('envelopeTo').textContent = friendName;
       document.getElementById('envelopeFrom').textContent =
         'Từ ' + fromName + (departure ? ' · ' + formatDate(departure) : '');
 
-      document.getElementById('letterBody').textContent =
-        pick('farewellMessage', 'Chúc cậu một hành trình thật rực rỡ.');
+      document.getElementById('letterBody').textContent = letterText;
       var sender = pick('farewellSender', '');
       var signEl = document.getElementById('letterSign');
       if (sender) signEl.textContent = '— ' + sender;
       else signEl.hidden = true;
     }
 
+    function galleryTileSize() {
+      var mobile = window.innerWidth < 768;
+      return Math.round((mobile ? 220 : 200) * Math.min(window.devicePixelRatio || 1, 3));
+    }
+
+    function squareImage(url, size) {
+      return new Promise(function (resolve) {
+        var objectUrl = '';
+        var settled = false;
+        var timeout = window.setTimeout(function () { finish(url); }, 8000);
+
+        function finish(value) {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+          resolve(value);
+        }
+
+        fetch(url)
+          .then(function (response) {
+            if (!response.ok) throw new Error('Image request failed');
+            return response.blob();
+          })
+          .then(function (blob) {
+            if (settled) return;
+            objectUrl = URL.createObjectURL(blob);
+            var img = new Image();
+            img.onload = function () {
+              try {
+                var canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                var ctx = canvas.getContext('2d');
+                var scale = Math.max(size / img.width, size / img.height);
+                var dw = img.width * scale;
+                var dh = img.height * scale;
+                ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+                finish(canvas.toDataURL('image/jpeg', 0.92));
+              } catch (error) {
+                finish(url);
+              }
+            };
+            img.onerror = function () { finish(url); };
+            img.src = objectUrl;
+          })
+          .catch(function () { finish(url); });
+      });
+    }
+
+    function preloadSphereImages() {
+      var unique = [];
+      images.forEach(function (url) {
+        if (unique.indexOf(url) === -1) unique.push(url);
+      });
+      return Promise.all(unique.map(function (url) {
+        return squareImage(url, galleryTileSize());
+      })).then(function (squared) {
+        var map = {};
+        unique.forEach(function (url, index) { map[url] = squared[index]; });
+        return map;
+      });
+    }
+
     /**
-     * Spread tiles evenly over a sphere with the same Fibonacci-sphere formula
-     * the Special Gift template uses for its memory globe, and render them
-     * with THREE.CSS3DObject/CSS3DRenderer. Customer photos are repeated
-     * across ~170/199 square cards (Special Gift's counts) so the ball reads
-     * as a dense globe rather than a handful of large portraits. Tiles are a
-     * single flat card — the far side is a mirror, same as theirs. The tour
-     * still visits each stage once, turning toward a well-spaced repeat of
-     * that photo instead of the first N Fibonacci points (which would all
-     * sit on the south pole of a 199-tile ball).
+     * Love Burst's photo sphere, with the final tap routed into Farewell's
+     * memory stages instead of Love Burst's envelope sequence.
      */
     function buildSphere() {
-      var count = stages.length;
-      if (!count || typeof THREE === 'undefined' || !THREE.CSS3DRenderer) return;
-
-      var slots = window.innerWidth < 768 ? SPHERE_FILL_MOBILE : SPHERE_FILL_DESKTOP;
-      if (slots < count) slots = count;
-
-      sphereCamera = new THREE.PerspectiveCamera(SPHERE_CAMERA_FOV, 1, 1, 6000);
-      sphereScene = new THREE.Scene();
-      sphereGroup = new THREE.Object3D();
-      sphereScene.add(sphereGroup);
-
-      var vector = new THREE.Vector3();
-      var spherical = new THREE.Spherical();
-
-      for (var i = 0; i < slots; i++) {
-        var stageIndex = i % count;
-        var stage = stages[stageIndex];
-        var stageImage = stage.imageUrl || '';
-
-        var tile = document.createElement('figure');
-        tile.className = 'tile';
-
-        if (stageImage) {
-          var img = document.createElement('img');
-          img.src = stageImage;
-          img.alt = 'Kỷ niệm ' + (stageIndex + 1);
-          img.loading = i < 6 ? 'eager' : 'lazy';
-          img.onerror = function () {
-            this.replaceWith(createTilePlaceholder());
-          };
-          tile.appendChild(img);
-        } else {
-          tile.appendChild(createTilePlaceholder());
-        }
-
-        // Same phi/theta distribution as the Special Gift globe: evenly
-        // spaced points on a unit sphere, each looking outward from the
-        // center so the card faces the viewer rather than the sphere's core.
-        var phi = Math.acos(-1 + (2 * i) / slots);
-        var theta = Math.sqrt(slots * Math.PI) * phi;
-
-        var object = new THREE.CSS3DObject(tile);
-        spherical.set(1, phi, theta);
-        object.position.setFromSpherical(spherical);
-        var direction = object.position.clone().normalize();
-        vector.copy(direction).multiplyScalar(2);
-
-        // object.lookAt() is degenerate right at the poles (direction ≈
-        // ±Y), where the default up vector (0,1,0) is parallel to the look
-        // direction — it produces an unpredictable, often upside-down roll.
-        // Fibonacci sphere point 0 lands exactly on a pole every time, and
-        // unlike Special Gift's ~200-tile ball (where that one odd tile is
-        // buried in the crowd), this tour deliberately parks every tile
-        // front-and-center in turn — so a broken pole tile would be glaring.
-        // Swap the up reference near the poles to keep lookAt well-defined.
-        if (Math.abs(direction.y) > 0.999) {
-          object.up.set(0, 0, 1);
-        }
-        object.lookAt(vector);
-
-        sphereGroup.add(object);
-
-        tiles.push({
-          el: tile,
-          object: object,
-          direction: direction,
-          // The rotation that, applied to the whole group, brings this tile
-          // round to face the camera (parked on the +Z axis).
-          quat: new THREE.Quaternion().setFromUnitVectors(direction, new THREE.Vector3(0, 0, 1))
-        });
+      if (!images.length || typeof THREE === 'undefined' ||
+          typeof TWEEN === 'undefined' || !THREE.CSS3DRenderer ||
+          !THREE.TrackballControls) {
+        return Promise.resolve(false);
       }
 
-      // Pick one well-spaced repeat of each stage so the tour travels
-      // around the globe instead of wobbling around the south pole.
-      tourTiles = [];
-      for (var m = 0; m < count; m++) {
-        var target = count <= 1
-          ? Math.floor(slots / 2)
-          : Math.round(m * (slots - 1) / (count - 1));
-        var best = m;
-        var bestDist = Math.abs(best - target);
-        for (var j = m; j < slots; j += count) {
-          var d = Math.abs(j - target);
-          if (d < bestDist) {
-            best = j;
-            bestDist = d;
+      return preloadSphereImages().then(function (imageMap) {
+        var ua = navigator.userAgent || '';
+        var inApp = /Zalo|FBAN|FBAV|Instagram|Line|MicroMessenger/i.test(ua);
+        var mobile = window.innerWidth < 768;
+        var rings = inApp ? (mobile ? 6 : 7) : (mobile ? 8 : 12);
+        var layout = [];
+        for (var ring = 0; ring < rings; ring++) {
+          var phi = Math.PI * (ring + 0.5) / rings;
+          var count = Math.max(1, Math.round(2 * rings * Math.sin(phi)));
+          for (var cell = 0; cell < count; cell++) {
+            layout.push({ phi: phi, theta: 2 * Math.PI * cell / count });
           }
         }
-        tourTiles.push(tiles[best]);
-      }
 
-      initialQuat = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(-14 * Math.PI / 180, 24 * Math.PI / 180, 0, 'XYZ')
-      );
+        sphereCamera = new THREE.PerspectiveCamera(
+          40,
+          window.innerWidth / window.innerHeight,
+          1,
+          10000
+        );
+        sphereCamera.position.z = 3000;
+        sphereScene = new THREE.Scene();
 
-      sphereRenderer = new THREE.CSS3DRenderer();
-      sphereRenderer.domElement.style.position = 'absolute';
-      sphereRenderer.domElement.style.top = '0';
-      sphereRenderer.domElement.style.left = '0';
-      sphereRenderer.domElement.style.pointerEvents = 'none';
-      // CSS3DRenderer defaults to overflow:hidden, which shears off tiles
-      // that perspective-scale past the box (the missing right side).
-      sphereRenderer.domElement.style.overflow = 'visible';
-      sphereEl.appendChild(sphereRenderer.domElement);
-    }
+        for (var i = 0; i < layout.length; i++) {
+          var tile = document.createElement('div');
+          tile.className = 'element';
+          var img = document.createElement('img');
+          var imageUrl = images[i % images.length];
+          img.src = imageMap[imageUrl] || imageUrl;
+          img.alt = 'Kỷ niệm ' + ((i % images.length) + 1);
+          tile.appendChild(img);
 
-    function createTilePlaceholder() {
-      var placeholder = document.createElement('span');
-      placeholder.className = 'tile-placeholder';
-      placeholder.textContent = '✈';
-      return placeholder;
-    }
+          var object = new THREE.CSS3DObject(tile);
+          object.position.set(
+            Math.random() * 4000 - 2000,
+            Math.random() * 4000 - 2000,
+            Math.random() * 4000 - 2000
+          );
+          sphereScene.add(object);
+          sphereObjects.push(object);
+        }
 
-    function renderGlobe() {
-      if (sphereRenderer && sphereScene && sphereCamera) {
-        sphereRenderer.render(sphereScene, sphereCamera);
-      }
-    }
+        var vector = new THREE.Vector3();
+        var spherical = new THREE.Spherical();
+        var radius = mobile ? 540 : 800;
+        for (i = 0; i < sphereObjects.length; i++) {
+          var target = new THREE.Object3D();
+          spherical.set(radius, layout[i].phi, layout[i].theta);
+          target.position.setFromSpherical(spherical);
+          vector.copy(target.position).multiplyScalar(2);
+          target.lookAt(vector);
+          sphereTargets.push(target);
 
-    function layoutSphere() {
-      var box = document.getElementById('globeScene').getBoundingClientRect();
-      // The scene is now a tight square around the sphere, so leaning on the
-      // shared side (they're equal) fills it far better than the old
-      // width/height split did, which used to leave a dead zone below the ball.
-      // 0.38 leaves room for tile size + CSS3D perspective scale so the
-      // silhouette stays inside the box (0.46 overflowed and got clipped).
-      var side = Math.min(box.width, box.height);
-      radius = side * 0.38;
-      // Keep the plane's lap inside the scene, however narrow the screen is.
-      orbitRadius = Math.min(side / 2 - 22, radius * 1.45);
-      sphereEl.style.setProperty(
-        '--tile',
-        Math.max(28, Math.round(radius * SPHERE_TILE_RATIO)) + 'px'
-      );
+          var innerTarget = new THREE.Object3D();
+          spherical.set(radius, layout[i].phi, layout[i].theta);
+          innerTarget.position.setFromSpherical(spherical);
+          innerTarget.lookAt(new THREE.Vector3(0, 0, 0));
+          sphereInnerTargets.push(innerTarget);
+        }
 
-      if (!sphereRenderer || !sphereCamera) return;
+        sphereRenderer = new THREE.CSS3DRenderer();
+        sphereRenderer.setSize(window.innerWidth, window.innerHeight);
+        sphereRenderer.domElement.style.position = 'absolute';
+        sphereRenderer.domElement.style.background = 'transparent';
+        sphereEl.appendChild(sphereRenderer.domElement);
 
-      var width = Math.max(1, Math.round(box.width));
-      var height = Math.max(1, Math.round(box.height));
+        sphereControls = new THREE.TrackballControls(sphereCamera, sphereRenderer.domElement);
+        sphereControls.rotateSpeed = 0.5;
+        sphereControls.minDistance = 500;
+        sphereControls.maxDistance = 6000;
+        sphereControls.noRotate = true;
+        sphereControls.noPan = true;
+        sphereControls.noZoom = true;
+        sphereControls.enabled = false;
 
-      sphereRenderer.setSize(width, height);
-      sphereCamera.aspect = width / height;
-      // Park the camera so one world unit renders as one CSS pixel at the
-      // sphere's center — the same relationship the Special Gift globe relies
-      // on — so tiles at "radius" line up with the plane's CSS-driven orbit.
-      var fovRad = (SPHERE_CAMERA_FOV * Math.PI) / 180;
-      sphereCamera.position.z = (height / 2) / Math.tan(fovRad / 2);
-      sphereCamera.updateProjectionMatrix();
+        sphereTransform = function (targets, duration) {
+          TWEEN.removeAll();
+          for (var index = 0; index < sphereObjects.length; index++) {
+            new TWEEN.Tween(sphereObjects[index].position)
+              .to({
+                x: targets[index].position.x,
+                y: targets[index].position.y,
+                z: targets[index].position.z
+              }, Math.random() * duration + duration)
+              .easing(TWEEN.Easing.Exponential.InOut)
+              .start();
+            new TWEEN.Tween(sphereObjects[index].rotation)
+              .to({
+                x: targets[index].rotation.x,
+                y: targets[index].rotation.y,
+                z: targets[index].rotation.z
+              }, Math.random() * duration + duration)
+              .easing(TWEEN.Easing.Exponential.InOut)
+              .start();
+          }
+        };
 
-      tiles.forEach(function (tile) {
-        tile.object.position.copy(tile.direction).multiplyScalar(radius);
+        var pointerDown = { x: 0, y: 0 };
+        var dragDistance = 0;
+        var pointerActive = false;
+        sphereRenderer.domElement.addEventListener('pointerdown', function (event) {
+          if (event.button && event.button !== 0) return;
+          pointerActive = true;
+          pointerDown.x = event.clientX;
+          pointerDown.y = event.clientY;
+          dragDistance = 0;
+        });
+        sphereRenderer.domElement.addEventListener('pointermove', function (event) {
+          if (!pointerActive) return;
+          var dx = event.clientX - pointerDown.x;
+          var dy = event.clientY - pointerDown.y;
+          dragDistance = Math.max(dragDistance, Math.sqrt(dx * dx + dy * dy));
+        });
+        sphereRenderer.domElement.addEventListener('pointerup', function () {
+          if (!pointerActive) return;
+          pointerActive = false;
+          if (dragDistance <= 12) enterSphere();
+        });
+        sphereRenderer.domElement.addEventListener('pointercancel', function () {
+          pointerActive = false;
+        });
+
+        window.addEventListener('resize', function () {
+          if (!sphereRenderer || !sphereCamera) return;
+          sphereCamera.aspect = window.innerWidth / window.innerHeight;
+          sphereCamera.updateProjectionMatrix();
+          sphereRenderer.setSize(window.innerWidth, window.innerHeight);
+          sphereControls.handleResize();
+          updateOrbitRadius();
+        });
+
+        updateOrbitRadius();
+        sphereReady = true;
+        return true;
       });
-
-      renderGlobe();
     }
 
-    function startFlight() {
+    function showSphereStage() {
       document.body.classList.remove('is-gated');
 
-      // Nothing to fly around, or the visitor asked for calm: go straight there.
-      if (!tiles.length || reduceMotion) {
+      // Nothing to show, or the visitor asked for calm: go straight there.
+      if (!images.length || reduceMotion) {
         endFlight();
         return;
       }
@@ -520,8 +581,100 @@
       landingEl.hidden = true;
       globeEl.hidden = false;
       document.body.classList.add('is-flying');
-      // Let the section get its size before the tiles are placed on it.
-      layoutSphere();
+      sphereStage.hidden = false;
+      memoryStage.hidden = true;
+      hud.classList.remove('is-visible');
+      sphereBuildPromise.then(function (built) {
+        if (!built || sphereStage.hidden) {
+          if (!built) endFlight();
+          return;
+        }
+        sphereEl.classList.add('active');
+        if (!sphereHasAssembled) {
+          sphereTransform(sphereTargets, 2000);
+          sphereHasAssembled = true;
+        }
+        if (!spherePreview.running) {
+          spherePreview.running = true;
+          spherePreview.startedAt = window.performance.now();
+          spherePreview.raf = window.requestAnimationFrame(stepSpherePreview);
+        }
+      });
+    }
+
+    function stepSpherePreview(now) {
+      if (!spherePreview.running) return;
+      sphereScene.rotation.y += 0.004;
+      TWEEN.update();
+      sphereControls.update();
+      sphereRenderer.render(sphereScene, sphereCamera);
+      spinPlane(now - spherePreview.startedAt);
+      spherePreview.raf = window.requestAnimationFrame(stepSpherePreview);
+    }
+
+    function updateOrbitRadius() {
+      var worldRadius = window.innerWidth < 768 ? 540 : 800;
+      var projectedRadius =
+        worldRadius * window.innerHeight /
+        (2 * Math.tan((40 * Math.PI / 180) / 2) * 3000);
+      orbitRadius = Math.min(
+        projectedRadius * 1.08,
+        window.innerWidth * 0.44,
+        window.innerHeight * 0.44
+      );
+    }
+
+    function spinPlane(elapsed) {
+      var angle = (elapsed / ORBIT_PERIOD) * 360;
+      armEl.style.transform = 'rotateY(' + angle + 'deg)';
+
+      var rad = angle * (Math.PI / 180);
+      var tiltRad = ORBIT_TILT * (Math.PI / 180);
+      var heading =
+        Math.atan2(Math.sin(rad) * Math.sin(tiltRad), Math.cos(rad)) *
+        (180 / Math.PI);
+      planeEl.style.transform =
+        'translateZ(' + Math.round(orbitRadius) + 'px) ' +
+        'rotateY(' + -angle + 'deg) rotateX(' + -ORBIT_TILT + 'deg)';
+      planeEl.firstElementChild.style.transform =
+        'rotate(' + (heading + 90) + 'deg)';
+
+      var depth = Math.cos(rad);
+      var fade = clamp((depth + 0.22) / 0.44, 0, 1);
+      planeEl.style.opacity = String(fade);
+      planeEl.style.visibility = fade < 0.02 ? 'hidden' : 'visible';
+    }
+
+    function enterSphere() {
+      if (!sphereReady || !spherePreview.running || sphereIsEntering || flight.running) return;
+      sphereIsEntering = true;
+      sphereStage.classList.add('is-entering');
+      sphereTransform(sphereInnerTargets, 1500);
+      new TWEEN.Tween(sphereCamera.position)
+        .to({ x: 0, y: 0, z: window.innerWidth < 768 ? 180 : 0 }, 2000)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .onComplete(function () {
+          sphereIsEntering = false;
+          startFlight();
+        })
+        .start();
+    }
+
+    function startFlight() {
+      if (!sphereReady || !spherePreview.running || flight.running) return;
+      spherePreview.running = false;
+      if (spherePreview.raf) window.cancelAnimationFrame(spherePreview.raf);
+      spherePreview.raf = 0;
+      sphereEl.classList.remove('active');
+      sphereStage.classList.remove('is-entering');
+      sphereStage.hidden = true;
+      memoryStage.hidden = false;
+      TWEEN.removeAll();
+      sphereCamera.position.set(0, 0, 3000);
+      sphereObjects.forEach(function (object, index) {
+        object.position.copy(sphereTargets[index].position);
+        object.rotation.copy(sphereTargets[index].rotation);
+      });
 
       flight.running = true;
       flight.front = -1;
@@ -535,8 +688,8 @@
       var elapsed = now - flight.startedAt;
       var progress = clamp(elapsed / tourMs, 0, 1);
 
-      spinPlane(elapsed);
-      turnSphere(elapsed);
+      var stageIndex = clamp(Math.floor(elapsed / legMs), 0, memoryCount - 1);
+      if (flight.front !== stageIndex) showMemory(stageIndex);
       updateHud(progress);
       updateStatus(progress);
 
@@ -547,59 +700,16 @@
       flight.raf = window.requestAnimationFrame(step);
     }
 
-    function spinPlane(elapsed) {
-      var angle = (elapsed / ORBIT_PERIOD) * 360;
-      armEl.style.transform = 'rotateY(' + angle + 'deg)';
-
-      // Billboard the plane out of the orbit's rotations, then point its nose
-      // along the direction it is travelling on screen.
-      var rad = angle * (Math.PI / 180);
-      var tiltRad = ORBIT_TILT * (Math.PI / 180);
-      var heading = Math.atan2(Math.sin(rad) * Math.sin(tiltRad), Math.cos(rad)) * (180 / Math.PI);
-      planeEl.style.transform =
-        'translateZ(' + Math.round(orbitRadius) + 'px) ' +
-        'rotateY(' + -angle + 'deg) rotateX(' + -ORBIT_TILT + 'deg)';
-      planeEl.firstElementChild.style.transform = 'rotate(' + (heading + 90) + 'deg)';
-
-      // The sphere is a hollow shell of translucent cards — CSS cannot fully
-      // occlude the plane through gaps and opacity. Fade it out on the far half
-      // of the lap (cos < 0 ≈ behind the ball) so it never shows through.
-      var depth = Math.cos(rad);
-      var fade = clamp((depth + 0.22) / 0.44, 0, 1);
-      planeEl.style.opacity = String(fade);
-      planeEl.style.visibility = fade < 0.02 ? 'hidden' : 'visible';
-    }
-
-    function turnSphere(elapsed) {
-      // The tour visits each memory once, not each tile — the sphere repeats
-      // the photos to fill itself out.
-      var index = clamp(Math.floor(elapsed / legMs), 0, memoryCount - 1);
-      if (!tourTiles[index] || !sphereGroup) return;
-
-      var local = elapsed - index * legMs;
-      var toQuat = tourTiles[index].quat;
-      var fromQuat = index === 0 ? initialQuat : tourTiles[index - 1].quat;
-      var t = easeInOut(clamp(local / TURN_MS, 0, 1));
-
-      // Spherical interpolation, so the whole rigid sphere arcs smoothly
-      // round to the next tile instead of wobbling through separate X/Y turns.
-      sphereGroup.quaternion.copy(fromQuat).slerp(toQuat, t);
-      renderGlobe();
-
-      // Hand over once the incoming memory is most of the way round, so the
-      // caption is never describing the photo that just left.
-      if (t >= 0.45 && flight.front !== index) showMemory(index);
-    }
-
     function showMemory(index) {
-      if (flight.front >= 0 && tourTiles[flight.front]) {
-        tourTiles[flight.front].el.classList.remove('is-front');
-      }
       flight.front = index;
-      if (tourTiles[index]) tourTiles[index].el.classList.add('is-front');
 
       var stage = stages[index] || { imageUrl: '', message: '' };
       var memoryEl = document.querySelector('.globe-memory');
+      memoryEl.style.setProperty('--stage-x', index % 2 === 0 ? '54px' : '-54px');
+      memoryEl.style.setProperty('--stage-turn', index % 2 === 0 ? '-7deg' : '7deg');
+      memoryEl.classList.remove('is-changing');
+      void memoryEl.offsetWidth;
+      memoryEl.classList.add('is-changing');
       var imageEl = document.getElementById('globeMemoryImage');
       var placeholderEl = document.getElementById('globeMemoryPlaceholder');
       var hasImage = Boolean(stage.imageUrl);
@@ -658,6 +768,10 @@
 
     /** Land: put the globe away and hand the page back to normal scrolling. */
     function endFlight() {
+      spherePreview.running = false;
+      if (spherePreview.raf) window.cancelAnimationFrame(spherePreview.raf);
+      spherePreview.raf = 0;
+      sphereEl.classList.remove('active');
       if (flight.raf) window.cancelAnimationFrame(flight.raf);
       flight.raf = 0;
       flight.running = false;
@@ -679,45 +793,12 @@
       document.getElementById('stampCode').textContent = dest.code;
       document.getElementById('stampCity').textContent = deaccent(city).toUpperCase();
       document.getElementById('stampDate').textContent = formatDate(departure);
-
-      var facts = document.getElementById('facts');
-      if (distance === null) {
-        facts.hidden = true;
-      } else {
-        document.getElementById('factDistance').textContent = num(distance) + ' km';
-        document.getElementById('factDuration').textContent = flightTime(distance);
-      }
-
-      var clocks = document.getElementById('clocks');
-      var note = document.getElementById('clocksNote');
-      if (!canUseTimeZones || !dest.tz) {
-        clocks.hidden = true;
-        document.getElementById('factOffset').textContent = '—';
-        return;
-      }
-
-      var minutes = zoneOffset(dest.tz, new Date()) - zoneOffset(HOME_TZ, new Date());
-      document.getElementById('factOffset').textContent = offsetText(minutes);
-      document.getElementById('clockFromLabel').textContent = origin.city || fromName;
-      document.getElementById('clockToLabel').textContent = city;
-      note.textContent = minutes === 0
-        ? 'Cũng may, hai nơi vẫn chung một múi giờ.'
-        : 'Từ hôm nay, ' + city + ' luôn ' + (minutes > 0 ? 'đi trước ' : 'đi sau ') +
-          (origin.city || fromName) + ' ' + spanText(minutes) + '.';
+      document.getElementById('facts').hidden = true;
+      document.getElementById('clocks').hidden = true;
+      document.getElementById('clocksNote').hidden = true;
     }
 
-    function startClocks() {
-      if (!canUseTimeZones || !dest.tz) return;
-      var fromEl = document.getElementById('clockFrom');
-      var toEl = document.getElementById('clockTo');
-      var render = function () {
-        var now = new Date();
-        fromEl.textContent = timeIn(HOME_TZ, now);
-        toEl.textContent = timeIn(dest.tz, now);
-      };
-      render();
-      setInterval(render, 20000);
-    }
+    function startClocks() {}
 
     function buildRecap() {
       if (images.length === 0) return;
@@ -744,38 +825,70 @@
       recap.hidden = false;
     }
 
+    function scrollLetterIntoCenter() {
+      var box = letterPaper.getBoundingClientRect();
+      var target = window.scrollY + box.top + box.height / 2 - window.innerHeight / 2;
+      window.scrollTo({
+        top: Math.max(0, target),
+        behavior: reduceMotion ? 'auto' : 'smooth'
+      });
+    }
+
     /**
-     * The envelope and the sealed letter each stay out of the document flow
-     * (`hidden`) whenever they're not the one on screen, so the invisible one
-     * never inflates `.letter-stage`'s height — that used to leave a tall dead
-     * gap sized to the letter's full text before it was ever opened.
+     * Flap opens, the paper slides out, then zooms to readable size.
+     * No book-fold open — that was the Love Letter card flip.
      */
     function openEnvelope() {
       if (envelopeOpen) return;
       envelopeOpen = true;
       window.clearTimeout(envelopeHideTimer);
       window.clearTimeout(letterHideTimer);
+      window.clearTimeout(letterRaiseTimer);
+      window.clearTimeout(letterOpenTimer);
 
       letterPaper.hidden = false;
-      void letterPaper.offsetWidth; // flush layout so the seal→open transition animates
-      letterPaper.classList.remove('is-sealed');
       envelope.classList.add('is-open');
       envelope.setAttribute('aria-expanded', 'true');
 
+      if (reduceMotion) {
+        letterPaper.classList.remove('is-sealed', 'is-raised');
+        letterPaper.classList.add('is-expanded');
+        envelope.classList.add('is-away');
+        envelope.hidden = true;
+        scrollLetterIntoCenter();
+        return;
+      }
+
+      letterRaiseTimer = window.setTimeout(function () {
+        letterPaper.classList.remove('is-sealed', 'is-expanded');
+        letterPaper.classList.add('is-raised');
+      }, 280);
+
+      letterOpenTimer = window.setTimeout(function () {
+        letterPaper.classList.remove('is-raised');
+        letterPaper.classList.add('is-expanded');
+        envelope.classList.add('is-away');
+        scrollLetterIntoCenter();
+      }, 980);
+
       envelopeHideTimer = window.setTimeout(function () {
         envelope.hidden = true;
-      }, reduceMotion ? 0 : 900);
+        scrollLetterIntoCenter();
+      }, 1550);
     }
 
     function sealEnvelope() {
       envelopeOpen = false;
       window.clearTimeout(envelopeHideTimer);
       window.clearTimeout(letterHideTimer);
+      window.clearTimeout(letterRaiseTimer);
+      window.clearTimeout(letterOpenTimer);
 
       envelope.hidden = false;
       void envelope.offsetWidth;
-      envelope.classList.remove('is-open');
+      envelope.classList.remove('is-open', 'is-away');
       envelope.setAttribute('aria-expanded', 'false');
+      letterPaper.classList.remove('is-raised', 'is-expanded');
       letterPaper.classList.add('is-sealed');
 
       letterHideTimer = window.setTimeout(function () {

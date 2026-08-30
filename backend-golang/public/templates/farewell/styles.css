@@ -1,3 +1,10 @@
+/* Shared with the Love Letter template so both letters read in the same hand. */
+@font-face {
+  font-family: 'SVN-ComicSansMS';
+  src: url('/templates/loveletter/SVN-ComicSansMS.ttf') format('truetype');
+  font-display: swap;
+}
+
 :root {
   --sky-top: #dcecfd;
   --sky-bottom: #f6fbff;
@@ -155,10 +162,185 @@ body.is-landed .intro {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(18px, 4vw, 28px);
-  padding: 48px clamp(16px, 5vw, 40px);
+  justify-content: space-evenly;
+  gap: clamp(16px, 3.5vw, 24px);
+  padding: max(26px, env(safe-area-inset-top) + 14px) clamp(16px, 5vw, 40px)
+    max(22px, env(safe-area-inset-bottom) + 14px);
   text-align: center;
+}
+
+.intro-top,
+.intro-bottom {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.intro-top {
+  gap: 14px;
+}
+
+.intro-mid {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 3.5vw, 22px);
+}
+
+.intro-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--blue-deep);
+}
+
+.intro-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+  color: #ffffff;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #57a4f8, var(--blue-deep));
+  box-shadow: 0 8px 18px rgba(37, 99, 203, 0.28);
+}
+
+.board {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 187, 233, 0.35);
+  box-shadow: 0 10px 24px rgba(24, 68, 122, 0.08);
+}
+
+.board-cell {
+  flex: 1 1 0;
+  text-align: left;
+}
+
+.board-cell:last-child {
+  text-align: right;
+}
+
+.board-cell span {
+  display: block;
+  white-space: nowrap;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.board-cell b {
+  display: block;
+  margin-top: 3px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.board-live {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-family: inherit !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+  color: var(--blue-deep) !important;
+}
+
+.board-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #37b26d;
+  animation: boardPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes boardPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(55, 178, 109, 0.5); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 5px rgba(55, 178, 109, 0); }
+}
+
+.intro-bottom {
+  gap: 10px;
+}
+
+.intro-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 300px;
+  color: var(--blue);
+}
+
+.intro-path-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+
+.intro-path-line {
+  flex: 1 1 auto;
+  height: 2px;
+  border-radius: 999px;
+  background-image: linear-gradient(90deg, currentColor 0 5px, transparent 5px 11px);
+  background-size: 11px 2px;
+  opacity: 0.5;
+}
+
+.intro-path-plane {
+  flex: 0 0 auto;
+  font-size: 15px;
+  font-style: normal;
+  animation: introPathFloat 3.4s ease-in-out infinite;
+}
+
+@keyframes introPathFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.intro-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.intro-note b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.intro-fine {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-live i,
+  .intro-path-plane {
+    animation: none;
+  }
 }
 
 .intro-eyebrow {
@@ -342,41 +524,131 @@ body.is-flying .intro {
   animation: globe-in 560ms ease both;
 }
 
+.sphere-stage,
+.memory-stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 4vw, 24px);
+}
+
+.memory-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.memory-stage::before,
+.memory-stage::after {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: min(88vw, 860px);
+  aspect-ratio: 1;
+  content: '';
+  pointer-events: none;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(-12deg);
+}
+
+.memory-stage::before {
+  border: 1px dashed rgba(67, 122, 184, 0.22);
+  box-shadow:
+    0 0 80px rgba(116, 175, 229, 0.12),
+    inset 0 0 80px rgba(255, 255, 255, 0.35);
+  animation: memory-orbit 18s linear infinite;
+}
+
+.memory-stage::after {
+  width: min(66vw, 650px);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.08);
+  animation: memory-orbit-reverse 24s linear infinite;
+}
+
+@keyframes memory-orbit {
+  to { transform: translate(-50%, -50%) rotate(348deg); }
+}
+
+@keyframes memory-orbit-reverse {
+  from { transform: translate(-50%, -50%) rotate(18deg); }
+  to { transform: translate(-50%, -50%) rotate(-342deg); }
+}
+
+.sphere-stage[hidden],
+.memory-stage[hidden] {
+  display: none;
+}
+
+.sphere-enter {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  bottom: max(28px, calc(env(safe-area-inset-bottom) + 20px));
+  margin: 0;
+  padding: 10px 18px;
+  color: var(--blue-deep);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(24, 68, 122, 0.14);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: sphere-prompt 1.8s ease-in-out infinite;
+}
+
+@keyframes sphere-prompt {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 4px); }
+}
+
 @keyframes globe-in {
   from { opacity: 0; transform: scale(0.94); }
 }
 
-.globe-scene {
-  position: relative;
-  flex: 0 0 auto;
-  /* Square, sized to the padded globe — 94vw overflowed the 16px side
-     padding and CSS3D's overflow:hidden then sheared off the right side. */
-  width: min(100%, 62vh, 520px);
-  aspect-ratio: 1;
-  height: auto;
-  overflow: visible;
-}
-
-/* The sphere is rendered by THREE.CSS3DRenderer, which appends its own
-   camera-projected canvas here — it just needs to fill the scene so its
-   projection center lands on the box's center, matching the plane's orbit. */
 .globe-sphere {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  overflow: visible;
+  z-index: 1;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+  opacity: 0;
+  transition: opacity 1.5s ease;
 }
 
-/* Own 3D context for the plane, so ancestor `perspective` does not wrap
-   (and clip) the CSS3D sphere. */
+.globe-sphere.active {
+  opacity: 1;
+}
+
+.globe-sphere > div {
+  background: transparent !important;
+}
+
+.globe-sphere:focus-visible {
+  box-shadow: inset 0 0 0 4px rgba(59, 130, 246, 0.35);
+}
+
 .globe-orbit-space {
-  position: absolute;
+  position: fixed;
+  z-index: 2;
   inset: 0;
+  overflow: hidden;
   perspective: 1150px;
   pointer-events: none;
-  overflow: visible;
+  opacity: 1;
+  transition: opacity 300ms ease;
 }
 
-/* A zero-sized anchor at the middle of the scene: the orbit hangs off it. */
+.sphere-stage.is-entering .globe-orbit-space {
+  opacity: 0;
+}
+
 .globe-orbit,
 .globe-arm {
   position: absolute;
@@ -391,24 +663,17 @@ body.is-flying .intro {
   transform: rotateX(-20deg);
 }
 
-.globe-arm {
-  top: 0;
-  left: 0;
-}
-
 .globe-plane {
   position: absolute;
   display: flex;
-  align-items: center;
-  justify-content: center;
   width: 40px;
   height: 40px;
   margin: -20px 0 0 -20px;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 8px 20px rgba(24, 68, 122, 0.24);
-  /* Opacity is driven by JS from orbit depth — no CSS transition, or the fade
-     lags a frame behind the plane and looks like it is still poking through. */
 }
 
 .globe-plane svg {
@@ -417,48 +682,29 @@ body.is-flying .intro {
   fill: var(--blue-deep);
 }
 
-/* Square CSS3D cards matching Special Gift's `.element` (208×208, ~4px
-   inset photo, rounded). Size comes from --tile so packing stays at
-   Special Gift's 208/800 tile-to-radius ratio as the globe scales. */
-.tile {
-  width: var(--tile, 52px);
-  height: var(--tile, 52px);
-  padding: 4px;
-  background: var(--card);
-  border: 1px solid rgba(255, 255, 255, 0.92);
-  border-radius: 10px;
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.45);
-  pointer-events: none;
+.globe-sphere .element {
+  width: 200px;
+  height: 200px;
+  box-shadow: 0 0 10px rgba(249, 146, 146, 0.5), 0 0 25px rgba(255, 182, 193, 0.3);
+  border: 1px solid rgba(255, 182, 193, 0.4);
+  text-align: center;
+  cursor: default;
+  border-radius: 8px;
+  overflow: hidden;
+  background: transparent;
 }
 
-.tile.is-front {
-  box-shadow: 0 0 18px rgba(59, 130, 246, 0.8), 0 10px 24px rgba(24, 68, 122, 0.28);
-}
-
-.tile img {
-  display: block;
-  width: 100%;
-  height: 100%;
+.globe-sphere .element img {
+  width: 200px;
+  height: 200px;
+  border-radius: 8px;
   object-fit: cover;
-  border-radius: 8px;
-  background: #e4eefa;
-}
-
-.tile-placeholder {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(12px, 3vw, 18px);
-  color: var(--blue-deep);
-  background:
-    radial-gradient(circle at 68% 28%, rgba(255, 255, 255, 0.95) 0 12%, transparent 13%),
-    linear-gradient(155deg, #d9ebff, #f8fbff 60%, #f4dfbd);
-  border-radius: 8px;
+  display: block;
 }
 
 .globe-memory {
+  --stage-x: 54px;
+  --stage-turn: -7deg;
   position: relative;
   flex: 0 0 auto;
   width: min(620px, 100%);
@@ -467,12 +713,40 @@ body.is-flying .intro {
   grid-template-columns: minmax(230px, 1fr) minmax(0, 1fr);
   align-items: stretch;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  box-shadow: 0 18px 44px rgba(24, 68, 122, 0.14);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.98);
+  border-radius: 24px;
+  box-shadow:
+    0 28px 70px rgba(24, 68, 122, 0.2),
+    0 0 0 7px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+.globe-memory.is-changing {
+  animation: memory-stage-in 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes memory-stage-in {
+  from {
+    opacity: 0;
+    filter: blur(8px) saturate(0.7);
+    transform:
+      perspective(1000px)
+      translate3d(var(--stage-x), 30px, -120px)
+      rotateY(var(--stage-turn))
+      scale(0.9);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) saturate(1);
+    transform:
+      perspective(1000px)
+      translate3d(0, 0, 0)
+      rotateY(0)
+      scale(1);
+  }
 }
 
 .globe-memory-visual {
@@ -483,6 +757,28 @@ body.is-flying .intro {
   background: #e8f1fb;
 }
 
+.globe-memory-visual::after {
+  position: absolute;
+  inset: -40% -65%;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 36%,
+    rgba(255, 255, 255, 0.5) 48%,
+    transparent 60%
+  );
+  transform: translateX(-55%);
+}
+
+.globe-memory.is-changing .globe-memory-visual::after {
+  animation: memory-shine 1150ms 180ms ease-out both;
+}
+
+@keyframes memory-shine {
+  to { transform: translateX(55%); }
+}
+
 #globeMemoryImage {
   display: block;
   width: 100%;
@@ -491,6 +787,15 @@ body.is-flying .intro {
   /* Portraits usually carry the subject's face in the upper third; biasing
      the crop upward keeps faces in frame instead of centring on chins. */
   object-position: 50% 28%;
+}
+
+.globe-memory.is-changing #globeMemoryImage {
+  animation: memory-photo-in 2400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes memory-photo-in {
+  from { transform: scale(1.09); }
+  to { transform: scale(1); }
 }
 
 #globeMemoryImage[hidden] {
@@ -561,13 +866,19 @@ body.is-flying .intro {
   right: auto;
   bottom: auto;
   min-height: auto;
-  padding: 6px 13px;
-  background: rgba(18, 38, 63, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 7px 14px;
+  background: linear-gradient(135deg, rgba(17, 42, 72, 0.8), rgba(45, 96, 153, 0.64));
+  border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: 999px;
-  box-shadow: 0 6px 16px rgba(24, 68, 122, 0.22);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 8px 22px rgba(12, 42, 76, 0.28);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.globe-memory.is-image-only .globe-step::before {
+  margin-right: 7px;
+  content: '✦';
+  color: #f6d89b;
 }
 
 .globe-memory.is-image-only .globe-step {
@@ -653,22 +964,40 @@ body.is-flying .intro {
   }
 }
 
+.memory-stage .globe-memory,
+.memory-stage .globe-memory.is-image-only {
+  width: min(780px, 100%);
+  height: min(58vh, 520px);
+}
+
+.memory-stage .globe-memory-visual,
+.memory-stage .globe-memory.is-image-only .globe-memory-visual {
+  height: 100%;
+}
+
 .globe-skip {
   flex: 0 0 auto;
   padding: 10px 18px;
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--muted);
-  background: transparent;
-  border: 1px solid var(--line);
+  color: var(--blue-deep);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(103, 151, 201, 0.3);
   border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(24, 68, 122, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .globe-skip:hover {
   color: var(--blue-deep);
   border-color: var(--blue-pale);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(24, 68, 122, 0.14);
+  transform: translateY(-2px);
 }
 
 /* ─── Arrival ─── */
@@ -824,17 +1153,15 @@ body.is-flying .intro {
   padding: 0 clamp(16px, 5vw, 40px) clamp(60px, 14vw, 110px);
 }
 
-/*
- * The envelope and the sealed letter both stay `hidden` (removed from the
- * document flow) whenever they're not the one showing — see openEnvelope /
- * sealEnvelope in app.js. Only one of them ever occupies space here, so this
- * stage never inflates to the full letter's height before it's opened.
- */
 .letter-stage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: relative;
+  display: grid;
+  place-items: center;
   perspective: 1400px;
+}
+
+.letter-stage > * {
+  grid-area: 1 / 1;
 }
 
 /* ─── Envelope ─── */
@@ -850,13 +1177,20 @@ body.is-flying .intro {
   border: 0;
   cursor: pointer;
   transform-style: preserve-3d;
-  transition: opacity 400ms ease 380ms, transform 520ms ease 380ms, visibility 0s 780ms;
+  transition:
+    opacity 420ms ease,
+    transform 720ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s 420ms;
 }
 
 .envelope.is-open {
+  transform: translateY(clamp(90px, 16vw, 150px)) scale(0.94);
+}
+
+.envelope.is-away {
   opacity: 0;
   visibility: hidden;
-  transform: translateY(28px) scale(0.94);
+  transform: translateY(clamp(130px, 20vw, 190px)) scale(0.88);
   pointer-events: none;
 }
 
@@ -990,25 +1324,43 @@ body.is-flying .intro {
 .letter-paper {
   position: relative;
   z-index: 1;
-  width: 100%;
-  margin-top: 28px;
+  width: min(620px, 100%);
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: clamp(26px, 6vw, 42px);
-  background: var(--card);
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.98);
   border-radius: 14px;
   box-shadow: 0 22px 50px rgba(24, 68, 122, 0.16);
-  transition: opacity 520ms ease 460ms, transform 640ms cubic-bezier(0.22, 1, 0.36, 1) 460ms,
-    visibility 0s 460ms;
+  transform-origin: center center;
+  transition:
+    opacity 260ms ease,
+    transform 720ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
 }
 
 .letter-paper.is-sealed {
   opacity: 0;
   visibility: hidden;
-  transform: translateY(26px) scale(0.97);
+  z-index: 1;
+  transform: translateY(48px) scale(0.42);
   pointer-events: none;
-  transition: opacity 240ms ease, transform 240ms ease, visibility 0s 240ms;
+}
+
+.letter-paper.is-raised {
+  z-index: 4;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(clamp(-220px, -26vw, -140px)) scale(0.46);
+  pointer-events: none;
+}
+
+.letter-paper.is-expanded {
+  z-index: 5;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
 }
 
 .letter-eyebrow {
@@ -1022,16 +1374,21 @@ body.is-flying .intro {
 
 .letter-body {
   margin: 0;
-  max-width: 58ch;
-  font-size: clamp(15px, 4vw, 18px);
-  line-height: 1.8;
+  max-width: 46ch;
+  font-family: 'SVN-ComicSansMS', 'Comic Sans MS', cursive;
+  font-size: clamp(19px, 5.2vw, 24px);
+  font-weight: 400;
+  line-height: 1.45;
   white-space: pre-wrap;
 }
 
 .letter-sign {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  align-self: flex-end;
+  font-family: 'SVN-ComicSansMS', 'Comic Sans MS', cursive;
+  font-size: clamp(19px, 5.2vw, 24px);
+  font-weight: 400;
+  text-align: right;
   color: var(--blue-deep);
 }
 
@@ -1112,6 +1469,14 @@ body.is-flying .intro {
 
 @media (prefers-reduced-motion: reduce) {
   .cloud {
+    animation: none;
+  }
+
+  .memory-stage::before,
+  .memory-stage::after,
+  .globe-memory.is-changing,
+  .globe-memory.is-changing #globeMemoryImage,
+  .globe-memory.is-changing .globe-memory-visual::after {
     animation: none;
   }
 

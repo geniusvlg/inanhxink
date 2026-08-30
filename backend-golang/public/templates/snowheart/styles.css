@@ -1,3 +1,10 @@
+/* Shared with the Love Letter template so every letter reads in the same hand. */
+@font-face {
+  font-family: 'SVN-ComicSansMS';
+  src: url('/templates/loveletter/SVN-ComicSansMS.ttf') format('truetype');
+  font-display: swap;
+}
+
 html, body {
   background: #000 !important;
   color-scheme: dark;
@@ -295,7 +302,7 @@ canvas.snowheart-letter-ready:focus-visible {
 #snowheart-letter-title {
   margin: 0 36px 20px;
   color: #247fb9;
-  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-family: 'SVN-ComicSansMS', "Comic Sans MS", cursive;
   font-size: clamp(24px, 6vw, 32px);
   line-height: 1.25;
   text-align: center;
@@ -311,10 +318,9 @@ canvas.snowheart-letter-ready:focus-visible {
   border-left: 3px solid rgba(74, 161, 210, .45);
   border-radius: 0 10px 10px 0;
   color: #29475b;
-  font-family: "Segoe Print", "Bradley Hand", cursive;
-  font-size: clamp(15px, 3vw, 17px);
-  font-style: italic;
-  line-height: 1.8;
+  font-family: 'SVN-ComicSansMS', "Comic Sans MS", cursive;
+  font-size: clamp(18px, 4.4vw, 21px);
+  line-height: 1.5;
   overflow-wrap: break-word;
   background: rgba(255, 255, 255, .62);
   white-space: pre-wrap;
@@ -368,7 +374,7 @@ canvas.snowheart-letter-ready:focus-visible {
   .start-invitation { min-width: 235px; padding: 10px 39px 11px 18px; }
   #snowheart-letter-hint { top: 18px; font-size: 12px; }
   .snowheart-letter-card { padding: 40px 24px 30px; }
-  #snowheart-letter-content { font-size: 16px; line-height: 1.75; }
+  #snowheart-letter-content { font-size: 19px; line-height: 1.5; }
 }
 
 @media (prefers-reduced-motion: reduce) {

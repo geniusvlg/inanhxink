@@ -153,12 +153,34 @@ const prepareQRImage = async (file: File): Promise<File> => {
   }
 };
 
-let qrImageProcessingQueue: Promise<void> = Promise.resolve();
+const QR_IMAGE_PROCESSING_CONCURRENCY = 5;
+let activeQRImageProcessors = 0;
+const qrImageProcessingWaiters: Array<() => void> = [];
 
-const prepareQRImageQueued = (file: File): Promise<File> => {
-  const task = qrImageProcessingQueue.then(() => prepareQRImage(file));
-  qrImageProcessingQueue = task.then(() => undefined, () => undefined);
-  return task;
+const acquireQRImageProcessingSlot = async (): Promise<void> => {
+  if (activeQRImageProcessors < QR_IMAGE_PROCESSING_CONCURRENCY) {
+    activeQRImageProcessors++;
+    return;
+  }
+  await new Promise<void>(resolve => qrImageProcessingWaiters.push(resolve));
+};
+
+const releaseQRImageProcessingSlot = (): void => {
+  const next = qrImageProcessingWaiters.shift();
+  if (next) {
+    next();
+    return;
+  }
+  activeQRImageProcessors--;
+};
+
+const prepareQRImageQueued = async (file: File): Promise<File> => {
+  await acquireQRImageProcessingSlot();
+  try {
+    return await prepareQRImage(file);
+  } finally {
+    releaseQRImageProcessingSlot();
+  }
 };
 
 export const uploadFiles = async (files: File[], qrName?: string): Promise<string[]> => {
@@ -167,7 +189,7 @@ export const uploadFiles = async (files: File[], qrName?: string): Promise<strin
   }
   return Promise.all(files.map(async file => {
     try {
-      // Decode/resize one photo at a time; direct S3 PUTs may still run concurrently.
+      // Bound compression concurrency; direct S3 PUTs may also run concurrently.
       const prepared = await prepareQRImageQueued(file);
       return await uploadDirectlyToS3(prepared, qrName, 'image');
     } catch (error) {
