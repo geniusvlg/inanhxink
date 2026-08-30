@@ -303,7 +303,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	case "farewell":
 		templateData["farewellFriendName"] = strOrDefault(body, "farewellFriendName", "")
 		templateData["farewellFrom"] = strOrDefault(body, "farewellFrom", "Việt Nam")
-		templateData["farewellDestination"] = strOrDefault(body, "farewellDestination", "other")
+		templateData["farewellDestination"] = strOrDefault(body, "farewellDestination", "")
 		templateData["farewellDepartureDate"] = strOrDefault(body, "farewellDepartureDate", "")
 		templateData["farewellMessage"] = strOrDefault(body, "farewellMessage", content)
 		templateData["farewellSender"] = strOrDefault(body, "farewellSender", "")

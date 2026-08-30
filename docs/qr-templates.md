@@ -15,7 +15,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `birthday` | `birthday` | Birthday fields, no image uploader |
 | `birthdaycake` | `birthdaycake` | Letter title/body, cake inscription, and up to 15 photos |
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
-| `farewell` | `farewell` | Friend name, origin city, destination/date, farewell letter, and 1–8 stages each with an optional image and message |
+| `farewell` | `farewell` | Friend name, origin city, free-text destination, date, farewell letter, and 1–8 stages each with an optional image and message |
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
 
@@ -32,12 +32,16 @@ Safari's later synthetic `click`.
 
 ### Farewell / Bon Voyage
 
-A boarding pass opens the page. Pressing it hands the screen to a full-viewport
-globe: a sphere built from the order's photos, with the plane flying laps around
-it. The sphere turns to bring each memory to the front in turn while its caption
-reads out below, then the page lands on the arrival facts and a sealed airmail
+A boarding pass opens the page, framed by an airline header ("Inanhxink
+Airlines" brand row plus a flight/seat/status strip derived from the gate hash)
+and a footer flight-path
+strip with the baggage note. Pressing it first hands the screen to a
+full-viewport copy of Love Burst's photo sphere. The sphere is a dedicated
+interactive stage: tapping or keyboard-activating it transitions to the flight
+sequence, where each memory card appears separately under the altitude/distance
+progress HUD. The page then lands on the arrival facts and a sealed airmail
 envelope. A skip button jumps straight there, and the replay button reseals the
-envelope and flies the whole thing again.
+envelope and shows the sphere again.
 
 The page is gated before and during the flight. The initial
 `body.is-gated` class limits the document to `100svh`, locks scrolling, and
@@ -50,43 +54,44 @@ configured stage — a 1s turn plus a hold.
 
 After arriving, the sealed envelope waits for the visitor to click or tap it;
 landing, skipping, and reduced-motion mode never open it automatically. The flap
-then folds up, the envelope fades, and the letter rises in its place. Both share
-one CSS grid cell, so opening never shifts the page. The flap is a
+then folds up, the paper slides out of the envelope, and the paper zooms to
+readable size while the page smooth-scrolls to keep the letter centered.
+The letter text and signature use Love Letter's `SVN-ComicSansMS` face, loaded
+from `/templates/loveletter/SVN-ComicSansMS.ttf`, so both letters read in the
+same hand. There is no book-fold open. Reduced-motion mode reveals the
+expanded paper immediately. The flap is a
 `clip-path` triangle, so
 its fold shadow is a `drop-shadow` filter rather than a `box-shadow`, which
 would be clipped away, and it keeps its backface visible so it stays on screen
 while rotating past 90°.
 
-The photo sphere is rendered with three.js `CSS3DRenderer`, the same
-technique as the Special Gift gallery globe. Customer photos (1–8 stages)
-are repeated across ~170 square tiles on mobile and ~199 on desktop —
-Special Gift's counts — and spread with the same Fibonacci-sphere formula
-so the ball reads as a dense globe rather than a handful of large cards.
-Tiles are single-faced (the far side is a mirror, as in Special Gift).
-The tour still visits each stage once: it turns toward a well-spaced
-repeat of that stage's photo, not the first N Fibonacci points (which
-would cluster at the south pole on a 199-tile ball). Stages without an
-image use a travel-themed placeholder.
+The photo sphere uses Love Burst's full three.js implementation: `CSS3DRenderer`,
+Tween-based random-to-sphere assembly, `TrackballControls`, a 40-degree camera at
+`z = 3000`, 200px image tiles, 540/800 mobile/desktop radii, and continuous
+automatic rotation. Customer photos are square-cropped in-browser at 92% JPEG
+quality, then repeat across Love Burst's latitude-ring layout. Preprocessing
+fetches each CDN image as a blob and decodes a local object URL; this avoids
+direct CDN `<img>` loads remaining pending and blocking the entire sphere.
+Mobile and in-app browsers use fewer rings. A tap with no more than 12px pointer
+travel starts the same inward camera transition as Love Burst, then starts the
+Farewell memory sequence instead of Love Burst's rising-photo and envelope
+sequence.
 
-The plane orbits on its own tilted ring. It is counter-rotated out of both the
-ring's spin and its tilt so it always faces the viewer, then turned in 2D to
-point along its screen-space tangent. Its lap is clamped to the scene width, so
-on a narrow phone the orbit tightens rather than flying off the edge. Radius and
-tile size are recomputed on resize.
-
-`.globe-scene` must set `transform-style: preserve-3d` so the sphere and the
-orbit share one depth sort — without it the plane always paints on top. Even
-with that, the ball is a hollow shell of semi-transparent cards, so CSS cannot
-fully hide the plane through gaps; `spinPlane` fades `opacity` from the orbit's
-`cos(angle)` and sets `visibility: hidden` on the far half.
+During the sphere stage, the original Farewell airplane circles the globe on a
+separate tilted CSS 3D orbit. Its radius follows the sphere's projected screen
+size and is clamped on narrow displays. The airplane counter-rotates to face the
+viewer, points along its flight path, fades while passing behind the globe, and
+fades out completely during the inward camera transition.
 
 New orders store `farewellStages` as an ordered array of 1–8
 `{ imageUrl, message }` objects. The image and the message are each optional
 and empty stages remain in the array; the template gives a fully empty stage a
-travel-themed visual and default message. Each active stage is also rendered in
-a dedicated memory panel below the sphere, showing its single image alongside
-the message. The message swaps in partway through each turn, not at the end,
-so it never describes the visual that has just left the front.
+travel-themed visual and default message. After the sphere is tapped, each active
+stage is rendered on its own in a dedicated memory panel, showing its single
+image alongside the message while the progress HUD advances. Memory panels use
+alternating 3D entrances, a subtle photo zoom and light sweep, glass framing,
+and animated flight-path rings behind the card. Reduced-motion mode disables
+all of these decorative animations.
 
 For backward compatibility, `app.js` zips legacy `imageUrls` and
 `farewellCaptions` when `farewellStages` is absent, and also accepts the
@@ -97,37 +102,31 @@ and the final recap. Stage image URLs remain raw S3 values in JSONB;
 `rewriteTemplateDataCDN` rewrites nested `farewellStages[].imageUrl` values
 only when serving public data. Payment migration already walks nested JSON.
 
-Everything else on the page is derived from the two cities rather than asked for
-in the order form:
+The destination is free text from the order form. Arrival shows the typed city
+and a stamp code from its first letters. Distance, flight time, time-zone
+offset, and live clocks are hidden — those need known coordinates/timezones
+that a typed destination does not provide. The in-flight HUD shows progress as
+a percent instead of kilometres.
 
-- **Flight telemetry** — a fixed chip showing altitude and distance covered,
-  visible only while airborne. Altitude ramps over the first and last 12% of the
-  tour and cruises at 10.600 m in between.
+Legacy destination keys such as `australia` still map to their old labels on
+the boarding pass. Vietnamese origin cities still map to airport codes.
+
+- **Flight telemetry** — altitude plus a percent progress bar, visible only
+  while airborne.
 - **Flight status** — climbing, cruising, half way, descending, under the caption.
 - **Stage memory panel** — the current stage's image plus its message; empty
   stages use the placeholder, while image-only or message-only stages preserve
   the supplied content.
 - **Countdown** — days until `farewellDepartureDate`, on the boarding pass.
-- **Arrival section** — a passport stamp that thuds down on entry, great-circle
-  distance (haversine), estimated flight time (distance ÷ 850 km/h plus 36
-  minutes), and the time difference.
-- **Live dual clocks** — origin and destination time, refreshed every 20s. Offsets
-  come from the browser's IANA timezone data via `Intl.DateTimeFormat`, so
-  daylight saving stays correct without a lookup table. Destinations with no
-  timezone (`other`) hide the clocks and the distance facts.
+- **Arrival section** — a passport stamp that thuds down on entry, plus the
+  destination name. No distance, duration, offset, or clocks.
 - **Recap grid** — every photo again with its caption, below the letter.
 
 There are no third-party dependencies. `prefers-reduced-motion` drops the stamp
 and the drifting clouds, and skips the flight entirely — the start button goes
 straight to the arrival and the letter, where the recap grid still carries every
 uploaded stage image and its optional message. Legacy orders with no stages take
-that same shortcut.
-
-Supported destination keys, each with an airport code, city, IANA timezone, and
-coordinates, are defined in `public/templates/farewell/app.js`; unknown values
-fall back to the generic `other` destination. Vietnamese origin cities map to
-real airport codes and coordinates for the boarding pass, defaulting to `VN` and
-Hanoi's position. The template row is seeded by
+that same shortcut. The template row is seeded by
 `V64__seed_farewell_template.sql`.
 
 ## Love Burst
@@ -177,7 +176,9 @@ Snow Heart also accepts an optional `content` letter of up to 400 characters
 and an optional `letterTitle` of up to 50 characters. When present, the formed
 snow heart becomes clickable after the reveal. Clicking or tapping the heart
 displays a text-only Love Burst-style letter dialog; Snow Heart does not include
-the image slider. Its title and paper use the Snow Heart blue palette, and the
+the image slider. Its title and paper use the Snow Heart blue palette with Love
+Letter's `SVN-ComicSansMS` face (loaded from
+`/templates/loveletter/SVN-ComicSansMS.ttf`), and the
 letter content types in one character at a time (reduced-motion mode shows it
 immediately). Keyboard users can focus the canvas and press Enter or Space.
 Voice playback continues to start from the initial invitation tap, not from the

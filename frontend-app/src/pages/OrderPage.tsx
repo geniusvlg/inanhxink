@@ -19,20 +19,20 @@ import { resolveAssetUrl } from '../utils/assetUrl';
 
 const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart']);
 
-const FAREWELL_DESTINATIONS = [
-  ['australia', 'Úc'],
-  ['usa', 'Hoa Kỳ'],
-  ['canada', 'Canada'],
-  ['uk', 'Anh'],
-  ['france', 'Pháp'],
-  ['germany', 'Đức'],
-  ['japan', 'Nhật Bản'],
-  ['korea', 'Hàn Quốc'],
-  ['singapore', 'Singapore'],
-  ['newzealand', 'New Zealand'],
-  ['netherlands', 'Hà Lan'],
-  ['other', 'Quốc gia khác'],
-] as const;
+const FAREWELL_DESTINATION_LABELS: Record<string, string> = {
+  australia: 'Úc',
+  usa: 'Hoa Kỳ',
+  canada: 'Canada',
+  uk: 'Anh',
+  france: 'Pháp',
+  germany: 'Đức',
+  japan: 'Nhật Bản',
+  korea: 'Hàn Quốc',
+  singapore: 'Singapore',
+  newzealand: 'New Zealand',
+  netherlands: 'Hà Lan',
+  other: '',
+};
 const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday', 'farewell']);
 const DEFAULT_FAREWELL_STAGE_COUNT = 5;
 const MAX_FAREWELL_STAGES = 8;
@@ -104,7 +104,7 @@ function OrderPage() {
   // Farewell fields
   const [farewellFriendName, setFarewellFriendName] = useState('');
   const [farewellFrom, setFarewellFrom] = useState('Việt Nam');
-  const [farewellDestination, setFarewellDestination] = useState('australia');
+  const [farewellDestination, setFarewellDestination] = useState('');
   const [farewellDepartureDate, setFarewellDepartureDate] = useState('');
   const [farewellMessage, setFarewellMessage] = useState('');
   const [farewellSender, setFarewellSender] = useState('');
@@ -189,7 +189,9 @@ function OrderPage() {
         if (d.birthdayCakeInscription) setBirthdayCakeInscription(d.birthdayCakeInscription);
         if (d.farewellFriendName) setFarewellFriendName(d.farewellFriendName);
         if (d.farewellFrom) setFarewellFrom(d.farewellFrom);
-        if (d.farewellDestination) setFarewellDestination(d.farewellDestination);
+        if (d.farewellDestination) {
+          setFarewellDestination(FAREWELL_DESTINATION_LABELS[d.farewellDestination] ?? d.farewellDestination);
+        }
         if (d.farewellDepartureDate) setFarewellDepartureDate(d.farewellDepartureDate);
         if (d.farewellMessage) setFarewellMessage(d.farewellMessage);
         if (d.farewellSender) setFarewellSender(d.farewellSender);
@@ -660,7 +662,7 @@ function OrderPage() {
         ...(templateType === 'farewell' && {
           farewellFriendName: farewellFriendName.trim(),
           farewellFrom: farewellFrom.trim(),
-          farewellDestination,
+          farewellDestination: farewellDestination.trim(),
           farewellDepartureDate,
           farewellMessage: farewellMessage.trim(),
           farewellSender: farewellSender.trim(),
@@ -1185,15 +1187,14 @@ function OrderPage() {
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Điểm đến</label>
-              <select
+              <input
+                type="text"
                 value={farewellDestination}
                 onChange={e => setFarewellDestination(e.target.value)}
-                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', background: '#fff' }}
-              >
-                {FAREWELL_DESTINATIONS.map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
+                placeholder="Ví dụ: Sydney"
+                maxLength={40}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
             </div>
           </div>
           <div>
