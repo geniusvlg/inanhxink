@@ -35,25 +35,49 @@
   var CRUISE_SPEED = 850;
 
   // Pacing of each memory stage.
-  var ORBIT_PERIOD = 7600;
-  var ORBIT_TILT = -20;
   var TURN_MS = 1000;
   var HOLD_MS = 1500;
   var HOLD_MS_SHORT = 1050;
+  var BOARD_MESSAGE_MAX = 36;
 
   var DESTINATIONS = {
-    australia:   { label: 'Úc',           code: 'SYD', city: 'Sydney',    tz: 'Australia/Sydney',  lat: -33.87, lon: 151.21 },
-    usa:         { label: 'Hoa Kỳ',       code: 'JFK', city: 'New York',  tz: 'America/New_York',  lat: 40.71,  lon: -74.01 },
-    canada:      { label: 'Canada',       code: 'YVR', city: 'Vancouver', tz: 'America/Vancouver', lat: 49.28,  lon: -123.12 },
-    uk:          { label: 'Anh',          code: 'LHR', city: 'London',    tz: 'Europe/London',     lat: 51.51,  lon: -0.13 },
-    france:      { label: 'Pháp',         code: 'CDG', city: 'Paris',     tz: 'Europe/Paris',      lat: 48.86,  lon: 2.35 },
-    germany:     { label: 'Đức',          code: 'FRA', city: 'Frankfurt', tz: 'Europe/Berlin',     lat: 50.11,  lon: 8.68 },
-    japan:       { label: 'Nhật Bản',     code: 'HND', city: 'Tokyo',     tz: 'Asia/Tokyo',        lat: 35.68,  lon: 139.69 },
-    korea:       { label: 'Hàn Quốc',     code: 'ICN', city: 'Seoul',     tz: 'Asia/Seoul',        lat: 37.57,  lon: 126.98 },
-    singapore:   { label: 'Singapore',    code: 'SIN', city: 'Singapore', tz: 'Asia/Singapore',    lat: 1.35,   lon: 103.82 },
-    newzealand:  { label: 'New Zealand',  code: 'AKL', city: 'Auckland',  tz: 'Pacific/Auckland',  lat: -36.85, lon: 174.76 },
-    netherlands: { label: 'Hà Lan',       code: 'AMS', city: 'Amsterdam', tz: 'Europe/Amsterdam',  lat: 52.37,  lon: 4.90 },
-    other:       { label: 'Miền đất mới', code: 'INT', city: '',          tz: '',                  lat: null,   lon: null }
+    australia:   { label: 'Úc',           code: 'SYD', city: 'Sydney',    cc: 'AU', tz: 'Australia/Sydney',  lat: -33.87, lon: 151.21 },
+    usa:         { label: 'Hoa Kỳ',       code: 'JFK', city: 'New York',  cc: 'US', tz: 'America/New_York',  lat: 40.71,  lon: -74.01 },
+    canada:      { label: 'Canada',       code: 'YVR', city: 'Vancouver', cc: 'CA', tz: 'America/Vancouver', lat: 49.28,  lon: -123.12 },
+    uk:          { label: 'Anh',          code: 'LHR', city: 'London',    cc: 'GB', tz: 'Europe/London',     lat: 51.51,  lon: -0.13 },
+    france:      { label: 'Pháp',         code: 'CDG', city: 'Paris',     cc: 'FR', tz: 'Europe/Paris',      lat: 48.86,  lon: 2.35 },
+    germany:     { label: 'Đức',          code: 'FRA', city: 'Frankfurt', cc: 'DE', tz: 'Europe/Berlin',     lat: 50.11,  lon: 8.68 },
+    japan:       { label: 'Nhật Bản',     code: 'HND', city: 'Tokyo',     cc: 'JP', tz: 'Asia/Tokyo',        lat: 35.68,  lon: 139.69 },
+    korea:       { label: 'Hàn Quốc',     code: 'ICN', city: 'Seoul',     cc: 'KR', tz: 'Asia/Seoul',        lat: 37.57,  lon: 126.98 },
+    singapore:   { label: 'Singapore',    code: 'SIN', city: 'Singapore', cc: 'SG', tz: 'Asia/Singapore',    lat: 1.35,   lon: 103.82 },
+    newzealand:  { label: 'New Zealand',  code: 'AKL', city: 'Auckland',  cc: 'NZ', tz: 'Pacific/Auckland',  lat: -36.85, lon: 174.76 },
+    netherlands: { label: 'Hà Lan',       code: 'AMS', city: 'Amsterdam', cc: 'NL', tz: 'Europe/Amsterdam',  lat: 52.37,  lon: 4.90 },
+    other:       { label: 'Miền đất mới', code: 'INT', city: '',          cc: '',   tz: '',                  lat: null,   lon: null }
+  };
+
+  // Longer needles first so "new york" wins over a short country slug.
+  var FLAG_HINTS = [
+    ['ho chi minh', 'VN'], ['hai phong', 'VN'], ['nha trang', 'VN'], ['can tho', 'VN'],
+    ['new york', 'US'], ['los angeles', 'US'], ['san francisco', 'US'], ['hoa ky', 'US'],
+    ['new zealand', 'NZ'], ['auckland', 'NZ'], ['wellington', 'NZ'],
+    ['singapore', 'SG'], ['australia', 'AU'], ['melbourne', 'AU'], ['brisbane', 'AU'],
+    ['sydney', 'AU'], ['perth', 'AU'], ['vancouver', 'CA'], ['toronto', 'CA'],
+    ['canada', 'CA'], ['london', 'GB'], ['manchester', 'GB'], ['paris', 'FR'],
+    ['frankfurt', 'DE'], ['berlin', 'DE'], ['munich', 'DE'], ['tokyo', 'JP'],
+    ['osaka', 'JP'], ['seoul', 'KR'], ['busan', 'KR'], ['amsterdam', 'NL'],
+    ['bangkok', 'TH'], ['thailand', 'TH'], ['taipei', 'TW'],
+    ['ha noi', 'VN'], ['hanoi', 'VN'], ['sai gon', 'VN'], ['saigon', 'VN'],
+    ['da nang', 'VN'], ['viet nam', 'VN'], ['vietnam', 'VN'],
+    ['japan', 'JP'], ['korea', 'KR'], ['france', 'FR'], ['germany', 'DE'],
+    ['nhat ban', 'JP'], ['han quoc', 'KR'], ['ha lan', 'NL'],
+    ['tphcm', 'VN'], ['hue', 'VN']
+  ];
+
+  // One unique flag per board row, like a real departures list.
+  var BOARD_FLAGS = ['JP', 'SG', 'US', 'FR', 'TH', 'GB', 'AU', 'KR', 'CA', 'DE', 'NZ', 'NL', 'VN'];
+  var BOARD_AIRLINES = {
+    JP: 'JL', SG: 'SQ', US: 'AA', FR: 'AF', TH: 'TG', GB: 'BA',
+    AU: 'QF', KR: 'KE', CA: 'AC', DE: 'LH', NZ: 'NZ', NL: 'KL', VN: 'VN'
   };
 
   var ORIGINS = [
@@ -109,10 +133,59 @@
   function resolveDestination(raw) {
     var known = DESTINATIONS[raw];
     if (known && raw !== 'other') {
-      return { label: known.label, code: known.code, city: known.city || known.label };
+      return {
+        label: known.label,
+        code: known.code,
+        city: known.city || known.label,
+        cc: known.cc || ''
+      };
     }
     var name = !raw || raw === 'other' ? 'Miền đất mới' : raw;
-    return { label: name, code: airportCode(name), city: name };
+    return { label: name, code: airportCode(name), city: name, cc: guessCountryCode(name) };
+  }
+
+  function guessCountryCode(name) {
+    var plain = deaccent(name);
+    if (!plain) return '';
+    if (DESTINATIONS[plain] && DESTINATIONS[plain].cc) return DESTINATIONS[plain].cc;
+    var key;
+    for (key in DESTINATIONS) {
+      if (!Object.prototype.hasOwnProperty.call(DESTINATIONS, key)) continue;
+      var place = DESTINATIONS[key];
+      if (!place.cc) continue;
+      if (plain === deaccent(place.label) || plain === deaccent(place.city) ||
+          plain === String(place.code).toLowerCase()) {
+        return place.cc;
+      }
+    }
+    var i;
+    for (i = 0; i < FLAG_HINTS.length; i++) {
+      if (plain.indexOf(FLAG_HINTS[i][0]) !== -1) return FLAG_HINTS[i][1];
+    }
+    if (plain === 'uc') return 'AU';
+    if (plain === 'my' || plain === 'usa') return 'US';
+    if (plain === 'anh' || plain === 'uk') return 'GB';
+    if (plain === 'duc') return 'DE';
+    if (plain === 'phap') return 'FR';
+    return '';
+  }
+
+  function boardFlagCodes(prefer) {
+    var list = [];
+    if (prefer) list.push(prefer);
+    var i;
+    for (i = 0; i < BOARD_FLAGS.length; i++) {
+      if (BOARD_FLAGS[i] !== prefer) list.push(BOARD_FLAGS[i]);
+    }
+    return list;
+  }
+
+  function flagEmoji(cc) {
+    if (!cc || cc.length !== 2) return '';
+    var a = cc.toUpperCase().charCodeAt(0) - 65;
+    var b = cc.toUpperCase().charCodeAt(1) - 65;
+    if (a < 0 || a > 25 || b < 0 || b > 25) return '';
+    return String.fromCodePoint(0x1F1E6 + a, 0x1F1E6 + b);
   }
 
   function hashCode(text) {
@@ -203,27 +276,40 @@
     return value < min ? min : value > max ? max : value;
   }
 
-  function normalizeStages(rawStages, legacyImages, legacyCaptions) {
-    if (rawStages.length) {
-      return rawStages.slice(0, 8).map(function (raw) {
-        var stage = raw && typeof raw === 'object' ? raw : {};
-        var imageUrl = typeof stage.imageUrl === 'string'
-          ? stage.imageUrl
-          : (Array.isArray(stage.imageUrls) && typeof stage.imageUrls[0] === 'string' ? stage.imageUrls[0] : '');
-        return {
-          imageUrl: imageUrl.trim(),
-          message: typeof stage.message === 'string' ? stage.message.trim() : ''
-        };
-      });
+  function stageImageUrl(raw) {
+    var stage = raw && typeof raw === 'object' ? raw : {};
+    if (typeof stage.imageUrl === 'string') return stage.imageUrl.trim();
+    if (Array.isArray(stage.imageUrls) && typeof stage.imageUrls[0] === 'string') {
+      return stage.imageUrls[0].trim();
     }
+    return '';
+  }
 
-    var legacyCount = Math.max(legacyImages.length, legacyCaptions.length);
-    return Array.from({ length: Math.min(legacyCount, 12) }, function (_, index) {
-      return {
-        imageUrl: typeof legacyImages[index] === 'string' ? legacyImages[index] : '',
-        message: typeof legacyCaptions[index] === 'string' ? legacyCaptions[index].trim() : ''
-      };
-    });
+  function collectImages(rawStages, imageUrls) {
+    var urls = imageUrls.filter(function (url) {
+      return typeof url === 'string' && url.trim();
+    }).map(function (url) { return url.trim(); }).slice(0, 12);
+    if (urls.length) return urls;
+    return rawStages.slice(0, 12).map(stageImageUrl).filter(Boolean);
+  }
+
+  function collectMessages(rawStages, captions) {
+    var fromCaptions = captions.map(function (item) {
+      return typeof item === 'string' ? fitBoardMessage(item) : '';
+    }).filter(Boolean).slice(0, 12);
+    var fromStages = rawStages.slice(0, 12).map(function (raw) {
+      var stage = raw && typeof raw === 'object' ? raw : {};
+      return typeof stage.message === 'string' ? fitBoardMessage(stage.message) : '';
+    }).filter(Boolean);
+    // Prefer the longer list so new independent captions win over a short
+    // image-zip, while older paired stages keep messages that never sat on a photo.
+    if (fromCaptions.length >= fromStages.length && fromCaptions.length) return fromCaptions;
+    if (fromStages.length) return fromStages;
+    return fromCaptions;
+  }
+
+  function fitBoardMessage(text) {
+    return Array.from(text.trim()).slice(0, BOARD_MESSAGE_MAX).join('');
   }
 
   function defaultStageMessage(index) {
@@ -241,6 +327,53 @@
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
+  function seededRandom(seed) {
+    var s = seed;
+    return function () {
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
+    };
+  }
+
+  function paintNightSky() {
+    var canvas = document.getElementById('globeStars');
+    if (!canvas || !canvas.getContext) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    var rng = seededRandom(20260901);
+    var count = Math.max(900, Math.round((width * height) / 420));
+    var i;
+    for (i = 0; i < count; i++) {
+      var roll = rng();
+      var x = rng() * width;
+      var y = rng() * height;
+      if (roll < 0.5) {
+        var t = rng();
+        x = width * (0.08 + t * 0.84) + (rng() - 0.5) * width * 0.22;
+        y = height * (0.08 + t * 0.55) + (rng() - 0.5) * height * 0.2;
+      }
+      var size = roll < 0.84 ? 0.35 + rng() * 0.55 : roll < 0.97 ? 0.9 + rng() * 0.7 : 1.5 + rng() * 1.1;
+      var alpha = roll < 0.84 ? 0.22 + rng() * 0.4 : 0.68 + rng() * 0.32;
+      var tint = rng();
+      var color = tint < 0.1
+        ? '255, 214, 170'
+        : tint < 0.2
+        ? '186, 214, 255'
+        : '255, 255, 255';
+      ctx.fillStyle = 'rgba(' + color + ',' + alpha + ')';
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function boot() {
     var globeEl = document.getElementById('globe');
     var sphereEl = document.getElementById('sphere');
@@ -248,10 +381,11 @@
     var hud = document.getElementById('hud');
     var sphereStage = document.getElementById('sphereStage');
     var memoryStage = document.getElementById('memoryStage');
-    var armEl = document.getElementById('orbitArm');
-    var planeEl = document.getElementById('orbitPlane');
     if (!globeEl || !sphereEl || !landingEl || !sphereStage ||
-        !memoryStage || !armEl || !planeEl) return;
+        !memoryStage) return;
+
+    paintNightSky();
+    window.addEventListener('resize', paintNightSky);
 
     var friendName = pick('farewellFriendName', 'Người bạn thân');
     var fromName = pick('farewellFrom', 'Việt Nam');
@@ -259,14 +393,10 @@
     var dest = resolveDestination(pick('farewellDestination', ''));
     var departure = parseDate(pick('farewellDepartureDate', ''));
     var letterText = pick('farewellMessage', 'Chúc cậu một hành trình thật rực rỡ.');
-    var stages = normalizeStages(
-      pickList('farewellStages'),
-      pickList('imageUrls'),
-      pickList('farewellCaptions')
-    );
-    var images = stages
-      .map(function (stage) { return stage.imageUrl; })
-      .filter(function (url) { return Boolean(url); });
+    var rawStages = pickList('farewellStages');
+    var images = collectImages(rawStages, pickList('imageUrls'));
+    var boardMessages = collectMessages(rawStages, pickList('farewellCaptions'));
+    if (!boardMessages.length) boardMessages = [fitBoardMessage(defaultStageMessage(0))];
     var gate = (hashCode(friendName) % 24) + 1;
     var distance = null;
 
@@ -282,13 +412,13 @@
     var sphereHasAssembled = false;
     var sphereIsEntering = false;
     var sphereBuildPromise = null;
-    var orbitRadius = 0;
-    var memoryCount = stages.length;
+    var memoryCount = Math.max(images.length, boardMessages.length, 1);
     var holdMs = memoryCount > 8 ? HOLD_MS_SHORT : HOLD_MS;
     var legMs = TURN_MS + holdMs;
     var tourMs = Math.max(1, memoryCount) * legMs;
     var flight = { raf: 0, startedAt: 0, running: false, front: -1 };
     var spherePreview = { raf: 0, startedAt: 0, running: false };
+    var boardRows = [];
 
     var envelope = document.getElementById('envelope');
     var letterPaper = document.getElementById('letterPaper');
@@ -299,6 +429,7 @@
     var letterOpenTimer = null;
 
     fillBoardingPass();
+    buildBoard();
     sphereBuildPromise = buildSphere();
     fillArrival();
     buildRecap();
@@ -560,10 +691,8 @@
           sphereCamera.updateProjectionMatrix();
           sphereRenderer.setSize(window.innerWidth, window.innerHeight);
           sphereControls.handleResize();
-          updateOrbitRadius();
         });
 
-        updateOrbitRadius();
         sphereReady = true;
         return true;
       });
@@ -608,47 +737,12 @@
       TWEEN.update();
       sphereControls.update();
       sphereRenderer.render(sphereScene, sphereCamera);
-      spinPlane(now - spherePreview.startedAt);
       spherePreview.raf = window.requestAnimationFrame(stepSpherePreview);
-    }
-
-    function updateOrbitRadius() {
-      var worldRadius = window.innerWidth < 768 ? 540 : 800;
-      var projectedRadius =
-        worldRadius * window.innerHeight /
-        (2 * Math.tan((40 * Math.PI / 180) / 2) * 3000);
-      orbitRadius = Math.min(
-        projectedRadius * 1.08,
-        window.innerWidth * 0.44,
-        window.innerHeight * 0.44
-      );
-    }
-
-    function spinPlane(elapsed) {
-      var angle = (elapsed / ORBIT_PERIOD) * 360;
-      armEl.style.transform = 'rotateY(' + angle + 'deg)';
-
-      var rad = angle * (Math.PI / 180);
-      var tiltRad = ORBIT_TILT * (Math.PI / 180);
-      var heading =
-        Math.atan2(Math.sin(rad) * Math.sin(tiltRad), Math.cos(rad)) *
-        (180 / Math.PI);
-      planeEl.style.transform =
-        'translateZ(' + Math.round(orbitRadius) + 'px) ' +
-        'rotateY(' + -angle + 'deg) rotateX(' + -ORBIT_TILT + 'deg)';
-      planeEl.firstElementChild.style.transform =
-        'rotate(' + (heading + 90) + 'deg)';
-
-      var depth = Math.cos(rad);
-      var fade = clamp((depth + 0.22) / 0.44, 0, 1);
-      planeEl.style.opacity = String(fade);
-      planeEl.style.visibility = fade < 0.02 ? 'hidden' : 'visible';
     }
 
     function enterSphere() {
       if (!sphereReady || !spherePreview.running || sphereIsEntering || flight.running) return;
       sphereIsEntering = true;
-      sphereStage.classList.add('is-entering');
       sphereTransform(sphereInnerTargets, 1500);
       new TWEEN.Tween(sphereCamera.position)
         .to({ x: 0, y: 0, z: window.innerWidth < 768 ? 180 : 0 }, 2000)
@@ -666,7 +760,6 @@
       if (spherePreview.raf) window.cancelAnimationFrame(spherePreview.raf);
       spherePreview.raf = 0;
       sphereEl.classList.remove('active');
-      sphereStage.classList.remove('is-entering');
       sphereStage.hidden = true;
       memoryStage.hidden = false;
       TWEEN.removeAll();
@@ -700,10 +793,58 @@
       flight.raf = window.requestAnimationFrame(step);
     }
 
+    /**
+     * Every stage message lives on the departure board at once, so the photo
+     * panel carries no caption — the board row is what tells the story.
+     */
+    function buildBoard() {
+      var rowsEl = document.getElementById('fidsRows');
+      var dotsEl = document.getElementById('globeDots');
+      rowsEl.innerHTML = '';
+      dotsEl.innerHTML = '';
+      var dotCount = Math.max(images.length, 1);
+      for (var d = 0; d < dotCount; d++) {
+        dotsEl.appendChild(document.createElement('i'));
+      }
+      var flagCodes = boardFlagCodes(dest.cc);
+      boardRows = boardMessages.map(function (text, index) {
+        var row = document.createElement('li');
+        row.className = 'fids-row is-wait';
+        var rowCc = flagCodes[index % flagCodes.length];
+        var rowFlag = flagEmoji(rowCc);
+
+        var flag = document.createElement('span');
+        flag.className = rowFlag ? 'f' : 'f is-empty';
+        flag.setAttribute('aria-hidden', 'true');
+        flag.textContent = rowFlag;
+
+        var message = document.createElement('span');
+        message.className = 'm';
+        if (Array.from(text).length > 30) message.classList.add('is-long');
+        message.textContent = text;
+
+        var code = document.createElement('span');
+        code.className = 't';
+        code.textContent = BOARD_AIRLINES[rowCc] || 'BV';
+
+        var status = document.createElement('span');
+        status.className = 's';
+        status.textContent = 'Chờ';
+
+        row.appendChild(flag);
+        row.appendChild(message);
+        row.appendChild(code);
+        row.appendChild(status);
+        rowsEl.appendChild(row);
+        return row;
+      });
+    }
+
     function showMemory(index) {
       flight.front = index;
 
-      var stage = stages[index] || { imageUrl: '', message: '' };
+      var photoIndex = images.length ? Math.min(index, images.length - 1) : -1;
+      var photoUrl = photoIndex >= 0 ? images[photoIndex] : '';
       var memoryEl = document.querySelector('.globe-memory');
       memoryEl.style.setProperty('--stage-x', index % 2 === 0 ? '54px' : '-54px');
       memoryEl.style.setProperty('--stage-turn', index % 2 === 0 ? '-7deg' : '7deg');
@@ -712,13 +853,9 @@
       memoryEl.classList.add('is-changing');
       var imageEl = document.getElementById('globeMemoryImage');
       var placeholderEl = document.getElementById('globeMemoryPlaceholder');
-      var hasImage = Boolean(stage.imageUrl);
-      memoryEl.classList.toggle('is-image-only', hasImage && !stage.message);
-      memoryEl.classList.toggle('is-message-only', !hasImage && Boolean(stage.message));
-      memoryEl.classList.toggle('is-empty', !hasImage && !stage.message);
-      if (hasImage) {
-        imageEl.src = stage.imageUrl;
-        imageEl.alt = 'Ảnh chặng ' + (index + 1);
+      if (photoUrl) {
+        imageEl.src = photoUrl;
+        imageEl.alt = 'Ảnh ' + (photoIndex + 1);
         imageEl.hidden = false;
         imageEl.onerror = function () {
           imageEl.hidden = true;
@@ -731,13 +868,30 @@
         placeholderEl.hidden = false;
       }
 
-      var note = stage.message;
-      if (!hasImage && !note) {
-        note = defaultStageMessage(index);
-      }
+      var photoTotal = Math.max(images.length, 1);
+      var photoShown = photoIndex >= 0 ? photoIndex : 0;
       document.getElementById('globeStep').textContent =
-        'Chặng ' + (index < 9 ? '0' : '') + (index + 1);
-      document.getElementById('globeNote').textContent = note;
+        'Ảnh ' + (photoShown < 9 ? '0' : '') + (photoShown + 1) + ' / ' +
+        (photoTotal < 10 ? '0' : '') + photoTotal;
+
+      var dots = document.getElementById('globeDots').children;
+      for (var d = 0; d < dots.length; d++) {
+        dots[d].classList.toggle('is-now', d === photoShown);
+      }
+
+      boardRows.forEach(function (row, rowIndex) {
+        var state = index >= boardRows.length
+          ? 'is-done'
+          : rowIndex < index ? 'is-done' : rowIndex > index ? 'is-wait' : 'is-now';
+        row.className = 'fids-row ' + state;
+        row.lastChild.textContent =
+          state === 'is-done' ? 'Đã qua' : state === 'is-now' ? 'Đang bay' : 'Chờ';
+      });
+
+      var active = index < boardRows.length ? boardRows[index] : boardRows[boardRows.length - 1];
+      if (active && active.scrollIntoView) {
+        active.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+      }
     }
 
     function updateStatus(progress) {
@@ -804,22 +958,15 @@
       if (images.length === 0) return;
       var recap = document.getElementById('recap');
       var grid = document.getElementById('recapGrid');
-      stages.forEach(function (stage, stageIndex) {
-        if (!stage.imageUrl) return;
+      images.forEach(function (url, imageIndex) {
         var figure = document.createElement('figure');
         figure.className = 'recap-item';
 
         var img = document.createElement('img');
-        img.src = stage.imageUrl;
-        img.alt = 'Kỷ niệm ' + (stageIndex + 1);
+        img.src = url;
+        img.alt = 'Kỷ niệm ' + (imageIndex + 1);
         img.loading = 'lazy';
         figure.appendChild(img);
-
-        if (stage.message) {
-          var caption = document.createElement('figcaption');
-          caption.textContent = stage.message;
-          figure.appendChild(caption);
-        }
         grid.appendChild(figure);
       });
       recap.hidden = false;

@@ -153,6 +153,16 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "Nội dung thư không được quá 400 ký tự")
 		return
 	}
+	if resolvedType == "farewell" {
+		letter, _ := body["farewellMessage"].(string)
+		if letter == "" {
+			letter = content
+		}
+		if len(strings.Fields(letter)) > 400 {
+			BadRequest(w, "Lời nhắn chia tay không được quá 400 từ")
+			return
+		}
+	}
 	if resolvedType == "snowheart" {
 		letterTitle, _ := body["snowheartLetterTitle"].(string)
 		if utf8.RuneCountInString(letterTitle) > 50 {
@@ -193,6 +203,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if resolvedType == "birthdaycake" && len(imageUrls) > 15 {
 		BadRequest(w, "Birthday Cake hỗ trợ tối đa 15 ảnh")
+		return
+	}
+	if resolvedType == "farewell" && len(imageUrls) > 12 {
+		BadRequest(w, "Bon Voyage hỗ trợ tối đa 12 ảnh")
 		return
 	}
 	musicUrl, _ := body["musicUrl"].(string)
@@ -308,13 +322,13 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		templateData["farewellMessage"] = strOrDefault(body, "farewellMessage", content)
 		templateData["farewellSender"] = strOrDefault(body, "farewellSender", "")
 
-		// Explicit stages preserve sparse slots: an image, a message, both, or
-		// neither. Older clients can continue sending the arrays below.
+		// Images and board messages are independent. Stages remain accepted so
+		// older clients and compact readers still work.
 		if rawStages, ok := body["farewellStages"].([]any); ok {
-			stages := make([]map[string]any, 0, min(len(rawStages), 8))
+			stages := make([]map[string]any, 0, min(len(rawStages), 12))
 			deriveImages := len(imageUrls) == 0
 			for _, raw := range rawStages {
-				if len(stages) == 8 {
+				if len(stages) == 12 {
 					break
 				}
 				stage, ok := raw.(map[string]any)
@@ -323,8 +337,8 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 				}
 				message, _ := stage["message"].(string)
 				message = strings.TrimSpace(message)
-				if utf8.RuneCountInString(message) > 140 {
-					message = string([]rune(message)[:140])
+				if utf8.RuneCountInString(message) > 36 {
+					message = string([]rune(message)[:36])
 				}
 
 				imageURL := ""
@@ -348,12 +362,21 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			templateData["farewellStages"] = stages
 		}
 
-		// Legacy captions are positional: index i belongs to imageUrls[i].
+		// Board messages are independent of the photo list.
 		captions := []string{}
 		if raw, ok := body["farewellCaptions"].([]any); ok {
 			for _, item := range raw {
+				if len(captions) == 12 {
+					break
+				}
 				s, _ := item.(string)
-				captions = append(captions, strings.TrimSpace(s))
+				s = strings.TrimSpace(s)
+				if utf8.RuneCountInString(s) > 36 {
+					s = string([]rune(s)[:36])
+				}
+				if s != "" {
+					captions = append(captions, s)
+				}
 			}
 		}
 		templateData["farewellCaptions"] = captions

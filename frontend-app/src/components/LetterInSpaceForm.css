@@ -1,0 +1,118 @@
+.letter-space {
+  margin-bottom: 1.5rem;
+}
+
+.letter-space__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.letter-space__heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.letter-space__heading span,
+.letter-space__count {
+  font-size: 0.8rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.letter-space__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.letter-space__row {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.letter-space__number {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #be123c;
+  background: #fff1f2;
+  border-radius: 50%;
+}
+
+.letter-space__row input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  font-size: 0.95rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+}
+
+.letter-space__row input:focus {
+  outline: none;
+  border-color: #ffb3c1;
+  box-shadow: 0 0 0 3px rgba(254, 44, 86, 0.14);
+}
+
+.letter-space__row button,
+.letter-space__add {
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  color: #be123c;
+  background: #fff1f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.letter-space__row button:disabled,
+.letter-space__add:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.letter-space__add {
+  margin-top: 0.75rem;
+  font-weight: 600;
+  border-color: #fda4af;
+}
+
+.letter-space__note {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 560px) {
+  .letter-space__row {
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  }
+
+  .letter-space__number {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .letter-space__count {
+    grid-column: 2;
+    justify-self: end;
+    margin-top: -0.35rem;
+  }
+
+  .letter-space__row button {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
