@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260830-02">
+  <link rel="stylesheet" href="./styles.css?v=20260901-13">
 </head>
 <body class="is-gated">
   <div class="sky" aria-hidden="true">
@@ -108,19 +108,16 @@
     </footer>
   </section>
 
-  <!-- ─── The flight: a sphere of memories, circled by the plane ─── -->
+  <!-- ─── The flight: a sphere of memories ─── -->
   <section class="globe" id="globe" hidden>
+    <div class="globe-sky" aria-hidden="true">
+      <img class="globe-sky-day" src="/templates/farewell/background.jpeg" alt="">
+      <div class="globe-sky-night"></div>
+      <span class="globe-moon"></span>
+      <canvas class="globe-stars" id="globeStars" aria-hidden="true"></canvas>
+    </div>
     <div class="sphere-stage" id="sphereStage">
       <div class="globe-sphere" id="sphere" role="button" tabindex="0" aria-label="Chạm vào quả cầu kỷ niệm để bắt đầu chuyến bay"></div>
-      <div class="globe-orbit-space" id="orbitSpace" aria-hidden="true">
-        <div class="globe-orbit">
-          <div class="globe-arm" id="orbitArm">
-            <span class="globe-plane" id="orbitPlane">
-              <svg viewBox="0 0 24 24"><path d="M12 1.5 L20.5 21 L12 17 L3.5 21 Z"/></svg>
-            </span>
-          </div>
-        </div>
-      </div>
       <p class="sphere-enter">Chạm vào quả cầu để xem từng chặng <span aria-hidden="true">↓</span></p>
     </div>
 
@@ -132,13 +129,23 @@
             <span>✈</span>
             <small>Kỷ niệm đang chờ</small>
           </div>
-        </div>
-        <div class="globe-info">
-          <span class="globe-step" id="globeStep">Chặng 01</span>
-          <p class="globe-note" id="globeNote"></p>
-          <p class="globe-status" id="globeStatus"></p>
+          <span class="globe-step" id="globeStep">Ảnh 01</span>
+          <div class="globe-dots" id="globeDots" aria-hidden="true"></div>
         </div>
       </div>
+
+      <!-- Every message lives here at once, like an airport departure board. -->
+      <section class="fids" id="fids" aria-label="Lịch trình kỷ niệm">
+        <header class="fids-head">
+          <b>Khởi hành</b>
+          <span id="globeStatus">Đang bay</span>
+        </header>
+        <div class="fids-cols" aria-hidden="true">
+          <i></i><i>Kỷ niệm</i><i>Chặng</i><i>Tình trạng</i>
+        </div>
+        <ol class="fids-rows" id="fidsRows"></ol>
+      </section>
+
       <button class="globe-skip" id="skipFlight" type="button">Bỏ qua, tới nơi ngay ↓</button>
     </div>
   </section>
@@ -215,6 +222,6 @@
   <script data-cfasync="false" src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
   <script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/TrackballControls.js"></script>
   <script data-cfasync="false" src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/renderers/CSS3DRenderer.js"></script>
-  <script data-cfasync="false" src="./app.js?v=20260830-01" defer></script>
+  <script data-cfasync="false" src="./app.js?v=20260901-08" defer></script>
 </body>
 </html>

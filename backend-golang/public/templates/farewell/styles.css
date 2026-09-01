@@ -16,6 +16,8 @@
   --blue-pale: #b9d5f0;
   --sand: #e9b872;
   --card: #ffffff;
+  --board-ink: #08182f;
+  --board-amber: #f6c667;
 }
 
 * {
@@ -502,6 +504,7 @@ body.is-landed .intro {
 
 body.is-flying {
   overflow: hidden;
+  background: url('/templates/farewell/background.jpeg') center / cover no-repeat;
 }
 
 body.is-flying .intro {
@@ -521,7 +524,100 @@ body.is-flying .intro {
   gap: clamp(10px, 3vw, 20px);
   padding: max(74px, calc(env(safe-area-inset-top) + 74px)) 16px
     max(24px, calc(env(safe-area-inset-bottom) + 20px));
+  background: url('/templates/farewell/background.jpeg') center / cover no-repeat;
   animation: globe-in 560ms ease both;
+}
+
+.globe-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.globe-sky-day,
+.globe-sky-night,
+.globe-moon,
+.globe-stars {
+  position: absolute;
+}
+
+.globe-sky-day,
+.globe-sky-night,
+.globe-stars {
+  inset: 0;
+}
+
+.globe-sky-day {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: globe-day-shift 10s ease-in-out infinite alternate;
+}
+
+.globe-sky-night {
+  background:
+    radial-gradient(ellipse 42% 36% at 78% 16%, rgba(58, 82, 140, 0.42), transparent 62%),
+    radial-gradient(ellipse 90% 80% at 50% 35%, #071022 0%, #03060d 58%, #000000 100%);
+  opacity: 0;
+  animation: globe-night 10s ease-in-out infinite alternate;
+}
+
+.globe-moon {
+  top: 6%;
+  right: 6%;
+  left: auto;
+  width: clamp(120px, 22vw, 190px);
+  aspect-ratio: 176 / 146;
+  background: url('/templates/farewell/moon.png') center / 100% 100% no-repeat;
+  -webkit-mask-image: radial-gradient(
+    ellipse 58% 66% at 56% 46%,
+    #000 0 41%,
+    rgba(0, 0, 0, 0.9) 47%,
+    rgba(0, 0, 0, 0.38) 54%,
+    transparent 60%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-image: radial-gradient(
+    ellipse 58% 66% at 56% 46%,
+    #000 0 41%,
+    rgba(0, 0, 0, 0.9) 47%,
+    rgba(0, 0, 0, 0.38) 54%,
+    transparent 60%
+  );
+  mask-repeat: no-repeat;
+  opacity: 0;
+  animation: globe-moon 10s ease-in-out infinite alternate;
+}
+
+.globe-stars {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  animation: globe-stars 10s ease-in-out infinite alternate;
+}
+
+@keyframes globe-day-shift {
+  from { transform: scale(1) translateY(0); }
+  to { transform: scale(1.08) translateY(-2%); }
+}
+
+@keyframes globe-night {
+  0%, 18% { opacity: 0; }
+  42% { opacity: 0.35; }
+  78%, 100% { opacity: 1; }
+}
+
+@keyframes globe-moon {
+  0%, 40% { opacity: 0; transform: translateY(28px); }
+  70%, 100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes globe-stars {
+  0%, 45% { opacity: 0; }
+  70%, 100% { opacity: 1; }
 }
 
 .sphere-stage,
@@ -626,60 +722,14 @@ body.is-flying .intro {
   opacity: 1;
 }
 
-.globe-sphere > div {
+.globe-sphere,
+.globe-sphere > div,
+.globe-sphere > div > div {
   background: transparent !important;
 }
 
 .globe-sphere:focus-visible {
   box-shadow: inset 0 0 0 4px rgba(59, 130, 246, 0.35);
-}
-
-.globe-orbit-space {
-  position: fixed;
-  z-index: 2;
-  inset: 0;
-  overflow: hidden;
-  perspective: 1150px;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 300ms ease;
-}
-
-.sphere-stage.is-entering .globe-orbit-space {
-  opacity: 0;
-}
-
-.globe-orbit,
-.globe-arm {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  transform-style: preserve-3d;
-}
-
-.globe-orbit {
-  transform: rotateX(-20deg);
-}
-
-.globe-plane {
-  position: absolute;
-  display: flex;
-  width: 40px;
-  height: 40px;
-  margin: -20px 0 0 -20px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(24, 68, 122, 0.24);
-}
-
-.globe-plane svg {
-  width: 18px;
-  height: 18px;
-  fill: var(--blue-deep);
 }
 
 .globe-sphere .element {
@@ -707,11 +757,8 @@ body.is-flying .intro {
   --stage-turn: -7deg;
   position: relative;
   flex: 0 0 auto;
-  width: min(620px, 100%);
+  width: min(560px, 100%);
   height: 180px;
-  display: grid;
-  grid-template-columns: minmax(230px, 1fr) minmax(0, 1fr);
-  align-items: stretch;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(255, 255, 255, 0.98);
@@ -751,7 +798,7 @@ body.is-flying .intro {
 
 .globe-memory-visual {
   position: relative;
-  height: 178px;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: #e8f1fb;
@@ -835,38 +882,18 @@ body.is-flying .intro {
   text-transform: uppercase;
 }
 
-.globe-info {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 24px 28px;
-  text-align: left;
-}
-
-.globe-memory.is-image-only {
-  grid-template-columns: 1fr;
-  height: 180px;
-}
-
-.globe-memory.is-image-only .globe-memory-visual {
-  height: 178px;
-  min-height: 0;
-}
-
-/*
- * Image-only stages skip the text panel entirely — a full-width caption bar
- * used to sit on top of the photos and cover faces. A small corner pill with
- * just the stage number is enough context without ever crossing a subject.
- */
-.globe-memory.is-image-only .globe-info {
+/* Photo counter, sitting clear of faces in the top-left corner. */
+.globe-step {
   position: absolute;
+  z-index: 2;
   top: 12px;
   left: 12px;
-  right: auto;
-  bottom: auto;
-  min-height: auto;
   padding: 7px 14px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
   background: linear-gradient(135deg, rgba(17, 42, 72, 0.8), rgba(45, 96, 153, 0.64));
   border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: 999px;
@@ -875,46 +902,227 @@ body.is-flying .intro {
   -webkit-backdrop-filter: blur(9px);
 }
 
-.globe-memory.is-image-only .globe-step::before {
-  margin-right: 7px;
-  content: '✦';
-  color: #f6d89b;
+.globe-dots {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+  transform: translateX(-50%);
 }
 
-.globe-memory.is-image-only .globe-step {
-  color: rgba(255, 255, 255, 0.92);
+.globe-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition: width 260ms ease, background 260ms ease;
 }
 
-.globe-memory.is-image-only .globe-note,
-.globe-memory.is-image-only .globe-status {
-  display: none;
+.globe-dots i.is-now {
+  width: 18px;
+  border-radius: 999px;
+  background: #ffffff;
 }
 
-.globe-note:empty {
-  display: none;
+/* ─── Departure board: every stage message at once ─── */
+.fids {
+  flex: 0 0 auto;
+  width: min(560px, 100%);
+  padding: 0 12px 10px;
+  color: #e9f2ff;
+  text-align: left;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03) 0 2px,
+      transparent 2px 6px
+    ),
+    linear-gradient(180deg, #14181f, #0b0e14);
+  border: 3px solid #2a3038;
+  border-radius: 14px;
+  box-shadow: 0 22px 44px rgba(9, 32, 62, 0.34);
 }
 
-.globe-step {
+.fids-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -12px 10px;
+  padding: 9px 12px;
+  background: #f5d000;
+  border-radius: 11px 11px 0 0;
+}
+
+.fids-head b {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: 'Roboto Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: 13px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #111;
 }
 
-.globe-note {
-  margin: 8px 0 0;
-  font-size: clamp(14px, 3.8vw, 16px);
-  line-height: 1.6;
+.fids-head b::before {
+  content: '✈';
+  font-size: 14px;
 }
 
-.globe-status {
-  margin: 12px 0 0;
-  font-family: 'Roboto Mono', monospace;
-  font-size: 10.5px;
+.fids-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--blue-deep);
+  text-align: right;
+  color: rgba(17, 17, 17, 0.7);
+}
+
+.fids-head span::before {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  content: '';
+  border-radius: 50%;
+  background: #0f7a3a;
+  animation: fids-live 1.8s ease-in-out infinite;
+}
+
+@keyframes fids-live {
+  50% { opacity: 0.35; }
+}
+
+.fids-cols,
+.fids-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 28px 64px;
+  gap: 8px;
+  align-items: center;
+}
+
+.fids-cols {
+  padding: 0 8px 6px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 8px;
+  font-style: normal;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(233, 242, 255, 0.45);
+}
+
+.fids-cols i {
+  font-style: normal;
+}
+
+.fids-cols i:last-child {
+  text-align: right;
+}
+
+.fids-rows {
+  max-height: min(38vh, 320px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 187, 233, 0.4) transparent;
+}
+
+.fids-row {
+  padding: 8px;
+  font-size: 12.5px;
+  border-radius: 9px;
+  transition: background 320ms ease, opacity 320ms ease;
+}
+
+.fids-row .f {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 15px;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.fids-row .f.is-empty {
+  background: linear-gradient(180deg, #3d4a5c, #2a3340);
+  box-shadow: none;
+}
+
+.fids-row .t {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+  color: var(--board-amber);
+}
+
+.fids-row .m {
+  overflow: hidden;
+  font-weight: 700;
+  color: var(--board-amber);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fids-row .m.is-long {
+  font-size: 10.5px;
+  letter-spacing: -0.025em;
+}
+
+.fids-row .s {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-align: right;
+  text-transform: uppercase;
+  color: rgba(233, 242, 255, 0.45);
+}
+
+.fids-row.is-done {
+  opacity: 0.72;
+}
+
+.fids-row.is-done .s {
+  color: #7ddea0;
+}
+
+.fids-row.is-wait .m,
+.fids-row.is-wait .t {
+  color: rgba(246, 198, 103, 0.55);
+}
+
+.fids-row.is-now {
+  background: linear-gradient(90deg, rgba(245, 208, 0, 0.16), rgba(245, 208, 0, 0.04));
+  box-shadow: inset 2px 0 0 #f5d000;
+}
+
+.fids-row.is-now .m {
+  color: #ffe98a;
+}
+
+.fids-row.is-now .t,
+.fids-row.is-now .s {
+  color: #7ee7ff;
+}
+
+/* Split-flap nod: the status cell flips as the board hands over to the next leg. */
+.fids-row.is-now .s {
+  transform-origin: 50% 0;
+  animation: fids-flip 420ms ease both;
+}
+
+@keyframes fids-flip {
+  from { opacity: 0; transform: rotateX(-88deg); }
+  to { opacity: 1; transform: rotateX(0); }
 }
 
 @media (max-width: 520px) {
@@ -924,55 +1132,33 @@ body.is-flying .intro {
   }
 
   .globe-memory {
-    grid-template-columns: minmax(126px, 0.8fr) minmax(0, 1.2fr);
     height: 148px;
     border-radius: 16px;
   }
 
-  .globe-memory-visual {
-    height: 146px;
-    min-height: 0;
-  }
-
-  .globe-info {
-    padding: 14px;
-  }
-
-  .globe-memory.is-image-only {
-    height: 148px;
-  }
-
-  .globe-memory.is-image-only .globe-memory-visual {
-    height: 146px;
-    min-height: 0;
-  }
-
-  .globe-memory.is-image-only .globe-info {
+  .globe-step {
     top: 9px;
     left: 9px;
     padding: 5px 10px;
   }
 
-  .globe-note {
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .globe-status {
-    margin-top: 8px;
-    font-size: 9px;
+  .fids-row {
+    font-size: 12px;
   }
 }
 
-.memory-stage .globe-memory,
-.memory-stage .globe-memory.is-image-only {
-  width: min(780px, 100%);
-  height: min(58vh, 520px);
+/* During the flight the photo takes whatever height the board and the skip
+   button leave behind, so it stays full-bleed on any screen. */
+.memory-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  justify-content: flex-start;
 }
 
-.memory-stage .globe-memory-visual,
-.memory-stage .globe-memory.is-image-only .globe-memory-visual {
-  height: 100%;
+.memory-stage .globe-memory {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 160px;
 }
 
 .globe-skip {
@@ -1468,15 +1654,27 @@ body.is-flying .intro {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud {
+  .cloud,
+  .globe-sky-day,
+  .globe-sky-night,
+  .globe-moon,
+  .globe-stars {
     animation: none;
+  }
+
+  .globe-sky-night,
+  .globe-moon,
+  .globe-stars {
+    opacity: 0;
   }
 
   .memory-stage::before,
   .memory-stage::after,
   .globe-memory.is-changing,
   .globe-memory.is-changing #globeMemoryImage,
-  .globe-memory.is-changing .globe-memory-visual::after {
+  .globe-memory.is-changing .globe-memory-visual::after,
+  .fids-head span::before,
+  .fids-row.is-now .s {
     animation: none;
   }
 

@@ -33,9 +33,28 @@ const FAREWELL_DESTINATION_LABELS: Record<string, string> = {
   netherlands: 'Hà Lan',
   other: '',
 };
-const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday', 'farewell']);
-const DEFAULT_FAREWELL_STAGE_COUNT = 5;
-const MAX_FAREWELL_STAGES = 8;
+const HIDE_IMAGE_UPLOADER_TEMPLATE_TYPES = new Set(['letterinspace', 'birthday']);
+const FAREWELL_MAX_IMAGES = 12;
+const FAREWELL_LETTER_MAX_WORDS = 400;
+
+function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+function takeWords(text: string, max: number): string {
+  const chunks = text.match(/\S+\s*/g);
+  if (!chunks) return text;
+  let words = 0;
+  let out = '';
+  for (const chunk of chunks) {
+    if (!chunk.trim()) continue;
+    if (words >= max) break;
+    out += chunk;
+    words += 1;
+  }
+  return out;
+}
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
 const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
@@ -108,9 +127,7 @@ function OrderPage() {
   const [farewellDepartureDate, setFarewellDepartureDate] = useState('');
   const [farewellMessage, setFarewellMessage] = useState('');
   const [farewellSender, setFarewellSender] = useState('');
-  // Each stage owns three consecutive upload slots; messages are stage-indexed.
-  const [farewellStageCount, setFarewellStageCount] = useState(DEFAULT_FAREWELL_STAGE_COUNT);
-  const [farewellStageMessages, setFarewellStageMessages] = useState<string[]>([]);
+  const [farewellStageMessages, setFarewellStageMessages] = useState<string[]>(['']);
   const [loveburstTitle, setLoveburstTitle] = useState('Gửi bé iu 💖');
   const [loveburstMessages, setLoveburstMessages] = useState<string[]>(DEFAULT_LOVEBURST_MESSAGES);
   const [snowheartLetterTitle, setSnowheartLetterTitle] = useState('');
@@ -195,13 +212,9 @@ function OrderPage() {
         if (d.farewellDepartureDate) setFarewellDepartureDate(d.farewellDepartureDate);
         if (d.farewellMessage) setFarewellMessage(d.farewellMessage);
         if (d.farewellSender) setFarewellSender(d.farewellSender);
-        if (d.farewellStageCount) {
-          setFarewellStageCount(Math.min(MAX_FAREWELL_STAGES, Math.max(1, Number(d.farewellStageCount))));
-        }
         if (d.farewellStageMessages?.length) {
           setFarewellStageMessages(d.farewellStageMessages);
         } else if (d.farewellCaptions?.length) {
-          // Backward-compatible draft restore from the old photo-caption model.
           setFarewellStageMessages(d.farewellCaptions);
         }
         if (d.loveburstTitle) setLoveburstTitle(d.loveburstTitle);
@@ -378,60 +391,6 @@ function OrderPage() {
     });
   };
 
-  const handleFarewellStageCountChange = (count: number) => {
-    const nextCount = Math.min(MAX_FAREWELL_STAGES, Math.max(1, count));
-    if (nextCount < farewellStageCount) {
-      for (let slot = nextCount; slot < farewellStageCount; slot++) {
-        handleFileRemoved(slot);
-      }
-      setUploadedImages(prev => prev.slice(0, nextCount));
-      setImagePreviews(prev => prev.slice(0, nextCount));
-      setFarewellStageMessages(prev => prev.slice(0, nextCount));
-    }
-    setFarewellStageCount(nextCount);
-  };
-
-  const handleFarewellStageImage = (index: number, file: File, preview: string) => {
-    const previous = bgUploads.current.get(index);
-    if (previous) {
-      previous.cancelled = true;
-      bgUploads.current.delete(index);
-    }
-    setUploadedImages(prev => {
-      const next = [...prev];
-      next[index] = file;
-      return next;
-    });
-    setImagePreviews(prev => {
-      const next = [...prev];
-      next[index] = preview;
-      return next;
-    });
-    startUpload(index, file, qrName);
-  };
-
-  const handleFarewellStageImageRemoved = (index: number) => {
-    handleFileRemoved(index);
-    setUploadedImages(prev => {
-      const next = [...prev];
-      next[index] = null;
-      return next;
-    });
-    setImagePreviews(prev => {
-      const next = [...prev];
-      next[index] = '';
-      return next;
-    });
-  };
-
-  const handleFarewellStageMessage = (index: number, message: string) => {
-    setFarewellStageMessages(prev => {
-      const next = [...prev];
-      next[index] = message;
-      return next;
-    });
-  };
-
   const updateImageSegment = (start: number, length: number, segment: (File | null)[]) => {
     const next = [...uploadedImages];
     for (let i = 0; i < length; i++) {
@@ -507,8 +466,7 @@ function OrderPage() {
       setFarewellDepartureDate('');
       setFarewellMessage('');
       setFarewellSender('');
-      setFarewellStageCount(DEFAULT_FAREWELL_STAGE_COUNT);
-      setFarewellStageMessages([]);
+      setFarewellStageMessages(['']);
       setError('');
       setUploadedImages([]);
       setImagePreviews([]);
@@ -562,18 +520,19 @@ function OrderPage() {
       setError('Vui lòng nhập lời nhắn chia tay');
       return;
     }
+    if (templateType === 'farewell' && countWords(farewellMessage) > FAREWELL_LETTER_MAX_WORDS) {
+      setError(`Lời nhắn chia tay không được quá ${FAREWELL_LETTER_MAX_WORDS} từ`);
+      return;
+    }
     if (musicAdded && !musicLink) { setError('Vui lòng xác nhận link nhạc trước khi thanh toán'); return; }
     if (voiceRecordingAdded && !voiceRecording) { setError('Vui lòng ghi âm lời nhắn trước khi thanh toán'); return; }
 
     setSubmitting(true);
     try {
       // Collect image URLs: await any still-in-progress background uploads
-      const submissionImages = templateType === 'farewell'
-        ? uploadedImages.slice(0, farewellStageCount)
-        : uploadedImages;
+      const submissionImages = uploadedImages;
       const realFiles = submissionImages.filter(Boolean) as File[];
       let imageUrls: string[] = [];
-      let imageUrlsBySlot: (string | null)[] = [];
       if (realFiles.length > 0) {
         const urlResults = await Promise.all(
           submissionImages.map((file, index) => {
@@ -584,7 +543,6 @@ function OrderPage() {
             return uploadFiles([file], qrName).then(urls => urls[0]).catch(() => null);
           })
         );
-        imageUrlsBySlot = urlResults;
         imageUrls = urlResults.filter((u): u is string => !!u);
         // If any uploads failed, abort
         if (imageUrls.length < realFiles.length) {
@@ -666,14 +624,12 @@ function OrderPage() {
           farewellDepartureDate,
           farewellMessage: farewellMessage.trim(),
           farewellSender: farewellSender.trim(),
-          farewellStages: Array.from({ length: farewellStageCount }, (_, index) => ({
-            imageUrl: imageUrlsBySlot[index] || '',
+          farewellCaptions: farewellStageMessages.map(message => message.trim()).filter(Boolean),
+          // Compact zip for older template builds that still read paired stages.
+          farewellStages: imageUrls.map((imageUrl, index) => ({
+            imageUrl,
             message: (farewellStageMessages[index] || '').trim(),
           })),
-          // Keep the legacy arrays for existing readers and the final recap.
-          farewellCaptions: submissionImages
-            .map((file, i) => (file ? (farewellStageMessages[i] || '').trim() : null))
-            .filter((caption): caption is string => caption !== null),
         }),
         ...(templateType === 'loveburst' && {
           loveburstTitle: loveburstTitle.trim() || 'Gửi bé iu 💖',
@@ -696,7 +652,7 @@ function OrderPage() {
             birthdayCakeInscription,
             farewellFriendName, farewellFrom, farewellDestination,
             farewellDepartureDate, farewellMessage, farewellSender,
-            farewellStageCount, farewellStageMessages,
+            farewellStageMessages,
             loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
@@ -1207,10 +1163,15 @@ function OrderPage() {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời nhắn chia tay</label>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Lời nhắn chia tay
+              <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.8rem', marginLeft: '0.4rem' }}>
+                ({countWords(farewellMessage)}/{FAREWELL_LETTER_MAX_WORDS} từ)
+              </span>
+            </label>
             <textarea
               value={farewellMessage}
-              onChange={e => setFarewellMessage(e.target.value)}
+              onChange={e => setFarewellMessage(takeWords(e.target.value, FAREWELL_LETTER_MAX_WORDS))}
               placeholder="Viết lời nhắn sẽ hiện ở cuối hành trình..."
               rows={5}
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
@@ -1227,6 +1188,11 @@ function OrderPage() {
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
             />
           </div>
+
+          <FarewellStagesEditor
+            messages={farewellStageMessages}
+            onChange={setFarewellStageMessages}
+          />
 
         </div>
       )}
@@ -1475,6 +1441,14 @@ function OrderPage() {
                   </span>
                 </p>
               )}
+              {templateType === 'farewell' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh kỷ niệm
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {FAREWELL_MAX_IMAGES} ảnh — chạy riêng với lời nhắn)
+                  </span>
+                </p>
+              )}
               <ImageUploader
                 images={uploadedImages}
                 onImagesChange={setUploadedImages}
@@ -1485,6 +1459,8 @@ function OrderPage() {
                     ? LOVELETTER_MAX_IMAGES
                     : templateType === 'snowheart'
                     ? SNOWHEART_MAX_IMAGES
+                    : templateType === 'farewell'
+                    ? FAREWELL_MAX_IMAGES
                     : QR_TEMPLATE_MAX_IMAGES
                 }
                 onImageSelected={() => {}}
@@ -1501,23 +1477,6 @@ function OrderPage() {
           )}
 
         </>
-      )}
-
-      {templateType === 'farewell' && (
-        <FarewellStagesEditor
-          stageCount={farewellStageCount}
-          messages={farewellStageMessages}
-          images={uploadedImages}
-          previews={imagePreviews}
-          uploadStates={uploadStates}
-          disabled={!canUploadImages}
-          disabledReason={!canUploadImages ? uploadDisabledReason : undefined}
-          onStageCountChange={handleFarewellStageCountChange}
-          onMessageChange={handleFarewellStageMessage}
-          onImageSelected={handleFarewellStageImage}
-          onImageRemoved={handleFarewellStageImageRemoved}
-          onRetry={handleRetry}
-        />
       )}
 
       <div className="qr-audio-addons">

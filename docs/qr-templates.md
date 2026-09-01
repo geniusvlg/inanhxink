@@ -9,13 +9,13 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | Template type | Folder | Order form |
 |---|---|---|
 | `galaxy` | `galaxy` | Optional envelope message (max 150 characters, responsive display of up to 7 lines); opens automatically after a 3D post-load countdown shown above the planet and stays visible; plus up to 15 images |
-| `letterinspace` | `letterinspace` | Letter-in-space text form |
+| `letterinspace` | `letterinspace` | Up to 20 separately managed falling sentences, 40 characters each |
 | `loveletter` | `loveletter` | Letter title, hint, signoff, sender, receiver, content, up to 12 images |
 | `lovedays` | `lovedays` | Date, names, secret message, timeline, 2 avatars, up to 10 gallery images |
 | `birthday` | `birthday` | Birthday fields, no image uploader |
 | `birthdaycake` | `birthdaycake` | Letter title/body, cake inscription, and up to 15 photos |
 | `specialgift` | `specialgift` | Start date, left/right names, day label, popup title/content, 2 avatars, and up to 12 gallery images |
-| `farewell` | `farewell` | Friend name, origin city, free-text destination, date, farewell letter, and 1–8 stages each with an optional image and message |
+| `farewell` | `farewell` | Friend name, origin city, free-text destination, date, farewell letter (max 400 words), up to 12 photos, and up to 12 board messages written separately |
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
 
@@ -30,16 +30,28 @@ handles its start button in capture phase on `pointerdown`/`touchstart`. This
 ensures its visual transition starts before shared audio playback can suppress
 Safari's later synthetic `click`.
 
+Its order form presents each falling sentence as a separate input with
+add/remove controls (up to 20 sentences, 40 characters each). The controlled
+form still serializes the rows into the existing newline-delimited `content`;
+the backend continues deriving `texts`, so existing orders and template
+playback remain compatible.
+
 ### Farewell / Bon Voyage
 
 A boarding pass opens the page, framed by an airline header ("Inanhxink
 Airlines" brand row plus a flight/seat/status strip derived from the gate hash)
 and a footer flight-path
 strip with the baggage note. Pressing it first hands the screen to a
-full-viewport copy of Love Burst's photo sphere. The sphere is a dedicated
+full-viewport copy of Love Burst's photo sphere, set against `background.jpeg`
+that eases into a deep navy night (full moon with halo and a dense painted
+star field; reduced motion keeps the day image).
+The sphere is a dedicated
 interactive stage: tapping or keyboard-activating it transitions to the flight
-sequence, where each memory card appears separately under the altitude/distance
-progress HUD. The page then lands on the arrival facts and a sealed airmail
+sequence, where up to 12 photos play one by one under the altitude/distance
+progress HUD while an airport-style departure board below them lists every
+message (written separately, up to 12) with a different country flag on the
+far left of each row. The page then lands on the arrival facts
+and a sealed airmail
 envelope. A skip button jumps straight there, and the replay button reseals the
 envelope and shows the sphere again.
 
@@ -77,30 +89,24 @@ travel starts the same inward camera transition as Love Burst, then starts the
 Farewell memory sequence instead of Love Burst's rising-photo and envelope
 sequence.
 
-During the sphere stage, the original Farewell airplane circles the globe on a
-separate tilted CSS 3D orbit. Its radius follows the sphere's projected screen
-size and is clamped on narrow displays. The airplane counter-rotates to face the
-viewer, points along its flight path, fades while passing behind the globe, and
-fades out completely during the inward camera transition.
+New orders store photos and board messages independently: `imageUrls` holds
+up to 12 photos, `farewellCaptions` holds up to 12 messages (36 characters)
+each; longer rows use compact board text beside the flag, carrier code, and status;
+empty rows dropped). A compact `farewellStages` zip is still written so
+older template builds keep a paired fallback. After the sphere is tapped, the
+photos play as their own slideshow while the departure board lists every
+message; the tour lasts as long as the longer of the two lists. Extra photos
+after the last message mark every row `ĐÃ QUA`; extra messages after the last
+photo keep showing that last frame.
 
-New orders store `farewellStages` as an ordered array of 1–8
-`{ imageUrl, message }` objects. The image and the message are each optional
-and empty stages remain in the array; the template gives a fully empty stage a
-travel-themed visual and default message. After the sphere is tapped, each active
-stage is rendered on its own in a dedicated memory panel, showing its single
-image alongside the message while the progress HUD advances. Memory panels use
-alternating 3D entrances, a subtle photo zoom and light sweep, glass framing,
-and animated flight-path rings behind the card. Reduced-motion mode disables
-all of these decorative animations.
-
-For backward compatibility, `app.js` zips legacy `imageUrls` and
-`farewellCaptions` when `farewellStages` is absent, and also accepts the
-short-lived multi-image `imageUrls` array per stage from an earlier iteration
-(only the first URL is kept). New submissions still keep compact
-`imageUrls`/`farewellCaptions` alongside the stage objects for older readers
-and the final recap. Stage image URLs remain raw S3 values in JSONB;
-`rewriteTemplateDataCDN` rewrites nested `farewellStages[].imageUrl` values
-only when serving public data. Payment migration already walks nested JSON.
+For backward compatibility, `app.js` reads `imageUrls` first and otherwise
+collects photos from `farewellStages[].imageUrl` (or the short-lived
+per-stage `imageUrls` array, first URL only). Messages prefer
+`farewellCaptions` when that list is at least as long as the non-empty stage
+messages, so older paired stages do not lose a line that never sat on a
+photo. Image URLs remain raw S3 values in JSONB; `rewriteTemplateDataCDN`
+rewrites both top-level `imageUrls` and nested `farewellStages[].imageUrl`
+when serving public data. Payment migration already walks nested JSON.
 
 The destination is free text from the order form. Arrival shows the typed city
 and a stamp code from its first letters. Distance, flight time, time-zone
@@ -114,9 +120,17 @@ the boarding pass. Vietnamese origin cities still map to airport codes.
 - **Flight telemetry** — altitude plus a percent progress bar, visible only
   while airborne.
 - **Flight status** — climbing, cruising, half way, descending, under the caption.
-- **Stage memory panel** — the current stage's image plus its message; empty
-  stages use the placeholder, while image-only or message-only stages preserve
-  the supplied content.
+- **Stage photo panel** — a full-bleed photo with no caption on it, just an
+  `Ảnh 02 / 12` counter pill in the corner and progress dots along the bottom.
+  The slideshow uses `imageUrls` (up to 12) and is not tied 1:1 to the board.
+  An empty photo list falls back to the placeholder.
+- **Departure board** — every written message is listed at once under the photo,
+  styled like an airport flight-information display: a two-letter carrier
+  code paired with the row flag, the
+  message, and a status of `ĐÃ QUA` / `ĐANG BAY` / `CHỜ`. The active row is
+  highlighted amber, its status cell flips split-flap style on hand-over, and
+  the row scrolls itself into view when the list overflows. The board header
+  carries the live flight status (climbing, cruising, half way, descending).
 - **Countdown** — days until `farewellDepartureDate`, on the boarding pass.
 - **Arrival section** — a passport stamp that thuds down on entry, plus the
   destination name. No distance, duration, offset, or clocks.
