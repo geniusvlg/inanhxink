@@ -219,7 +219,9 @@ use a known music element id. Letter cues such as birthday cake `#letterSound`
 are left alone. Galaxy's
 `#bg-audio` element also loops its selected background music continuously. If
 browser autoplay policy blocks sound, playback starts on the visitor's first
-tap, click, or key press anywhere on the template.
+tap, click, or key press anywhere on the template. The shared player also sets
+Safari's `navigator.audioSession` to `playback` so music still plays when the
+iPhone silent switch is on (YouTube-style media session, iOS 16.4+).
 
 Template implementations do not need their own voice-message code. Public
 template data is CDN-rewritten before it is injected into

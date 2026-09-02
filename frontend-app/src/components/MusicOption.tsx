@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { extractMusic } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { setPlaybackAudioSession } from '../utils/audioSession';
 import './MusicOption.css';
 
 interface MusicOptionProps {
@@ -120,6 +121,7 @@ function MusicOption({ musicAdded, onMusicToggle, musicLink, onMusicLinkChange, 
       if (other !== audio) other.pause();
     });
     try {
+      setPlaybackAudioSession();
       try { audio.currentTime = 0; } catch { /* ignore */ }
       await audio.play();
       setPlayingPreview(true);

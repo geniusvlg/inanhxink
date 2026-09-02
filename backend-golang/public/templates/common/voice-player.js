@@ -1,6 +1,19 @@
 (function () {
   'use strict';
 
+  // iOS treats <audio> / Web Audio as ambient (muted by the silent switch).
+  // YouTube uses the playback session and still sounds. Match that.
+  function setPlaybackSession() {
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch (e) {}
+  }
+  window.__inxkSetPlaybackSession = setPlaybackSession;
+  setPlaybackSession();
+  ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'].forEach(function (eventName) {
+    document.addEventListener(eventName, setPlaybackSession, true);
+  });
+
   function parseVolume(value, fallback) {
     if (value === undefined || value === null || value === '') return fallback;
     var n = Number(value);
@@ -42,6 +55,7 @@
   }
 
   function unlockWebAudio() {
+    setPlaybackSession();
     var ctx = ensureAudioContext();
     if (!ctx) return;
     if (ctx.state === 'suspended') {

@@ -88,9 +88,9 @@ func injectScripts(html, subdomain, templateType string, templateData map[string
 	// data-cfasync="false" opts these out of Cloudflare Rocket Loader, which would
 	// otherwise defer them until after DOMContentLoaded and break template bootstrap.
 	tag := fmt.Sprintf(
-		"<script data-cfasync=\"false\">window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;</script>\n"+
+		"<script data-cfasync=\"false\">window.__SUBDOMAIN__=%s;window.dataFromSubdomain=%s;try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}</script>\n"+
 			"<link rel=\"stylesheet\" href=\"/templates/common/voice-player.css\">\n"+
-			"<script data-cfasync=\"false\" defer src=\"/templates/common/voice-player.js?v=20260823-10\"></script>",
+			"<script data-cfasync=\"false\" defer src=\"/templates/common/voice-player.js?v=20260902-1\"></script>",
 		string(subdomainJSON), string(dataPayload),
 	)
 	return strings.Replace(html, "</head>", tag+"\n</head>", 1)
