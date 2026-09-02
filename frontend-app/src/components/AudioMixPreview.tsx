@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { setPlaybackAudioSession } from '../utils/audioSession';
 import './AudioMixPreview.css';
 
 interface AudioMixPreviewProps {
@@ -184,6 +185,7 @@ export default function AudioMixPreview({
       if (other !== music && other !== voice) other.pause();
     });
     try {
+      setPlaybackAudioSession();
       if (music) {
         music.loop = true;
         routeMusicThroughGain();

@@ -97,3 +97,9 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
 Browsers, especially mobile Safari and Chrome, may prohibit audible autoplay
 before user interaction. This fallback is required and cannot be bypassed
 reliably by application code.
+
+iOS Safari routes `<audio>` and Web Audio through the **ambient** session, so
+the hardware silent switch (and often Focus/DND) mutes QR music even when
+YouTube still plays. `voice-player.js` sets `navigator.audioSession.type` to
+`playback` on load and again on the first tap so QR audio uses the same media
+session as YouTube (Safari 16.4+ / iOS 16.4+).
