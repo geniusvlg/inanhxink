@@ -14,7 +14,7 @@ const PAGE_FLAGS: { key: string; label: string; description: string }[] = [
   { key: 'page_order_tracking',    label: 'Tra cứu đơn hàng',   description: 'Trang khách hàng tra cứu đơn theo mã invoice' },
   { key: 'page_tao_ma_qr',         label: 'Tạo mã QR',          description: 'Trang khách hàng tạo và tải mã QR cho đơn QR đã mua' },
   { key: 'page_danh_gia',          label: 'Feedback',           description: 'Trang đánh giá / phản hồi khách hàng' },
-  { key: 'page_photobooth',        label: 'Photobooth',         description: 'Trang photobooth chụp ảnh lấy liền trên trình duyệt' },
+  { key: 'page_photobooth',        label: 'Chụp lấy liền',      description: 'Trang photobooth chụp ảnh lấy liền trên trình duyệt' },
 ];
 
 const PAGE_ORDER_KEY = 'page_order';

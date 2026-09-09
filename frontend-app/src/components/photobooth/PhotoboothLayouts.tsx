@@ -6,17 +6,17 @@ interface PhotoboothLayoutsProps {
 }
 
 const BADGE: Record<string, string> = {
-  try: 'TRY IT NOW',
-  new: 'NEW LAYOUT',
-  template: 'TEMPLATE LAYOUT',
-  holiday: 'HOLIDAY SPECIAL',
+  try: 'THỬ NGAY',
+  new: 'MẪU MỚI',
+  template: 'MẪU CÓ SẴN',
+  holiday: 'ĐẶC BIỆT LỄ',
 };
 
 const PREVIEW: Record<LayoutId, string> = {
   a: '/photobooth/layouts/a.webp',
   b: '/photobooth/layouts/b.webp',
   idcard: '/photobooth/layouts/idcard.png',
-  hearts: '/photobooth/layouts/hearts.jpg',
+  hearts: '/photobooth/layouts/hearts.png',
   dog: '/photobooth/layouts/dog.jpg',
   vintage: '/photobooth/layouts/vintage.webp',
   solace: '/photobooth/layouts/solace.webp',
@@ -69,14 +69,14 @@ export default function PhotoboothLayouts({ onPick }: PhotoboothLayoutsProps) {
   return (
     <section className="pb-layouts">
       <div className="pb-layouts-glow" />
-      <h1 className="pb-layouts-title">choose your layout</h1>
-      <p className="pb-layouts-sub">Select from our collection of photo booth layouts</p>
+      <h1 className="pb-layouts-title">chọn mẫu ảnh</h1>
+      <p className="pb-layouts-sub">Chọn một mẫu photobooth bạn thích</p>
 
       <div className="pb-layouts-carousel">
         <button
           type="button"
           className="pb-layouts-arrow"
-          aria-label="Previous layouts"
+          aria-label="Mẫu trước"
           disabled={!canLeft}
           onClick={() => scrollBy(-1)}
         >
@@ -103,7 +103,7 @@ export default function PhotoboothLayouts({ onPick }: PhotoboothLayoutsProps) {
                   <StripPreview layout={layout} />
                 </div>
                 <h2>{layout.name}</h2>
-                <p>Size {layout.sizeLabel}</p>
+                <p>{layout.sizeLabel}</p>
                 <p>({layout.poseLabel})</p>
               </button>
             ))}
@@ -113,7 +113,7 @@ export default function PhotoboothLayouts({ onPick }: PhotoboothLayoutsProps) {
         <button
           type="button"
           className="pb-layouts-arrow"
-          aria-label="Next layouts"
+          aria-label="Mẫu tiếp"
           disabled={!canRight}
           onClick={() => scrollBy(1)}
         >

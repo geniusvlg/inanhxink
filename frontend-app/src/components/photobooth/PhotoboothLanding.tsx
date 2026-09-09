@@ -25,7 +25,7 @@ function PhotoStrip({ side }: { side: 'left' | 'right' }) {
   return (
     <img
       className={`pb-photo-strip pb-photo-strip--${side}`}
-      src={`/photobooth/strip-${side}.svg`}
+      src={side === 'left' ? '/photobooth/spotlight/week7-1.webp' : '/photobooth/spotlight/week7-2.webp'}
       alt=""
       aria-hidden
     />
@@ -54,15 +54,15 @@ export default function PhotoboothLanding({ onStart }: PhotoboothLandingProps) {
           </svg>
         </div>
         <div className="pb-timer-copy">
-          <p className="pb-timer-label">Est. February 9, 2025</p>
+          <p className="pb-timer-label">Thành lập 09/02/2025</p>
           <div className="pb-timer-row">
-            <span><strong>{t.days}</strong><em>days</em></span>
+            <span><strong>{t.days}</strong><em>ngày</em></span>
             <i>:</i>
-            <span><strong>{pad(t.hours)}</strong><em>hours</em></span>
+            <span><strong>{pad(t.hours)}</strong><em>giờ</em></span>
             <i>:</i>
-            <span><strong>{pad(t.mins)}</strong><em>mins</em></span>
+            <span><strong>{pad(t.mins)}</strong><em>phút</em></span>
             <i>:</i>
-            <span><strong>{pad(t.secs)}</strong><em>secs</em></span>
+            <span><strong>{pad(t.secs)}</strong><em>giây</em></span>
           </div>
         </div>
       </div>
@@ -72,17 +72,17 @@ export default function PhotoboothLanding({ onStart }: PhotoboothLandingProps) {
         <h1 className="pb-hero-title">
           <span className="pb-hero-side">EST</span>
           <span className="pb-hero-name">inanhxink</span>
-          <span className="pb-hero-side">2025</span>
+          <span className="pb-hero-side">{now.getFullYear()}</span>
         </h1>
         <p className="pb-hero-tag">
-          Capture the moment, cherish the magic,<br />
-          relive the love
+          Giữ khoảnh khắc, trân trọng phép màu,<br />
+          sống lại yêu thương
         </p>
       </div>
 
       <div className="pb-cta-wrap">
         <button type="button" className="pb-cta" onClick={onStart}>
-          START
+          BẮT ĐẦU
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
             <circle cx="12" cy="13" r="4" />
@@ -90,7 +90,7 @@ export default function PhotoboothLanding({ onStart }: PhotoboothLandingProps) {
         </button>
       </div>
 
-      <button type="button" className="pb-help-fab" aria-label="Website guide" onClick={() => setGuide(true)}>
+      <button type="button" className="pb-help-fab" aria-label="Hướng dẫn" onClick={() => setGuide(true)}>
         <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden>
           <circle cx="12" cy="12" r="9.25" stroke="currentColor" strokeWidth="1.7" />
           <path d="M9.6 9.2c.35-1.15 1.35-1.85 2.55-1.85 1.4 0 2.45.9 2.45 2.2 0 1.15-.7 1.75-1.7 2.3-.9.5-1.2.85-1.2 1.55v.35" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
@@ -102,13 +102,13 @@ export default function PhotoboothLanding({ onStart }: PhotoboothLandingProps) {
         <div className="pb-modal" onClick={() => setGuide(false)}>
           <div className="pb-modal-card pb-modal-card--light" onClick={e => e.stopPropagation()}>
             <div className="pb-modal-head">
-              <h2>Website Guide</h2>
-              <button type="button" className="pb-text-btn" onClick={() => setGuide(false)}>close</button>
+              <h2>Hướng dẫn</h2>
+              <button type="button" className="pb-text-btn" onClick={() => setGuide(false)}>Đóng</button>
             </div>
             <ol className="pb-guide-list">
-              <li>Choose a layout — that sets how many poses you take.</li>
-              <li>Use the camera or upload photos, pick a filter, then press DONE.</li>
-              <li>Customize the strip and download PNG or GIF.</li>
+              <li>Chọn mẫu — số ảnh bạn chụp phụ thuộc mẫu đó.</li>
+              <li>Dùng camera hoặc tải ảnh, chọn filter — hết ảnh sẽ cắt chỉnh rồi trang trí.</li>
+              <li>Trang trí dải ảnh và tải PNG hoặc GIF.</li>
             </ol>
           </div>
         </div>

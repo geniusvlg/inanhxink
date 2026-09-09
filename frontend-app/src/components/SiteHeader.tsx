@@ -36,7 +36,7 @@ const NAV_PAGES = [
   { flag: 'page_order_tracking', path: '/tra-cuu-don-hang', active: 'tra-cuu-don-hang', label: 'Tra cứu đơn hàng' },
   { flag: 'page_tao_ma_qr', path: '/tao-ma-qr', active: 'tao-ma-qr', label: 'Tạo mã QR' },
   { flag: 'page_danh_gia', path: '/danh-gia', active: 'danh-gia', label: 'Feedback' },
-  { flag: 'page_photobooth', path: '/photobooth', active: 'photobooth', label: 'Photobooth' },
+  { flag: 'page_photobooth', path: '/photobooth', active: 'photobooth', label: 'Chụp lấy liền' },
 ] as const;
 
 function SiteHeader({ activePage }: SiteHeaderProps) {
