@@ -2,10 +2,13 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -109,5 +112,113 @@ func ReleaseQRName(w http.ResponseWriter, r *http.Request) {
 		"message": fmt.Sprintf(
 			"Đã thu hồi tên QR \"%s\": %d đơn được giải phóng, %d tệp ảnh đã xoá. Tên này có thể được đặt lại.",
 			qrName, ordersReleased, s3Deleted),
+	})
+}
+
+// PATCH /api/admin/qr-names/{qrName}/volume
+// Body: { "musicVolume": 0.04 } — background music only, 0–1.
+// Updates the live qr_codes row and every unreleased order that has music.
+func UpdateQRMusicVolume(w http.ResponseWriter, r *http.Request) {
+	qrName := strings.ToLower(strings.TrimSpace(chi.URLParam(r, "qrName")))
+	if qrName == "" || !qrNamePattern.MatchString(qrName) {
+		handlers.BadRequest(w, "Tên QR không hợp lệ")
+		return
+	}
+
+	var body struct {
+		MusicVolume *float64 `json:"musicVolume"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.MusicVolume == nil {
+		handlers.BadRequest(w, "Âm lượng nhạc không hợp lệ")
+		return
+	}
+	if math.IsNaN(*body.MusicVolume) || math.IsInf(*body.MusicVolume, 0) {
+		handlers.BadRequest(w, "Âm lượng nhạc phải từ 0% đến 100%")
+		return
+	}
+	percent := int(math.Round(*body.MusicVolume * 100))
+	if percent < 0 || percent > 100 {
+		handlers.BadRequest(w, "Âm lượng nhạc phải từ 0% đến 100%")
+		return
+	}
+	volumeText := strconv.FormatFloat(float64(percent)/100, 'f', 2, 64)
+
+	ctx := context.Background()
+	tx, err := config.DB.Begin(ctx)
+	if err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+	defer tx.Rollback(ctx) //nolint
+
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", qrName); err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+
+	var qrUpdated int
+	if err := tx.QueryRow(ctx, `
+		WITH updated AS (
+			UPDATE qr_codes
+			SET template_data = jsonb_set(COALESCE(template_data, '{}'::jsonb), '{musicVolume}', to_jsonb($2::numeric), true),
+				updated_at = NOW()
+			WHERE qr_name = $1
+			  AND NULLIF(BTRIM(template_data->>'musicUrl'), '') IS NOT NULL
+			RETURNING 1
+		)
+		SELECT COUNT(*) FROM updated`, qrName, volumeText).Scan(&qrUpdated); err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+
+	var ordersUpdated int
+	if err := tx.QueryRow(ctx, `
+		WITH updated AS (
+			UPDATE orders
+			SET template_data = jsonb_set(COALESCE(template_data, '{}'::jsonb), '{musicVolume}', to_jsonb($2::numeric), true),
+				updated_at = NOW()
+			WHERE qr_name = $1
+			  AND qr_name_released_at IS NULL
+			  AND (
+				COALESCE(music_added, false)
+				OR NULLIF(BTRIM(template_data->>'musicUrl'), '') IS NOT NULL
+			  )
+			RETURNING 1
+		)
+		SELECT COUNT(*) FROM updated`, qrName, volumeText).Scan(&ordersUpdated); err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+
+	if qrUpdated == 0 && ordersUpdated == 0 {
+		var released bool
+		if err := tx.QueryRow(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM orders
+				WHERE qr_name = $1 AND qr_name_released_at IS NOT NULL
+			) AND NOT EXISTS (
+				SELECT 1 FROM qr_codes WHERE qr_name = $1
+			)`, qrName).Scan(&released); err != nil {
+			handlers.InternalError(w, err)
+			return
+		}
+		if released {
+			handlers.Conflict(w, "Không thể đổi âm lượng: tên QR đã bị thu hồi.")
+			return
+		}
+		handlers.BadRequest(w, "QR này không có nhạc nền để chỉnh âm lượng.")
+		return
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		handlers.InternalError(w, err)
+		return
+	}
+
+	handlers.OK(w, map[string]any{
+		"success":       true,
+		"qrName":        qrName,
+		"musicVolume":   float64(percent) / 100,
+		"ordersUpdated": ordersUpdated,
 	})
 }

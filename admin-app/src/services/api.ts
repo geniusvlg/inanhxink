@@ -60,6 +60,12 @@ export const qrNamesApi = {
       s3Deleted: number;
       message: string;
     }>(`/api/admin/qr-names/${encodeURIComponent(qrName)}`),
+  /** Sets background music volume (0–1) for one live QR and its unreleased orders. */
+  updateVolume: (qrName: string, musicVolume: number) =>
+    api.patch<{ success: boolean; qrName: string; musicVolume: number }>(
+      `/api/admin/qr-names/${encodeURIComponent(qrName)}/volume`,
+      { musicVolume },
+    ),
 };
 
 export const productOrdersApi = {

@@ -160,6 +160,24 @@ Fulfillment shipping step requires only the SPX `tracking_code` when moving
 product or QR-keychain orders to `shipped`. `shipping_carrier` is auto-set to
 `SPX` by the backend.
 
+## QR Order Filters
+
+`QrOrdersPage.tsx` lists `GET /api/admin/orders`. Dropdown filters combine with AND:
+
+| Query | Values | Matches |
+|-------|--------|---------|
+| `qr_name` | free text, max 100 characters | QR name, case-insensitive partial match |
+| `audio` | `music`, `voice`, `both`, `music_only`, `voice_only`, `none` | Background music and/or voice recording. "Has music" / "has voice" include orders that have both. A match is the add-on flag (`music_added`, `voice_recording_added`) or a non-empty `template_data` URL (`musicUrl`, `voiceRecordingUrl`). |
+| `keychain` | `yes`, `no` | Whether the order includes the QR keychain |
+| `payment_status` | `pending`, `paid`, `failed`, `refunded`, `cancelled` | Payment state |
+| `keychain_delivery_status` | delivery status string | Keychain fulfillment state |
+
+Each row includes `has_music` and `has_voice` so the table badges match the filter. Admin responses stay on raw S3 URLs.
+
+The detail modal also shows the price parts stored on the order: voice (`voice_recording_price`), tip (`tip_amount`), keychain, and voucher discount. Music is shown as included or not; the music fee itself is not snapshotted on the order. `template_price` is the template's current catalog price. `music_volume` is the saved background mix (`template_data.musicVolume`). When that value is missing, the modal shows the playback fallback: 4% if the order also has a voice recording, otherwise 100%.
+
+`PATCH /api/admin/qr-names/:qrName/volume` with `{ "musicVolume": 0.04 }` sets that QR's background volume (0–1, stored to the nearest 1%). It updates `qr_codes.template_data` for the live page and every unreleased order of that name that has music. Voice stays at full volume. A released name returns 409. A QR without music returns 400.
+
 ## Releasing A QR Name
 
 `QrOrdersPage.tsx` has a 🗑 button per row (and in the detail modal) that frees a
@@ -226,6 +244,10 @@ The "🎁 Phụ phí tuỳ chọn" card holds the QR add-on settings:
   show on the fulfillment board.
 - `keychain_price` / `music_price`: add-on surcharges in VND. `keychain_price` is
   ignored while `keychain_enabled` is `false`.
+- `default_music_volume`: background-music percent used when a new QR order has
+  both music and a voice recording and the customer has not chosen a volume.
+  Integer `0`–`100`. The seeded default is `4`. Music-only orders stay at 100%.
+  Changing it does not rewrite volumes already stored on existing orders.
 
 ## S3 Folder Structure (Products)
 

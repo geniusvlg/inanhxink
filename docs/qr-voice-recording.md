@@ -34,8 +34,14 @@ day.
   `voice_recording_price`.
 - `template_data.voiceRecordingUrl` stores the raw S3 URL.
 - `template_data.musicVolume` stores the chosen background volume as a 0–1
-  number. When omitted, it defaults to `0.04` if voice recording is also
-  selected, otherwise `1`. It is not an asset URL and is not CDN rewritten.
+  number. When omitted, it defaults to `metadata.default_music_volume` (a
+  percent, seeded at `4`) if voice recording is also selected, otherwise `1`.
+  The order form uses the same metadata value until the customer changes it.
+  It is not an asset URL and is not CDN rewritten.
+  Admins can override one QR from **Đơn QR** via
+  `PATCH /api/admin/qr-names/:qrName/volume`. That writes the live
+  `qr_codes` row and that name's unreleased orders. It does not change the
+  default for new orders.
 - Public template responses rewrite audio URLs to the CDN; the database and
   admin APIs retain raw S3 URLs.
 - `V69__normalize_mixed_audio_volume.sql` sets existing `qr_codes` and `orders`

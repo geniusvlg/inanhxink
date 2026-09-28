@@ -82,6 +82,7 @@ function OrderPage() {
   const [musicAdded, setMusicAdded] = useState(false);
   const [musicLink, setMusicLink] = useState('');
   const [musicVolume, setMusicVolume] = useState(DEFAULT_MUSIC_VOLUME);
+  const [mixMusicVolume, setMixMusicVolume] = useState(DEFAULT_MIX_MUSIC_VOLUME);
   const [musicVolumeTouched, setMusicVolumeTouched] = useState(false);
   const [mixResetToken, setMixResetToken] = useState(0);
   const [voiceIsRecording, setVoiceIsRecording] = useState(false);
@@ -167,6 +168,10 @@ function OrderPage() {
     getMetadata().then(data => {
       if (data.music_price) setMusicPrice(parseInt(data.music_price));
       if (data.voice_recording_price) setVoiceRecordingPrice(parseInt(data.voice_recording_price));
+      const mixPercent = Number(data.default_music_volume);
+      if (Number.isFinite(mixPercent) && mixPercent >= 0 && mixPercent <= 100) {
+        setMixMusicVolume(mixPercent / 100);
+      }
       if (data.keychain_price) setKeychainPrice(parseInt(data.keychain_price));
       if (data.keychain_enabled === 'false') {
         setKeychainEnabled(false);
@@ -324,7 +329,7 @@ function OrderPage() {
       return;
     }
     if (!musicVolumeTouched && voiceRecordingAdded) {
-      setMusicVolume(DEFAULT_MIX_MUSIC_VOLUME);
+      setMusicVolume(mixMusicVolume);
     }
   };
 
@@ -337,9 +342,15 @@ function OrderPage() {
       return;
     }
     if (!musicVolumeTouched && musicAdded) {
-      setMusicVolume(DEFAULT_MIX_MUSIC_VOLUME);
+      setMusicVolume(mixMusicVolume);
     }
   };
+
+  useEffect(() => {
+    if (!musicVolumeTouched && musicAdded && voiceRecordingAdded) {
+      setMusicVolume(mixMusicVolume);
+    }
+  }, [mixMusicVolume, musicVolumeTouched, musicAdded, voiceRecordingAdded]);
 
   const handleMusicVolumeChange = (next: number) => {
     setMusicVolumeTouched(true);
