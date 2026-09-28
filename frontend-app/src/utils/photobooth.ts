@@ -261,8 +261,15 @@ export const STICKERS: { id: string; label: string; icon: string; badge?: Sticke
   { id: 'grinch', label: 'Grinch', icon: '/photobooth/stickers/grinch/grinch1.png', badge: 'special' },
 ];
 
+export const PHOTOBOOTH_LOGO_MAX = 24;
+
+/** Customer-typed strip logo. Empty means the brand word is not printed. */
+export function photoboothLogoText(raw: string | undefined | null): string {
+  return (raw ?? '').replace(/\s+/g, ' ').trim().slice(0, PHOTOBOOTH_LOGO_MAX);
+}
+
 export const LOGOS: { id: LogoId; label: string }[] = [
-  { id: 'brand', label: 'Inanhxink' },
+  { id: 'brand', label: 'Logo' },
   { id: 'heart', label: '♡' },
   { id: 'none', label: 'Ẩn' },
 ];
@@ -274,6 +281,8 @@ export interface StripOptions {
   shape: ShapeId;
   stickerId: string;
   logo: LogoId;
+  /** Word printed for the brand logo. Heart wraps it as ♡ word ♡. */
+  brandText?: string;
   addDate: boolean;
   addTime: boolean;
   customFill?: string;
@@ -471,11 +480,35 @@ function drawThemeChrome(
   }
 }
 
+function logoLine(logo: LogoId, brand: string): string {
+  if (logo === 'heart') return brand ? `♡ ${brand} ♡` : '♡';
+  if (logo === 'brand') return brand;
+  return '';
+}
+
+function fillFittedText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  startSize: number,
+) {
+  let size = startSize;
+  ctx.font = `700 ${size}px "Be Vietnam Pro", sans-serif`;
+  while (size > 12 && ctx.measureText(text).width > maxWidth) {
+    size -= 1;
+    ctx.font = `700 ${size}px "Be Vietnam Pro", sans-serif`;
+  }
+  ctx.fillText(text, x, y);
+}
+
 function drawThemeFooter(
   ctx: CanvasRenderingContext2D,
   layout: PhotoboothLayout,
   m: ReturnType<typeof stripMetrics>,
   logo: LogoId,
+  brand: string,
   addDate: boolean,
   addTime: boolean,
 ) {
@@ -505,20 +538,15 @@ function drawThemeFooter(
 
   const darkFrame = layout.theme === 'classic' || layout.theme === 'vintage' || layout.defaultFrame === 'black';
   ctx.fillStyle = darkFrame ? '#f6f1ea' : '#2a211c';
-  if (logo === 'brand') {
-    ctx.font = '700 22px "Be Vietnam Pro", sans-serif';
-    ctx.fillText('inanhxink', m.width / 2, footerY - 10);
-  } else if (logo === 'heart') {
-    ctx.font = '700 22px "Be Vietnam Pro", sans-serif';
-    ctx.fillText('♡ inanhxink ♡', m.width / 2, footerY - 10);
-  }
+  const line = logoLine(logo, brand);
+  if (line) fillFittedText(ctx, line, m.width / 2, footerY - 10, m.width - 36, 22);
   const parts: string[] = [];
   if (addDate) parts.push(now.toLocaleDateString('vi-VN'));
   if (addTime) parts.push(now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
   if (parts.length) {
     ctx.font = '500 13px "Be Vietnam Pro", sans-serif';
     ctx.globalAlpha = 0.8;
-    ctx.fillText(parts.join('  ·  '), m.width / 2, footerY + (logo === 'none' ? 0 : 16));
+    ctx.fillText(parts.join('  ·  '), m.width / 2, footerY + (line ? 16 : 0));
     ctx.globalAlpha = 1;
   }
 }
@@ -605,7 +633,7 @@ export async function renderPhotoStrip(opts: StripOptions): Promise<HTMLCanvasEl
   });
 
   await drawStickers(ctx, opts.stickerId, m.width, m.height);
-  drawThemeFooter(ctx, opts.layout, m, opts.logo, opts.addDate, opts.addTime);
+  drawThemeFooter(ctx, opts.layout, m, opts.logo, photoboothLogoText(opts.brandText), opts.addDate, opts.addTime);
   return canvas;
 }
 
@@ -878,11 +906,12 @@ function packGifBlocks(data: Uint8Array): Uint8Array {
 
 export async function encodeFramesGif(
   groups: string[][],
-  opts?: { delayCs?: number; holdCs?: number; framed?: boolean },
+  opts?: { delayCs?: number; holdCs?: number; framed?: boolean; brandText?: string },
 ): Promise<Blob> {
   const clips = groups.filter(g => g.length);
   if (!clips.length) throw new Error('Không có khung hình để tạo GIF');
   const framed = opts?.framed ?? false;
+  const brand = photoboothLogoText(opts?.brandText);
   const delayCs = opts?.delayCs ?? (framed ? 80 : 10);
   const holdCs = opts?.holdCs ?? (framed ? delayCs : 40);
   const images = await Promise.all(clips.map(clip => Promise.all(clip.map(loadImage))));
@@ -918,10 +947,9 @@ export async function encodeFramesGif(
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = '700 26px "Be Vietnam Pro", sans-serif';
-        ctx.fillText('inanhxink', w / 2, padTop + photoH + 28);
+        if (brand) fillFittedText(ctx, brand, w / 2, padTop + photoH + 28, w - 24, 26);
         ctx.font = '500 14px "Be Vietnam Pro", sans-serif';
-        ctx.fillText(stamp, w / 2, padTop + photoH + 54);
+        ctx.fillText(stamp, w / 2, padTop + photoH + (brand ? 54 : 40));
       }
       frames.push(ctx.getImageData(0, 0, w, h));
     }
@@ -965,8 +993,8 @@ export async function encodeFramesGif(
   return new Blob([new Uint8Array(bytes)], { type: 'image/gif' });
 }
 
-export async function encodePoseGif(photos: string[], delayCs = 80): Promise<Blob> {
-  return encodeFramesGif(photos.map(src => [src]), { delayCs, framed: true });
+export async function encodePoseGif(photos: string[], delayCs = 80, brandText = ''): Promise<Blob> {
+  return encodeFramesGif(photos.map(src => [src]), { delayCs, framed: true, brandText });
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

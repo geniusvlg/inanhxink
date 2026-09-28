@@ -7,6 +7,8 @@ import {
   canvasToBlob,
   downloadBlob,
   encodeFramesGif,
+  PHOTOBOOTH_LOGO_MAX,
+  photoboothLogoText,
   renderPhotoStrip,
   type LogoId,
   type PhotoboothLayout,
@@ -21,6 +23,8 @@ interface PhotoboothCustomizeProps {
 }
 
 export default function PhotoboothCustomize({ layout, photos, onRetake }: PhotoboothCustomizeProps) {
+  const [logoText, setLogoText] = useState('');
+  const brandText = photoboothLogoText(logoText);
   const [frameId, setFrameId] = useState(layout.defaultFrame);
   const [customFill, setCustomFill] = useState('#ffffff');
   const [shape, setShape] = useState<ShapeId>(layout.defaultShape);
@@ -35,7 +39,7 @@ export default function PhotoboothCustomize({ layout, photos, onRetake }: Photob
   useEffect(() => {
     let cancelled = false;
     setBusy('Đang ghép ảnh…');
-    renderPhotoStrip({ photos, layout, frameId, shape, stickerId, logo, addDate, addTime, customFill })
+    renderPhotoStrip({ photos, layout, frameId, shape, stickerId, logo, brandText, addDate, addTime, customFill })
       .then(canvas => {
         if (!cancelled) setPreview(canvas.toDataURL('image/png'));
       })
@@ -51,7 +55,7 @@ export default function PhotoboothCustomize({ layout, photos, onRetake }: Photob
     return () => {
       cancelled = true;
     };
-  }, [photos, layout, frameId, shape, stickerId, logo, addDate, addTime, customFill]);
+  }, [photos, layout, frameId, shape, stickerId, logo, brandText, addDate, addTime, customFill]);
 
   useEffect(() => {
     let url = '';
@@ -76,7 +80,7 @@ export default function PhotoboothCustomize({ layout, photos, onRetake }: Photob
   }, [photos]);
 
   const buildCanvas = () =>
-    renderPhotoStrip({ photos, layout, frameId, shape, stickerId, logo, addDate, addTime, customFill });
+    renderPhotoStrip({ photos, layout, frameId, shape, stickerId, logo, brandText, addDate, addTime, customFill });
 
   const onDownload = async () => {
     setBusy('Đang tải…');
@@ -219,6 +223,17 @@ export default function PhotoboothCustomize({ layout, photos, onRetake }: Photob
               </button>
             ))}
           </div>
+          {logo !== 'none' && (
+            <input
+              className="pb-logo-input"
+              type="text"
+              maxLength={PHOTOBOOTH_LOGO_MAX}
+              placeholder="Nhập chữ logo"
+              value={logoText}
+              onChange={e => setLogoText(e.target.value.slice(0, PHOTOBOOTH_LOGO_MAX))}
+              aria-label="Chữ logo"
+            />
+          )}
 
           <div className="pb-check-row">
             <label className="pb-check">

@@ -30,7 +30,10 @@ strips that sway with `tiltLeftToRight`). Photos stay on-device.
 4. Crop review (photobooth-io `openCropReviewGate`): crop, tỉ lệ, xoay
    từng ảnh, rồi **Xong cắt**.
 5. Customize (`customize.html` look): solid + texture frames, photo
-   shape icons, sticker packs, logo, date/time. After the last pose the
+   shape icons, sticker packs, logo, date/time. The logo word starts empty;
+   the customer types it (max 24 characters). **Logo** prints that text,
+   **♡** wraps it as `♡ text ♡`, and an empty field prints no brand word.
+   After the last pose the
    capture step opens crop review first (`#google_vignette` on
    photobooth-io is an ad overlay, not a route).
 6. Download PNG of the decorated strip, or **Tải GIF** for an animated
