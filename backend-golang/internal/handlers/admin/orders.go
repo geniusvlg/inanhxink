@@ -23,7 +23,15 @@ func adminDomain() string {
 	return "inanhxink.com"
 }
 
-// GET /api/admin/orders?page=&limit=&payment_status=&keychain_delivery_status=
+// orderHasMusic / orderHasVoice match either the add-on flag or a stored audio URL.
+const (
+	orderHasMusic = `(COALESCE(o.music_added, false) OR NULLIF(BTRIM(o.template_data->>'musicUrl'), '') IS NOT NULL)`
+	orderHasVoice = `(COALESCE(o.voice_recording_added, false) OR NULLIF(BTRIM(o.template_data->>'voiceRecordingUrl'), '') IS NOT NULL)`
+)
+
+// GET /api/admin/orders?page=&limit=&payment_status=&keychain_delivery_status=&qr_name=&audio=&keychain=
+// audio: music | voice | both | music_only | voice_only | none
+// keychain: yes | no
 func ListOrders(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	page := handlers.Clamp(handlers.IntParam(q.Get("page"), 1), 1, 1<<30)
@@ -44,10 +52,46 @@ func ListOrders(w http.ResponseWriter, r *http.Request) {
 		params = append(params, v)
 		idx++
 	}
+	if v := strings.TrimSpace(q.Get("qr_name")); v != "" {
+		if runes := []rune(v); len(runes) > 100 {
+			v = string(runes[:100])
+		}
+		conditions = append(conditions, fmt.Sprintf(`o.qr_name ILIKE $%d ESCAPE '\'`, idx))
+		params = append(params, likeContains(v))
+		idx++
+	}
+	switch audio := q.Get("audio"); audio {
+	case "":
+	case "music":
+		conditions = append(conditions, orderHasMusic)
+	case "voice":
+		conditions = append(conditions, orderHasVoice)
+	case "both":
+		conditions = append(conditions, orderHasMusic+" AND "+orderHasVoice)
+	case "music_only":
+		conditions = append(conditions, orderHasMusic+" AND NOT "+orderHasVoice)
+	case "voice_only":
+		conditions = append(conditions, orderHasVoice+" AND NOT "+orderHasMusic)
+	case "none":
+		conditions = append(conditions, "NOT "+orderHasMusic+" AND NOT "+orderHasVoice)
+	default:
+		handlers.BadRequest(w, "audio must be music, voice, both, music_only, voice_only, or none")
+		return
+	}
+	switch keychain := q.Get("keychain"); keychain {
+	case "":
+	case "yes":
+		conditions = append(conditions, "o.keychain_purchased IS TRUE")
+	case "no":
+		conditions = append(conditions, "COALESCE(o.keychain_purchased, false) = false")
+	default:
+		handlers.BadRequest(w, "keychain must be yes or no")
+		return
+	}
 
 	where := ""
 	if len(conditions) > 0 {
-		where = "WHERE " + joinClauses(conditions)
+		where = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
 	filterParams := make([]any, len(params))
@@ -55,9 +99,13 @@ func ListOrders(w http.ResponseWriter, r *http.Request) {
 
 	params = append(params, limit, offset)
 	rows, err := config.DB.Query(context.Background(),
-		fmt.Sprintf(`SELECT o.*, t.name AS template_name FROM orders o
+		fmt.Sprintf(`SELECT o.*, t.name AS template_name, t.price AS template_price,
+			%s AS has_music, %s AS has_voice,
+			NULLIF(BTRIM(o.template_data->>'musicVolume'), '') AS music_volume
+			FROM orders o
 			LEFT JOIN templates t ON t.id = o.template_id
-			%s ORDER BY o.created_at DESC LIMIT $%d OFFSET $%d`, where, idx, idx+1),
+			%s ORDER BY o.created_at DESC LIMIT $%d OFFSET $%d`,
+			orderHasMusic, orderHasVoice, where, idx, idx+1),
 		params...)
 	if err != nil {
 		handlers.InternalError(w, err)
@@ -75,6 +123,11 @@ func ListOrders(w http.ResponseWriter, r *http.Request) {
 	countRow.Scan(&total) //nolint
 
 	handlers.OK(w, map[string]any{"success": true, "orders": orders, "total": total, "page": page, "limit": limit})
+}
+
+func likeContains(s string) string {
+	s = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+	return "%" + s + "%"
 }
 
 // GET /api/admin/orders/:id

@@ -436,7 +436,6 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if resolvedMusicUrl != "" {
 		templateData["musicUrl"] = resolvedMusicUrl
-		templateData["musicVolume"] = resolveMusicVolume(voiceRecordingAdded, body["musicVolume"])
 	}
 	voiceRecordingURL = strings.TrimSpace(voiceRecordingURL)
 	if voiceRecordingAdded {
@@ -460,7 +459,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Get add-on prices from metadata
 	metaRows, err := config.DB.Query(context.Background(),
-		"SELECT key, value FROM metadata WHERE key IN ('music_price', 'voice_recording_price', 'keychain_price', 'keychain_enabled')")
+		"SELECT key, value FROM metadata WHERE key IN ('music_price', 'voice_recording_price', 'keychain_price', 'keychain_enabled', 'default_music_volume')")
 	if err != nil {
 		InternalError(w, err)
 		return
@@ -479,6 +478,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// Admins can disable the keychain add-on; ignore it even if the client still sends it.
 	if metaRaw["keychain_enabled"] == "false" {
 		keychainPurchased = false
+	}
+	if resolvedMusicUrl != "" {
+		templateData["musicVolume"] = resolveMusicVolume(
+			voiceRecordingAdded, body["musicVolume"], parseDefaultMusicVolume(metaRaw["default_music_volume"]))
 	}
 	musicPrice := 0.0
 	if musicAdded {
@@ -839,10 +842,27 @@ func validQRImageURLs(body map[string]any, expectedPrefix string) bool {
 	return true
 }
 
-func resolveMusicVolume(voiceRecordingAdded bool, raw any) float64 {
+// parseDefaultMusicVolume reads metadata default_music_volume as a percent (0–100).
+// Missing or invalid values fall back to 4%.
+func parseDefaultMusicVolume(raw string) float64 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0.04
+	}
+	var percent float64
+	if _, err := fmt.Sscanf(raw, "%f", &percent); err != nil || percent < 0 || percent > 100 {
+		return 0.04
+	}
+	return percent / 100
+}
+
+func resolveMusicVolume(voiceRecordingAdded bool, raw any, mixDefault float64) float64 {
+	if math.IsNaN(mixDefault) || mixDefault < 0 || mixDefault > 1 {
+		mixDefault = 0.04
+	}
 	volume := 1.0
 	if voiceRecordingAdded {
-		volume = 0.04
+		volume = mixDefault
 	}
 	if raw != nil {
 		volume = math.Min(1, math.Max(0, toFloat(raw)))

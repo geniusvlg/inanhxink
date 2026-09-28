@@ -18,11 +18,24 @@ export interface Order {
   customer_phone: string;
   template_id: number;
   template_name?: string;
+  /** Current catalog price of the template, not a snapshot from checkout. */
+  template_price?: number;
   template_type: string;
   payment_status: string;
   keychain_delivery_status: string | null;
   keychain_purchased: boolean;
   keychain_price: number;
+  /** True when the order has background music (add-on flag or musicUrl). */
+  has_music?: boolean;
+  /** True when the order has a voice recording (add-on flag or voiceRecordingUrl). */
+  has_voice?: boolean;
+  music_added?: boolean;
+  /** Saved background mix, 0–1. Empty when the order never stored one. */
+  music_volume?: number | string | null;
+  voice_recording_added?: boolean;
+  voice_recording_price?: number;
+  tip_amount?: number;
+  voucher_discount?: number;
   subtotal: number;
   total_amount: number;
   voucher_code: string | null;

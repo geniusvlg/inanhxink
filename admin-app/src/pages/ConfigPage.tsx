@@ -24,6 +24,7 @@ const SHIPPING_FEE_KEY = 'product_shipping_fee';
 const SHIPPING_THRESHOLD_KEY = 'product_shipping_fee_threshold';
 const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY, SHIPPING_THRESHOLD_KEY]);
 const VOICE_RECORDING_PRICE_KEY = 'voice_recording_price';
+const DEFAULT_MUSIC_VOLUME_KEY = 'default_music_volume';
 const KEYCHAIN_ENABLED_KEY = 'keychain_enabled';
 
 interface NumericFieldConfig {
@@ -172,6 +173,10 @@ export default function ConfigPage() {
         ? String(Math.round(voicePrice))
         : '10000';
       payload[KEYCHAIN_ENABLED_KEY] = config[KEYCHAIN_ENABLED_KEY] === 'false' ? 'false' : 'true';
+      const mixVolume = Number(config[DEFAULT_MUSIC_VOLUME_KEY]);
+      payload[DEFAULT_MUSIC_VOLUME_KEY] = (Number.isFinite(mixVolume) && mixVolume >= 0 && mixVolume <= 100)
+        ? String(Math.round(mixVolume))
+        : '4';
       for (const f of NUMERIC_FIELDS) {
         const v = Number(config[f.key]);
         payload[f.key] = (Number.isFinite(v) && v >= f.min) ? String(Math.round(v)) : f.defaultValue;
@@ -228,6 +233,7 @@ export default function ConfigPage() {
       k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)
       && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k)
       && k !== VOICE_RECORDING_PRICE_KEY && k !== KEYCHAIN_ENABLED_KEY
+      && k !== DEFAULT_MUSIC_VOLUME_KEY
       && !KNOWN_OTHER_KEYS.has(k) && !DEPRECATED_KEYS.has(k),
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
@@ -397,7 +403,7 @@ export default function ConfigPage() {
           <div className="cfg-card-head">
             <div className="cfg-card-title">🎁 Phụ phí tuỳ chọn</div>
             <div className="cfg-card-sub">
-              Giá các tuỳ chọn thêm mà khách có thể chọn khi đặt QR.
+              Giá các tuỳ chọn thêm mà khách có thể chọn khi đặt QR, và âm lượng nhạc nền mặc định khi đơn có cả nhạc và ghi âm.
             </div>
           </div>
           <div className="cfg-row">
@@ -418,6 +424,27 @@ export default function ConfigPage() {
           </div>
           <div className="cfg-section">
             {ADDON_PRICE_FIELDS.map(renderNumericField)}
+            <div className="form-group">
+              <label className="form-label">Âm lượng nhạc nền mặc định khi có ghi âm (%)</label>
+              <input
+                className="form-input"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                max="100"
+                placeholder="4"
+                value={config[DEFAULT_MUSIC_VOLUME_KEY] ?? ''}
+                onChange={e => {
+                  const raw = e.target.value;
+                  if (raw === '') { handleChange(DEFAULT_MUSIC_VOLUME_KEY, ''); return; }
+                  const value = Number(raw);
+                  if (!Number.isNaN(value) && value >= 0 && value <= 100) {
+                    handleChange(DEFAULT_MUSIC_VOLUME_KEY, String(Math.round(value)));
+                  }
+                }}
+              />
+              <p className="cfg-field-note">Áp dụng cho đơn mới khi khách chọn cả nhạc nền và ghi âm mà chưa tự chỉnh âm lượng. Nhạc không kèm ghi âm vẫn là 100%. Đơn đã lưu giữ nguyên mức âm lượng của đơn đó.</p>
+            </div>
           </div>
         </div>
 

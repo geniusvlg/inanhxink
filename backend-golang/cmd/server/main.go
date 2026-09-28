@@ -168,6 +168,7 @@ func main() {
 			})
 
 			r.Delete("/qr-names/{qrName}", adminHandlers.ReleaseQRName)
+			r.Patch("/qr-names/{qrName}/volume", adminHandlers.UpdateQRMusicVolume)
 
 			r.Route("/product-orders", func(r chi.Router) {
 				r.Get("/", adminHandlers.ListProductOrders)
