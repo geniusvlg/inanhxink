@@ -53,7 +53,7 @@ Public handlers (`backend-golang/internal/handlers/*.go`):
 
 - `banners.go` → `image_url` (`CdnURLField`)
 - `heroshots.go` → `image_url` (`CdnURLField`)
-- `products.go` → `thumbnail_url` (`CdnURLField`) and `images` (`CdnArrayField`) on product list/detail rows; `variants[].image` per-variant image (`CdnStr`)
+- `products.go` → `thumbnail_url` (`CdnURLField`) and `images` (`CdnArrayField`) on product list/detail rows; `video_url` (`CdnURLField`) on product detail; `variants[].image` per-variant image (`CdnStr`)
 - `templates.go` → `image_url` (`CdnURLField`) — applied on both the list and single-template responses
 - `qrcodes.go` → `template_image_url` (`CdnStr`)
 - `testimonials.go` → `image_url` (`CdnURLField`) — applied on both the list and single-testimonial responses

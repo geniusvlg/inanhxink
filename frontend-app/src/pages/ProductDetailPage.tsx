@@ -152,6 +152,8 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeImg, setActiveImg] = useState(0);
+  const [videoMuted, setVideoMuted] = useState(true);
+  const mainVideoRef = useRef<HTMLVideoElement>(null);
   const [hoveredVariantImg, setHoveredVariantImg] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [cartToastVisible, setCartToastVisible] = useState(false);
@@ -176,7 +178,7 @@ export default function ProductDetailPage() {
     if (!id) return;
     setLoading(true);
     getProductById(Number(id))
-      .then((p) => { setProduct(p); setActiveImg(0); setSelectedVariant(null); })
+      .then((p) => { setProduct(p); setActiveImg(p.video_url ? -1 : 0); setVideoMuted(true); setSelectedVariant(null); })
       .catch(() => setError('Không thể tải sản phẩm'))
       .finally(() => setLoading(false));
   }, [id]);
@@ -289,6 +291,7 @@ export default function ProductDetailPage() {
   const productImages = product?.images?.length
     ? product.images.map(resolveUrl)
     : ['/placeholder.png'];
+  const productVideo = product?.video_url ? resolveUrl(product.video_url) : null;
 
   const variants: ProductVariant[] = product?.variants ?? [];
   const hasVariants = variants.length > 0;
@@ -297,6 +300,23 @@ export default function ProductDetailPage() {
   const displayImg = hoveredVariantImg
     ? resolveUrl(hoveredVariantImg)
     : productImages[activeImg];
+  const showingVideo = !!productVideo && activeImg === -1 && !hoveredVariantImg;
+
+  useEffect(() => {
+    const el = mainVideoRef.current;
+    if (!showingVideo || !el) return;
+    el.muted = true;
+    el.defaultMuted = true;
+    el.setAttribute('playsinline', '');
+    el.setAttribute('webkit-playsinline', 'true');
+    const start = () => {
+      const pending = el.play();
+      if (pending) pending.catch(() => {});
+    };
+    start();
+    el.addEventListener('canplay', start);
+    return () => el.removeEventListener('canplay', start);
+  }, [showingVideo, productVideo]);
 
   // Effective price: variant effective price if selected, else product discount/base price
   const basePrice = getActiveDiscountPrice(product ?? ({} as Product)) ?? product?.price ?? 0;
@@ -378,6 +398,16 @@ export default function ProductDetailPage() {
           {/* ── Left: image gallery (product images only, NOT variant images) ── */}
           <div className="pd-gallery">
             <div className="pd-thumbnails">
+              {productVideo && (
+                <button
+                  className={`pd-thumb-btn pd-video-thumb${showingVideo ? ' active' : ''}`}
+                  onClick={() => { setActiveImg(-1); setHoveredVariantImg(null); }}
+                  aria-label="Xem video sản phẩm"
+                >
+                  <video src={productVideo} muted playsInline preload="metadata" />
+                  <span aria-hidden>▶</span>
+                </button>
+              )}
               {productImages.map((src, i) => (
                 <button
                   key={i}
@@ -389,12 +419,54 @@ export default function ProductDetailPage() {
               ))}
             </div>
             <div className="pd-main-img-wrap">
-              <img
-                className="pd-main-img"
-                src={displayImg}
-                alt={product.name}
-              />
-              {productImages.length > 1 && !hoveredVariantImg && (
+              {showingVideo ? (
+                <div className="pd-main-video-frame">
+                  <video
+                    ref={mainVideoRef}
+                    className="pd-main-img pd-main-video"
+                    src={productVideo}
+                    autoPlay
+                    muted={videoMuted}
+                    playsInline
+                    loop
+                    aria-label={`Video ${product.name}`}
+                  />
+                  <button
+                    type="button"
+                    className="pd-video-sound"
+                    onClick={() => {
+                      const nextMuted = !videoMuted;
+                      const el = mainVideoRef.current;
+                      if (el) {
+                        el.muted = nextMuted;
+                        const pending = el.play();
+                        if (pending) pending.catch(() => {});
+                      }
+                      setVideoMuted(nextMuted);
+                    }}
+                    aria-label={videoMuted ? 'Bật tiếng' : 'Tắt tiếng'}
+                  >
+                    {videoMuted ? (
+                      <svg viewBox="0 0 24 24" aria-hidden>
+                        <path d="M4 9v6h4l5 4V5L8 9H4z" />
+                        <path d="M16.5 8.5l5 5M21.5 8.5l-5 5" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" aria-hidden>
+                        <path d="M4 9v6h4l5 4V5L8 9H4z" />
+                        <path d="M16 9.5a3.5 3.5 0 010 5M18.2 7a6.5 6.5 0 010 10" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <img
+                  className="pd-main-img"
+                  src={displayImg}
+                  alt={product.name}
+                />
+              )}
+              {productImages.length > 1 && activeImg >= 0 && !hoveredVariantImg && (
                 <>
                   <button
                     className="pd-arrow pd-arrow--prev"

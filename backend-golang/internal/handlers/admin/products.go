@@ -56,6 +56,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 		handlers.InternalError(w, err)
 		return
 	}
+	AttachLatestVideoJobs(products)
 	handlers.OK(w, map[string]any{"success": true, "products": products, "total": total, "page": page, "limit": limit})
 }
 
@@ -288,7 +289,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback(context.Background()) //nolint
 
 	allowed := map[string]bool{
-		"name": true, "description": true, "price": true, "images": true, "thumbnail_url": true,
+		"name": true, "description": true, "price": true, "images": true, "thumbnail_url": true, "video_url": true,
 		"is_active": true, "is_best_seller": true, "watermark_enabled": true,
 		"tiktok_url": true, "instagram_url": true,
 		"discount_price": true, "discount_from": true, "discount_to": true,
@@ -335,7 +336,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			if k == "thumbnail_url" {
+			if k == "thumbnail_url" || k == "video_url" {
 				if s, ok := v.(string); ok && strings.TrimSpace(s) == "" {
 					val = nil
 				}

@@ -10,6 +10,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -446,6 +447,32 @@ func ExtractKeyFromURL(url string) (string, bool) {
 	}
 	key := url[len(prefix):]
 	return key, key != ""
+}
+
+// DownloadURLToFile downloads an object in this bucket to a local file.
+func DownloadURLToFile(ctx context.Context, rawURL, dest string) error {
+	key, ok := ExtractKeyFromURL(rawURL)
+	if !ok {
+		return fmt.Errorf("object is outside the configured bucket")
+	}
+	out, err := S3Client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(S3Bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return fmt.Errorf("download object: %w", err)
+	}
+	defer out.Body.Close()
+
+	file, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := io.Copy(file, out.Body); err != nil {
+		return fmt.Errorf("write downloaded object: %w", err)
+	}
+	return nil
 }
 
 // DeleteFromS3 deletes the S3 object at the given public URL.

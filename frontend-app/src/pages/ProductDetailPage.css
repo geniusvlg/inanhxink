@@ -82,11 +82,29 @@
   flex-shrink: 0;
   transition: outline-color 0.15s;
 }
-.pd-thumb-btn img {
+.pd-thumb-btn img,
+.pd-thumb-btn video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.pd-video-thumb {
+  position: relative;
+}
+.pd-video-thumb span {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  padding-left: 2px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  font-size: 0.85rem;
 }
 .pd-thumb-btn.active {
   outline-color: #fe2c56;
@@ -102,11 +120,59 @@
   overflow: hidden;
   background: #f9fafb;
 }
+.pd-main-img-wrap:has(.pd-main-video) {
+  display: flex;
+  justify-content: center;
+  background: transparent;
+}
 
 .pd-main-img {
   width: 100%;
   height: auto;
   display: block;
+}
+.pd-main-video-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+.pd-main-video {
+  width: auto;
+  max-width: 100%;
+  max-height: 720px;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  background: transparent;
+}
+.pd-video-sound {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+.pd-video-sound svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #222;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pd-video-sound svg path:first-child {
+  fill: #222;
+  stroke: none;
 }
 
 .pd-arrow {

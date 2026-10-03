@@ -151,6 +151,7 @@ export interface Product {
   price: number;
   images: string[];
   thumbnail_url: string | null;
+  video_url: string | null;
   type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
   categories: { id: number; name: string }[];
   category_ids?: number[];
@@ -171,6 +172,12 @@ export interface Product {
   home_sort_order: number;
   created_at: string;
   variants?: ProductVariant[];
+  video_job?: {
+    status: 'uploading' | 'processing' | 'ready' | 'failed' | 'cancelled';
+    progress: number;
+    error: string | null;
+    applyOnSuccess: boolean;
+  } | null;
 }
 
 /** Product review row (admin list includes `is_admin_entry`). */
