@@ -7,6 +7,7 @@ cd "$APP_DIR"
 
 # Pull latest code (for nginx.conf, docker-compose.yml, deploy script)
 git pull origin main
+chmod +x scripts/*.sh
 
 # Pull pre-built images from GHCR
 docker compose pull frontend admin backend
