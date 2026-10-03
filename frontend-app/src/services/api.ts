@@ -269,6 +269,7 @@ export interface Product {
   price: number;
   images: string[];
   thumbnail_url: string | null;
+  video_url: string | null;
   type: 'thiep' | 'khung_anh' | 'so_scrapbook' | 'khac' | 'set-qua-tang' | 'in_anh';
   categories: { id: number; name: string }[];
   is_active: boolean;

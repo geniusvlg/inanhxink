@@ -22,6 +22,7 @@ func rewriteProductCDN(row map[string]any) {
 	}
 	config.CdnURLField(row, "thumbnail_url")
 	config.CdnArrayField(row, "images")
+	config.CdnURLField(row, "video_url")
 }
 
 // GET /api/products?type=&category_ids=1,2&min_price=&max_price=&sort=&page=&limit=
@@ -149,7 +150,7 @@ func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	rows, err := config.DB.Query(context.Background(), `
-		SELECT p.id, p.name, p.description, p.price, p.images, p.thumbnail_url, p.type, p.is_active,
+		SELECT p.id, p.name, p.description, p.price, p.images, p.thumbnail_url, p.video_url, p.type, p.is_active,
 			p.max_upload_images, p.sold_count, p.average_rating, p.review_count,
 			p.is_best_seller, p.tiktok_url, p.instagram_url, p.created_at,
 			p.discount_price, p.discount_from, p.discount_to,

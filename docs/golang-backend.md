@@ -182,13 +182,13 @@ browser. If browser conversion, signing, CORS, or the direct PUT fails, the
 frontend falls back to the existing backend upload endpoints. `CreateOrder`
 accepts image and voice URLs only from that QR name's raw-S3 temporary prefix.
 
-The VNG bucket must allow browser CORS `PUT` requests from the storefront origins
+The VNG bucket must allow browser CORS `PUT` requests from the storefront and admin origins
 with the `Content-Type` and `x-amz-acl` headers:
 
 ```json
 [
   {
-    "AllowedOrigins": ["https://inanhxink.com", "http://localhost:5173"],
+    "AllowedOrigins": ["https://inanhxink.com", "https://admin.inanhxink.com", "http://localhost:5173", "http://localhost:5174"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["content-type", "x-amz-acl"],
     "ExposeHeaders": ["ETag"],

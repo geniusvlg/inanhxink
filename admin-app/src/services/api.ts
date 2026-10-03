@@ -108,6 +108,15 @@ export const metadataApi = {
   update: (data: Record<string, string>) => api.put('/api/admin/metadata', data),
 };
 
+export interface ProductVideoJob {
+  id: number;
+  status: 'uploading' | 'processing' | 'ready' | 'failed' | 'cancelled';
+  outputUrl: string | null;
+  error: string | null;
+  progress: number;
+  applyOnSuccess: boolean;
+}
+
 export const productsApi = {
   list:      (type: string, page = 1, limit = 20) => api.get('/api/admin/products', { params: { type, page, limit } }),
   checkName: (name: string, type: string, excludeId?: number) =>
@@ -118,6 +127,21 @@ export const productsApi = {
   reserve:   (name: string, type: string) => api.post<{ success: boolean; productId: number }>('/api/admin/products/reserve', { name, type }),
   create:    (data: unknown)             => api.post('/api/admin/products', data),
   update:    (id: number, data: unknown) => api.put(`/api/admin/products/${id}`, data),
+  presignVideo: (id: number, file: File) =>
+    api.post<{ success: boolean; jobId: number; uploadUrl: string; publicUrl: string; headers: Record<string, string> }>(
+      `/api/admin/products/${id}/video/presign`,
+      { contentType: file.type, size: file.size, filename: file.name },
+    ),
+  startVideoJob: (id: number, jobId: number) =>
+    api.post<{ success: boolean; jobId: number; status: string }>(`/api/admin/products/${id}/video/jobs/${jobId}/process`),
+  getVideoJob: (id: number, jobId: number) =>
+    api.get<{ success: boolean; job: ProductVideoJob }>(`/api/admin/products/${id}/video/jobs/${jobId}`),
+  latestVideoJob: (id: number) =>
+    api.get<{ success: boolean; job: ProductVideoJob | null }>(`/api/admin/products/${id}/video/job`),
+  commitVideoJob: (id: number, jobId: number) =>
+    api.post<{ success: boolean; status: string }>(`/api/admin/products/${id}/video/jobs/${jobId}/commit`),
+  cancelVideoJob: (id: number, jobId: number) =>
+    api.post(`/api/admin/products/${id}/video/jobs/${jobId}/cancel`),
   delete:    (id: number)                => api.delete(`/api/admin/products/${id}`),
   // Featured-on-home — admin-curated set displayed on the public /home page.
   listFeaturedOnHome: () => api.get('/api/admin/products/featured-on-home'),

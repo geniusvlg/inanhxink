@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { productsApi, productCategoriesApi, uploadApi, productVariantsApi } from '../services/api';
+import { productsApi, productCategoriesApi, uploadApi, productVariantsApi, type ProductVideoJob } from '../services/api';
 import { type Product, type ProductCategory, type ProductVariant } from '../types';
 import LoadingGif from '../components/LoadingGif';
 import { resolveAssetUrl } from '../utils/assetUrl';
@@ -107,7 +107,7 @@ function getDiscountStatusUi(status: DiscountStatus): { label: string; style: Re
 
 
 const emptyForm = (): Partial<Product> & { category_ids: number[] } => ({
-  name: '', description: '', price: undefined, images: [], thumbnail_url: null, is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
+  name: '', description: '', price: undefined, images: [], thumbnail_url: null, video_url: null, is_active: true, is_best_seller: false, watermark_enabled: true, tiktok_url: null, instagram_url: null, category_ids: [],
   discount_price: null, discount_from: null, discount_to: null,
   max_upload_images: 15,
   sold_count: 0,
@@ -130,6 +130,11 @@ export default function ProductItemsPage({ type }: Props) {
   const [imageEntries, setImageEntries] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [videoPhase, setVideoPhase] = useState<'idle' | 'uploading' | 'uploaded'>('idle');
+  const [videoError, setVideoError] = useState('');
+  const [videoConverting, setVideoConverting] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoLocalUrl, setVideoLocalUrl] = useState<string | null>(null);
   const [reservedProductId, setReservedProductId] = useState<number | null>(null);
   const [saving, setSaving]         = useState(false);
   const [nameCheckState, setNameCheckState] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -138,6 +143,15 @@ export default function ProductItemsPage({ type }: Props) {
   const [limit, setLimit]           = useState(20);
   const fileRef                     = useRef<HTMLInputElement>(null);
   const thumbnailRef                = useRef<HTMLInputElement>(null);
+  const videoRef                    = useRef<HTMLInputElement>(null);
+  const videoUploadControllerRef    = useRef<AbortController | null>(null);
+  const videoUploadSequenceRef      = useRef(0);
+  const originalVideoUrlRef         = useRef<string | null>(null);
+  const videoJobIdRef               = useRef<number | null>(null);
+  const videoProductIdRef           = useRef<number | null>(null);
+  const videoJobCommittedRef        = useRef(false);
+  const videoPollRef                = useRef<ReturnType<typeof setInterval> | null>(null);
+  const videoLocalUrlRef            = useRef<string | null>(null);
 
   // Variant state
   const [variants, setVariants]             = useState<ProductVariant[]>([]);
@@ -177,13 +191,126 @@ export default function ProductItemsPage({ type }: Props) {
 
   useEffect(() => { setPage(1); load(1, limit); }, [type]);
 
+  const hasProcessingVideo = products.some(p => p.video_job?.status === 'processing');
+  useEffect(() => {
+    if (!hasProcessingVideo) return;
+    const timer = setInterval(() => {
+      productsApi.list(type, page, limit)
+        .then(pr => {
+          setProducts(pr.data.products ?? []);
+          setTotal(pr.data.total ?? 0);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [hasProcessingVideo, type, page, limit]);
+
+  useEffect(() => () => {
+    if (videoPollRef.current) clearInterval(videoPollRef.current);
+    if (videoLocalUrlRef.current) URL.revokeObjectURL(videoLocalUrlRef.current);
+  }, []);
+
+  const stopVideoPoll = () => {
+    if (videoPollRef.current) {
+      clearInterval(videoPollRef.current);
+      videoPollRef.current = null;
+    }
+  };
+
+  const replaceVideoPreview = (file: File | null) => {
+    if (videoLocalUrlRef.current) URL.revokeObjectURL(videoLocalUrlRef.current);
+    const next = file ? URL.createObjectURL(file) : null;
+    videoLocalUrlRef.current = next;
+    setVideoLocalUrl(next);
+  };
+
+  const cancelActiveVideoJob = () => {
+    const jobId = videoJobIdRef.current;
+    const productId = videoProductIdRef.current;
+    if (jobId && productId) {
+      void productsApi.cancelVideoJob(productId, jobId).catch(() => {});
+    }
+    videoJobIdRef.current = null;
+    videoProductIdRef.current = null;
+    videoJobCommittedRef.current = false;
+  };
+
+  const watchVideoJob = (productId: number, jobId: number, sequence: number) => {
+    stopVideoPoll();
+    const tick = async () => {
+      if (sequence !== videoUploadSequenceRef.current) return;
+      try {
+        const res = await productsApi.getVideoJob(productId, jobId);
+        if (sequence !== videoUploadSequenceRef.current) return;
+        const job: ProductVideoJob = res.data.job;
+        setVideoProgress(job.progress ?? 0);
+        if (job.status === 'ready' && job.outputUrl) {
+          stopVideoPoll();
+          setVideoPhase('idle');
+          setVideoConverting(false);
+          setVideoProgress(100);
+          setVideoError('');
+          if (job.applyOnSuccess && job.outputUrl) {
+            originalVideoUrlRef.current = job.outputUrl;
+          }
+          setForm(current => {
+            const previous = current.video_url;
+            if (!job.applyOnSuccess && previous && previous !== originalVideoUrlRef.current && previous !== job.outputUrl) {
+              void uploadApi.deleteMany([previous]);
+            }
+            return { ...current, video_url: job.outputUrl };
+          });
+          return;
+        }
+        if (job.status === 'failed') {
+          stopVideoPoll();
+          setVideoPhase('idle');
+          setVideoConverting(false);
+          const message = job.error || 'Không thể xử lý video.';
+          setVideoError(message);
+          if (!job.applyOnSuccess) alert(message);
+          return;
+        }
+        if (job.status === 'cancelled') {
+          stopVideoPoll();
+          setVideoPhase('idle');
+          setVideoConverting(false);
+        }
+      } catch (err) {
+        captureException(err);
+      }
+    };
+    void tick();
+    videoPollRef.current = setInterval(() => { void tick(); }, 3000);
+  };
+
+  const resetVideoTracking = (cancelUncommitted: boolean) => {
+    videoUploadControllerRef.current?.abort();
+    videoUploadControllerRef.current = null;
+    stopVideoPoll();
+    if (cancelUncommitted && videoJobIdRef.current && videoProductIdRef.current && !videoJobCommittedRef.current) {
+      void productsApi.cancelVideoJob(videoProductIdRef.current, videoJobIdRef.current).catch(() => {});
+    }
+    videoJobIdRef.current = null;
+    videoProductIdRef.current = null;
+    videoJobCommittedRef.current = false;
+    replaceVideoPreview(null);
+    setVideoPhase('idle');
+    setVideoConverting(false);
+    setVideoProgress(0);
+  };
+
   const openCreate = () => {
+    videoUploadSequenceRef.current += 1;
+    resetVideoTracking(true);
+    setVideoError('');
     setEditing(null);
     setForm(emptyForm());
     setMaxUploadImagesInput('15');
     setSoldCountInput('0');
     setImageEntries([]);
     setReservedProductId(null);
+    originalVideoUrlRef.current = null;
     setNameCheckState('idle');
     setVariants([]);
     setVariantEditIdx(null);
@@ -192,24 +319,79 @@ export default function ProductItemsPage({ type }: Props) {
   };
 
   const openEdit = (p: Product) => {
+    const sequence = videoUploadSequenceRef.current + 1;
+    videoUploadSequenceRef.current = sequence;
+    resetVideoTracking(true);
+    setVideoError('');
     setEditing(p);
     setForm({ ...p, category_ids: p.categories.map(c => c.id) });
     setMaxUploadImagesInput(String(p.max_upload_images ?? 15));
     setSoldCountInput(formatIntegerInputWithCommas(String(p.sold_count ?? 0)));
     setImageEntries(p.images);
     setReservedProductId(null);
+    originalVideoUrlRef.current = p.video_url;
     setNameCheckState('available');
     setVariants([]);
     setVariantEditIdx(null);
     setNewVariant({ ...EMPTY_NEW_VARIANT });
     setShowModal(true);
-    // Load existing variants
     productVariantsApi.list(p.id)
       .then(res => setVariants((res.data.variants ?? []) as ProductVariant[]))
       .catch(() => {});
+    productsApi.latestVideoJob(p.id)
+      .then(res => {
+        if (sequence !== videoUploadSequenceRef.current) return;
+        const job = res.data.job;
+        if (!job || job.status === 'cancelled') return;
+        if (job.status === 'uploading' || (job.status === 'processing' && !job.applyOnSuccess)) {
+          void productsApi.cancelVideoJob(p.id, job.id).catch(() => {});
+          return;
+        }
+        if (job.status === 'processing') {
+          videoJobIdRef.current = job.id;
+          videoProductIdRef.current = p.id;
+          videoJobCommittedRef.current = true;
+          setVideoConverting(true);
+          setVideoProgress(job.progress ?? 0);
+          watchVideoJob(p.id, job.id, sequence);
+          return;
+        }
+        if (job.status === 'failed' && job.applyOnSuccess) {
+          setVideoError(job.error || 'Không xử lý được video. Video trước đó vẫn được giữ.');
+          return;
+        }
+        if (job.status === 'ready' && job.outputUrl && job.outputUrl !== p.video_url) {
+          videoJobIdRef.current = job.id;
+          videoProductIdRef.current = p.id;
+          videoJobCommittedRef.current = job.applyOnSuccess;
+          if (job.applyOnSuccess) originalVideoUrlRef.current = job.outputUrl;
+          setForm(current => ({ ...current, video_url: job.outputUrl }));
+        }
+      })
+      .catch(() => {});
   };
 
-  const closeModal = () => {
+  const closeModal = (cleanupUnsavedVideo = true) => {
+    videoUploadSequenceRef.current += 1;
+    videoUploadControllerRef.current?.abort();
+    videoUploadControllerRef.current = null;
+    stopVideoPoll();
+    const keepSavedVideo = videoJobCommittedRef.current;
+    if (cleanupUnsavedVideo && videoJobIdRef.current && videoProductIdRef.current && !keepSavedVideo) {
+      void productsApi.cancelVideoJob(videoProductIdRef.current, videoJobIdRef.current).catch(() => {});
+    }
+    videoJobIdRef.current = null;
+    videoProductIdRef.current = null;
+    videoJobCommittedRef.current = false;
+    replaceVideoPreview(null);
+    setVideoPhase('idle');
+    setVideoError('');
+    setVideoConverting(false);
+    setVideoProgress(0);
+    const currentVideo = form.video_url;
+    if (cleanupUnsavedVideo && !keepSavedVideo && currentVideo && currentVideo !== originalVideoUrlRef.current) {
+      void uploadApi.deleteMany([currentVideo]);
+    }
     setShowModal(false);
     setEditing(null);
     setImageEntries([]);
@@ -268,6 +450,96 @@ export default function ProductItemsPage({ type }: Props) {
 
   const clearThumbnail = () => {
     setForm(f => ({ ...f, thumbnail_url: null }));
+  };
+
+  const handleVideoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (videoRef.current) videoRef.current.value = '';
+
+    const productId = editing?.id ?? reservedProductId;
+    if (!productId) {
+      alert('Vui lòng kiểm tra tên sản phẩm trước khi tải video.');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      alert('Video quá lớn. Kích thước tối đa là 100MB.');
+      return;
+    }
+
+    videoUploadControllerRef.current?.abort();
+    stopVideoPoll();
+    if (videoJobIdRef.current && videoProductIdRef.current) {
+      void productsApi.cancelVideoJob(videoProductIdRef.current, videoJobIdRef.current).catch(() => {});
+    }
+    const controller = new AbortController();
+    const sequence = videoUploadSequenceRef.current + 1;
+    videoUploadSequenceRef.current = sequence;
+    videoUploadControllerRef.current = controller;
+    videoJobCommittedRef.current = false;
+    replaceVideoPreview(null);
+    setVideoPhase('uploading');
+    setVideoError('');
+    setVideoConverting(false);
+    setVideoProgress(0);
+
+    try {
+      const signed = await productsApi.presignVideo(productId, file);
+      if (sequence !== videoUploadSequenceRef.current || controller.signal.aborted) {
+        void productsApi.cancelVideoJob(productId, signed.data.jobId).catch(() => {});
+        return;
+      }
+      videoJobIdRef.current = signed.data.jobId;
+      videoProductIdRef.current = productId;
+      const uploaded = await fetch(signed.data.uploadUrl, {
+        method: 'PUT',
+        headers: signed.data.headers,
+        body: file,
+        signal: controller.signal,
+      });
+      if (!uploaded.ok) {
+        throw new Error(`Tải video lên kho thất bại (${uploaded.status})`);
+      }
+      if (sequence !== videoUploadSequenceRef.current || controller.signal.aborted) {
+        void productsApi.cancelVideoJob(productId, signed.data.jobId).catch(() => {});
+        return;
+      }
+      videoUploadControllerRef.current = null;
+      replaceVideoPreview(file);
+      setVideoPhase('uploaded');
+    } catch (err: unknown) {
+      if (controller.signal.aborted) return;
+      captureException(err);
+      if (videoJobIdRef.current) {
+        void productsApi.cancelVideoJob(productId, videoJobIdRef.current).catch(() => {});
+      }
+      videoJobIdRef.current = null;
+      videoProductIdRef.current = null;
+      if (sequence === videoUploadSequenceRef.current) {
+        setVideoPhase('idle');
+        videoUploadControllerRef.current = null;
+      }
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      alert(axiosErr.response?.data?.error || (err instanceof Error ? err.message : 'Không thể tải video lên.'));
+    }
+  };
+
+  const clearVideo = () => {
+    videoUploadSequenceRef.current += 1;
+    stopVideoPoll();
+    cancelActiveVideoJob();
+    videoUploadControllerRef.current?.abort();
+    videoUploadControllerRef.current = null;
+    replaceVideoPreview(null);
+    setVideoPhase('idle');
+    setVideoError('');
+    setVideoConverting(false);
+    setVideoProgress(0);
+    const current = form.video_url;
+    if (current && current !== originalVideoUrlRef.current) {
+      void uploadApi.deleteMany([current]);
+    }
+    setForm(f => ({ ...f, video_url: null }));
   };
 
   const removeImage = (url: string) => {
@@ -426,12 +698,26 @@ export default function ProductItemsPage({ type }: Props) {
         : 'Vui lòng kiểm tra tên sản phẩm trước khi lưu');
       return;
     }
+    if (videoPhase === 'uploading') {
+      const saveWithoutVideo = window.confirm(
+        'Video vẫn đang được tải lên. Bạn có muốn lưu các thông tin khác mà không dùng video mới này không?',
+      );
+      if (!saveWithoutVideo) return;
+      videoUploadSequenceRef.current += 1;
+      videoUploadControllerRef.current?.abort();
+      videoUploadControllerRef.current = null;
+      cancelActiveVideoJob();
+      replaceVideoPreview(null);
+      setVideoPhase('idle');
+    }
+    const saveUploadedVideo = videoPhase === 'uploaded' && videoJobIdRef.current != null;
+    const keepInFlightVideo = !saveUploadedVideo && videoJobCommittedRef.current && videoJobIdRef.current != null;
     setSaving(true);
     try {
       const productId = editing?.id ?? reservedProductId!;
       const soldRaw = soldCountInput.replace(/,/g, '').replace(/\D/g, '');
       const soldCount = Math.max(0, soldRaw === '' ? 0 : Number(soldRaw));
-      await productsApi.update(productId, {
+      const payload: Record<string, unknown> = {
         ...form,
         name: nextName,
         type,
@@ -440,10 +726,28 @@ export default function ProductItemsPage({ type }: Props) {
         sold_count: soldCount,
         is_active: form.is_active ?? true,
         is_featured_on_home: form.is_featured_on_home ?? false,
-      });
+      };
+      if (saveUploadedVideo || keepInFlightVideo) delete payload.video_url;
+      await productsApi.update(productId, payload);
+      if (saveUploadedVideo && videoJobIdRef.current) {
+        const jobId = videoJobIdRef.current;
+        try {
+          await productsApi.startVideoJob(productId, jobId);
+        } catch (err: unknown) {
+          const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+          if (message !== 'Video này không còn chờ xử lý') throw err;
+        }
+        await productsApi.commitVideoJob(productId, jobId);
+        videoJobCommittedRef.current = true;
+      } else if (!keepInFlightVideo) {
+        const originalVideo = originalVideoUrlRef.current;
+        if (originalVideo && originalVideo !== form.video_url) {
+          void uploadApi.deleteMany([originalVideo]);
+        }
+      }
       // Save variants (only meaningful in edit mode, but safe to call always)
       await handleSaveVariants(productId);
-      closeModal();
+      closeModal(false);
       load();
     } catch (err) {
       captureException(err);
@@ -512,6 +816,16 @@ export default function ProductItemsPage({ type }: Props) {
                 </td>
                 <td>
                   <strong>{p.name}</strong>
+                  {p.video_job?.status === 'processing' && (
+                    <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: 600, marginTop: 2 }}>
+                      Đã tải video · đang xử lý {p.video_job.progress ?? 0}%
+                    </div>
+                  )}
+                  {p.video_job?.status === 'failed' && p.video_job.applyOnSuccess && (
+                    <div style={{ fontSize: '0.75rem', color: '#b91c1c', marginTop: 2 }}>
+                      Xử lý video thất bại
+                    </div>
+                  )}
                   {p.description && (
                     <div style={{ fontSize: '0.8rem', color: '#94a3b8', maxWidth: 200, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                       {p.description}
@@ -580,6 +894,20 @@ export default function ProductItemsPage({ type }: Props) {
                         🏠 Trang chủ
                       </span>
                     )}
+                    {p.video_url && p.video_job?.status !== 'processing' && !(p.video_job?.status === 'failed' && p.video_job.applyOnSuccess) && (
+                      <span
+                        className="badge"
+                        title="Sản phẩm có video"
+                        style={{
+                          background: '#ecfdf5',
+                          color: '#047857',
+                          border: '1px solid #6ee7b7',
+                          fontWeight: 700,
+                        }}
+                      >
+                        ▶ Có video
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td style={{ display: 'flex', gap: '0.4rem' }}>
@@ -614,7 +942,7 @@ export default function ProductItemsPage({ type }: Props) {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={() => closeModal()}>
           <div className="modal" style={{ maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">{editing ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}</h2>
             <form onSubmit={handleSave}>
@@ -858,6 +1186,109 @@ export default function ProductItemsPage({ type }: Props) {
                   accept="image/*"
                   style={{ display: 'none' }}
                   onChange={handleThumbnailPick}
+                  disabled={!editing && !reservedProductId}
+                />
+              </div>
+
+              {/* Product video */}
+              <div className="form-group">
+                <label className="form-label">Video sản phẩm</label>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
+                  MP4, WebM hoặc video iPhone, tối đa 100MB. Video được tải thẳng lên kho. Bấm Lưu để xử lý và gắn vào sản phẩm.
+                </p>
+                {videoError && (
+                  <p style={{ fontSize: '0.78rem', color: '#b91c1c', margin: '0 0 0.5rem' }}>{videoError}</p>
+                )}
+                {videoConverting && (
+                  <div style={{ maxWidth: 280, marginBottom: '0.5rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600, margin: 0 }}>
+                      Đã tải video lên
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: '#334155', margin: '0.2rem 0 0.35rem' }}>
+                      Đang xử lý {videoProgress}%
+                    </p>
+                    <div style={{ height: 6, borderRadius: 99, background: '#e2e8f0', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.max(0, Math.min(100, videoProgress))}%`, height: '100%', background: '#16a34a' }} />
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.35rem 0 0' }}>
+                      Video hiện tại vẫn được giữ cho đến khi xử lý xong.
+                    </p>
+                  </div>
+                )}
+                {videoPhase === 'uploading' && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      width: 180,
+                      minHeight: 140,
+                      marginBottom: '0.5rem',
+                      border: '1px dashed #cbd5e1',
+                      borderRadius: 6,
+                      background: '#f8fafc',
+                    }}
+                  >
+                    <LoadingGif size={96} label="Đang tải video..." seed="product-video" />
+                    <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>
+                      Đang tải video...
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', padding: '0 0.5rem' }}>
+                      Bạn vẫn có thể nhập các thông tin khác.
+                    </span>
+                  </div>
+                )}
+                {videoPhase === 'uploaded' && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    {videoLocalUrl && (
+                      <video
+                        src={videoLocalUrl}
+                        controls
+                        muted
+                        playsInline
+                        style={{ display: 'block', width: 'auto', maxWidth: 180, maxHeight: 240, borderRadius: 6, marginBottom: '0.35rem' }}
+                      />
+                    )}
+                    <p style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 600, margin: 0 }}>
+                      Đã tải video lên
+                    </p>
+                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.15rem 0 0' }}>
+                      Bấm Lưu để xử lý video và gắn vào sản phẩm.
+                    </p>
+                  </div>
+                )}
+                {form.video_url && videoPhase === 'idle' && (
+                  <video
+                    src={resolveAssetUrl(form.video_url)}
+                    controls
+                    muted
+                    playsInline
+                    style={{ display: 'block', width: 'auto', maxWidth: 180, maxHeight: 240, borderRadius: 6, marginBottom: '0.5rem' }}
+                  />
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => videoRef.current?.click()}
+                    disabled={videoPhase === 'uploading' || (!editing && !reservedProductId)}
+                  >
+                    {videoPhase === 'uploading' ? 'Đang tải video...' : ((form.video_url || videoPhase === 'uploaded' || videoConverting) ? 'Thay video' : 'Tải video')}
+                  </button>
+                  {(form.video_url || videoPhase !== 'idle' || videoConverting) && (
+                    <button type="button" className="btn-secondary" onClick={clearVideo} disabled={videoPhase === 'uploading'}>
+                      Xoá video
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={videoRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,.mov,.m4v"
+                  style={{ display: 'none' }}
+                  onChange={handleVideoPick}
                   disabled={!editing && !reservedProductId}
                 />
               </div>
@@ -1158,7 +1589,7 @@ export default function ProductItemsPage({ type }: Props) {
               </div>
 
               <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeModal}>Huỷ</button>
+                <button type="button" className="btn-secondary" onClick={() => closeModal()}>Huỷ</button>
                 <button
                   type="submit"
                   className="btn-primary"

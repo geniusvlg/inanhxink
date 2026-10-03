@@ -31,6 +31,7 @@ func main() {
 	config.InitDB()
 	config.InitS3()
 	config.InitCDN()
+	adminHandlers.FailInterruptedProductVideoJobs()
 
 	// Background cleanup: evict expired QR name reservations every 5 minutes.
 	go func() {
@@ -198,6 +199,12 @@ func main() {
 				r.Post("/check-name", adminHandlers.CheckProductName)
 				r.Post("/reserve", adminHandlers.ReserveProduct)
 				r.Post("/", adminHandlers.CreateProduct)
+				r.Post("/{id}/video/presign", adminHandlers.PresignProductVideo)
+				r.Post("/{id}/video/jobs/{jobId}/process", adminHandlers.StartProductVideoJob)
+				r.Get("/{id}/video/jobs/{jobId}", adminHandlers.GetProductVideoJob)
+				r.Post("/{id}/video/jobs/{jobId}/commit", adminHandlers.CommitProductVideoJob)
+				r.Post("/{id}/video/jobs/{jobId}/cancel", adminHandlers.CancelProductVideoJob)
+				r.Get("/{id}/video/job", adminHandlers.LatestProductVideoJob)
 				r.Get("/{id}/reviews", adminHandlers.ListAdminProductReviews)
 				r.Post("/{id}/reviews", adminHandlers.CreateAdminProductReview)
 				r.Delete("/{id}/reviews/{reviewId}", adminHandlers.DeleteAdminProductReview)
