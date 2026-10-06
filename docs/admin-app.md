@@ -113,6 +113,9 @@ also refreshes product metadata by ID so existing cart items pick up changes.
 4. `PUT /api/admin/products/:id` with `is_active: true` + image URLs and optional `thumbnail_url`
 5. Rollback: delete product if upload fails
 
+### Reorder
+Gallery order is the `images` array order. In the product form, drag thumbnails to reorder, then save. `PUT /api/admin/products/:id` stores that array as-is. The storefront gallery and the fallback thumbnail (`images[0]` when `thumbnail_url` is empty) follow it.
+
 ### Planned improvement — S3-first (Option 1: temp folder)
 - Generate a `temp-{uuid}` key client-side before product exists
 - Upload images to `products/{type}/temp-{uuid}/`
