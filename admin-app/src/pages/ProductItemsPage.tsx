@@ -118,6 +118,14 @@ function productThumbnailUrl(product: Pick<Product, 'thumbnail_url' | 'images'>)
   return product.thumbnail_url || product.images?.[0] || null;
 }
 
+function moveItem<T>(items: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return items;
+  const next = items.slice();
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
+}
+
 export default function ProductItemsPage({ type }: Props) {
   const [products, setProducts]     = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
@@ -128,6 +136,9 @@ export default function ProductItemsPage({ type }: Props) {
   const [maxUploadImagesInput, setMaxUploadImagesInput] = useState('15');
   const [soldCountInput, setSoldCountInput]             = useState('0');
   const [imageEntries, setImageEntries] = useState<string[]>([]);
+  const [draggingImageIndex, setDraggingImageIndex] = useState<number | null>(null);
+  const [dragOverImageIndex, setDragOverImageIndex] = useState<number | null>(null);
+  const imageDragFromRef = useRef<number | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [videoPhase, setVideoPhase] = useState<'idle' | 'uploading' | 'uploaded'>('idle');
@@ -544,6 +555,16 @@ export default function ProductItemsPage({ type }: Props) {
 
   const removeImage = (url: string) => {
     setImageEntries(prev => prev.filter(u => u !== url));
+  };
+
+  const clearImageDrag = () => {
+    imageDragFromRef.current = null;
+    setDraggingImageIndex(null);
+    setDragOverImageIndex(null);
+  };
+
+  const moveImage = (from: number, to: number) => {
+    setImageEntries(prev => moveItem(prev, from, to));
   };
 
   const toggleCategory = (id: number) => {
@@ -1297,7 +1318,7 @@ export default function ProductItemsPage({ type }: Props) {
               <div className="form-group">
                 <label className="form-label">Ảnh sản phẩm</label>
                 <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 0.5rem' }}>
-                  💡 Ảnh đầu tiên sẽ được dùng làm thumbnail nếu bạn không tải thumbnail riêng.
+                  💡 Kéo thả để đổi thứ tự trên web, rồi bấm Lưu. Ảnh đầu tiên được dùng làm thumbnail nếu bạn không tải thumbnail riêng.
                 </p>
                 <div
                   style={{
@@ -1314,20 +1335,78 @@ export default function ProductItemsPage({ type }: Props) {
                     transition: 'background 150ms ease',
                   }}
                 >
-                  {imageEntries.map(url => (
+                  {imageEntries.map((url, index) => {
+                    const dragging = draggingImageIndex === index;
+                    const dragOver = dragOverImageIndex === index && draggingImageIndex !== index;
+                    return (
                     <div key={url} style={{ position: 'relative' }}>
-                      <img
-                        src={resolveAssetUrl(url)}
-                        alt=""
-                        style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0' }}
-                      />
+                      <div
+                        draggable={!uploadingImages}
+                        title="Kéo để đổi thứ tự"
+                        onDragStart={(e) => {
+                          if (uploadingImages) {
+                            e.preventDefault();
+                            return;
+                          }
+                          imageDragFromRef.current = index;
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', String(index));
+                          setDraggingImageIndex(index);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (dragOverImageIndex !== index) setDragOverImageIndex(index);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const from = imageDragFromRef.current;
+                          if (from !== null) moveImage(from, index);
+                          clearImageDrag();
+                        }}
+                        onDragEnd={clearImageDrag}
+                        style={{
+                          cursor: uploadingImages ? 'default' : dragging ? 'grabbing' : 'grab',
+                          opacity: dragging ? 0.45 : 1,
+                          borderRadius: 4,
+                          outline: dragOver ? '2px solid #6366f1' : '2px solid transparent',
+                          outlineOffset: 2,
+                        }}
+                      >
+                        <img
+                          src={resolveAssetUrl(url)}
+                          alt=""
+                          draggable={false}
+                          style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 4, border: '1px solid #e2e8f0', display: 'block', pointerEvents: 'none' }}
+                        />
+                        <span
+                          style={{
+                            position: 'absolute',
+                            left: 4,
+                            bottom: 4,
+                            minWidth: 16,
+                            height: 16,
+                            padding: '0 4px',
+                            borderRadius: 8,
+                            background: index === 0 ? '#6366f1' : 'rgba(15, 23, 42, 0.72)',
+                            color: '#fff',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            lineHeight: '16px',
+                            textAlign: 'center',
+                            pointerEvents: 'none',
+                          }}
+                        >{index + 1}</span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeImage(url)}
-                        style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0 }}
+                        draggable={false}
+                        style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12, lineHeight: '20px', padding: 0, zIndex: 1 }}
                       >×</button>
                     </div>
-                  ))}
+                    );
+                  })}
                   {uploadingImages && (
                     <div
                       style={{
