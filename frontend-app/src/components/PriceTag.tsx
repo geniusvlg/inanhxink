@@ -1,8 +1,22 @@
 import { type Product } from '../services/api';
+import {
+  computeVariantPriceRange,
+  formatVariantOriginalLabel,
+  formatVariantPriceLabel,
+  formatVnd,
+  maxVariantDiscountPercent,
+  type VariantPriceSource,
+} from '../utils/variantPrice';
 import './PriceTag.css';
 
 function fmt(price: number): string {
-  return Math.round(price).toLocaleString('vi-VN') + 'đ';
+  return formatVnd(price);
+}
+
+function variantSources(product: Pick<Product, 'variants' | 'variant_prices'>): VariantPriceSource[] | null {
+  if (product.variants && product.variants.length > 0) return product.variants;
+  if (product.variant_prices && product.variant_prices.length > 0) return product.variant_prices;
+  return null;
 }
 
 /** Returns the active discount price if the discount window is currently open, otherwise null. */
@@ -18,12 +32,31 @@ export function getActiveDiscountPrice(product: Pick<Product, 'price' | 'discoun
 }
 
 interface Props {
-  product: Pick<Product, 'price' | 'discount_price' | 'discount_from' | 'discount_to'>;
+  product: Pick<Product, 'price' | 'discount_price' | 'discount_from' | 'discount_to' | 'variants' | 'variant_prices'>;
   className?: string;
 }
 
-/** Renders price — shows sale price + struck-through original + % off when a discount is active. */
+/** Renders price — variant range when types differ, otherwise sale price + struck-through original. */
 export default function PriceTag({ product, className }: Props) {
+  const sources = variantSources(product);
+  if (sources) {
+    const range = computeVariantPriceRange(sources);
+    const label = formatVariantPriceLabel(range);
+    if (!range.hasDiscount) {
+      return <span className={`price-tag-current ${className ?? ''}`.trim()}>{label}</span>;
+    }
+    const percentOff = maxVariantDiscountPercent(sources);
+    return (
+      <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4em', flexWrap: 'wrap' }}>
+        <span className="price-tag-current">{label}</span>
+        <span className="price-tag-was">{formatVariantOriginalLabel(range)}</span>
+        {percentOff > 0 && (
+          <span className="price-tag-off-badge">-{percentOff}%</span>
+        )}
+      </span>
+    );
+  }
+
   const salePrice = getActiveDiscountPrice(product);
 
   if (salePrice === null) {

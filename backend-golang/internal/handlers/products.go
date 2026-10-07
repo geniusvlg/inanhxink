@@ -3,9 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -115,6 +117,7 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	for _, p := range products {
 		rewriteProductCDN(p)
 	}
+	attachVariantPrices(products)
 	OK(w, map[string]any{"success": true, "products": products, "total": total, "page": page, "limit": limit})
 }
 
@@ -143,6 +146,7 @@ func ListFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 	for _, p := range products {
 		rewriteProductCDN(p)
 	}
+	attachVariantPrices(products)
 	OK(w, map[string]any{"success": true, "products": products})
 }
 
@@ -222,4 +226,86 @@ func parseIntList(s string) []int {
 		}
 	}
 	return ids
+}
+
+func productRowID(value any) (int32, bool) {
+	switch id := value.(type) {
+	case int32:
+		return id, true
+	case int64:
+		return int32(id), true
+	case int:
+		return int32(id), true
+	default:
+		return 0, false
+	}
+}
+
+// attachVariantPrices adds each product's variant prices so listing cards can
+// show the same lowest–highest range as the product page. products.price stays
+// the lowest price for sort and filters.
+func attachVariantPrices(products []map[string]any) {
+	if len(products) == 0 {
+		return
+	}
+	ids := make([]int32, 0, len(products))
+	for _, product := range products {
+		if id, ok := productRowID(product["id"]); ok {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	rows, err := config.DB.Query(context.Background(), `
+		SELECT product_id, price::float8, discount_price::float8, discount_from, discount_to
+		FROM product_variants
+		WHERE product_id = ANY($1)
+		ORDER BY sort_order ASC, id ASC`, ids)
+	if err != nil {
+		log.Printf("attachVariantPrices: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	byProduct := map[int32][]map[string]any{}
+	for rows.Next() {
+		var productID int32
+		var price float64
+		var discountPrice *float64
+		var discountFrom, discountTo *time.Time
+		if err := rows.Scan(&productID, &price, &discountPrice, &discountFrom, &discountTo); err != nil {
+			log.Printf("attachVariantPrices scan: %v", err)
+			return
+		}
+		item := map[string]any{
+			"price":          price,
+			"discount_price": nil,
+			"discount_from":  nil,
+			"discount_to":    nil,
+		}
+		if discountPrice != nil {
+			item["discount_price"] = *discountPrice
+		}
+		if discountFrom != nil {
+			item["discount_from"] = discountFrom.Format(time.RFC3339)
+		}
+		if discountTo != nil {
+			item["discount_to"] = discountTo.Format(time.RFC3339)
+		}
+		byProduct[productID] = append(byProduct[productID], item)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("attachVariantPrices rows: %v", err)
+		return
+	}
+	for _, product := range products {
+		id, ok := productRowID(product["id"])
+		if !ok {
+			continue
+		}
+		if prices := byProduct[id]; len(prices) > 0 {
+			product["variant_prices"] = prices
+		}
+	}
 }

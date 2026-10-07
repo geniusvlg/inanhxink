@@ -90,6 +90,8 @@ raw S3 URLs for edit/delete flows.
 }
 ```
 
+When a product has variants at different prices, `price` is stored as the lowest effective variant price (sort and price filters use that). The product page and every storefront card (type pages, category, search, related products) show the range from lowest to highest effective variant price, for example `125.000đ - 300.000đ`. List responses include `variant_prices` for that range; a single price is shown when every variant costs the same.
+
 `max_upload_images` no longer gates an in-app checkout upload — checkout has
 no file picker (see `docs/product-orders-fulfillment.md`). It's shown to the
 customer as the max number of photos to send via Zalo after ordering, and

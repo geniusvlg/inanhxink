@@ -16,6 +16,12 @@ import PriceTag, { getActiveDiscountPrice } from '../components/PriceTag';
 import ProductSoldCount from '../components/ProductSoldCount';
 import { startBuyNowCheckout, useCart } from '../contexts/CartContext';
 import { getProductThumbnailUrl } from '../utils/productImage';
+import {
+  computeVariantPriceRange,
+  formatVnd,
+  getVariantEffectivePrice,
+  maxVariantDiscountPercent,
+} from '../utils/variantPrice';
 import './ProductDetailPage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -27,7 +33,7 @@ const resolveUrl   = (url: string) => {
 };
 
 function formatPrice(price: number): string {
-  return Math.round(price).toLocaleString('vi-VN') + 'đ';
+  return formatVnd(price);
 }
 
 function formatReviewDate(iso: string): string {
@@ -86,51 +92,6 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
       ))}
     </div>
   );
-}
-
-/** Returns the active discount price for a variant, or null if no active discount. */
-function getVariantEffectivePrice(v: ProductVariant): number {
-  if (v.discount_price != null) {
-    const now = Date.now();
-    const from = v.discount_from ? new Date(v.discount_from).getTime() : null;
-    const to   = v.discount_to   ? new Date(v.discount_to).getTime()   : null;
-    const fromOk = from == null || from <= now;
-    const toOk   = to   == null || to   >= now;
-    if (fromOk && toOk) return v.discount_price;
-  }
-  return v.price;
-}
-
-interface VariantPriceRange {
-  minEffective: number;
-  maxEffective: number;
-  minOriginal:  number;
-  maxOriginal:  number;
-  hasDiscount:  boolean;
-}
-
-function computeVariantPriceRange(variants: ProductVariant[]): VariantPriceRange {
-  const effectives = variants.map(getVariantEffectivePrice);
-  const originals  = variants.map(v => v.price);
-  return {
-    minEffective: Math.min(...effectives),
-    maxEffective: Math.max(...effectives),
-    minOriginal:  Math.min(...originals),
-    maxOriginal:  Math.max(...originals),
-    hasDiscount:  variants.some(v => getVariantEffectivePrice(v) < v.price),
-  };
-}
-
-/** Largest rounded % off among variants (effective vs that variant's Giá gốc). Matches "Giảm tới X%" style. */
-function maxVariantDiscountPercent(variants: ProductVariant[]): number {
-  let max = 0;
-  for (const v of variants) {
-    const eff = getVariantEffectivePrice(v);
-    if (eff >= v.price) continue;
-    const pct = Math.round((1 - eff / v.price) * 100);
-    if (pct > max) max = pct;
-  }
-  return max;
 }
 
 const PRODUCT_LIST_CRUMB: Record<
