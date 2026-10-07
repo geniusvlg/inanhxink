@@ -287,6 +287,8 @@ export interface Product {
   review_count?: number;
   created_at: string;
   variants?: ProductVariant[];
+  /** Listing-only variant prices, used to show lowest–highest outside the product page. */
+  variant_prices?: Array<Pick<ProductVariant, 'price' | 'discount_price' | 'discount_from' | 'discount_to'>>;
 }
 
 export interface ProductReview {
