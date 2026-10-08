@@ -216,6 +216,7 @@ metadata keys:
 - `page_order_tracking`: toggles the customer order lookup page.
 - `page_tao_ma_qr`: toggles the customer QR download page (`/tao-ma-qr`).
 - `page_danh_gia`: toggles the storefront feedback/reviews page.
+- `page_photobooth`: toggles the browser photobooth page (`/photobooth`).
 - `page_order`: JSON array of page flag keys that controls storefront nav order
   after `Trang chủ`.
 

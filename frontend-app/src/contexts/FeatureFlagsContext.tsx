@@ -50,6 +50,7 @@ export interface FeatureFlags {
   page_order_tracking:     boolean;
   page_tao_ma_qr:          boolean;
   page_danh_gia:           boolean;
+  page_photobooth:         boolean;
   page_order:              string[];
   products_page_size:      number;
   testimonials_page_size:  number;
@@ -82,6 +83,7 @@ const DEFAULTS: FeatureFlags = {
   page_order_tracking:     true,
   page_tao_ma_qr:          true,
   page_danh_gia:           true,
+  page_photobooth:         true,
   page_order: [
     'page_qr_yeu_thuong',
     'page_thiep',
@@ -93,6 +95,7 @@ const DEFAULTS: FeatureFlags = {
     'page_order_tracking',
     'page_tao_ma_qr',
     'page_danh_gia',
+    'page_photobooth',
   ],
   products_page_size:      12,
   testimonials_page_size:  12,
@@ -197,6 +200,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
           page_order_tracking:    c.page_order_tracking    !== 'false',
           page_tao_ma_qr:         c.page_tao_ma_qr         !== 'false',
           page_danh_gia:          c.page_danh_gia          !== 'false',
+          page_photobooth:        c.page_photobooth        !== 'false',
           page_order:             parsePageOrder(c.page_order),
           products_page_size:     Math.max(1, parseInt(c.products_page_size) || 12),
           testimonials_page_size: Math.max(1, parseInt(c.testimonials_page_size) || 12),
