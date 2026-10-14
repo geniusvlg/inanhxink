@@ -6,10 +6,15 @@ import (
 
 	"inanhxink/backend-golang/internal/config"
 	"inanhxink/backend-golang/internal/handlers"
+	"inanhxink/backend-golang/internal/middleware"
 )
 
 // DELETE /api/admin/uploads — best-effort removal of S3 objects by URL.
 func DeleteUploads(w http.ResponseWriter, r *http.Request) {
+	if !middleware.GetAdmin(r).HasWrite() {
+		handlers.Forbidden(w)
+		return
+	}
 	var body struct {
 		URLs []string `json:"urls"`
 	}

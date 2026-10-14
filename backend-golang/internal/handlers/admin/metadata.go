@@ -8,6 +8,7 @@ import (
 
 	"inanhxink/backend-golang/internal/config"
 	"inanhxink/backend-golang/internal/handlers"
+	"inanhxink/backend-golang/internal/middleware"
 	"inanhxink/backend-golang/internal/notify"
 )
 
@@ -27,7 +28,38 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 		cfg[k] = v
 	}
 	redactNotifySMTPPasswordForAdmin(cfg)
-	handlers.OK(w, map[string]any{"success": true, "config": cfg})
+	handlers.OK(w, map[string]any{"success": true, "config": filterMetadata(r, cfg)})
+}
+
+// filterMetadata hides keys the account's pages are not allowed to read.
+// Config view receives the full map. In Ảnh and Banner only receive their own keys.
+func filterMetadata(r *http.Request, cfg map[string]string) map[string]string {
+	p := middleware.GetAdmin(r)
+	if p.Can("config.view") {
+		return cfg
+	}
+	out := map[string]string{}
+	for key, value := range cfg {
+		if strings.HasPrefix(key, "in_anh_") && p.Can("in_anh.view") {
+			out[key] = value
+			continue
+		}
+		if strings.HasPrefix(key, "product_banner_") && p.Can("banners.view") {
+			out[key] = value
+		}
+	}
+	return out
+}
+
+func metadataUpdatePermission(key string) string {
+	switch {
+	case strings.HasPrefix(key, "in_anh_"):
+		return "in_anh.update"
+	case strings.HasPrefix(key, "product_banner_"):
+		return "banners.update"
+	default:
+		return "config.update"
+	}
 }
 
 func redactNotifySMTPPasswordForAdmin(cfg map[string]string) {
@@ -49,6 +81,13 @@ func UpsertMetadata(w http.ResponseWriter, r *http.Request) {
 	if len(body) == 0 {
 		handlers.OK(w, map[string]any{"success": true})
 		return
+	}
+	principal := middleware.GetAdmin(r)
+	for k := range body {
+		if !principal.Can(metadataUpdatePermission(k)) {
+			handlers.Forbidden(w)
+			return
+		}
 	}
 	for k, v := range body {
 		if k == notify.MetaSMTPPass {

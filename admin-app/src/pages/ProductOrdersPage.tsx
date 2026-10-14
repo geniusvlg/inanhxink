@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { productOrdersApi } from '../services/api';
 import { type ProductOrder, type ProductOrderItem } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 
 const PAYMENT_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cancelled'];
@@ -67,6 +68,7 @@ function firstCatalogImage(items: ProductOrderItem[] | undefined): string | null
 }
 
 export default function ProductOrdersPage() {
+  const canUpdate = useAuth().can('product_orders.update');
   const [orders, setOrders]                 = useState<ProductOrder[]>([]);
   const [total, setTotal]                   = useState(0);
   const [page, setPage]                     = useState(1);
@@ -295,9 +297,11 @@ export default function ProductOrdersPage() {
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setDetail(null)}>Đóng</button>
-              <button className="btn-primary" onClick={handleSaveStatus} disabled={saving}>
-                {saving ? 'Đang lưu...' : 'Cập nhật'}
-              </button>
+              {canUpdate && (
+                <button className="btn-primary" onClick={handleSaveStatus} disabled={saving}>
+                  {saving ? 'Đang lưu...' : 'Cập nhật'}
+                </button>
+              )}
             </div>
 
             {showConfirm && (

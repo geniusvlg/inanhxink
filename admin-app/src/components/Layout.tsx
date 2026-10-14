@@ -17,29 +17,37 @@ function QrIcon() {
   );
 }
 
-const NAV: { to: string; label: ReactNode }[] = [
-  { to: '/products',          label: <><QrIcon /> QR Templates</> },
-  { to: '/thiep',             label: '🎴 Thiệp' },
-  { to: '/khung-anh',        label: '🖼️ Khung Ảnh' },
-  { to: '/so-scrapbook',     label: '📒 Sổ & Scrapbook' },
-  { to: '/cac-san-pham-khac', label: '📦 Các Sản Phẩm Khác' },
-  { to: '/set-qua-tang',     label: '🎁 Set Quà Tặng' },
-  { to: '/in-anh',           label: '🖨️ In Ảnh' },
-  { to: '/featured-on-home', label: '🏠 SP trang chủ' },
-  { to: '/categories',       label: '🏷️ Danh mục' },
-  { to: '/product-reviews',  label: '⭐ Đánh giá SP' },
-  { to: '/orders',           label: '📦 Đơn sản phẩm' },
-  { to: '/fulfillment',      label: '⚙️ Xử lý đơn hàng' },
-  { to: '/qr-orders',        label: '🔳 Đơn QR' },
-  { to: '/vouchers',         label: '🎟️ Voucher' },
-  { to: '/testimonials',     label: '💬 Feedback' },
-  { to: '/banners',          label: '🖼️ Banner' },
-  { to: '/hero-shots',       label: '📸 Polaroid trang chủ' },
-  { to: '/config',           label: '⚙️ Cấu hình' },
+const NAV: { to: string; area: string; label: ReactNode }[] = [
+  { to: '/products',          area: 'qr_templates',    label: <><QrIcon /> QR Templates</> },
+  { to: '/thiep',             area: 'thiep',           label: '🎴 Thiệp' },
+  { to: '/khung-anh',        area: 'khung_anh',       label: '🖼️ Khung Ảnh' },
+  { to: '/so-scrapbook',     area: 'so_scrapbook',    label: '📒 Sổ & Scrapbook' },
+  { to: '/cac-san-pham-khac', area: 'khac',           label: '📦 Các Sản Phẩm Khác' },
+  { to: '/set-qua-tang',     area: 'set_qua_tang',    label: '🎁 Set Quà Tặng' },
+  { to: '/in-anh',           area: 'in_anh',          label: '🖨️ In Ảnh' },
+  { to: '/featured-on-home', area: 'featured',        label: '🏠 SP trang chủ' },
+  { to: '/categories',       area: 'categories',      label: '🏷️ Danh mục' },
+  { to: '/product-reviews',  area: 'product_reviews', label: '⭐ Đánh giá SP' },
+  { to: '/orders',           area: 'product_orders',  label: '📦 Đơn sản phẩm' },
+  { to: '/fulfillment',      area: 'fulfillment',     label: '⚙️ Xử lý đơn hàng' },
+  { to: '/qr-orders',        area: 'qr_orders',       label: '🔳 Đơn QR' },
+  { to: '/vouchers',         area: 'vouchers',        label: '🎟️ Voucher' },
+  { to: '/testimonials',     area: 'testimonials',    label: '💬 Feedback' },
+  { to: '/banners',          area: 'banners',         label: '🖼️ Banner' },
+  { to: '/hero-shots',       area: 'hero_shots',      label: '📸 Polaroid trang chủ' },
+  { to: '/config',           area: 'config',          label: '⚙️ Cấu hình' },
 ];
 
 export default function Layout() {
-  const { username, logout } = useAuth();
+  const { username, logout, can, isSystem } = useAuth();
+  const nav = [
+    ...NAV.filter((item) => can(`${item.area}.view`)),
+    ...(isSystem ? [
+      { to: '/vai-tro', label: '🎭 Role' },
+      { to: '/nhan-vien', label: '👤 Quản lý nhân viên' },
+    ] : []),
+    { to: '/ho-so', label: '🪪 Profile' },
+  ];
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -61,7 +69,7 @@ export default function Layout() {
           <span>Admin</span>
         </div>
         <nav className="admin-sidebar-nav">
-          {NAV.map(({ to, label }) => (
+          {nav.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -75,7 +83,7 @@ export default function Layout() {
           ))}
         </nav>
         <div className="admin-sidebar-footer">
-          <span className="admin-username">👤 {username}</span>
+          <NavLink to="/ho-so" className="admin-username" onClick={() => setSidebarOpen(false)}>👤 {username}</NavLink>
           <button className="admin-logout-btn" onClick={handleLogout}>Đăng xuất</button>
         </div>
       </aside>

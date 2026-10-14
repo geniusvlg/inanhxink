@@ -147,54 +147,73 @@ func main() {
 		// Auth (unauthenticated)
 		r.Post("/auth/login", adminHandlers.Login)
 		r.Get("/auth/me", middleware.RequireAdmin(http.HandlerFunc(adminHandlers.Me)).ServeHTTP)
+		r.Put("/auth/profile", middleware.RequireAdmin(http.HandlerFunc(adminHandlers.UpdateProfile)).ServeHTTP)
+		r.Post("/auth/password", middleware.RequireAdmin(http.HandlerFunc(adminHandlers.ChangePassword)).ServeHTTP)
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireAdmin)
 
+			r.Route("/roles", func(r chi.Router) {
+				r.Use(middleware.RequireSystemAdmin)
+				r.Get("/catalog", adminHandlers.RoleCatalog)
+				r.Get("/", adminHandlers.ListRoles)
+				r.Post("/", adminHandlers.CreateRole)
+				r.Put("/{id}", adminHandlers.UpdateRole)
+				r.Delete("/{id}", adminHandlers.DeleteRole)
+			})
+
+			r.Route("/users", func(r chi.Router) {
+				r.Use(middleware.RequireSystemAdmin)
+				r.Get("/", adminHandlers.ListUsers)
+				r.Post("/", adminHandlers.CreateUser)
+				r.Put("/{id}", adminHandlers.UpdateUser)
+				r.Post("/{id}/password", adminHandlers.ResetUserPassword)
+			})
+
 			r.Route("/templates", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListTemplates)
-				r.Get("/{id}", adminHandlers.GetTemplate)
-				r.Post("/", adminHandlers.CreateTemplate)
-				r.Put("/{id}", adminHandlers.UpdateTemplate)
-				r.Delete("/{id}", adminHandlers.DeleteTemplate)
+				r.With(middleware.RequirePermission("qr_templates.view")).Get("/", adminHandlers.ListTemplates)
+				r.With(middleware.RequirePermission("qr_templates.view")).Get("/{id}", adminHandlers.GetTemplate)
+				r.With(middleware.RequirePermission("qr_templates.create")).Post("/", adminHandlers.CreateTemplate)
+				r.With(middleware.RequirePermission("qr_templates.update")).Put("/{id}", adminHandlers.UpdateTemplate)
+				r.With(middleware.RequirePermission("qr_templates.delete")).Delete("/{id}", adminHandlers.DeleteTemplate)
 			})
 
 			r.Route("/orders", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListOrders)
-				r.Get("/search", adminHandlers.SearchOrder)
-				r.Get("/{id}", adminHandlers.GetOrder)
-				r.Patch("/{id}/status", adminHandlers.UpdateOrderStatus)
-				r.Patch("/{id}/fulfillment", adminHandlers.UpdateQRKeychainFulfillment)
+				r.With(middleware.RequirePermission("qr_orders.view")).Get("/", adminHandlers.ListOrders)
+				r.With(middleware.RequirePermission("qr_orders.view")).Get("/search", adminHandlers.SearchOrder)
+				r.With(middleware.RequirePermission("qr_orders.view")).Get("/{id}", adminHandlers.GetOrder)
+				r.With(middleware.RequirePermission("qr_orders.update")).Patch("/{id}/status", adminHandlers.UpdateOrderStatus)
+				r.With(middleware.RequirePermission("fulfillment.update")).Patch("/{id}/fulfillment", adminHandlers.UpdateQRKeychainFulfillment)
 			})
 
-			r.Delete("/qr-names/{qrName}", adminHandlers.ReleaseQRName)
-			r.Patch("/qr-names/{qrName}/volume", adminHandlers.UpdateQRMusicVolume)
+			r.With(middleware.RequirePermission("qr_orders.update")).Delete("/qr-names/{qrName}", adminHandlers.ReleaseQRName)
+			r.With(middleware.RequirePermission("qr_orders.update")).Patch("/qr-names/{qrName}/volume", adminHandlers.UpdateQRMusicVolume)
 
 			r.Route("/product-orders", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListProductOrders)
-				r.Get("/fulfillment", adminHandlers.ListFulfillmentOrders)
-				r.Get("/{id}", adminHandlers.GetProductOrder)
-				r.Patch("/{id}/status", adminHandlers.UpdateProductOrderStatus)
-				r.Patch("/{id}/fulfillment", adminHandlers.UpdateFulfillmentStatus)
-				r.Patch("/{id}/items", adminHandlers.UpdateProductOrderItems)
+				r.With(middleware.RequirePermission("product_orders.view")).Get("/", adminHandlers.ListProductOrders)
+				r.With(middleware.RequirePermission("fulfillment.view")).Get("/fulfillment", adminHandlers.ListFulfillmentOrders)
+				r.With(middleware.RequirePermission("product_orders.view", "fulfillment.view")).Get("/{id}", adminHandlers.GetProductOrder)
+				r.With(middleware.RequirePermission("product_orders.update")).Patch("/{id}/status", adminHandlers.UpdateProductOrderStatus)
+				r.With(middleware.RequirePermission("fulfillment.update")).Patch("/{id}/fulfillment", adminHandlers.UpdateFulfillmentStatus)
+				r.With(middleware.RequirePermission("fulfillment.update")).Patch("/{id}/items", adminHandlers.UpdateProductOrderItems)
 			})
 
 			r.Route("/vouchers", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListVouchers)
-				r.Post("/", adminHandlers.CreateVoucher)
-				r.Put("/{id}", adminHandlers.UpdateVoucher)
-				r.Delete("/{id}", adminHandlers.DeleteVoucher)
+				r.With(middleware.RequirePermission("vouchers.view")).Get("/", adminHandlers.ListVouchers)
+				r.With(middleware.RequirePermission("vouchers.create")).Post("/", adminHandlers.CreateVoucher)
+				r.With(middleware.RequirePermission("vouchers.update")).Put("/{id}", adminHandlers.UpdateVoucher)
+				r.With(middleware.RequirePermission("vouchers.delete")).Delete("/{id}", adminHandlers.DeleteVoucher)
 			})
 
 			r.Route("/metadata", func(r chi.Router) {
-				r.Get("/", adminHandlers.GetMetadata)
-				r.Put("/", adminHandlers.UpsertMetadata)
+				r.With(middleware.RequirePermission("config.view", "in_anh.view", "banners.view")).Get("/", adminHandlers.GetMetadata)
+				r.With(middleware.RequirePermission("config.update", "in_anh.update", "banners.update")).Put("/", adminHandlers.UpsertMetadata)
 			})
 
 			r.Route("/products", func(r chi.Router) {
-				r.Get("/featured-on-home", adminHandlers.ListFeaturedProducts)
-				r.Patch("/featured-on-home/reorder", adminHandlers.ReorderFeaturedProducts)
+				r.With(middleware.RequirePermission("featured.view")).Get("/featured-on-home", adminHandlers.ListFeaturedProducts)
+				r.With(middleware.RequirePermission("featured.update")).Patch("/featured-on-home/reorder", adminHandlers.ReorderFeaturedProducts)
 				r.Get("/", adminHandlers.ListProducts)
 				r.Post("/check-name", adminHandlers.CheckProductName)
 				r.Post("/reserve", adminHandlers.ReserveProduct)
@@ -205,9 +224,9 @@ func main() {
 				r.Post("/{id}/video/jobs/{jobId}/commit", adminHandlers.CommitProductVideoJob)
 				r.Post("/{id}/video/jobs/{jobId}/cancel", adminHandlers.CancelProductVideoJob)
 				r.Get("/{id}/video/job", adminHandlers.LatestProductVideoJob)
-				r.Get("/{id}/reviews", adminHandlers.ListAdminProductReviews)
-				r.Post("/{id}/reviews", adminHandlers.CreateAdminProductReview)
-				r.Delete("/{id}/reviews/{reviewId}", adminHandlers.DeleteAdminProductReview)
+				r.With(middleware.RequirePermission("product_reviews.view")).Get("/{id}/reviews", adminHandlers.ListAdminProductReviews)
+				r.With(middleware.RequirePermission("product_reviews.create")).Post("/{id}/reviews", adminHandlers.CreateAdminProductReview)
+				r.With(middleware.RequirePermission("product_reviews.delete")).Delete("/{id}/reviews/{reviewId}", adminHandlers.DeleteAdminProductReview)
 				r.Get("/{id}", adminHandlers.GetProduct)
 				r.Put("/{id}", adminHandlers.UpdateProduct)
 				r.Delete("/{id}", adminHandlers.DeleteProduct)
@@ -217,32 +236,32 @@ func main() {
 			})
 
 			r.Route("/product-categories", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListProductCategories)
-				r.Post("/", adminHandlers.CreateProductCategory)
-				r.Put("/{id}", adminHandlers.UpdateProductCategory)
-				r.Delete("/{id}", adminHandlers.DeleteProductCategory)
+				r.With(middleware.RequirePermission("categories.view")).Get("/", adminHandlers.ListProductCategories)
+				r.With(middleware.RequirePermission("categories.create")).Post("/", adminHandlers.CreateProductCategory)
+				r.With(middleware.RequirePermission("categories.update")).Put("/{id}", adminHandlers.UpdateProductCategory)
+				r.With(middleware.RequirePermission("categories.delete")).Delete("/{id}", adminHandlers.DeleteProductCategory)
 			})
 
 			r.Route("/testimonials", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListTestimonials)
-				r.Post("/", adminHandlers.CreateTestimonial)
-				r.Post("/bulk", adminHandlers.BulkCreateTestimonials)
-				r.Patch("/reorder", adminHandlers.ReorderTestimonials)
-				r.Put("/{id}", adminHandlers.UpdateTestimonial)
-				r.Delete("/{id}", adminHandlers.DeleteTestimonial)
+				r.With(middleware.RequirePermission("testimonials.view")).Get("/", adminHandlers.ListTestimonials)
+				r.With(middleware.RequirePermission("testimonials.create")).Post("/", adminHandlers.CreateTestimonial)
+				r.With(middleware.RequirePermission("testimonials.create")).Post("/bulk", adminHandlers.BulkCreateTestimonials)
+				r.With(middleware.RequirePermission("testimonials.update")).Patch("/reorder", adminHandlers.ReorderTestimonials)
+				r.With(middleware.RequirePermission("testimonials.update")).Put("/{id}", adminHandlers.UpdateTestimonial)
+				r.With(middleware.RequirePermission("testimonials.delete")).Delete("/{id}", adminHandlers.DeleteTestimonial)
 			})
 
 			r.Route("/banners", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListBanners)
-				r.Post("/", adminHandlers.CreateBanner)
-				r.Patch("/reorder", adminHandlers.ReorderBanners)
-				r.Put("/{id}", adminHandlers.UpdateBanner)
-				r.Delete("/{id}", adminHandlers.DeleteBanner)
+				r.With(middleware.RequirePermission("banners.view")).Get("/", adminHandlers.ListBanners)
+				r.With(middleware.RequirePermission("banners.create")).Post("/", adminHandlers.CreateBanner)
+				r.With(middleware.RequirePermission("banners.update")).Patch("/reorder", adminHandlers.ReorderBanners)
+				r.With(middleware.RequirePermission("banners.update")).Put("/{id}", adminHandlers.UpdateBanner)
+				r.With(middleware.RequirePermission("banners.delete")).Delete("/{id}", adminHandlers.DeleteBanner)
 			})
 
 			r.Route("/hero-shots", func(r chi.Router) {
-				r.Get("/", adminHandlers.ListHeroShots)
-				r.Put("/{slot}", adminHandlers.UpdateHeroShot)
+				r.With(middleware.RequirePermission("hero_shots.view")).Get("/", adminHandlers.ListHeroShots)
+				r.With(middleware.RequirePermission("hero_shots.update")).Put("/{slot}", adminHandlers.UpdateHeroShot)
 			})
 
 			r.Delete("/uploads", adminHandlers.DeleteUploads)

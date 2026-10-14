@@ -60,6 +60,9 @@ func PresignProductVideo(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	if !allowProductAction(w, r, productType, "update") {
+		return
+	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
 	var body productVideoSignRequest
@@ -128,6 +131,9 @@ func PresignProductVideo(w http.ResponseWriter, r *http.Request) {
 // StartProductVideoJob begins conversion. The admin form calls this only when
 // the product is saved, after the browser has finished the direct upload.
 func StartProductVideoJob(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "update") {
+		return
+	}
 	productID, jobID, ok := productVideoIDs(w, r)
 	if !ok {
 		return
@@ -151,6 +157,9 @@ func StartProductVideoJob(w http.ResponseWriter, r *http.Request) {
 
 // GetProductVideoJob returns one job so the admin form can poll it.
 func GetProductVideoJob(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "view") {
+		return
+	}
 	productID, jobID, ok := productVideoIDs(w, r)
 	if !ok {
 		return
@@ -169,6 +178,9 @@ func GetProductVideoJob(w http.ResponseWriter, r *http.Request) {
 
 // LatestProductVideoJob returns the newest job for a product, if one exists.
 func LatestProductVideoJob(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "view") {
+		return
+	}
 	productID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil || productID <= 0 {
 		handlers.BadRequest(w, "Sản phẩm không hợp lệ")
@@ -189,6 +201,9 @@ func LatestProductVideoJob(w http.ResponseWriter, r *http.Request) {
 // CommitProductVideoJob marks a saved upload to replace the product video.
 // If the original is still waiting, saving also starts conversion.
 func CommitProductVideoJob(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "update") {
+		return
+	}
 	productID, jobID, ok := productVideoIDs(w, r)
 	if !ok {
 		return
@@ -232,6 +247,9 @@ func CommitProductVideoJob(w http.ResponseWriter, r *http.Request) {
 
 // CancelProductVideoJob drops an upload that the admin did not keep.
 func CancelProductVideoJob(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "update") {
+		return
+	}
 	productID, jobID, ok := productVideoIDs(w, r)
 	if !ok {
 		return

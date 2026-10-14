@@ -3,6 +3,7 @@ import { productsApi } from '../services/api';
 import { type Product } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import { captureException } from '../utils/sentry';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -22,6 +23,7 @@ type FeaturedRow = Pick<
 > & { is_draft?: boolean; categories?: { id: number; name: string }[] };
 
 export default function FeaturedOnHomePage() {
+  const canUpdate = useAuth().can('featured.update');
   const [items, setItems]     = useState<FeaturedRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
@@ -86,7 +88,7 @@ export default function FeaturedOnHomePage() {
     <div>
       <div className="admin-page-header">
         <h1 className="admin-page-title">🏠 Sản phẩm trang chủ</h1>
-        {dirty && (
+        {dirty && canUpdate && (
           <button className="btn-primary" onClick={saveOrder} disabled={saving}>
             {saving ? 'Đang lưu...' : '💾 Lưu thứ tự'}
           </button>
@@ -159,6 +161,7 @@ export default function FeaturedOnHomePage() {
                     )}
                   </td>
                   <td style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    {canUpdate && <>
                     <button
                       className="btn-secondary"
                       style={{ fontSize: '0.85rem', padding: '0.3rem 0.6rem' }}
@@ -178,6 +181,7 @@ export default function FeaturedOnHomePage() {
                       style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
                       onClick={() => unfeature(p)}
                     >Bỏ khỏi trang chủ</button>
+                    </>}
                   </td>
                 </tr>
               ))}

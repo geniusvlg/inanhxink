@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { ordersApi, qrNamesApi } from '../services/api';
 import { type Order } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 
 const PAYMENT_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cancelled'];
@@ -104,6 +105,7 @@ function AudioBadges({ music, voice }: { music?: boolean; voice?: boolean }) {
 }
 
 export default function OrdersPage() {
+  const canUpdate = useAuth().can('qr_orders.update');
   const [orders, setOrders]           = useState<Order[]>([]);
   const [total, setTotal]             = useState(0);
   const [page, setPage]               = useState(1);
@@ -279,7 +281,7 @@ export default function OrdersPage() {
                     <td><PaymentBadge status={o.payment_status} /></td>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.created_at).toLocaleString('vi-VN', { day: '2-digit', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                     <td>
-                      {!o.qr_name_released_at && (
+                      {canUpdate && !o.qr_name_released_at && (
                         <button
                           className="btn-secondary"
                           title={`Thu hồi tên QR "${o.qr_name}" để người khác đặt lại`}
@@ -348,7 +350,7 @@ export default function OrdersPage() {
                             onChange={e => setVolumePercent(e.target.value)}
                           />
                           <span>%</span>
-                          <button
+                          {canUpdate && <button
                             className="btn-secondary"
                             style={{ padding: '0.35rem 0.75rem' }}
                             disabled={savingVolume || (
@@ -358,7 +360,7 @@ export default function OrdersPage() {
                             onClick={handleSaveVolume}
                           >
                             {savingVolume ? 'Đang lưu...' : 'Lưu'}
-                          </button>
+                          </button>}
                         </div>
                       ) : v}
                     </td>
@@ -388,7 +390,7 @@ export default function OrdersPage() {
                 <span style={{ fontSize: '0.8rem', color: '#b91c1c' }}>
                   Tên QR đã thu hồi {new Date(detail.qr_name_released_at).toLocaleString('vi-VN')}
                 </span>
-              ) : (
+              ) : canUpdate ? (
                 <button
                   className="btn-secondary"
                   style={{ color: '#b91c1c' }}
@@ -396,12 +398,14 @@ export default function OrdersPage() {
                 >
                   🗑 Thu hồi tên QR
                 </button>
-              )}
+              ) : <span />}
               <span style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className="btn-secondary" onClick={() => setDetail(null)}>Đóng</button>
-                <button className="btn-primary" onClick={handleSaveStatus} disabled={saving}>
-                  {saving ? 'Đang lưu...' : 'Cập nhật'}
-                </button>
+                {canUpdate && (
+                  <button className="btn-primary" onClick={handleSaveStatus} disabled={saving}>
+                    {saving ? 'Đang lưu...' : 'Cập nhật'}
+                  </button>
+                )}
               </span>
             </div>
           </div>

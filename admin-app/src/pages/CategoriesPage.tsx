@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { productCategoriesApi, uploadApi } from '../services/api';
 import { type ProductCategory } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 import './CategoriesPage.css';
 
@@ -18,6 +19,10 @@ const typeLabel = (type?: string) =>
   type ? (PRODUCT_TYPES.find(t => t.value === type)?.label ?? type) : 'Chung';
 
 export default function CategoriesPage() {
+  const { can } = useAuth();
+  const canCreate = can('categories.create');
+  const canUpdate = can('categories.update');
+  const canDelete = can('categories.delete');
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading]       = useState(true);
   const [showModal, setShowModal]   = useState(false);
@@ -105,7 +110,7 @@ export default function CategoriesPage() {
     <div>
       <div className="admin-page-header">
         <h1 className="admin-page-title">🏷️ Danh mục</h1>
-        <button className="btn-primary" onClick={openCreate}>+ Thêm danh mục</button>
+        {canCreate && <button className="btn-primary" onClick={openCreate}>+ Thêm danh mục</button>}
       </div>
 
       <div className="admin-table-wrap">
@@ -143,14 +148,16 @@ export default function CategoriesPage() {
                       onChange={e => handleUploadImage(c, e)}
                       style={{ display: 'none' }}
                     />
-                    <button
-                      type="button"
-                      className="btn-edit"
-                      onClick={() => fileInputRefs.current[c.id]?.click()}
-                      disabled={uploadingId === c.id}
-                    >
-                      {uploadingId === c.id ? 'Đang tải...' : (c.image_url ? 'Thay ảnh' : 'Tải ảnh')}
-                    </button>
+                    {canUpdate && (
+                      <button
+                        type="button"
+                        className="btn-edit"
+                        onClick={() => fileInputRefs.current[c.id]?.click()}
+                        disabled={uploadingId === c.id}
+                      >
+                        {uploadingId === c.id ? 'Đang tải...' : (c.image_url ? 'Thay ảnh' : 'Tải ảnh')}
+                      </button>
+                    )}
                   </div>
                 </td>
                 <td><strong>{c.name}</strong></td>
@@ -163,15 +170,16 @@ export default function CategoriesPage() {
                     <input
                       type="checkbox"
                       checked={c.is_active}
-                      onChange={() => toggleActive(c)}
+                      disabled={!canUpdate}
+                      onChange={() => { if (canUpdate) toggleActive(c); }}
                     />
                     <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
                   </label>
                 </td>
                 <td>
-                  <button type="button" className="btn-edit" onClick={() => openEdit(c)}>Sửa tên</button>
+                  {canUpdate && <button type="button" className="btn-edit" onClick={() => openEdit(c)}>Sửa tên</button>}
                   {' '}
-                  <button type="button" className="btn-danger" onClick={() => handleDelete(c)}>Xoá</button>
+                  {canDelete && <button type="button" className="btn-danger" onClick={() => handleDelete(c)}>Xoá</button>}
                 </td>
               </tr>
             ))}

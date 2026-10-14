@@ -26,6 +26,25 @@ jobs:
         run: npm run lint
         working-directory: frontend-app
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend-golang/go.mod
+          cache-dependency-path: backend-golang/go.sum
+
+      - name: Install libwebp
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebp-dev pkg-config
+
+      - name: Test backend
+        working-directory: backend-golang
+        run: CGO_ENABLED=1 go test ./...
+
   build:
     runs-on: ubuntu-latest
     steps:

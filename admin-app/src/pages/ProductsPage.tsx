@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { templatesApi, uploadApi } from '../services/api';
 import { type Template } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 
 function QrIcon() {
@@ -39,6 +40,9 @@ const emptyForm = (): FormState => ({
 });
 
 export default function ProductsPage() {
+  const { can } = useAuth();
+  const canCreate = can('qr_templates.create');
+  const canUpdate = can('qr_templates.update');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
@@ -166,7 +170,7 @@ export default function ProductsPage() {
         <h1 className="admin-page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <QrIcon /> QR Templates
         </h1>
-        <button className="btn-primary" onClick={openCreate}>+ Thêm mới</button>
+        {canCreate && <button className="btn-primary" onClick={openCreate}>+ Thêm mới</button>}
       </div>
 
       <div className="admin-table-wrap">
@@ -207,20 +211,24 @@ export default function ProductsPage() {
                   </span>
                 </td>
                 <td style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    className="btn-secondary"
-                    style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }}
-                    onClick={() => openEdit(t)}
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    className="btn-secondary"
-                    style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }}
-                    onClick={() => handleToggle(t)}
-                  >
-                    {t.is_active ? 'Ẩn' : 'Hiện'}
-                  </button>
+                  {canUpdate && (
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }}
+                      onClick={() => openEdit(t)}
+                    >
+                      Sửa
+                    </button>
+                  )}
+                  {canUpdate && (
+                    <button
+                      className="btn-secondary"
+                      style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }}
+                      onClick={() => handleToggle(t)}
+                    >
+                      {t.is_active ? 'Ẩn' : 'Hiện'}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

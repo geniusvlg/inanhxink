@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { productOrdersApi } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import './FulfillmentPage.css';
 
 type FulfillmentStatus = 'new' | 'preparing' | 'packing' | 'shipped';
@@ -91,6 +92,7 @@ function OrderDetailModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const canUpdate = useAuth().can('fulfillment.update');
   const order = result.order;
   const isProduct = result.type === 'product';
   const rawItems = order.items ?? '[]';
@@ -341,7 +343,7 @@ function OrderDetailModal({
           )}
         </div>
 
-        {isProduct && (
+        {isProduct && canUpdate && (
           <div className="ff-modal-footer">
             {saveMsg && <span className="ff-modal-save-msg">{saveMsg}</span>}
             <button className="ff-modal-save-btn" onClick={() => setShowSaveConfirm(true)} disabled={saving}>
@@ -385,6 +387,7 @@ function OrderCard({
   onAdvance: (id: number, type: OrderType, status: FulfillmentStatus, trackingCode?: string, shippingCarrier?: string) => void;
   onViewDetail: (order: FulfillmentOrder) => void;
 }) {
+  const canUpdate = useAuth().can('fulfillment.update');
   const [open, setOpen] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showTracking, setShowTracking] = useState(false);
@@ -504,7 +507,7 @@ function OrderCard({
         </div>
       )}
 
-      {next && nextLabel && !showTracking && !showConfirm && (
+      {canUpdate && next && nextLabel && !showTracking && !showConfirm && (
         <button className="ff-advance-btn" onClick={handleAdvanceClick}>{nextLabel} →</button>
       )}
       {showConfirm && (
