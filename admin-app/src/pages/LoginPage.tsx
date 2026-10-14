@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { apiErrorMessage } from '../services/api';
 import './LoginPage.css';
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -35,9 +36,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-      navigate('/products');
-    } catch {
-      setError('Sai tên đăng nhập hoặc mật khẩu');
+      navigate('/');
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Sai tên đăng nhập hoặc mật khẩu'));
     } finally {
       setLoading(false);
     }

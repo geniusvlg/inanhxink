@@ -32,8 +32,20 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 	params := []any{}
 	idx := 1
 	if t := q.Get("type"); t != "" {
+		if !allowProductList(w, r, t) {
+			return
+		}
 		params = append(params, t)
 		conditions = append(conditions, fmt.Sprintf("p.type = $%d", idx))
+		idx++
+	} else {
+		types := viewableProductTypes(r)
+		if len(types) == 0 {
+			handlers.OK(w, map[string]any{"success": true, "products": []any{}, "total": 0, "page": page, "limit": limit})
+			return
+		}
+		params = append(params, types)
+		conditions = append(conditions, fmt.Sprintf("p.type = ANY($%d)", idx))
 		idx++
 	}
 	where := "WHERE " + strings.Join(conditions, " AND ")
@@ -109,6 +121,9 @@ func ReorderFeaturedProducts(w http.ResponseWriter, r *http.Request) {
 
 // GET /api/admin/products/:id
 func GetProduct(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "view") {
+		return
+	}
 	rows, err := config.DB.Query(context.Background(),
 		productSelectWithCategories+` WHERE p.id = $1 GROUP BY p.id`, chi.URLParam(r, "id"))
 	if err != nil {
@@ -133,6 +148,13 @@ func CheckProductName(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" || body.Type == "" {
 		handlers.BadRequest(w, "name and type are required")
+		return
+	}
+	action := "create"
+	if body.ExcludeID != nil {
+		action = "update"
+	}
+	if !allowProductAction(w, r, body.Type, action) {
 		return
 	}
 	var id int
@@ -163,6 +185,9 @@ func ReserveProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" || body.Type == "" {
 		handlers.BadRequest(w, "name and type are required")
+		return
+	}
+	if !allowProductAction(w, r, body.Type, "create") {
 		return
 	}
 	tx, err := config.DB.Begin(context.Background())
@@ -198,6 +223,9 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	price := body["price"]
 	if name == "" || price == nil || productType == "" {
 		handlers.BadRequest(w, "name, price, type required")
+		return
+	}
+	if !allowProductAction(w, r, productType, "create") {
 		return
 	}
 
@@ -279,6 +307,16 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		handlers.BadRequest(w, "Invalid JSON")
 		return
+	}
+	if !allowProductByID(w, r, "update") {
+		return
+	}
+	if newType, _ := body["type"].(string); newType != "" {
+		var current string
+		err := config.DB.QueryRow(context.Background(), `SELECT type FROM products WHERE id = $1`, id).Scan(&current)
+		if err == nil && newType != current && !allowProductAction(w, r, newType, "update") {
+			return
+		}
 	}
 
 	tx, err := config.DB.Begin(context.Background())
@@ -434,6 +472,9 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/admin/products/:id (hard delete)
 func DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "delete") {
+		return
+	}
 	id := chi.URLParam(r, "id")
 	result, err := config.DB.Exec(context.Background(),
 		"DELETE FROM products WHERE id = $1", id)

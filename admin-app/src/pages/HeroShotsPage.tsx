@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { heroShotsApi, uploadApi } from '../services/api';
 import { type HeroShot } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 import './BannersPage.css';   // reuses .form-hint
 import './HeroShotsPage.css';
@@ -22,6 +23,7 @@ const SLOT_LABELS: Record<SlotIdx, string> = {
 };
 
 export default function HeroShotsPage() {
+  const canUpdate = useAuth().can('hero_shots.update');
   const [shots, setShots]         = useState<HeroShot[]>([]);
   const [loading, setLoading]     = useState(true);
   const [editing, setEditing]     = useState<HeroShot | null>(null);
@@ -143,7 +145,7 @@ export default function HeroShotsPage() {
               {s.caption || '— chưa có chú thích —'}
             </div>
 
-            <button className="btn-edit" onClick={() => openEdit(s)}>Sửa ô này</button>
+            {canUpdate && <button className="btn-edit" onClick={() => openEdit(s)}>Sửa ô này</button>}
           </div>
         ))}
       </div>

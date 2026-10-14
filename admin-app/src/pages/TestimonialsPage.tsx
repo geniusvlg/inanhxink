@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { testimonialsApi, uploadApi, type TestimonialBulkItem } from '../services/api';
 import { type Testimonial } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 import './TestimonialsPage.css';
 
@@ -40,6 +41,10 @@ const makePending = (image_url: string): PendingItem => ({
 });
 
 export default function TestimonialsPage() {
+  const { can } = useAuth();
+  const canCreate = can('testimonials.create');
+  const canUpdate = can('testimonials.update');
+  const canDelete = can('testimonials.delete');
   const [items, setItems]       = useState<Testimonial[]>([]);
   const [loading, setLoading]   = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -274,13 +279,13 @@ export default function TestimonialsPage() {
             onChange={handleBulkUpload}
             style={{ display: 'none' }}
           />
-          <button
+          {canCreate && <button
             className="btn-primary"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
           >
             {uploading ? 'Đang tải...' : '+ Tải lên ảnh đánh giá'}
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -320,7 +325,8 @@ export default function TestimonialsPage() {
                   <button
                     type="button"
                     className="testimonial-star-btn"
-                    onClick={() => toggleFeatured(t)}
+                    disabled={!canUpdate}
+                    onClick={() => { if (canUpdate) toggleFeatured(t); }}
                     title={t.is_featured ? 'Bỏ nổi bật' : 'Đánh dấu nổi bật'}
                   >
                     {t.is_featured ? '⭐' : '☆'}
@@ -330,7 +336,8 @@ export default function TestimonialsPage() {
                   <button
                     type="button"
                     className="testimonial-star-btn"
-                    onClick={() => toggleHome(t)}
+                    disabled={!canUpdate}
+                    onClick={() => { if (canUpdate) toggleHome(t); }}
                     title={t.is_featured_on_home ? 'Bỏ khỏi trang chủ' : 'Hiển thị trên trang chủ'}
                     style={{ opacity: t.is_featured_on_home ? 1 : 0.35 }}
                   >
@@ -342,20 +349,20 @@ export default function TestimonialsPage() {
                     <button
                       className="btn-edit"
                       onClick={() => move(idx, -1)}
-                      disabled={idx === 0}
+                      disabled={!canUpdate || idx === 0}
                       title="Lên"
                     >↑</button>
                     <button
                       className="btn-edit"
                       onClick={() => move(idx, +1)}
-                      disabled={idx === items.length - 1}
+                      disabled={!canUpdate || idx === items.length - 1}
                       title="Xuống"
                     >↓</button>
                   </div>
                 </td>
                 <td style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn-edit"   onClick={() => openEdit(t)}>Sửa</button>
-                  <button className="btn-danger" onClick={() => handleDelete(t)}>Xoá</button>
+                  {canUpdate && <button className="btn-edit"   onClick={() => openEdit(t)}>Sửa</button>}
+                  {canDelete && <button className="btn-danger" onClick={() => handleDelete(t)}>Xoá</button>}
                 </td>
               </tr>
             ))}

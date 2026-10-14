@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { metadataApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 import './ConfigPage.css';
 
@@ -108,6 +109,7 @@ const MANAGED_ELSEWHERE = new Set([
 ]);
 
 export default function ConfigPage() {
+  const canUpdate = useAuth().can('config.update');
   const [config,  setConfig]  = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
@@ -573,9 +575,11 @@ export default function ConfigPage() {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
-          </button>
+          {canUpdate && (
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
+            </button>
+          )}
           {saved && <span style={{ color: '#16a34a', fontSize: '0.875rem' }}>✓ Đã lưu!</span>}
         </div>
       </form>

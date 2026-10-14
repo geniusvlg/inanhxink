@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { vouchersApi } from '../services/api';
 import { type Voucher } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 
 const emptyForm = (): Partial<Voucher> => ({
@@ -9,6 +10,10 @@ const emptyForm = (): Partial<Voucher> => ({
 });
 
 export default function VouchersPage() {
+  const { can } = useAuth();
+  const canCreate = can('vouchers.create');
+  const canUpdate = can('vouchers.update');
+  const canDelete = can('vouchers.delete');
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading]   = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -60,7 +65,7 @@ export default function VouchersPage() {
     <div>
       <div className="admin-page-header">
         <h1 className="admin-page-title">🎟️ Voucher</h1>
-        <button className="btn-primary" onClick={openCreate}>+ Thêm voucher</button>
+        {canCreate && <button className="btn-primary" onClick={openCreate}>+ Thêm voucher</button>}
       </div>
 
       <div className="admin-table-wrap">
@@ -82,8 +87,8 @@ export default function VouchersPage() {
                 <td>{v.expires_at ? new Date(v.expires_at).toLocaleDateString('vi-VN') : '—'}</td>
                 <td><span className={`badge ${v.is_active ? 'badge-green' : 'badge-red'}`}>{v.is_active ? 'Hoạt động' : 'Ẩn'}</span></td>
                 <td style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn-edit"   onClick={() => openEdit(v)}>Sửa</button>
-                  <button className="btn-danger" onClick={() => handleDelete(v)}>Ẩn</button>
+                  {canUpdate && <button className="btn-edit"   onClick={() => openEdit(v)}>Sửa</button>}
+                  {canDelete && <button className="btn-danger" onClick={() => handleDelete(v)}>Ẩn</button>}
                 </td>
               </tr>
             ))}

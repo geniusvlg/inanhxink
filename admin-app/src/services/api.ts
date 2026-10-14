@@ -28,10 +28,59 @@ api.interceptors.response.use(
 
 export default api;
 
+export interface StaffRole {
+  id: number;
+  name: string;
+  is_system: boolean;
+}
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  display_name: string;
+  is_active: boolean;
+  role: StaffRole;
+  permissions: string[];
+}
+
+export interface RoleRecord extends StaffRole {
+  description: string;
+  permissions: string[];
+}
+
+export interface PermissionArea {
+  key: string;
+  label: string;
+  actions: string[];
+}
+
+export interface StaffUser {
+  id: number;
+  username: string;
+  display_name: string;
+  is_active: boolean;
+  role: StaffRole;
+}
+
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const msg = (err.response?.data as { error?: string } | undefined)?.error;
+    if (msg) return msg;
+  }
+  return fallback;
+}
+
 export const authApi = {
   login: (username: string, password: string) =>
-    api.post<{ success: boolean; token: string; username: string }>('/api/admin/auth/login', { username, password }),
-  me: () => api.get('/api/admin/auth/me'),
+    api.post<{ success: boolean; token: string; username: string; user: AuthUser }>('/api/admin/auth/login', { username, password }),
+  me: () => api.get<{ success: boolean; user: AuthUser }>('/api/admin/auth/me'),
+  updateProfile: (displayName: string) =>
+    api.put<{ success: boolean; user: AuthUser }>('/api/admin/auth/profile', { display_name: displayName }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<{ success: boolean }>('/api/admin/auth/password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
 };
 
 export const templatesApi = {
@@ -312,4 +361,24 @@ export const testimonialsApi = {
   reorder: (items: { id: number; sort_order: number }[]) =>
     api.patch('/api/admin/testimonials/reorder', { items }),
   delete:  (id: number)          => api.delete(`/api/admin/testimonials/${id}`),
+};
+
+export const rolesApi = {
+  catalog: () => api.get<{ success: boolean; areas: PermissionArea[] }>('/api/admin/roles/catalog'),
+  list: () => api.get<{ success: boolean; roles: RoleRecord[] }>('/api/admin/roles'),
+  create: (data: { name: string; description: string; permissions: string[] }) =>
+    api.post<{ success: boolean; id: number }>('/api/admin/roles', data),
+  update: (id: number, data: { name: string; description: string; permissions: string[] }) =>
+    api.put(`/api/admin/roles/${id}`, data),
+  delete: (id: number) => api.delete(`/api/admin/roles/${id}`),
+};
+
+export const usersApi = {
+  list: () => api.get<{ success: boolean; users: StaffUser[] }>('/api/admin/users'),
+  create: (data: { username: string; password: string; display_name: string; role_id: number }) =>
+    api.post<{ success: boolean; id: number }>('/api/admin/users', data),
+  update: (id: number, data: { display_name: string; role_id: number; is_active: boolean }) =>
+    api.put(`/api/admin/users/${id}`, data),
+  resetPassword: (id: number, password: string) =>
+    api.post(`/api/admin/users/${id}/password`, { password }),
 };

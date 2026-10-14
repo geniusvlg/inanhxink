@@ -35,6 +35,7 @@ admin-app/src/
 - JWT token stored in `localStorage.admin_token`
 - All admin API calls attach `Authorization: Bearer {token}`
 - 401 response → redirect to login
+- Staff accounts, roles, and page permissions: see `docs/admin-roles.md`
 
 ## Product Types
 

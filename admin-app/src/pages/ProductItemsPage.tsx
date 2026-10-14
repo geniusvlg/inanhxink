@@ -4,6 +4,8 @@ import { type Product, type ProductCategory, type ProductVariant } from '../type
 import LoadingGif from '../components/LoadingGif';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import { captureException } from '../utils/sentry';
+import { useAuth } from '../contexts/AuthContext';
+import { productArea } from '../auth/permissions';
 import '../components/Layout.css';
 
 interface Props {
@@ -127,6 +129,10 @@ function moveItem<T>(items: T[], from: number, to: number): T[] {
 }
 
 export default function ProductItemsPage({ type }: Props) {
+  const { can } = useAuth();
+  const canCreate = can(`${productArea(type)}.create`);
+  const canUpdate = can(`${productArea(type)}.update`);
+  const canDelete = can(`${productArea(type)}.delete`);
   const [products, setProducts]     = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -805,7 +811,7 @@ export default function ProductItemsPage({ type }: Props) {
     <div>
       <div className="admin-page-header">
         <h1 className="admin-page-title">{PAGE_TITLE[type]}</h1>
-        <button className="btn-primary" onClick={openCreate}>+ Thêm mới</button>
+        {canCreate && <button className="btn-primary" onClick={openCreate}>+ Thêm mới</button>}
       </div>
 
       <div className="admin-table-wrap">
@@ -932,11 +938,13 @@ export default function ProductItemsPage({ type }: Props) {
                   </div>
                 </td>
                 <td style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button className="btn-edit"      onClick={() => openEdit(p)}>Sửa</button>
-                  <button className="btn-secondary" style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }} onClick={() => handleToggle(p)}>
-                    {p.is_active ? 'Ẩn' : 'Hiện'}
-                  </button>
-                  <button className="btn-danger"    onClick={() => handleDelete(p)}>Xoá</button>
+                  {canUpdate && <button className="btn-edit"      onClick={() => openEdit(p)}>Sửa</button>}
+                  {canUpdate && (
+                    <button className="btn-secondary" style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem' }} onClick={() => handleToggle(p)}>
+                      {p.is_active ? 'Ẩn' : 'Hiện'}
+                    </button>
+                  )}
+                  {canDelete && <button className="btn-danger"    onClick={() => handleDelete(p)}>Xoá</button>}
                 </td>
               </tr>
             ))}

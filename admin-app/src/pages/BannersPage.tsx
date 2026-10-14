@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { bannersApi, metadataApi, uploadApi } from '../services/api';
 import { type Banner } from '../types';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 import './BannersPage.css';
 import './ConfigPage.css';
@@ -113,6 +114,10 @@ const emptyForm = (): EditForm => ({
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function BannersPage() {
+  const { can } = useAuth();
+  const canCreate = can('banners.create');
+  const canUpdate = can('banners.update');
+  const canDelete = can('banners.delete');
   // ── Homepage banners (banners table) ──────────────────────────────────────
   const [items,     setItems]     = useState<Banner[]>([]);
   const [loadingHP, setLoadingHP] = useState(true);
@@ -315,7 +320,7 @@ export default function BannersPage() {
       {/* ══ Section 1: Homepage banners ══════════════════════════════════════ */}
       <div className="admin-page-header">
         <h1 className="admin-page-title">🖼️ Banner trang chủ</h1>
-        <button className="btn-primary" onClick={openCreate}>+ Thêm banner</button>
+        {canCreate && <button className="btn-primary" onClick={openCreate}>+ Thêm banner</button>}
       </div>
 
       <div className="admin-table-wrap">
@@ -349,19 +354,19 @@ export default function BannersPage() {
                   </td>
                   <td>{b.alt_text || <span style={{ color: '#94a3b8' }}>—</span>}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <button type="button" className="banner-toggle-btn" onClick={() => toggleActive(b)} title={b.is_active ? 'Bấm để ẩn' : 'Bấm để hiện'}>
+                    <button type="button" className="banner-toggle-btn" disabled={!canUpdate} onClick={() => { if (canUpdate) toggleActive(b); }} title={b.is_active ? 'Bấm để ẩn' : 'Bấm để hiện'}>
                       {b.is_active ? '✅' : '🚫'}
                     </button>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <button className="btn-edit" onClick={() => move(idx, -1)} disabled={idx === 0} title="Lên">↑</button>
-                      <button className="btn-edit" onClick={() => move(idx, +1)} disabled={idx === items.length - 1} title="Xuống">↓</button>
+                      <button className="btn-edit" onClick={() => move(idx, -1)} disabled={!canUpdate || idx === 0} title="Lên">↑</button>
+                      <button className="btn-edit" onClick={() => move(idx, +1)} disabled={!canUpdate || idx === items.length - 1} title="Xuống">↓</button>
                     </div>
                   </td>
                   <td style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn-edit"   onClick={() => openEdit(b)}>Sửa</button>
-                    <button className="btn-danger" onClick={() => handleDelete(b)}>Xoá</button>
+                    {canUpdate && <button className="btn-edit"   onClick={() => openEdit(b)}>Sửa</button>}
+                    {canDelete && <button className="btn-danger" onClick={() => handleDelete(b)}>Xoá</button>}
                   </td>
                 </tr>
               ))}
@@ -454,9 +459,9 @@ export default function BannersPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <button type="submit" className="btn-primary" disabled={savingPB}>
+              {canUpdate && <button type="submit" className="btn-primary" disabled={savingPB}>
                 {savingPB ? 'Đang lưu...' : 'Lưu banner trang sản phẩm'}
-              </button>
+              </button>}
               {savedPB && <span style={{ color: '#16a34a', fontSize: '0.875rem' }}>✓ Đã lưu!</span>}
             </div>
           </form>

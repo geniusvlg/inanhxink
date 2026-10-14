@@ -14,6 +14,9 @@ import (
 
 // GET /api/admin/products/:id/variants
 func ListProductVariants(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "view") {
+		return
+	}
 	productID := chi.URLParam(r, "id")
 	rows, err := config.DB.Query(context.Background(), `
 		SELECT id, product_id, name, price, discount_price, discount_from, discount_to, image, sort_order, created_at
@@ -38,17 +41,20 @@ func ListProductVariants(w http.ResponseWriter, r *http.Request) {
 // PUT /api/admin/products/:id/variants
 // Replaces all variants for the product. Body: [{id?, name, price, discount_price?, discount_from?, discount_to?, image?, sort_order?}]
 func UpsertProductVariants(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "update") {
+		return
+	}
 	productID := chi.URLParam(r, "id")
 
 	var body []struct {
-		ID            *int    `json:"id"`
-		Name          string  `json:"name"`
-		Price         float64 `json:"price"`
+		ID            *int     `json:"id"`
+		Name          string   `json:"name"`
+		Price         float64  `json:"price"`
 		DiscountPrice *float64 `json:"discount_price"`
 		DiscountFrom  *string  `json:"discount_from"`
 		DiscountTo    *string  `json:"discount_to"`
-		Image         *string `json:"image"`
-		SortOrder     int     `json:"sort_order"`
+		Image         *string  `json:"image"`
+		SortOrder     int      `json:"sort_order"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		handlers.BadRequest(w, "Invalid JSON: expected array of variants")
@@ -129,6 +135,9 @@ func UpsertProductVariants(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /api/admin/products/:id/variants/:variantId
 func DeleteProductVariant(w http.ResponseWriter, r *http.Request) {
+	if !allowProductByID(w, r, "update") {
+		return
+	}
 	productID := chi.URLParam(r, "id")
 	variantID := chi.URLParam(r, "variantId")
 

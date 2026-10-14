@@ -2,12 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { productsApi } from '../services/api';
 import type { AdminProductReview } from '../types';
 import { captureException } from '../utils/sentry';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   productId: number;
 }
 
 export default function ProductReviewAdminPanel({ productId }: Props) {
+  const { can } = useAuth();
+  const canCreate = can('product_reviews.create');
+  const canDelete = can('product_reviews.delete');
   const [adminReviews, setAdminReviews] = useState<AdminProductReview[]>([]);
   const [adminReviewsLoading, setAdminReviewsLoading] = useState(false);
   const [fakeReview, setFakeReview] = useState({
@@ -73,7 +77,7 @@ export default function ProductReviewAdminPanel({ productId }: Props) {
         Thêm đánh giá mẫu (không cần đơn thật) hoặc xoá bất kỳ đánh giá nào — điểm trung bình sản phẩm cập nhật theo DB.
       </p>
 
-      <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+      {canCreate && <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <div>
             <label className="form-label" style={{ fontSize: '0.78rem' }}>Tên hiển thị *</label>
@@ -137,7 +141,7 @@ export default function ProductReviewAdminPanel({ productId }: Props) {
         <button type="button" className="btn-secondary" disabled={fakeReviewSubmitting} onClick={() => { void handleFakeReviewSubmit(); }}>
           {fakeReviewSubmitting ? 'Đang thêm…' : '+ Thêm đánh giá mẫu'}
         </button>
-      </div>
+      </div>}
 
       {adminReviewsLoading ? (
         <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Đang tải đánh giá…</p>
@@ -179,9 +183,11 @@ export default function ProductReviewAdminPanel({ productId }: Props) {
                         Mẫu
                       </span>
                     )}
-                    <button type="button" className="btn-danger" style={{ fontSize: '0.72rem', padding: '0.2rem 0.45rem' }} onClick={() => handleDeleteReview(rv.id)}>
-                      Xoá
-                    </button>
+                    {canDelete && (
+                      <button type="button" className="btn-danger" style={{ fontSize: '0.72rem', padding: '0.2rem 0.45rem' }} onClick={() => handleDeleteReview(rv.id)}>
+                        Xoá
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

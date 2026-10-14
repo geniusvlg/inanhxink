@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { metadataApi, uploadApi } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
+import { useAuth } from '../contexts/AuthContext';
 import '../components/Layout.css';
 
 export default function InAnhPage() {
+  const canUpdate = useAuth().can('in_anh.update');
   // Price image
   const [priceImageUrl,       setPriceImageUrl]       = useState('');
   const [uploadingPriceImage, setUploadingPriceImage] = useState(false);
@@ -108,9 +110,11 @@ export default function InAnhPage() {
       <div className="admin-page-header">
         <h1 className="admin-page-title">🖨️ In Ảnh</h1>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Đang lưu...' : 'Lưu tất cả'}
-          </button>
+          {canUpdate && (
+            <button className="btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Đang lưu...' : 'Lưu tất cả'}
+            </button>
+          )}
           {saved && <span style={{ color: '#16a34a', fontSize: '0.875rem' }}>✓ Đã lưu!</span>}
         </div>
       </div>
@@ -132,10 +136,10 @@ export default function InAnhPage() {
           )}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <input ref={priceFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePriceUpload} />
-            <button className="btn-secondary" onClick={() => priceFileRef.current?.click()} disabled={uploadingPriceImage}>
+            <button className="btn-secondary" onClick={() => priceFileRef.current?.click()} disabled={!canUpdate || uploadingPriceImage}>
               {uploadingPriceImage ? 'Đang tải...' : priceImageUrl ? 'Thay ảnh' : '+ Tải ảnh lên'}
             </button>
-            {priceImageUrl && <button className="btn-danger" onClick={() => setPriceImageUrl('')}>Xoá</button>}
+            {canUpdate && priceImageUrl && <button className="btn-danger" onClick={() => setPriceImageUrl('')}>Xoá</button>}
           </div>
         </div>
 
@@ -156,9 +160,9 @@ export default function InAnhPage() {
                     style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 8, display: 'block', border: '1px solid #e5e7eb' }}
                   />
                   <div style={{ display: 'flex', gap: '2px', marginTop: '3px', justifyContent: 'center' }}>
-                    <button className="btn-edit" style={{ padding: '1px 5px', fontSize: '0.7rem' }} onClick={() => moveGallery(idx, -1)} disabled={idx === 0}>←</button>
-                    <button className="btn-edit" style={{ padding: '1px 5px', fontSize: '0.7rem' }} onClick={() => moveGallery(idx, +1)} disabled={idx === gallery.length - 1}>→</button>
-                    <button className="btn-danger" style={{ padding: '1px 5px', fontSize: '0.7rem' }} onClick={() => removeGalleryImage(url)}>✕</button>
+                    <button className="btn-edit" style={{ padding: '1px 5px', fontSize: '0.7rem' }} onClick={() => moveGallery(idx, -1)} disabled={!canUpdate || idx === 0}>←</button>
+                    <button className="btn-edit" style={{ padding: '1px 5px', fontSize: '0.7rem' }} onClick={() => moveGallery(idx, +1)} disabled={!canUpdate || idx === gallery.length - 1}>→</button>
+                    {canUpdate && <button className="btn-danger" style={{ padding: '1px 5px', fontSize: '0.7rem' }} onClick={() => removeGalleryImage(url)}>✕</button>}
                   </div>
                 </div>
               ))}
@@ -167,7 +171,7 @@ export default function InAnhPage() {
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input ref={galleryFileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleGalleryUpload} />
-            <button className="btn-secondary" onClick={() => galleryFileRef.current?.click()} disabled={uploadingGallery}>
+            <button className="btn-secondary" onClick={() => galleryFileRef.current?.click()} disabled={!canUpdate || uploadingGallery}>
               {uploadingGallery ? 'Đang tải...' : `+ Thêm ảnh${gallery.length > 0 ? ` (${gallery.length} ảnh)` : ''}`}
             </button>
           </div>
