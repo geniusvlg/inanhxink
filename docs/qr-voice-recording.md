@@ -108,4 +108,7 @@ iOS Safari routes `<audio>` and Web Audio through the **ambient** session, so
 the hardware silent switch (and often Focus/DND) mutes QR music even when
 YouTube still plays. `voice-player.js` sets `navigator.audioSession.type` to
 `playback` on load and again on the first tap so QR audio uses the same media
-session as YouTube (Safari 16.4+ / iOS 16.4+).
+session as YouTube (Safari 16.4+ / iOS 16.4+). The order form does the same
+when the customer previews music. A `playback` session rejects `getUserMedia`
+and iOS shows no microphone prompt, so **Bắt đầu ghi âm** switches the session
+to `play-and-record` in that same tap before requesting the microphone.

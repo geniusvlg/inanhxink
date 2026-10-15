@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { setPlaybackAudioSession } from '../utils/audioSession';
+import { registerPlaybackAudioContext, setPlaybackAudioSession } from '../utils/audioSession';
 import './AudioMixPreview.css';
 
 interface AudioMixPreviewProps {
@@ -107,6 +107,7 @@ export default function AudioMixPreview({
     try {
       const ctx = audioCtxRef.current ?? new Ctor();
       audioCtxRef.current = ctx;
+      registerPlaybackAudioContext(ctx);
       if (ctx.state === 'suspended') void ctx.resume();
       const source = ctx.createMediaElementSource(music);
       const gain = ctx.createGain();
