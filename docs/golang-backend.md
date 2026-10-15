@@ -136,17 +136,20 @@ gets a "Site Maintenance" / JS-challenge page (`Unexpected response from
 webpage request`). `downloadAndUploadMusic` therefore:
 
 1. Parses the numeric post ID (including `/photo/` and `vm.tiktok.com` short
-   links). It warms a cookie session against `https://www.tiktok.com/` via
-   `curl` (Go's `net/http` TLS fingerprint is often 503'd with
+   links). It first calls `https://www.tiktok.com/player/api/v1/items?item_ids=<id>`,
+   which still returns a web mp4 when a datacenter IP only receives a
+   challenge page from the embed HTML. `ffmpeg` extracts the audio.
+2. If that fails, it warms a cookie session against `https://www.tiktok.com/`
+   via `curl` (Go's `net/http` TLS fingerprint is often 503'd with
    `overload-protect`), then fetches `https://www.tiktok.com/embed/v2/<id>`.
-   That page still embeds `__FRONTITY_CONNECT_STATE__` with
-   `musicInfos.playUrl` (and a video URL fallback). The signed audio is
-   downloaded directly and uploaded to S3.
-2. If that fails, falls back to `yt-dlp --impersonate chrome` against the
+   That page can embed `__FRONTITY_CONNECT_STATE__` with `musicInfos.playUrl`
+   (and a video URL fallback). The signed audio is downloaded directly and
+   uploaded to S3.
+3. If that fails, falls back to `yt-dlp --impersonate chrome` against the
    **embed URL** (the `/video/` extractor now hits "Site Maintenance"). Older
    yt-dlp builds without `--impersonate` automatically fall back to the
    Chrome UA string.
-3. Photo posts are rewritten to `/video/<id>` only when the embed ID cannot
+4. Photo posts are rewritten to `/video/<id>` only when the embed ID cannot
    be parsed ([yt-dlp#15764](https://github.com/yt-dlp/yt-dlp/issues/15764)).
 
 Keep the UA in `music_tiktok.go` reasonably current. If *most* TikTok links

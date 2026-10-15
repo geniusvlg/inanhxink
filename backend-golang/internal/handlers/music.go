@@ -60,12 +60,22 @@ func downloadAndUploadMusic(url, qrName string) (string, error) {
 
 	var musicFile string
 	if postID := tiktokPostID(url); postID != "" {
-		path, embedErr := downloadTikTokViaEmbed(tmpDir, url, postID)
-		if embedErr == nil {
+		// The player API returns a web mp4 from IPs that only get a challenge
+		// page from /embed/v2. Embed remains the fallback because it can
+		// include a direct audio URL.
+		path, playerErr := downloadTikTokViaPlayer(tmpDir, postID)
+		if playerErr == nil {
 			musicFile = path
-			log.Printf("[music-extract] tiktok embed extract succeeded for %s", url)
+			log.Printf("[music-extract] tiktok player extract succeeded for %s", url)
 		} else {
-			log.Printf("[music-extract] tiktok embed extract failed for %s: %v; falling back to yt-dlp", url, embedErr)
+			log.Printf("[music-extract] tiktok player extract failed for %s: %v", url, playerErr)
+			path, embedErr := downloadTikTokViaEmbed(tmpDir, url, postID)
+			if embedErr == nil {
+				musicFile = path
+				log.Printf("[music-extract] tiktok embed extract succeeded for %s", url)
+			} else {
+				log.Printf("[music-extract] tiktok embed extract failed for %s: %v; falling back to yt-dlp", url, embedErr)
+			}
 		}
 	}
 

@@ -18,6 +18,10 @@ import (
 
 const musicDownloadUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
+// maxTikTokVideoBytes is the temporary video cap. The extracted mp3 is still
+// rejected above maxMusicBytes.
+const maxTikTokVideoBytes = 40 * 1024 * 1024
+
 var (
 	tiktokIDPattern        = regexp.MustCompile(`(?i)(?:video|photo|embed(?:/v2)?)/(\d{8,})`)
 	tiktokShortHostPattern = regexp.MustCompile(`(?i)^https?://(?:vm|vt)\.tiktok\.com/|^https?://(?:www\.)?tiktok\.com/t/`)
@@ -128,10 +132,13 @@ func curlGetTo(rawURL, dest, cookieFile, referer string, timeoutSec int) (int, e
 	return code, nil
 }
 
-func curlDownloadFile(rawURL, dest, cookieFile, referer string) error {
+func curlDownloadFile(rawURL, dest, cookieFile, referer string, maxBytes int) error {
+	if maxBytes <= 0 {
+		maxBytes = maxMusicBytes
+	}
 	args := []string{
 		"-sS", "-L", "--fail", "--max-time", "45",
-		"--max-filesize", strconv.Itoa(maxMusicBytes),
+		"--max-filesize", strconv.Itoa(maxBytes),
 		"-A", musicDownloadUserAgent,
 		"-o", dest,
 	}
@@ -207,7 +214,7 @@ func downloadTikTokViaEmbed(tmpDir, sourceURL, postID string) (string, error) {
 		}
 		playURL, videoURL := parseTikTokEmbedMedia(html)
 		if playURL != "" {
-			path, err := downloadTikTokMedia(client, tmpDir, playURL, "music", cookieFile)
+			path, err := downloadTikTokMedia(client, tmpDir, playURL, "music", cookieFile, maxMusicBytes)
 			if err == nil {
 				return path, nil
 			}
@@ -346,13 +353,16 @@ func firstURLString(v any) string {
 	return ""
 }
 
-func downloadTikTokMedia(client *http.Client, tmpDir, mediaURL, baseName, cookieFile string) (string, error) {
+func downloadTikTokMedia(client *http.Client, tmpDir, mediaURL, baseName, cookieFile string, maxBytes int) (string, error) {
+	if maxBytes <= 0 {
+		maxBytes = maxMusicBytes
+	}
 	if curlAvailable() {
 		binPath := filepath.Join(tmpDir, baseName+".bin")
-		if err := curlDownloadFile(mediaURL, binPath, cookieFile, "https://www.tiktok.com/"); err != nil {
+		if err := curlDownloadFile(mediaURL, binPath, cookieFile, "https://www.tiktok.com/", maxBytes); err != nil {
 			log.Printf("[music-extract] tiktok curl media download failed: %v", err)
 		} else {
-			return finalizeDownloadedMedia(binPath, tmpDir, baseName, mediaURL)
+			return finalizeDownloadedMedia(binPath, tmpDir, baseName, mediaURL, maxBytes)
 		}
 	}
 	req, err := http.NewRequest(http.MethodGet, mediaURL, nil)
@@ -368,14 +378,14 @@ func downloadTikTokMedia(client *http.Client, tmpDir, mediaURL, baseName, cookie
 	if resp.StatusCode >= 400 {
 		return "", fmt.Errorf("media http %d", resp.StatusCode)
 	}
-	buf, err := io.ReadAll(io.LimitReader(resp.Body, maxMusicBytes+1))
+	buf, err := io.ReadAll(io.LimitReader(resp.Body, int64(maxBytes)+1))
 	if err != nil {
 		return "", err
 	}
 	if len(buf) == 0 {
 		return "", fmt.Errorf("empty media response")
 	}
-	if len(buf) > maxMusicBytes {
+	if len(buf) > maxBytes {
 		return "", fmt.Errorf("File nhạc quá lớn (tối đa 15MB)")
 	}
 	ext, _ := sniffAudioExt(buf, resp.Header.Get("Content-Type"), mediaURL)
@@ -386,7 +396,7 @@ func downloadTikTokMedia(client *http.Client, tmpDir, mediaURL, baseName, cookie
 	return path, nil
 }
 
-func finalizeDownloadedMedia(binPath, tmpDir, baseName, mediaURL string) (string, error) {
+func finalizeDownloadedMedia(binPath, tmpDir, baseName, mediaURL string, maxBytes int) (string, error) {
 	buf, err := os.ReadFile(binPath)
 	if err != nil {
 		return "", err
@@ -394,7 +404,7 @@ func finalizeDownloadedMedia(binPath, tmpDir, baseName, mediaURL string) (string
 	if len(buf) == 0 {
 		return "", fmt.Errorf("empty media response")
 	}
-	if len(buf) > maxMusicBytes {
+	if len(buf) > maxBytes {
 		return "", fmt.Errorf("File nhạc quá lớn (tối đa 15MB)")
 	}
 	ext, _ := sniffAudioExt(buf, "", mediaURL)
@@ -405,11 +415,114 @@ func finalizeDownloadedMedia(binPath, tmpDir, baseName, mediaURL string) (string
 	return path, nil
 }
 
+// downloadTikTokViaPlayer uses TikTok's public player JSON. Datacenter IPs
+// often receive an embed page with no audio URL, while this endpoint still
+// returns a web mp4 that ffmpeg can turn into the background track.
+func downloadTikTokViaPlayer(tmpDir, postID string) (string, error) {
+	rawURL := "https://www.tiktok.com/player/api/v1/items?item_ids=" + postID + "&language=en-US"
+	body, err := fetchTikTokText(tmpDir, "player.json", rawURL, "https://www.tiktok.com/")
+	if err != nil {
+		return "", err
+	}
+	urls := parseTikTokPlayerVideoURLs([]byte(body))
+	if len(urls) == 0 {
+		return "", fmt.Errorf("player api had no video url")
+	}
+	client := newTikTokClient()
+	var lastErr error
+	for _, videoURL := range urls {
+		path, err := downloadTikTokVideoAudio(client, tmpDir, videoURL, "")
+		if err == nil {
+			return path, nil
+		}
+		lastErr = err
+		log.Printf("[music-extract] tiktok player video failed: %v", err)
+	}
+	if lastErr == nil {
+		lastErr = fmt.Errorf("player api had no video url")
+	}
+	return "", lastErr
+}
+
+func fetchTikTokText(tmpDir, name, rawURL, referer string) (string, error) {
+	if curlAvailable() {
+		dest := filepath.Join(tmpDir, name)
+		code, err := curlGetTo(rawURL, dest, "", referer, 20)
+		if err != nil {
+			return "", err
+		}
+		body, readErr := os.ReadFile(dest)
+		if readErr != nil {
+			return "", readErr
+		}
+		if code >= 400 || len(body) == 0 {
+			return "", fmt.Errorf("player http %d", code)
+		}
+		return string(body), nil
+	}
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return "", err
+	}
+	applyTikTokHeaders(req, referer)
+	resp, err := newTikTokClient().Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode >= 400 || len(body) == 0 {
+		return "", fmt.Errorf("player http %d", resp.StatusCode)
+	}
+	return string(body), nil
+}
+
+func parseTikTokPlayerVideoURLs(body []byte) []string {
+	var payload struct {
+		Items []struct {
+			VideoInfo struct {
+				URLList  []string `json:"url_list"`
+				Profiles []struct {
+					PlayAddr struct {
+						URLList []string `json:"url_list"`
+					} `json:"play_addr"`
+				} `json:"profiles"`
+			} `json:"video_info"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil || len(payload.Items) == 0 {
+		return nil
+	}
+	info := payload.Items[0].VideoInfo
+	seen := map[string]struct{}{}
+	var urls []string
+	add := func(list []string) {
+		for _, raw := range list {
+			if !strings.HasPrefix(raw, "http") {
+				continue
+			}
+			if _, ok := seen[raw]; ok {
+				continue
+			}
+			seen[raw] = struct{}{}
+			urls = append(urls, raw)
+		}
+	}
+	for i := len(info.Profiles) - 1; i >= 0; i-- {
+		add(info.Profiles[i].PlayAddr.URLList)
+	}
+	add(info.URLList)
+	return urls
+}
+
 func downloadTikTokVideoAudio(client *http.Client, tmpDir, videoURL, cookieFile string) (string, error) {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		return "", fmt.Errorf("ffmpeg not available")
 	}
-	videoPath, err := downloadTikTokMedia(client, tmpDir, videoURL, "tiktok-video", cookieFile)
+	videoPath, err := downloadTikTokMedia(client, tmpDir, videoURL, "tiktok-video", cookieFile, maxTikTokVideoBytes)
 	if err != nil {
 		return "", err
 	}
