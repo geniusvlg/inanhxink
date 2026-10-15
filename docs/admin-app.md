@@ -241,6 +241,8 @@ price on the order, so changing the setting does not alter existing orders.
 
 The "🎁 Phụ phí tuỳ chọn" card holds the QR add-on settings:
 
+- `music_enabled`: toggle that hides the TikTok music section on the QR order
+  form when set to `false` (default: visible).
 - `keychain_enabled`: toggle for the "Mua móc khóa quét QR" option on the order
   form. Anything other than `false` counts as enabled (default `true`, seeded by
   `V65__keychain_enabled_flag.sql`). When `false`, `OrderPage.tsx` hides the

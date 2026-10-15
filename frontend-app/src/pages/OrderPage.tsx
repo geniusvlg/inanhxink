@@ -138,6 +138,7 @@ function OrderPage() {
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [musicPrice, setMusicPrice] = useState(10000);
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [voiceRecordingPrice, setVoiceRecordingPrice] = useState(10000);
   const [keychainPrice, setKeychainPrice] = useState(35000);
   const [keychainEnabled, setKeychainEnabled] = useState(true);
@@ -167,6 +168,11 @@ function OrderPage() {
   useEffect(() => {
     getMetadata().then(data => {
       if (data.music_price) setMusicPrice(parseInt(data.music_price));
+      if (data.music_enabled === 'false') {
+        setMusicEnabled(false);
+        setMusicAdded(false);
+        setMusicLink('');
+      }
       if (data.voice_recording_price) setVoiceRecordingPrice(parseInt(data.voice_recording_price));
       const mixPercent = Number(data.default_music_volume);
       if (Number.isFinite(mixPercent) && mixPercent >= 0 && mixPercent <= 100) {
@@ -1491,20 +1497,23 @@ function OrderPage() {
       )}
 
       <div className="qr-audio-addons">
-        <p className="qr-audio-addons-hint">
-          <span className="qr-audio-addons-badge">Đặc biệt</span>
-          Bạn có thể chọn nhạc nền và thêm lời nhắn bằng giọng nói cùng lúc. Để lời nhắn chạm đến trái tim của người thương
-        </p>
-
-        <MusicOption
-          musicAdded={musicAdded}
-          onMusicToggle={handleMusicToggle}
-          musicLink={musicLink}
-          onMusicLinkChange={setMusicLink}
-          previewLocked={voiceIsRecording}
-          qrName={qrName}
-          musicPrice={musicPrice}
-        />
+        {musicEnabled && (
+          <>
+            <p className="qr-audio-addons-hint">
+              <span className="qr-audio-addons-badge">Đặc biệt</span>
+              Bạn có thể chọn nhạc nền và thêm lời nhắn bằng giọng nói cùng lúc. Để lời nhắn chạm đến trái tim của người thương
+            </p>
+            <MusicOption
+              musicAdded={musicAdded}
+              onMusicToggle={handleMusicToggle}
+              musicLink={musicLink}
+              onMusicLinkChange={setMusicLink}
+              previewLocked={voiceIsRecording}
+              qrName={qrName}
+              musicPrice={musicPrice}
+            />
+          </>
+        )}
 
         <VoiceRecordingOption
           added={voiceRecordingAdded}
