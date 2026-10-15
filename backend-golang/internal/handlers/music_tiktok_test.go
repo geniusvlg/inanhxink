@@ -68,6 +68,40 @@ func TestImpersonateUnsupported(t *testing.T) {
 	}
 }
 
+func TestParseTikTokPlayerVideoURLs(t *testing.T) {
+	body := []byte(`{"items":[{"video_info":{"url_list":["https://cdn.example/default.mp4"],"profiles":[{"play_addr":{"url_list":["https://cdn.example/large.mp4"]}},{"play_addr":{"url_list":["https://cdn.example/small.mp4","https://cdn.example/small.mp4"]}}]}}]}`)
+	got := parseTikTokPlayerVideoURLs(body)
+	want := []string{"https://cdn.example/small.mp4", "https://cdn.example/large.mp4", "https://cdn.example/default.mp4"}
+	if len(got) != len(want) {
+		t.Fatalf("urls = %#v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("urls = %#v", got)
+		}
+	}
+	if parseTikTokPlayerVideoURLs([]byte(`{"items":[]}`)) != nil {
+		t.Fatal("empty items should have no urls")
+	}
+}
+
+func TestDownloadTikTokViaPlayerLive(t *testing.T) {
+	if os.Getenv("LIVE_TIKTOK") == "" {
+		t.Skip("set LIVE_TIKTOK=1 to hit TikTok")
+	}
+	path, err := downloadTikTokViaPlayer(t.TempDir(), "7377599319744056584")
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Size() < 1000 {
+		t.Fatalf("audio too small: %d bytes", st.Size())
+	}
+}
+
 func TestDownloadTikTokViaEmbedLive(t *testing.T) {
 	if os.Getenv("LIVE_TIKTOK") == "" {
 		t.Skip("set LIVE_TIKTOK=1 to hit TikTok")
