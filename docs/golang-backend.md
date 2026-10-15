@@ -130,10 +130,23 @@ self-updates yt-dlp (`yt-dlp -U`, best-effort with a timeout) on every
 container start to avoid shipping a version that's months behind TikTok's/
 YouTube's latest anti-bot changes.
 
-**TikTok extract (2026):** TikTok's public `/video/` HTML no longer includes
+**TikTok extract (2026):** When `TIKLIVE_API_KEY` is set, a TikTok link
+(including `vt.tiktok.com` / `vm.tiktok.com` short links) is sent to
+[TikLiveAPI Download Music](https://www.tikliveapi.com/documentation/download/music/):
+`GET https://api.tikliveapi.com/download-music/?url=<video url>` with header
+`X-Api-Key`. Each successful call costs 1 credit. The JSON `music` field is a
+signed TikTok CDN audio URL, not the file itself; the server downloads that
+URL and uploads the MP3 to S3. TikTok's own audio is 64 kbps, so a one-minute
+track is about 500 KB. The production server can fetch that CDN URL even
+though TikTok returns 403/503 for the player and embed pages from the same IP.
+Set `TIKLIVE_API_KEY` in the server `.env` that Docker Compose reads. The
+backend container receives it from `docker-compose.yml`.
+
+If `TIKLIVE_API_KEY` is empty, `downloadAndUploadMusic` keeps the older chain.
+TikTok's public `/video/` HTML no longer includes
 `__UNIVERSAL_DATA_FOR_REHYDRATION__`, and yt-dlp's webpage extractor now often
 gets a "Site Maintenance" / JS-challenge page (`Unexpected response from
-webpage request`). `downloadAndUploadMusic` therefore:
+webpage request`):
 
 1. Parses the numeric post ID (including `/photo/` and `vm.tiktok.com` short
    links). It first calls `https://www.tiktok.com/player/api/v1/items?item_ids=<id>`,
@@ -153,9 +166,9 @@ webpage request`). `downloadAndUploadMusic` therefore:
    be parsed ([yt-dlp#15764](https://github.com/yt-dlp/yt-dlp/issues/15764)).
 
 Keep the UA in `music_tiktok.go` reasonably current. If *most* TikTok links
-start failing again, check [yt-dlp issues](https://github.com/yt-dlp/yt-dlp/issues)
+start failing again with the key unset, check [yt-dlp issues](https://github.com/yt-dlp/yt-dlp/issues)
 before assuming a local bug; `docker-entrypoint.sh` still self-updates yt-dlp
-on container start.
+on container start. Instagram links still use yt-dlp.
 
 The challenge is also flaky moment-to-moment — a link that fails once often
 succeeds seconds later with zero other change (observed: customers clicking

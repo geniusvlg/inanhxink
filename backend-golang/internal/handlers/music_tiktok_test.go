@@ -85,6 +85,39 @@ func TestParseTikTokPlayerVideoURLs(t *testing.T) {
 	}
 }
 
+func TestParseTikLiveMusicURL(t *testing.T) {
+	got, err := parseTikLiveMusicURL([]byte(`{"music":"https://v16-ies-music.tiktokcdn-us.com/track.mp3"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "https://v16-ies-music.tiktokcdn-us.com/track.mp3" {
+		t.Fatalf("music=%q", got)
+	}
+	if _, err := parseTikLiveMusicURL([]byte(`{"message":"Please sign up to tikliveapi.com"}`)); err == nil {
+		t.Fatal("expected an error when music is missing")
+	}
+	if _, err := parseTikLiveMusicURL([]byte(`not-json`)); err == nil {
+		t.Fatal("expected an error for invalid json")
+	}
+}
+
+func TestDownloadTikTokViaTikLiveLive(t *testing.T) {
+	if os.Getenv("LIVE_TIKTOK") == "" || tikliveAPIKey() == "" {
+		t.Skip("set LIVE_TIKTOK=1 and TIKLIVE_API_KEY to hit TikLiveAPI")
+	}
+	path, err := downloadTikTokViaTikLive(t.TempDir(), "https://www.tiktok.com/@nhactinhsaulang68/video/7377599319744056584")
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Size() < 1000 {
+		t.Fatalf("audio too small: %d bytes", st.Size())
+	}
+}
+
 func TestDownloadTikTokViaPlayerLive(t *testing.T) {
 	if os.Getenv("LIVE_TIKTOK") == "" {
 		t.Skip("set LIVE_TIKTOK=1 to hit TikTok")

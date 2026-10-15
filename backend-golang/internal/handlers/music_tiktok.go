@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +33,112 @@ var (
 
 func isTikTokURL(raw string) bool {
 	return tiktokHostPattern.MatchString(raw)
+}
+
+const tikliveMusicEndpoint = "https://api.tikliveapi.com/download-music/"
+
+func tikliveAPIKey() string {
+	return strings.TrimSpace(os.Getenv("TIKLIVE_API_KEY"))
+}
+
+// downloadTikTokViaTikLive asks TikLiveAPI for a direct audio URL, then
+// downloads that file. A successful API call costs 1 credit. The response is
+// a signed TikTok CDN URL, not the audio bytes.
+func downloadTikTokViaTikLive(tmpDir, sourceURL string) (string, error) {
+	key := tikliveAPIKey()
+	if key == "" {
+		return "", fmt.Errorf("tiklive api key is not set")
+	}
+	endpoint, err := url.Parse(tikliveMusicEndpoint)
+	if err != nil {
+		return "", err
+	}
+	q := endpoint.Query()
+	q.Set("url", sourceURL)
+	endpoint.RawQuery = q.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("X-Api-Key", key)
+	req.Header.Set("Accept", "application/json")
+	client := &http.Client{Timeout: 40 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if bal := strings.TrimSpace(resp.Header.Get("X-Api-Balance")); bal != "" {
+		log.Printf("[music-extract] tiklive balance %s", bal)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("tiklive http %d", resp.StatusCode)
+	}
+	musicURL, err := parseTikLiveMusicURL(body)
+	if err != nil {
+		return "", err
+	}
+	return downloadTikLiveAudio(tmpDir, musicURL)
+}
+
+func parseTikLiveMusicURL(body []byte) (string, error) {
+	var payload struct {
+		Music   string `json:"music"`
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return "", fmt.Errorf("tiklive response was not json")
+	}
+	music := strings.TrimSpace(payload.Music)
+	if strings.HasPrefix(music, "https://") || strings.HasPrefix(music, "http://") {
+		return music, nil
+	}
+	msg := strings.TrimSpace(payload.Message)
+	if msg == "" {
+		msg = "tiklive returned no music url"
+	}
+	if len(msg) > 200 {
+		msg = msg[:200]
+	}
+	return "", fmt.Errorf("%s", msg)
+}
+
+func downloadTikLiveAudio(tmpDir, musicURL string) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, musicURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", musicDownloadUserAgent)
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("music file http %d", resp.StatusCode)
+	}
+	buf, err := io.ReadAll(io.LimitReader(resp.Body, int64(maxMusicBytes)+1))
+	if err != nil {
+		return "", err
+	}
+	if len(buf) == 0 {
+		return "", fmt.Errorf("empty music file")
+	}
+	if len(buf) > maxMusicBytes {
+		return "", fmt.Errorf("File nhạc quá lớn (tối đa 15MB)")
+	}
+	ext, _ := sniffAudioExt(buf, resp.Header.Get("Content-Type"), musicURL)
+	path := filepath.Join(tmpDir, "music"+ext)
+	if err := os.WriteFile(path, buf, 0600); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 func tiktokEmbedURL(postID string) string {
