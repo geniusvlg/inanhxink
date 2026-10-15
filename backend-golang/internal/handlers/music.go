@@ -59,10 +59,19 @@ func downloadAndUploadMusic(url, qrName string) (string, error) {
 	defer os.RemoveAll(tmpDir)
 
 	var musicFile string
-	if postID := tiktokPostID(url); postID != "" {
-		// The player API returns a web mp4 from IPs that only get a challenge
-		// page from /embed/v2. Embed remains the fallback because it can
-		// include a direct audio URL.
+	if isTikTokURL(url) && tikliveAPIKey() != "" {
+		// TikTok blocks this server's IP on the player and embed pages.
+		// TikLiveAPI returns a signed CDN audio URL that the server can fetch.
+		path, liveErr := downloadTikTokViaTikLive(tmpDir, url)
+		if liveErr != nil {
+			log.Printf("[music-extract] tiklive extract failed for %s: %v", url, liveErr)
+			return "", fmt.Errorf("Không tải được nhạc từ link này. Vui lòng kiểm tra lại link hoặc thử video khác.")
+		}
+		musicFile = path
+		log.Printf("[music-extract] tiklive extract succeeded for %s", url)
+	} else if postID := tiktokPostID(url); postID != "" {
+		// Used only when TIKLIVE_API_KEY is unset. The player API returns a
+		// web mp4 from IPs that only get a challenge page from /embed/v2.
 		path, playerErr := downloadTikTokViaPlayer(tmpDir, postID)
 		if playerErr == nil {
 			musicFile = path
