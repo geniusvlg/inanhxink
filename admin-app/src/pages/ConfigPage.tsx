@@ -27,6 +27,7 @@ const SHIPPING_CONFIG_KEYS = new Set([SHIPPING_FEE_KEY, SHIPPING_THRESHOLD_KEY])
 const VOICE_RECORDING_PRICE_KEY = 'voice_recording_price';
 const DEFAULT_MUSIC_VOLUME_KEY = 'default_music_volume';
 const KEYCHAIN_ENABLED_KEY = 'keychain_enabled';
+const MUSIC_ENABLED_KEY = 'music_enabled';
 
 interface NumericFieldConfig {
   key: string;
@@ -175,6 +176,7 @@ export default function ConfigPage() {
         ? String(Math.round(voicePrice))
         : '10000';
       payload[KEYCHAIN_ENABLED_KEY] = config[KEYCHAIN_ENABLED_KEY] === 'false' ? 'false' : 'true';
+      payload[MUSIC_ENABLED_KEY] = config[MUSIC_ENABLED_KEY] === 'false' ? 'false' : 'true';
       const mixVolume = Number(config[DEFAULT_MUSIC_VOLUME_KEY]);
       payload[DEFAULT_MUSIC_VOLUME_KEY] = (Number.isFinite(mixVolume) && mixVolume >= 0 && mixVolume <= 100)
         ? String(Math.round(mixVolume))
@@ -235,7 +237,7 @@ export default function ConfigPage() {
       k !== PAGE_ORDER_KEY && !pageFlagKeys.has(k) && !MANAGED_ELSEWHERE.has(k)
       && !COD_CONFIG_KEYS.has(k) && !SHIPPING_CONFIG_KEYS.has(k) && !NOTIFY_CONFIG_KEYS.has(k)
       && k !== VOICE_RECORDING_PRICE_KEY && k !== KEYCHAIN_ENABLED_KEY
-      && k !== DEFAULT_MUSIC_VOLUME_KEY
+      && k !== MUSIC_ENABLED_KEY && k !== DEFAULT_MUSIC_VOLUME_KEY
       && !KNOWN_OTHER_KEYS.has(k) && !DEPRECATED_KEYS.has(k),
     ),
     [config], // eslint-disable-line react-hooks/exhaustive-deps
@@ -419,6 +421,22 @@ export default function ConfigPage() {
                   type="checkbox"
                   checked={config[KEYCHAIN_ENABLED_KEY] !== 'false'}
                   onChange={e => handleToggle(KEYCHAIN_ENABLED_KEY, e.target.checked)}
+                />
+                <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
+              </label>
+            </div>
+          </div>
+          <div className="cfg-row">
+            <div>
+              <div className="cfg-row-title">Nhạc nền TikTok</div>
+              <div className="cfg-row-sub">Tắt để ẩn phần tải nhạc TikTok trên form đặt QR</div>
+            </div>
+            <div className="cfg-row-actions">
+              <label className="cfg-toggle">
+                <input
+                  type="checkbox"
+                  checked={config[MUSIC_ENABLED_KEY] !== 'false'}
+                  onChange={e => handleToggle(MUSIC_ENABLED_KEY, e.target.checked)}
                 />
                 <span className="cfg-toggle-track"><span className="cfg-toggle-thumb" /></span>
               </label>
