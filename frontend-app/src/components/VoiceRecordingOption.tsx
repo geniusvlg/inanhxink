@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { prepareMicrophoneCapture } from '../utils/audioSession';
 import './VoiceRecordingOption.css';
 
 const MAX_RECORDING_SECONDS = 30;
@@ -27,6 +28,21 @@ function supportedAudioType(): string {
     'audio/ogg;codecs=opus',
   ];
   return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function createRecorder(stream: MediaStream, mimeType: string): MediaRecorder {
+  const attempts: MediaRecorderOptions[] = mimeType
+    ? [{ mimeType, audioBitsPerSecond: 128000 }, { mimeType }, {}]
+    : [{}];
+  let lastError: unknown;
+  for (const options of attempts) {
+    try {
+      return new MediaRecorder(stream, options);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
 }
 
 function extensionForType(type: string): string {
@@ -98,10 +114,11 @@ export default function VoiceRecordingOption({
         try { audio.currentTime = 0; } catch { /* ignore */ }
       });
       onRecordingStateChange?.(true);
+      prepareMicrophoneCapture();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 128000 });
-      recorderRef.current = recorder;
       streamRef.current = stream;
+      const recorder = createRecorder(stream, mimeType);
+      recorderRef.current = recorder;
       chunksRef.current = [];
       startedAtRef.current = Date.now();
       setElapsedSeconds(0);
@@ -156,6 +173,8 @@ export default function VoiceRecordingOption({
       }, 250);
       stopTimerRef.current = setTimeout(stopRecording, MAX_RECORDING_SECONDS * 1000);
     } catch (err) {
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
       onRecordingStateChange?.(false);
       const permissionDenied = err instanceof DOMException
         && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
