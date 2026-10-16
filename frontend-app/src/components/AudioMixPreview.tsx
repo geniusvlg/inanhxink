@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { registerPlaybackAudioContext, setPlaybackAudioSession } from '../utils/audioSession';
+import { registerPlaybackAudioContext, releasePlaybackAudioContext, setPlaybackAudioSession } from '../utils/audioSession';
 import './AudioMixPreview.css';
 
 interface AudioMixPreviewProps {
@@ -75,6 +75,7 @@ export default function AudioMixPreview({
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainFailedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
+  const [musicElementKey, setMusicElementKey] = useState(0);
   const volumeRef = useRef(clampVolume(volume));
   const corsAllowedRef = useRef(true);
   const voiceObjectUrl = useMemo(
@@ -157,6 +158,17 @@ export default function AudioMixPreview({
   useEffect(() => {
     setPlaying(false);
     corsAllowedRef.current = true;
+    // Recording suspends this graph, and createMediaElementSource can capture
+    // an element only once. Drop both so the next preview builds a new one
+    // after the session is back on playback; otherwise the TikTok track stays silent.
+    const ctx = audioCtxRef.current;
+    if (ctx || gainRef.current) {
+      if (ctx) releasePlaybackAudioContext(ctx);
+      audioCtxRef.current = null;
+      gainRef.current = null;
+      gainFailedRef.current = false;
+      setMusicElementKey(key => key + 1);
+    }
     return () => {
       musicRef.current?.pause();
       voiceRef.current?.pause();
@@ -190,6 +202,10 @@ export default function AudioMixPreview({
       if (music) {
         music.loop = true;
         routeMusicThroughGain();
+        const ctx = audioCtxRef.current;
+        if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') {
+          try { await ctx.resume(); } catch { /* ignore */ }
+        }
         applyMusicVolume();
         try { music.currentTime = 0; } catch { /* ignore */ }
         await music.play();
@@ -216,7 +232,7 @@ export default function AudioMixPreview({
 
   return (
     <div className="audio-mix-preview">
-      <audio ref={musicRef} src={musicUrl} preload="auto" playsInline crossOrigin="anonymous" onError={handleMusicError} />
+      <audio key={musicElementKey} ref={musicRef} src={musicUrl} preload="auto" playsInline crossOrigin="anonymous" onError={handleMusicError} />
       {voiceObjectUrl && (
         <audio
           ref={voiceRef}

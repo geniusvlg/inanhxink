@@ -112,3 +112,8 @@ session as YouTube (Safari 16.4+ / iOS 16.4+). The order form does the same
 when the customer previews music. A `playback` session rejects `getUserMedia`
 and iOS shows no microphone prompt, so **Bắt đầu ghi âm** switches the session
 to `play-and-record` in that same tap before requesting the microphone.
+The order-form mix preview drops its Web Audio graph at that moment.
+`createMediaElementSource` can only capture an element once, and a graph
+suspended for the microphone stays silent after the session returns to
+`playback`, so the next **Nghe thử** builds a new graph. Otherwise only the
+voice recording is heard.
