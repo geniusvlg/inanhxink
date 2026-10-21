@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" role="img" aria-label="Wax Seal">
+  <rect width="480" height="360" fill="#6e1224"/>
+  <text x="240" y="78" text-anchor="middle" fill="#fffaf6" font-family="Georgia, serif" font-size="28" font-style="italic">Dear you</text>
+  <g transform="translate(140 108)">
+    <path d="M8 70 L100 132 L192 70 V168 H8 Z" fill="#fffaf6"/>
+    <path d="M8 70 L100 128 L192 70 L100 18 Z" fill="#f3efe8"/>
+    <circle cx="100" cy="96" r="26" fill="#e7b4c0"/>
+    <circle cx="100" cy="96" r="18" fill="none" stroke="#f7e4ea" stroke-width="2"/>
+    <text x="100" y="101" text-anchor="middle" fill="#8a3048" font-family="Georgia, serif" font-size="11" font-style="italic">love</text>
+  </g>
+  <text x="240" y="328" text-anchor="middle" fill="#fffaf6" font-family="Georgia, serif" font-size="16" letter-spacing="3">WAX SEAL</text>
+</svg>

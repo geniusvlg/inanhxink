@@ -17,7 +17,7 @@ import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
-const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart']);
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart', 'waxseal']);
 
 const FAREWELL_DESTINATION_LABELS: Record<string, string> = {
   australia: 'Úc',
@@ -133,6 +133,13 @@ function OrderPage() {
   const [loveburstMessages, setLoveburstMessages] = useState<string[]>(DEFAULT_LOVEBURST_MESSAGES);
   const [snowheartLetterTitle, setSnowheartLetterTitle] = useState('');
   const [snowheartMessages, setSnowheartMessages] = useState<string[]>(DEFAULT_SNOWHEART_MESSAGES);
+  const [waxsealRecipient, setWaxsealRecipient] = useState('');
+  const [waxsealCoverLine, setWaxsealCoverLine] = useState('I got you something special.');
+  const [waxsealTitle, setWaxsealTitle] = useState('Happy Birthday');
+  const [waxsealDate, setWaxsealDate] = useState('');
+  const [waxsealTeaser, setWaxsealTeaser] = useState('You have been');
+  const [waxsealSignoff, setWaxsealSignoff] = useState('');
+  const [waxsealSender, setWaxsealSender] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -157,6 +164,7 @@ function OrderPage() {
   const GALAXY_MAX_IMAGES = 15;
   const BIRTHDAY_CAKE_MAX_IMAGES = 15;
   const SNOWHEART_MAX_IMAGES = 15;
+  const WAXSEAL_MAX_IMAGES = 12;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
   const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
@@ -247,6 +255,13 @@ function OrderPage() {
         if (typeof d.snowheartLetterTitle === 'string') {
           setSnowheartLetterTitle(d.snowheartLetterTitle);
         }
+        if (typeof d.waxsealRecipient === 'string') setWaxsealRecipient(d.waxsealRecipient);
+        if (typeof d.waxsealCoverLine === 'string') setWaxsealCoverLine(d.waxsealCoverLine);
+        if (typeof d.waxsealTitle === 'string') setWaxsealTitle(d.waxsealTitle);
+        if (typeof d.waxsealDate === 'string') setWaxsealDate(d.waxsealDate);
+        if (typeof d.waxsealTeaser === 'string') setWaxsealTeaser(d.waxsealTeaser);
+        if (typeof d.waxsealSignoff === 'string') setWaxsealSignoff(d.waxsealSignoff);
+        if (typeof d.waxsealSender === 'string') setWaxsealSender(d.waxsealSender);
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
           // Convert base64 previews back to File objects
@@ -508,6 +523,12 @@ function OrderPage() {
       if (content.length > 400) { setError('Nội dung thư không được quá 400 ký tự'); return; }
       if (!uploadedImages.some(Boolean)) { setError('Vui lòng tải lên ít nhất một ảnh'); return; }
     }
+    if (templateType === 'waxseal') {
+      if (!waxsealRecipient.trim()) { setError('Vui lòng nhập tên người nhận'); return; }
+      if (waxsealRecipient.trim().length > 40) { setError('Tên người nhận không được quá 40 ký tự'); return; }
+      if (!content.trim()) { setError('Vui lòng nhập nội dung thư'); return; }
+      if (content.length > 2500) { setError('Nội dung thư không được quá 2500 ký tự'); return; }
+    }
     if (templateType === 'snowheart') {
       const lines = snowheartMessages.map(s => s.trim()).filter(Boolean);
       if (!lines.length) { setError('Vui lòng nhập ít nhất một câu lời nhắn Snow Heart'); return; }
@@ -656,6 +677,15 @@ function OrderPage() {
           snowheartLetterTitle: snowheartLetterTitle.trim(),
           snowheartMessages: snowheartMessages.map(s => s.trim()).filter(Boolean),
         }),
+        ...(templateType === 'waxseal' && {
+          waxsealRecipient: waxsealRecipient.trim(),
+          waxsealCoverLine: waxsealCoverLine.trim(),
+          waxsealTitle: waxsealTitle.trim(),
+          waxsealDate: waxsealDate.trim(),
+          waxsealTeaser: waxsealTeaser.trim(),
+          waxsealSignoff: waxsealSignoff.trim(),
+          waxsealSender: waxsealSender.trim(),
+        }),
       });
 
       if (response.success) {
@@ -671,6 +701,8 @@ function OrderPage() {
             farewellDepartureDate, farewellMessage, farewellSender,
             farewellStageMessages,
             loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
+            waxsealRecipient, waxsealCoverLine, waxsealTitle, waxsealDate,
+            waxsealTeaser, waxsealSignoff, waxsealSender,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -912,6 +944,105 @@ function OrderPage() {
             maxLength={400}
           />
         </>
+      )}
+
+      {templateType === 'waxseal' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem' }}>
+            Phong bì đỏ niêm sáp. Khách mở phong bì, chọn một biểu cảm, rồi chọn một trong ba trái tim: lời yêu, lá thư, hoặc kỷ niệm.
+          </p>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người nhận</label>
+            <input
+              type="text"
+              value={waxsealRecipient}
+              onChange={e => setWaxsealRecipient(e.target.value)}
+              placeholder="Ví dụ: mia leeee"
+              maxLength={40}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Dòng trên phong bì</label>
+            <input
+              type="text"
+              value={waxsealCoverLine}
+              onChange={e => setWaxsealCoverLine(e.target.value)}
+              placeholder="I got you something special."
+              maxLength={80}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tiêu đề thiệp</label>
+              <input
+                type="text"
+                value={waxsealTitle}
+                onChange={e => setWaxsealTitle(e.target.value)}
+                placeholder="Happy Birthday"
+                maxLength={40}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Ngày trên thiệp</label>
+              <input
+                type="text"
+                value={waxsealDate}
+                onChange={e => setWaxsealDate(e.target.value)}
+                placeholder="09.06.2026"
+                maxLength={20}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Dòng dưới thiệp</label>
+            <input
+              type="text"
+              value={waxsealTeaser}
+              onChange={e => setWaxsealTeaser(e.target.value)}
+              placeholder="You have been"
+              maxLength={60}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Nội dung thư</label>
+            <textarea
+              value={content}
+              onChange={e => setContent(e.target.value.slice(0, 2500))}
+              placeholder="Viết lá thư sẽ nằm trong trái tim thứ hai..."
+              rows={8}
+              maxLength={2500}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+            <p style={{ margin: '0.25rem 0 0', color: '#6b7280', fontSize: '0.8rem' }}>{content.length}/2500 ký tự</p>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời ký</label>
+            <input
+              type="text"
+              value={waxsealSignoff}
+              onChange={e => setWaxsealSignoff(e.target.value)}
+              placeholder="người đáng yêu nhất hành tinh là tôi"
+              maxLength={80}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Tên người gửi</label>
+            <input
+              type="text"
+              value={waxsealSender}
+              onChange={e => setWaxsealSender(e.target.value)}
+              placeholder="Linh"
+              maxLength={40}
+              style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
       )}
 
       {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (
@@ -1458,6 +1589,14 @@ function OrderPage() {
                   </span>
                 </p>
               )}
+              {templateType === 'waxseal' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh kỷ niệm
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {WAXSEAL_MAX_IMAGES} ảnh — ảnh đầu hiện trên thiệp, 3 ảnh đầu trong bó hoa)
+                  </span>
+                </p>
+              )}
               {templateType === 'farewell' && (
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
                   Ảnh kỷ niệm
@@ -1476,6 +1615,8 @@ function OrderPage() {
                     ? LOVELETTER_MAX_IMAGES
                     : templateType === 'snowheart'
                     ? SNOWHEART_MAX_IMAGES
+                    : templateType === 'waxseal'
+                    ? WAXSEAL_MAX_IMAGES
                     : templateType === 'farewell'
                     ? FAREWELL_MAX_IMAGES
                     : QR_TEMPLATE_MAX_IMAGES
