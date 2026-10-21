@@ -367,6 +367,33 @@
   margin: 1.5rem 0;
 }
 
+.pd-qr-intro-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.pd-qr-intro-head .pd-related-title {
+  margin: 0;
+}
+.pd-qr-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: #fe2c56;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.pd-qr-more:hover {
+  color: #c9408a;
+}
+
 /* ── Feature badges ── */
 .pd-badges {
   display: grid;
