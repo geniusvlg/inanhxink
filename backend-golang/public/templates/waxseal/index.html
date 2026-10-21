@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6e1224">
+  <title>Wax Seal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Great+Vibes&family=Pinyon+Script&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/templates/waxseal/styles.css?v=20261019-3">
+</head>
+<body>
+  <main id="stage">
+    <section class="screen is-active" data-screen="cover" aria-label="Phong bì">
+      <p class="script dear" id="dear-line">Dear bạn</p>
+      <button type="button" class="envelope-btn" id="open-seal" aria-label="Mở phong bì">
+        <span class="envelope is-closed" aria-hidden="true">
+          <span class="envelope-body"></span>
+          <span class="envelope-flap"></span>
+          <span class="seal"><span id="seal-name">love</span></span>
+        </span>
+      </button>
+      <p class="caption" id="cover-line">I got you something special.</p>
+    </section>
+
+    <section class="screen" data-screen="gate" hidden aria-label="Đừng mở vội">
+      <div class="gate-scene">
+        <div class="envelope is-behind" aria-hidden="true">
+          <span class="envelope-body"></span>
+          <span class="envelope-flap is-open"></span>
+        </div>
+        <article class="lace-card">
+          <p id="gate-1">Don’t open it yet.</p>
+          <p id="gate-2">Let me see your reaction first!</p>
+          <div class="faces">
+            <button type="button" class="face" data-go="opened" aria-label="Mở quà">😘</button>
+            <button type="button" class="face" data-go="retry" aria-label="Thử lại">😮</button>
+            <button type="button" class="face" data-go="retry" aria-label="Thử lại">😕</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="retry" hidden aria-label="Thử lại">
+      <div class="gate-scene">
+        <div class="envelope is-behind" aria-hidden="true">
+          <span class="envelope-body"></span>
+          <span class="envelope-flap is-open"></span>
+        </div>
+        <article class="lace-card">
+          <p id="retry-1">Open it and find out.</p>
+          <p id="retry-2">It’s all for you.</p>
+          <button type="button" class="pill" data-go="gate">Try again</button>
+        </article>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="opened" hidden aria-label="Thiệp sinh nhật">
+      <div class="opened-scene">
+        <div class="opened-stack">
+          <figure class="polaroid" id="hero-polaroid" hidden>
+            <img id="hero-photo" alt="">
+          </figure>
+          <div class="envelope is-open-env" aria-hidden="true">
+            <span class="envelope-sheet">
+              <span class="sheet-title" id="bday-title">Happy Birthday</span>
+              <span class="sheet-date" id="bday-date"></span>
+            </span>
+            <span class="star" aria-hidden="true">✶</span>
+            <span class="pin" aria-hidden="true"></span>
+            <span class="envelope-body"></span>
+            <span class="envelope-flap is-open"></span>
+          </div>
+        </div>
+        <p class="script teaser" id="teaser">You have been</p>
+        <button type="button" class="pill pill-light" data-go="choose">NEXT</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="choose" hidden aria-label="Chọn một trái tim">
+      <p class="script choose-title">Choose one</p>
+      <div class="hearts">
+        <button type="button" class="heart" data-go="love" aria-label="Lời yêu thương">
+          <svg viewBox="0 0 100 90" aria-hidden="true"><path fill="#fffaf6" d="M50 84C18 60 8 40 14 26 20 12 36 12 50 26 64 12 80 12 86 26 92 40 82 60 50 84Z"/></svg>
+        </button>
+        <button type="button" class="heart" data-go="letter" aria-label="Lá thư">
+          <svg viewBox="0 0 100 90" aria-hidden="true"><path fill="#fffaf6" d="M50 84C18 60 8 40 14 26 20 12 36 12 50 26 64 12 80 12 86 26 92 40 82 60 50 84Z"/></svg>
+        </button>
+        <button type="button" class="heart" data-go="memories" aria-label="Kỷ niệm">
+          <svg viewBox="0 0 100 90" aria-hidden="true"><path fill="#fffaf6" d="M50 84C18 60 8 40 14 26 20 12 36 12 50 26 64 12 80 12 86 26 92 40 82 60 50 84Z"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="love" hidden aria-label="I love you">
+      <div class="love-scene">
+        <p class="love-ring" aria-hidden="true">
+          <span>I love you</span>
+          <span>愛してる</span>
+          <span>Je t’aime</span>
+          <span>사랑해</span>
+          <span>Te amo</span>
+          <span>Wǒ ài nǐ</span>
+          <span>Я тебя люблю</span>
+          <span>Σ’αγαπώ</span>
+        </p>
+        <div class="bouquet" id="bouquet"></div>
+        <button type="button" class="pill" data-go="choose">BACK</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="memories" hidden aria-label="Kỷ niệm">
+      <p class="memories-kicker">Full of</p>
+      <h2 class="memories-title">MEMORIES</h2>
+      <div class="memory-grid" id="memory-grid"></div>
+      <button type="button" class="vinyl" id="vinyl" hidden aria-label="Phát bài hát yêu thích">
+        <span class="vinyl-label">favourite song</span>
+      </button>
+      <button type="button" class="pill" data-go="choose">BACK</button>
+    </section>
+
+    <section class="screen" data-screen="letter" hidden aria-label="Lá thư">
+      <article class="letter-paper">
+        <p id="letter-body"></p>
+        <p class="letter-signoff" id="letter-signoff"></p>
+        <p class="letter-sender" id="letter-sender"></p>
+      </article>
+      <button type="button" class="pill" data-go="choose">BACK</button>
+    </section>
+  </main>
+
+  <audio id="bg-audio" loop playsinline preload="auto" hidden crossorigin="anonymous"></audio>
+  <script data-cfasync="false" src="/templates/waxseal/demo-data.js"></script>
+  <script data-cfasync="false" src="/templates/waxseal/app.js?v=20261019-2"></script>
+</body>
+</html>

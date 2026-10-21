@@ -21,7 +21,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true, "waxseal": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -35,6 +35,7 @@ var templateFolderMap = map[string]string{
 	"farewell":      "farewell",
 	"loveburst":     "loveburst",
 	"snowheart":     "snowheart",
+	"waxseal":       "waxseal",
 }
 
 func domain() string {
@@ -126,7 +127,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst, snowheart"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst, snowheart, waxseal"))
 		return
 	}
 
@@ -200,6 +201,49 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if resolvedType == "snowheart" && len(imageUrls) > 15 {
 		BadRequest(w, "Snow Heart hỗ trợ tối đa 15 ảnh")
 		return
+	}
+	if resolvedType == "waxseal" && len(imageUrls) > 12 {
+		BadRequest(w, "Wax Seal hỗ trợ tối đa 12 ảnh")
+		return
+	}
+	if resolvedType == "waxseal" {
+		recipient, _ := body["waxsealRecipient"].(string)
+		recipient = strings.TrimSpace(recipient)
+		if recipient == "" {
+			BadRequest(w, "Vui lòng nhập tên người nhận")
+			return
+		}
+		if utf8.RuneCountInString(recipient) > 40 {
+			BadRequest(w, "Tên người nhận không được quá 40 ký tự")
+			return
+		}
+		if utf8.RuneCountInString(content) == 0 {
+			BadRequest(w, "Vui lòng nhập nội dung thư")
+			return
+		}
+		if utf8.RuneCountInString(content) > 2500 {
+			BadRequest(w, "Nội dung thư không được quá 2500 ký tự")
+			return
+		}
+		limits := []struct {
+			key  string
+			max  int
+			name string
+		}{
+			{"waxsealCoverLine", 80, "Dòng trên phong bì"},
+			{"waxsealTitle", 40, "Tiêu đề thiệp"},
+			{"waxsealDate", 20, "Ngày"},
+			{"waxsealTeaser", 60, "Dòng dưới thiệp"},
+			{"waxsealSignoff", 80, "Lời ký"},
+			{"waxsealSender", 40, "Tên người gửi"},
+		}
+		for _, limit := range limits {
+			value, _ := body[limit.key].(string)
+			if utf8.RuneCountInString(strings.TrimSpace(value)) > limit.max {
+				BadRequest(w, fmt.Sprintf("%s không được quá %d ký tự", limit.name, limit.max))
+				return
+			}
+		}
 	}
 	if resolvedType == "birthdaycake" && len(imageUrls) > 15 {
 		BadRequest(w, "Birthday Cake hỗ trợ tối đa 15 ảnh")
@@ -416,6 +460,14 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		templateData["candyTexts"] = messages
+	case "waxseal":
+		templateData["recipientName"] = strings.TrimSpace(strOrDefault(body, "waxsealRecipient", ""))
+		templateData["coverLine"] = strings.TrimSpace(strOrDefault(body, "waxsealCoverLine", "I got you something special."))
+		templateData["birthdayTitle"] = strings.TrimSpace(strOrDefault(body, "waxsealTitle", "Happy Birthday"))
+		templateData["birthdayDate"] = strings.TrimSpace(strOrDefault(body, "waxsealDate", ""))
+		templateData["teaserLine"] = strings.TrimSpace(strOrDefault(body, "waxsealTeaser", "You have been"))
+		templateData["signoff"] = strings.TrimSpace(strOrDefault(body, "waxsealSignoff", ""))
+		templateData["senderName"] = strings.TrimSpace(strOrDefault(body, "waxsealSender", ""))
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls
