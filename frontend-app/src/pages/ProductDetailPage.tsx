@@ -570,15 +570,21 @@ export default function ProductDetailPage() {
             </div>
             <div className="pd-related-grid">
               {qrTemplates.map((t) => (
-                <Link key={t.id} to={`/order?template=${t.id}`} className="product-card product-card--link">
-                  <div className="product-card-img-wrap">
-                    <img className="product-card-img" src={resolveAssetUrl(t.image_url)} alt={t.name} />
-                  </div>
-                  <div className="product-card-info">
-                    <div className="product-card-name">{t.name}</div>
-                    <div className="product-card-price">{formatPrice(t.price)}</div>
-                  </div>
-                </Link>
+                <article key={t.id} className="product-card product-card--link">
+                  <Link to={`/order?template=${t.id}`} className="pd-qr-card-main">
+                    <div className="product-card-img-wrap">
+                      <img className="product-card-img" src={resolveAssetUrl(t.image_url)} alt={t.name} />
+                    </div>
+                    <div className="product-card-info">
+                      <div className="product-card-name">{t.name}</div>
+                    </div>
+                  </Link>
+                  {t.demo_url && (
+                    <a className="pd-qr-demo" href={t.demo_url} target="_blank" rel="noopener noreferrer">
+                      Demo
+                    </a>
+                  )}
+                </article>
               ))}
             </div>
           </section>
