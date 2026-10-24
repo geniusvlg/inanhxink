@@ -18,6 +18,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `farewell` | `farewell` | Friend name, origin city, free-text destination, date, farewell letter (max 400 words), up to 12 photos, and up to 12 board messages written separately |
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
+| `waxseal` | `waxseal` | Sealed burgundy envelope, reaction gate, then three hearts: love notes, a letter, and up to 12 photos |
 
 Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
 and loads its blocking `app.js` at the end of the body. Do not defer that script
@@ -199,6 +200,24 @@ Voice playback continues to start from the initial invitation tap, not from the
 letter action. Snow Heart binds music to the shared `#bg-audio` element and
 starts it through `window.__inxkPlayBackgroundMusic`, so simultaneous music and
 voice use the same saved-volume Web Audio mix as the other QR templates.
+
+## Wax Seal
+
+A burgundy envelope page cloned from the sealed-card flow. The visitor taps the
+wax seal, picks one of three reactions (the kiss opens the card; the other two
+show a retry), then sees the birthday note, date, first photo, and teaser line.
+NEXT leads to three lace hearts:
+
+- the first opens a paper bouquet ringed with “I love you” in several languages, using up to three photos
+- the second opens the letter (`content`, up to 2500 characters) with an optional signoff and sender
+- the third opens the memory polaroids for every uploaded photo, plus a favourite-song control when `musicUrl` is set
+
+Order JSON stores `recipientName`, `coverLine`, `birthdayTitle`, `birthdayDate`,
+`teaserLine`, `content`, `signoff`, `senderName`, up to 12 raw-S3 `imageUrls`,
+and the shared optional `musicUrl` and voice fields. Public responses rewrite
+`imageUrls` to the CDN. Seeded by `V70__seed_waxseal_template.sql`. The seal
+opens on capture-phase `pointerdown` so the first tap is not lost to the shared
+audio player.
 
 ## Shared Voice Player
 
