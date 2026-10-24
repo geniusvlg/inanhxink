@@ -23,6 +23,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import ProductCheckoutPaymentPage from './pages/ProductCheckoutPaymentPage';
 import CheckoutResultPage from './pages/CheckoutResultPage';
 import TrackOrderPage from './pages/TrackOrderPage';
+import PhotoboothPage from './pages/PhotoboothPage';
 import FloatingContact from './components/FloatingContact';
 import type { ReactElement } from 'react';
 
@@ -78,6 +79,7 @@ function AppRoutes() {
       <Route path="/checkout/result"           element={<CheckoutResultPage />} />
       <Route path="/theo-doi-don-hang"         element={<FlaggedRoute flag="page_order_tracking" element={<TrackOrderPage />} />} />
       <Route path="/tra-cuu-don-hang"          element={<FlaggedRoute flag="page_order_tracking" element={<TrackOrderPage />} />} />
+      <Route path="/photobooth"                element={<FlaggedRoute flag="page_photobooth" element={<PhotoboothPage />} />} />
     </Routes>
     </>
   );

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="400" viewBox="0 0 192 400">
+  <defs>
+    <linearGradient id="w1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d7c8"/><stop offset="1" stop-color="#e8b7a4"/></linearGradient>
+    <linearGradient id="w2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9c2e6"/><stop offset="1" stop-color="#c4a3d4"/></linearGradient>
+    <linearGradient id="w3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9dce8"/><stop offset="1" stop-color="#9bb8cc"/></linearGradient>
+    <linearGradient id="w4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d3b8"/><stop offset="1" stop-color="#e8b48c"/></linearGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="70%"><stop offset="0" stop-color="#fff6" /><stop offset="1" stop-color="#0000"/></radialGradient>
+  </defs>
+  <rect width="192" height="400" rx="14" fill="#fff"/>
+  <rect x="9" y="10" width="174" height="86" rx="3" fill="url(#w1)"/>
+  <ellipse cx="70" cy="86" rx="28" ry="16" fill="#f26a8d"/>
+  <ellipse cx="118" cy="86" rx="30" ry="16" fill="#fa1172"/>
+  <circle cx="70" cy="48" r="16" fill="#2b1a14"/>
+  <circle cx="70" cy="50" r="12" fill="#e8b89a"/>
+  <circle cx="118" cy="47" r="15" fill="#4a2c1e"/>
+  <circle cx="118" cy="49" r="11" fill="#d4a07c"/>
+  <rect x="9" y="10" width="174" height="86" rx="3" fill="url(#glow)"/>
+
+  <rect x="9" y="104" width="174" height="86" rx="3" fill="url(#w2)"/>
+  <ellipse cx="96" cy="180" rx="36" ry="18" fill="#6b4a88"/>
+  <circle cx="96" cy="141" r="18" fill="#1d1210"/>
+  <circle cx="96" cy="143" r="13" fill="#c89070"/>
+  <rect x="9" y="104" width="174" height="86" rx="3" fill="url(#glow)"/>
+
+  <rect x="9" y="198" width="174" height="86" rx="3" fill="url(#w3)"/>
+  <ellipse cx="74" cy="274" rx="26" ry="16" fill="#3d6d88"/>
+  <ellipse cx="118" cy="274" rx="26" ry="16" fill="#4a7a9a"/>
+  <circle cx="74" cy="236" r="14" fill="#211610"/>
+  <circle cx="74" cy="238" r="10" fill="#c89070"/>
+  <circle cx="118" cy="235" r="14" fill="#7a4a2c"/>
+  <circle cx="118" cy="237" r="10" fill="#f0c8a8"/>
+  <rect x="9" y="198" width="174" height="86" rx="3" fill="url(#glow)"/>
+
+  <rect x="9" y="292" width="174" height="86" rx="3" fill="url(#w4)"/>
+  <ellipse cx="96" cy="368" rx="34" ry="18" fill="#fa1172"/>
+  <circle cx="96" cy="329" r="17" fill="#3a2218"/>
+  <circle cx="96" cy="331" r="12" fill="#deb896"/>
+  <rect x="9" y="292" width="174" height="86" rx="3" fill="url(#glow)"/>
+</svg>
