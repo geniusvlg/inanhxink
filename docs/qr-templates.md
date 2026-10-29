@@ -308,5 +308,8 @@ their QR name (subdomain prefix).
 - Feature flag: `page_tao_ma_qr` (Admin → Cấu hình → Hiển thị trang)
 - Lookup page: `frontend-app/src/pages/QrLookupPage.tsx`
 - Generator page: `frontend-app/src/pages/QrGeneratePage.tsx`
+- The printable image is a PNG file built in the browser (`QRCode.tsx`) and
+  saved with an `<a download>` link on both desktop and phones. A `data:` URL
+  of this image is too large for mobile browsers to save.
 - Post-payment redirect still goes directly to `/qr/<qr_name>` even if the menu
   entry is hidden.

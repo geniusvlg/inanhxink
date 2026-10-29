@@ -200,3 +200,11 @@
   background: #fe2c56;
   color: #fff;
 }
+
+.qr-gen-download:disabled,
+.qr-gen-download:disabled:hover {
+  opacity: 0.55;
+  cursor: default;
+  background: #fff;
+  color: #fe2c56;
+}

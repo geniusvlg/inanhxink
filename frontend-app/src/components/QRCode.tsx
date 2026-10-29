@@ -51,13 +51,19 @@ interface StyledQRCodeProps {
   url: string;
   template?: string;
   imgRef?: React.RefObject<HTMLImageElement | null>;
+  onBlob?: (blob: Blob) => void;
 }
 
-function StyledQRCode({ url, template = 'heart', imgRef }: StyledQRCodeProps) {
+function StyledQRCode({ url, template = 'heart', imgRef, onBlob }: StyledQRCodeProps) {
   const [imgSrc, setImgSrc] = useState('');
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
+  const onBlobRef = useRef(onBlob);
+  onBlobRef.current = onBlob;
 
   useEffect(() => {
+    let cancelled = false;
+    let objectUrl = '';
+
     const generate = async () => {
       const config = TEMPLATES[template] || TEMPLATES.heart;
 
@@ -82,6 +88,7 @@ function StyledQRCode({ url, template = 'heart', imgRef }: StyledQRCodeProps) {
         bgImg.onload = () => resolve(true);
         bgImg.onerror = () => resolve(false);
       });
+      if (cancelled) return;
 
       // Use offscreen canvas (no dpr scaling — render at exact image resolution)
       if (!offscreenRef.current) {
@@ -121,11 +128,25 @@ function StyledQRCode({ url, template = 'heart', imgRef }: StyledQRCodeProps) {
         }
       }
 
-      // Convert to data URL and set as img src
-      setImgSrc(canvas.toDataURL('image/png'));
+      // Blob URLs stay small enough for mobile browsers to save. A data URL of
+      // this canvas (especially 1090×1920 frames) is several MB and iOS refuses
+      // to download it.
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((value) => resolve(value), 'image/png');
+      });
+      if (cancelled || !blob) return;
+
+      objectUrl = URL.createObjectURL(blob);
+      onBlobRef.current?.(blob);
+      setImgSrc(objectUrl);
     };
 
     generate();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [url, template]);
 
   if (!imgSrc) return null;
