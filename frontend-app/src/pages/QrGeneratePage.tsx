@@ -21,6 +21,7 @@ function QrGeneratePage() {
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [qrBlob, setQrBlob] = useState<Blob | null>(null);
   const qrImgRef = useRef<HTMLImageElement>(null);
 
   const domain = 'inanhxink.com';
@@ -55,16 +56,23 @@ function QrGeneratePage() {
   }, [qrName, navigate]);
 
   const handleGenerate = () => {
+    setQrBlob(null);
     setGenerated(true);
   };
 
   const handleDownload = () => {
-    const img = qrImgRef.current;
-    if (!img?.src) return;
+    if (!qrBlob) return;
+    const filename = `qr-${qrName}-${selectedTemplate}.png`;
+    const url = URL.createObjectURL(qrBlob);
     const link = document.createElement('a');
-    link.href = img.src;
-    link.download = `qr-${qrName}-${selectedTemplate}.png`;
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    link.remove();
+    // Phones start the save after this click returns. Revoking immediately
+    // cancels it.
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   };
 
   if (loading) {
@@ -123,6 +131,7 @@ function QrGeneratePage() {
                   onClick={() => {
                     setSelectedTemplate(t.id);
                     setGenerated(false);
+                    setQrBlob(null);
                   }}
                 >
                   {t.thumbnail
@@ -141,8 +150,13 @@ function QrGeneratePage() {
 
           {generated && (
             <div className="qr-gen-result">
-              <StyledQRCode url={fullUrl} template={selectedTemplate} imgRef={qrImgRef} />
-              <button type="button" className="qr-gen-download" onClick={handleDownload}>
+              <StyledQRCode
+                url={fullUrl}
+                template={selectedTemplate}
+                imgRef={qrImgRef}
+                onBlob={setQrBlob}
+              />
+              <button type="button" className="qr-gen-download" onClick={handleDownload} disabled={!qrBlob}>
                 Tải ảnh QR về máy
               </button>
             </div>
