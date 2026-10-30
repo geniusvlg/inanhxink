@@ -315,7 +315,8 @@ category rail and cross-type category grid.
   `Layout.css`, same component `ConfigPage.tsx` uses) calls `PUT { is_active }`
   directly, no confirmation. Inactive categories stay listed/editable in the
   admin table but are filtered out of every public `/api/categories` response.
-- **Public side**: storefront rail (`CategoryRail`) + detail grid
+- **Public side**: storefront rail (`CategoryRail`, 10 + "Xem tất cả"),
+  the full list at `/danh-muc` (`CategoryListPage`), and the detail grid
   (`CategoryDetailPage`) at `/danh-muc/:id`; see `docs/category-feature.md` for
   the full feature (DB schema, public API, storefront composition).
 
