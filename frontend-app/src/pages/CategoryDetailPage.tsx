@@ -19,8 +19,8 @@ const TYPE_LABELS: Record<Product['type'], string> = {
   in_anh: 'In Ảnh',
 };
 
-// Reached only via CategoryRail taps (or a direct link) — there is no hub
-// page to breadcrumb back to, so this shows a plain browser-back pill.
+// Reached from the home rail, the /danh-muc hub, or a direct link.
+// Back follows browser history so it returns to whichever of those the user came from.
 export default function CategoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();

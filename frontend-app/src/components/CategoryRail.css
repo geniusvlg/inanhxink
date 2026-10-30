@@ -87,6 +87,15 @@
   color: #e05c99;
 }
 
+.cat-rail-more {
+  color: #e05c99;
+}
+
+.cat-rail-more svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
 .cat-rail-label {
   font-size: 0.76rem;
   font-weight: 600;

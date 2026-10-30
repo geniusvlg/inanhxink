@@ -147,9 +147,12 @@ mount; renders nothing while loading and nothing at all if the list comes back
 empty, so it never shows an empty rail. Each circle links to
 `/danh-muc/{id}`; the label is the category name and the photo is
 `cover_image_url` (falls back to the category name's first letter when null).
-Shows at most `MAX_VISIBLE = 10` categories (`categories.slice(0, 10)`) — the
-rest are still reachable via `/danh-muc/{id}` directly, just not surfaced in
-the rail. Plain horizontal scroll (no nudge-arrow button — removed as visual
+Shows at most `MAX_VISIBLE = 10` categories (`categories.slice(0, 10)`).
+The rail always ends with a **Xem tất cả** circle linking to `/danh-muc`,
+which lists every active category. Categories past the 10th are only on
+that page (and still reachable via `/danh-muc/{id}` directly).
+
+Plain horizontal scroll (no nudge-arrow button — removed as visual
 clutter); a right-edge fade hint (`.cat-rail-fade`) only renders when the rail
 actually overflows (`ResizeObserver` comparing `scrollWidth`/`clientWidth` on
 the scroll container, re-checked on resize), hidden on touch devices
@@ -190,11 +193,22 @@ still cluttered every sidebar). `CategoryRail` on `HomePage` deliberately
 keeps calling `getCategories()` with no `product_type` — it's cross-type by
 design, so it isn't scoped this way.
 
+### `CategoryListPage` (`pages/CategoryListPage.tsx` + `.css`)
+
+Route: `/danh-muc` (registered in `App.tsx` ahead of `/danh-muc/:id`, no
+`FlaggedRoute` wrapper). Hub for every active category — the home rail only
+surfaces 10, this page lists all of them.
+
+Fetches `getCategories()` once (same unscoped call as the rail). Renders a
+wrapping grid of the same circular highlights (`CategoryRail.css` classes,
+sized up in `CategoryListPage.css`). Each circle links to `/danh-muc/{id}`.
+Empty and error states reuse `ProductSearchPage` classes via `@import`.
+
 ### `CategoryDetailPage` (`pages/CategoryDetailPage.tsx` + `.css`)
 
 Route: `/danh-muc/:id` (registered in `App.tsx`, no `FlaggedRoute` wrapper —
-same treatment as `/product/:id`, since it's only ever reached via the rail or
-a direct link, never a nav entry).
+same treatment as `/product/:id`, since it's only ever reached via the rail,
+the `/danh-muc` hub, or a direct link, never a nav entry).
 
 - Fetches `getCategoryById(id)` (heading + count) and
   `getProducts({ category_ids: id, page, limit })` (paginated grid) in
@@ -205,9 +219,9 @@ a direct link, never a nav entry).
   same convention as `ProductDetailPage.tsx`'s `PRODUCT_LIST_CRUMB`) — positioned
   opposite the existing best-seller ribbon badge (top-left) so the two never
   collide.
-- Back button calls `navigate(-1)` rather than linking to one fixed page —
-  there is no single hub/grid page for all categories, so "back" has to return
-  to whichever page the user tapped the rail from.
+- Back button calls `navigate(-1)` rather than linking to one fixed page,
+  so it returns to whichever page the user came from (the home rail or the
+  `/danh-muc` hub).
 - Reuses `ProductSearchPage`'s classes via `@import './ProductSearchPage.css';`
   (`.ps-page`, `.ps-back`, `.ps-heading`, `.thiep-grid`, `.load-more-btn`, …)
   rather than redefining them, matching this codebase's existing convention of
@@ -246,10 +260,12 @@ admin-app/
 frontend-app/
   src/components/CategoryRail.tsx
   src/components/CategoryRail.css
+  src/pages/CategoryListPage.tsx
+  src/pages/CategoryListPage.css
   src/pages/CategoryDetailPage.tsx
   src/pages/CategoryDetailPage.css
   src/services/api.ts                            # Category type, getCategories, getCategoryById
-  src/App.tsx                                     # /danh-muc/:id route
+  src/App.tsx                                     # /danh-muc and /danh-muc/:id routes
   src/pages/HomePage.tsx                          # <CategoryRail /> mount (only page that renders it)
 docs/
   category-feature.md                            # this file
