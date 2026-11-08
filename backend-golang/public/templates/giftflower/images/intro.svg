@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Tulip bouquet">
+  <rect width="640" height="640" fill="#ffffff"/>
+  <g stroke="#2f9e57" stroke-width="9" fill="none" stroke-linecap="round">
+    <path d="M230 430 C236 360 220 310 214 268"/>
+    <path d="M320 446 C320 360 326 300 332 250"/>
+    <path d="M410 430 C404 360 418 310 426 270"/>
+  </g>
+  <g fill="#46b56a">
+    <ellipse cx="206" cy="340" rx="16" ry="8" transform="rotate(-40 206 340)"/>
+    <ellipse cx="348" cy="320" rx="16" ry="8" transform="rotate(35 348 320)"/>
+    <ellipse cx="438" cy="348" rx="16" ry="8" transform="rotate(42 438 348)"/>
+  </g>
+  <g>
+    <path d="M188 278c0-34 26-52 26-52s26 18 26 52c0 18-12 28-26 36-14-8-26-18-26-36z" fill="#ffb3c9"/>
+    <path d="M214 278c0-34 26-52 26-52s26 18 26 52c0 18-12 28-26 36-14-8-26-18-26-36z" fill="#ff7aa2"/>
+    <ellipse cx="214" cy="292" rx="8" ry="12" fill="#ffe6ef"/>
+    <path d="M292 262c0-38 30-58 30-58s30 20 30 58c0 20-14 32-30 40-16-8-30-20-30-40z" fill="#ffc2d4"/>
+    <path d="M322 262c0-38 30-58 30-58s30 20 30 58c0 20-14 32-30 40-16-8-30-20-30-40z" fill="#ff5d8f"/>
+    <ellipse cx="322" cy="278" rx="9" ry="14" fill="#fff0f5"/>
+    <path d="M400 278c0-34 26-52 26-52s26 18 26 52c0 18-12 28-26 36-14-8-26-18-26-36z" fill="#ff9ebc"/>
+    <path d="M426 278c0-34 26-52 26-52s26 18 26 52c0 18-12 28-26 36-14-8-26-18-26-36z" fill="#ff7aa2"/>
+    <ellipse cx="426" cy="292" rx="8" ry="12" fill="#ffe6ef"/>
+  </g>
+  <path d="M210 430 L320 392 L430 430 L392 520 L248 520 Z" fill="#f6d3b4"/>
+  <path d="M248 520 L210 430 L272 468 L248 520 Z" fill="#e8b892"/>
+  <path d="M392 520 L430 430 L368 468 L392 520 Z" fill="#e8b892"/>
+  <path d="M300 470c14 18 28 18 42 0" fill="none" stroke="#fff7ee" stroke-width="8" stroke-linecap="round"/>
+  <path d="M500 150c0-16 12-28 26-28 9 0 17 5 22 13 5-8 13-13 22-13 14 0 26 12 26 28 0 26-26 42-48 58-22-16-48-32-48-58z" fill="#ff4d7a"/>
+</svg>
