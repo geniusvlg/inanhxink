@@ -57,6 +57,7 @@ function takeWords(text: string, max: number): string {
 }
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
 const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
+const DEFAULT_GIFTFLOWER_LINES = ['', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
 const DEFAULT_MIX_MUSIC_VOLUME = 0.04;
 
@@ -133,6 +134,11 @@ function OrderPage() {
   const [loveburstMessages, setLoveburstMessages] = useState<string[]>(DEFAULT_LOVEBURST_MESSAGES);
   const [snowheartLetterTitle, setSnowheartLetterTitle] = useState('');
   const [snowheartMessages, setSnowheartMessages] = useState<string[]>(DEFAULT_SNOWHEART_MESSAGES);
+  const [giftflowerIntroTitle, setGiftflowerIntroTitle] = useState('');
+  const [giftflowerIntroHint, setGiftflowerIntroHint] = useState('');
+  const [giftflowerTitle, setGiftflowerTitle] = useState('');
+  const [giftflowerLetterTitle, setGiftflowerLetterTitle] = useState('');
+  const [giftflowerLines, setGiftflowerLines] = useState<string[]>(DEFAULT_GIFTFLOWER_LINES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -157,6 +163,7 @@ function OrderPage() {
   const GALAXY_MAX_IMAGES = 15;
   const BIRTHDAY_CAKE_MAX_IMAGES = 15;
   const SNOWHEART_MAX_IMAGES = 15;
+  const GIFTFLOWER_MAX_IMAGES = 8;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
   const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
@@ -246,6 +253,13 @@ function OrderPage() {
         }
         if (typeof d.snowheartLetterTitle === 'string') {
           setSnowheartLetterTitle(d.snowheartLetterTitle);
+        }
+        if (typeof d.giftflowerIntroTitle === 'string') setGiftflowerIntroTitle(d.giftflowerIntroTitle);
+        if (typeof d.giftflowerIntroHint === 'string') setGiftflowerIntroHint(d.giftflowerIntroHint);
+        if (typeof d.giftflowerTitle === 'string') setGiftflowerTitle(d.giftflowerTitle);
+        if (typeof d.giftflowerLetterTitle === 'string') setGiftflowerLetterTitle(d.giftflowerLetterTitle);
+        if (Array.isArray(d.giftflowerLines)) {
+          setGiftflowerLines(Array.from({ length: 3 }, (_, i) => String(d.giftflowerLines[i] || '')));
         }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
@@ -515,6 +529,17 @@ function OrderPage() {
       if (snowheartLetterTitle.length > 50) { setError('Tiêu đề thư không được quá 50 ký tự'); return; }
       if (content.length > 400) { setError('Nội dung thư không được quá 400 ký tự'); return; }
     }
+    if (templateType === 'giftflower') {
+      const lines = giftflowerLines.map(s => s.trim()).filter(Boolean);
+      if (!lines.length) { setError('Vui lòng nhập ít nhất một câu chạy chữ'); return; }
+      if (lines.some(line => line.length > 60)) { setError('Mỗi câu chạy chữ tối đa 60 ký tự'); return; }
+      if (giftflowerIntroTitle.length > 80 || giftflowerIntroHint.length > 80) {
+        setError('Lời mở đầu không được quá 80 ký tự'); return;
+      }
+      if (giftflowerTitle.length > 60) { setError('Tiêu đề bó hoa không được quá 60 ký tự'); return; }
+      if (giftflowerLetterTitle.length > 50) { setError('Tiêu đề thiệp không được quá 50 ký tự'); return; }
+      if (content.length > 400) { setError('Nội dung thiệp không được quá 400 ký tự'); return; }
+    }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
     }
@@ -656,6 +681,13 @@ function OrderPage() {
           snowheartLetterTitle: snowheartLetterTitle.trim(),
           snowheartMessages: snowheartMessages.map(s => s.trim()).filter(Boolean),
         }),
+        ...(templateType === 'giftflower' && {
+          giftflowerIntroTitle: giftflowerIntroTitle.trim(),
+          giftflowerIntroHint: giftflowerIntroHint.trim(),
+          giftflowerTitle: giftflowerTitle.trim(),
+          giftflowerLetterTitle: giftflowerLetterTitle.trim(),
+          giftflowerLines: giftflowerLines.map(s => s.trim()).filter(Boolean),
+        }),
       });
 
       if (response.success) {
@@ -671,6 +703,7 @@ function OrderPage() {
             farewellDepartureDate, farewellMessage, farewellSender,
             farewellStageMessages,
             loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
+            giftflowerIntroTitle, giftflowerIntroHint, giftflowerTitle, giftflowerLetterTitle, giftflowerLines,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -914,13 +947,127 @@ function OrderPage() {
         </>
       )}
 
+      {templateType === 'giftflower' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Lời mời mở quà <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={giftflowerIntroTitle}
+              onChange={e => setGiftflowerIntroTitle(e.target.value)}
+              placeholder="Cốc cốc, có quà cho em đây 💖"
+              maxLength={80}
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Gợi ý chạm <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={giftflowerIntroHint}
+              onChange={e => setGiftflowerIntroHint(e.target.value)}
+              placeholder="Chạm vào ảnh, có điều bất ngờ"
+              maxLength={80}
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Tiêu đề bó hoa <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={giftflowerTitle}
+              onChange={e => setGiftflowerTitle(e.target.value)}
+              placeholder="Gửi người anh yêu 💖"
+              maxLength={60}
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Câu chạy dưới tiêu đề</label>
+            <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#6b7280' }}>
+              Tối đa 3 câu, mỗi câu 60 ký tự. Các câu sẽ lần lượt được gõ ra.
+            </p>
+            {giftflowerLines.map((text, index) => (
+              <div key={index} style={{ position: 'relative', marginBottom: '0.55rem' }}>
+                <input
+                  type="text"
+                  value={text}
+                  onChange={e => setGiftflowerLines(current => (
+                    current.map((value, lineIndex) => lineIndex === index ? e.target.value : value)
+                  ))}
+                  placeholder={index === 0 ? 'Câu 1 (bắt buộc)' : `Câu ${index + 1} (không bắt buộc)`}
+                  maxLength={60}
+                  aria-label={`Câu chạy chữ ${index + 1}`}
+                  style={{
+                    width: '100%',
+                    padding: '0.625rem 3.25rem 0.625rem 0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <span style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#9ca3af',
+                  fontSize: '0.75rem',
+                  pointerEvents: 'none',
+                }}>
+                  {text.length}/60
+                </span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Tiêu đề thiệp <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={giftflowerLetterTitle}
+              onChange={e => setGiftflowerLetterTitle(e.target.value)}
+              placeholder="Gửi Người Anh Yêu 💖"
+              maxLength={50}
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+      )}
+
       {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (
         <ContentEditor
           value={content}
           onChange={setContent}
-          label={templateType === 'specialgift' || templateType === 'loveburst' ? 'Nội dung thư' : undefined}
-          placeholder={templateType === 'specialgift' || templateType === 'loveburst' ? 'Nhập nội dung sẽ hiển thị trong popup thư...' : undefined}
-          maxLength={templateType === 'loveburst' ? 400 : templateType === 'specialgift' ? 200 : undefined}
+          label={
+            templateType === 'giftflower'
+              ? 'Nội dung thiệp'
+              : templateType === 'specialgift' || templateType === 'loveburst'
+              ? 'Nội dung thư'
+              : undefined
+          }
+          placeholder={
+            templateType === 'giftflower'
+              ? 'Lời nhắn hiện trong thiệp khi chạm vào hoa...'
+              : templateType === 'specialgift' || templateType === 'loveburst'
+              ? 'Nhập nội dung sẽ hiển thị trong popup thư...'
+              : undefined
+          }
+          maxLength={
+            templateType === 'loveburst' || templateType === 'giftflower'
+              ? 400
+              : templateType === 'specialgift'
+              ? 200
+              : undefined
+          }
         />
       )}
 
@@ -1458,6 +1605,14 @@ function OrderPage() {
                   </span>
                 </p>
               )}
+              {templateType === 'giftflower' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh trong thiệp và ảnh bay
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {GIFTFLOWER_MAX_IMAGES} ảnh — ảnh đầu hiện trong thiệp, tất cả bay lên khi đóng)
+                  </span>
+                </p>
+              )}
               {templateType === 'farewell' && (
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
                   Ảnh kỷ niệm
@@ -1476,6 +1631,8 @@ function OrderPage() {
                     ? LOVELETTER_MAX_IMAGES
                     : templateType === 'snowheart'
                     ? SNOWHEART_MAX_IMAGES
+                    : templateType === 'giftflower'
+                    ? GIFTFLOWER_MAX_IMAGES
                     : templateType === 'farewell'
                     ? FAREWELL_MAX_IMAGES
                     : QR_TEMPLATE_MAX_IMAGES

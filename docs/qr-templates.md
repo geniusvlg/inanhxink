@@ -18,6 +18,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `farewell` | `farewell` | Friend name, origin city, free-text destination, date, farewell letter (max 400 words), up to 12 photos, and up to 12 board messages written separately |
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
+| `giftflower` | `giftflower` | Intro tap, tulip bouquet, letter card, then up to 8 photos that float upward. Three rotating lines (60 characters), letter up to 400 characters |
 
 Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
 and loads its blocking `app.js` at the end of the body. Do not defer that script
@@ -200,6 +201,29 @@ letter action. Snow Heart binds music to the shared `#bg-audio` element and
 starts it through `window.__inxkPlayBackgroundMusic`, so simultaneous music and
 voice use the same saved-volume Web Audio mix as the other QR templates.
 
+## Gift Flower
+
+A white intro card asks the visitor to tap. That tap opens the Love Burst night sky (purple gradient, twinkling stars,
+and shooting stars): a heading, up to three typewriter lines, and a bouquet
+of nine tulips. The intro card shows `images/intro.svg`, a bouquet drawing of our own. The
+bouquet is the original artwork: each stem is `images/tulip.png`, the wrap is
+`images/vohoa.png`, and the tag is `images/thiep.png`, laid out by the
+original stylesheet (`styles.css`). The paper opens first (0–0.6s), and the
+stems start growing after it (from about 0.8s). The "tap a flower" hint sits
+at the bottom of the screen, below the bouquet (`bottom: 12px` on desktop and
+phones), so it never covers the tulips. Tapping a flower opens a letter card. The
+first uploaded photo sits beside the letter. Closing the card hides the
+bouquet and sends every uploaded photo floating upward once. With no photos,
+hearts float instead so the ending still plays.
+
+Order JSON stores `introTitle`, `introHint`, `title`, `lines` (1–3 strings,
+60 characters), `letterTitle`, `content` (max 400 characters), and up to 8
+`imageUrls`. Empty text fields fall back to the demo copy inside `app.js`.
+Music uses the shared `#bg-audio` element and starts on the intro tap through
+`window.__inxkPlayBackgroundMusic`. `prefers-reduced-motion` shows the text
+immediately and holds the photos still. Seeded by
+`V77__seed_giftflower_template.sql`.
+
 ## Shared Voice Player
 
 See `docs/qr-voice-recording.md` for the complete recording, pricing, storage,
@@ -257,7 +281,7 @@ Three independent protections are in place; keep all of them when editing templa
 Click-only start controls that share an element with the voice player use
 idempotent, capture-phase `pointerdown`/`touchstart` handlers so their visual
 action begins before iOS Safari starts audio. Galaxy, Love Letter, Letter in
-Space, Farewell, Love Burst, Special Gift, and Snow Heart follow this pattern.
+Space, Farewell, Love Burst, Special Gift, Snow Heart, and Gift Flower follow this pattern.
 Special Gift remains non-interactive until its eight-second intro finishes;
 Snow Heart queues an early tap until its module has installed the canvas reveal
 listener.

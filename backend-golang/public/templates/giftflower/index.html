@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bó hoa tulip</title>
+    <meta name="theme-color" content="#ff6b9d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@600;700&family=Caveat:wght@400;500;600&family=Mali:wght@200;300;400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/templates/giftflower/styles.css?v=20261110-8">
+</head>
+<body class="container">
+<!-- Intro Screen -->
+    <div id="introScreen" class="intro-screen" >
+        <div class="intro-content">
+            <h1 class="intro-title">Cốc cốc, có quà cho em đây 💖</h1>
+            <div class="intro-card">
+                <img src="/templates/giftflower/images/intro.svg?v=20261110-4" alt="Quà" class="intro-image">
+            </div>
+            <p class="intro-hint">Chạm vào ảnh, có điều bất ngờ</p>
+        </div>
+    </div>
+
+    <div id="mainContent" class="main-content hidden">
+    <div class="night" aria-hidden="true">
+      <i class="star small" style="top:12%;left:18%"></i>
+      <i class="star medium" style="top:22%;left:78%;animation-delay:.6s"></i>
+      <i class="star small" style="top:68%;left:14%;animation-delay:1.1s"></i>
+      <i class="star medium" style="top:78%;left:82%;animation-delay:.3s"></i>
+      <i class="star small" style="top:36%;left:8%;animation-delay:1.7s"></i>
+      <i class="star large" style="top:16%;left:52%;animation-delay:.9s"></i>
+      <i class="star medium" style="top:84%;left:40%;animation-delay:1.4s"></i>
+      <i class="star small" style="top:48%;left:90%;animation-delay:.4s"></i>
+      <i class="star small" style="top:8%;left:86%;animation-delay:2s"></i>
+      <i class="star medium" style="top:58%;left:6%;animation-delay:1.2s"></i>
+      <i class="star small" style="top:90%;left:66%;animation-delay:.7s"></i>
+      <i class="star small" style="top:30%;left:30%;animation-delay:1.8s"></i>
+      <div class="shooting-stars" id="shooting-stars"></div>
+    </div>
+
+    <!-- Header Messages -->
+    <div class="teachers-day-text">
+        <h1 class="teachers-day-title"></h1>
+        <p class="teachers-day-date"></p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction">
+        <p class="instruction-text">Chạm vào hoa để nhận lời yêu <span class="instruction-icon">👆</span></p>
+    </div>
+
+    <div class="flowers">
+      <!-- Flower Wrapper -->
+      <div class="flower-wrapper">
+        <img src="/templates/giftflower/images/vohoa.png" alt="Flower Wrapper" class="wrapper-img">
+      </div>
+
+      <!-- Thiep Cover -->
+      <div class="thiep-cover">
+        <img src="/templates/giftflower/images/thiep.png" alt="Thiep" class="thiep-img">
+      </div>
+
+      <!-- Top 3: Vươn cao giữa -->
+      <div class="flower flower--1">
+        <div class="flower__leafs flower__leafs--1">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <div class="flower flower--10">
+        <div class="flower__leafs flower__leafs--10">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <div class="flower flower--11">
+        <div class="flower__leafs flower__leafs--11">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <!-- Left 3: Chụm bên trái -->
+      <div class="flower flower--4">
+        <div class="flower__leafs flower__leafs--4">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <div class="flower flower--2">
+        <div class="flower__leafs flower__leafs--2">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <div class="flower flower--6">
+        <div class="flower__leafs flower__leafs--6">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <!-- Right 3: Chụm bên phải -->
+      <div class="flower flower--5">
+        <div class="flower__leafs flower__leafs--5">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <div class="flower flower--3">
+        <div class="flower__leafs flower__leafs--3">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+      <div class="flower flower--7">
+        <div class="flower__leafs flower__leafs--7">
+          <img src="/templates/giftflower/images/tulip.png" alt="Tulip" class="flower__tulip-img">
+          <div class="flower__light flower__light--1"></div>
+          <div class="flower__light flower__light--2"></div>
+          <div class="flower__light flower__light--3"></div>
+          <div class="flower__light flower__light--4"></div>
+          <div class="flower__light flower__light--5"></div>
+          <div class="flower__light flower__light--6"></div>
+          <div class="flower__light flower__light--7"></div>
+          <div class="flower__light flower__light--8"></div>
+        </div>
+        <div class="flower__line">
+          <div class="flower__line__leaf flower__line__leaf--1"></div>
+          <div class="flower__line__leaf flower__line__leaf--2"></div>
+          <div class="flower__line__leaf flower__line__leaf--3"></div>
+          <div class="flower__line__leaf flower__line__leaf--4"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Popup Modal -->
+    <div id="flowerPopup" class="popup-overlay">
+        <div class="popup-card">
+            <button class="popup-close" id="popupCloseBtn">✕</button>
+            <div class="popup-card-inner">
+                <div class="popup-card-image">
+                    <img src="/templates/giftflower/images/girl.jpeg" alt="Girl">
+                </div>
+                <div class="popup-card-text">
+                    <h2 class="popup-title">Gửi Bé Iu 💖</h2>
+                    <p class="popup-message">
+                        💘 Chúc em một ngày 1/6 thật vui vẻ! Dù lớn rồi nhưng trong mắt anh em vẫn là cô bé đáng yêu nhất. Hãy giữ nụ cười hồn nhiên và trái tim trong sáng nhé. Mãi yêu em 💕
+                    </p>
+                </div>
+            </div>
+            <span class="popup-heart popup-heart--1">♥</span>
+            <span class="popup-heart popup-heart--2">♥</span>
+            <span class="popup-heart popup-heart--3">♥</span>
+        </div>
+    </div>
+
+    <!-- Background Music -->
+    <audio id="bg-audio" loop playsinline preload="auto" hidden crossorigin="anonymous"></audio>
+
+    <!-- Flying Images Container -->
+    <div id="flyingImages" class="flying-images-container"></div>
+
+    </div><!-- end mainContent -->
+    <script data-cfasync="false" src="/templates/giftflower/demo-data.js"></script>
+    <script data-cfasync="false" src="/templates/giftflower/app.js?v=20261109-3"></script>
+</body>
+</html>
