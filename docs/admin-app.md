@@ -222,6 +222,12 @@ metadata keys:
 
 `ConfigPage.tsx` also manages product checkout payment/shipping settings:
 
+- `product_purchase_enabled`: one toggle for both storefront purchase buttons
+  (“Mua ngay” and “Thêm vào giỏ hàng”) on the product detail page. Anything
+  other than `false` counts as enabled (default `true`, seeded by
+  `V78__product_purchase_enabled.sql`). When `false`, `ProductDetailPage.tsx`
+  hides both buttons. The product page, cart icon, and checkout stay available.
+
 - `product_shipping_fee`: fixed shipping fee in VND, applied to Ship COD orders
   and to bank-transfer orders below the free-shipping threshold.
 - `product_shipping_fee_threshold`: product subtotal required for bank-transfer
