@@ -19,6 +19,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `loveburst` | `loveburst` | Four separate particle-message inputs (blank inputs are omitted), popup title/letter, and up to 12 gallery images |
 | `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
 | `giftflower` | `giftflower` | Intro tap, tulip bouquet, letter card, then up to 8 photos that float upward. Three rotating lines (60 characters), letter up to 400 characters |
+| `lovechristmas` | `lovechristmas` | Tap to open a particle Christmas tree. A title and up to five messages type on the board; tapping the tree bursts up to 12 photos from the star |
 
 Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
 and loads its blocking `app.js` at the end of the body. Do not defer that script
@@ -224,6 +225,12 @@ Music uses the shared `#bg-audio` element and starts on the intro tap through
 immediately and holds the photos still. Seeded by
 `V77__seed_giftflower_template.sql`.
 
+## Love Christmas
+
+A tap on the opening screen starts the shared background music and a short camera sweep around a particle Christmas tree. The tree draws itself in, snow and fireworks play over a galaxy, and the order title plus up to five messages type onto a glowing board. The tree cycles its color on its own. Tapping it still bursts the uploaded photos (or a message, when there are no photos). Photos fall slowly, can be dragged, and a hint asks the viewer to tap one to open it larger. `prefers-reduced-motion` skips the camera sweep and the fireworks.
+
+Order JSON stores `title` (max 40 characters; the scene uses “Merry Christmas” when it is blank), `messages` (1–5 strings, 80 characters), and up to 12 `imageUrls`. The static preview’s demo copy lives in `demo-data.js`. Music uses `#bg-audio` and starts on the opening tap through `window.__inxkPlayBackgroundMusic`. The tree, snowflakes, and pop sound are local assets. Three.js 0.151 and GSAP 3.11 load from jsDelivr. Seeded by `V79__seed_lovechristmas_template.sql`.
+
 ## Shared Voice Player
 
 See `docs/qr-voice-recording.md` for the complete recording, pricing, storage,
@@ -281,7 +288,7 @@ Three independent protections are in place; keep all of them when editing templa
 Click-only start controls that share an element with the voice player use
 idempotent, capture-phase `pointerdown`/`touchstart` handlers so their visual
 action begins before iOS Safari starts audio. Galaxy, Love Letter, Letter in
-Space, Farewell, Love Burst, Special Gift, Snow Heart, and Gift Flower follow this pattern.
+Space, Farewell, Love Burst, Special Gift, Snow Heart, Gift Flower, and Love Christmas follow this pattern.
 Special Gift remains non-interactive until its eight-second intro finishes;
 Snow Heart queues an early tap until its module has installed the canvas reveal
 listener.

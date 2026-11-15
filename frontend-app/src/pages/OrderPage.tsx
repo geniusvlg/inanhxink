@@ -17,7 +17,7 @@ import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
-const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart']);
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart', 'lovechristmas']);
 
 const FAREWELL_DESTINATION_LABELS: Record<string, string> = {
   australia: 'Úc',
@@ -58,6 +58,7 @@ function takeWords(text: string, max: number): string {
 const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nhất 💝', 'Mãi Bên Em 💖', ''];
 const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_GIFTFLOWER_LINES = ['', '', ''];
+const DEFAULT_LOVECHRISTMAS_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
 const DEFAULT_MIX_MUSIC_VOLUME = 0.04;
 
@@ -139,6 +140,8 @@ function OrderPage() {
   const [giftflowerTitle, setGiftflowerTitle] = useState('');
   const [giftflowerLetterTitle, setGiftflowerLetterTitle] = useState('');
   const [giftflowerLines, setGiftflowerLines] = useState<string[]>(DEFAULT_GIFTFLOWER_LINES);
+  const [lovechristmasTitle, setLovechristmasTitle] = useState('');
+  const [lovechristmasMessages, setLovechristmasMessages] = useState<string[]>(DEFAULT_LOVECHRISTMAS_MESSAGES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -164,6 +167,7 @@ function OrderPage() {
   const BIRTHDAY_CAKE_MAX_IMAGES = 15;
   const SNOWHEART_MAX_IMAGES = 15;
   const GIFTFLOWER_MAX_IMAGES = 8;
+  const LOVECHRISTMAS_MAX_IMAGES = 12;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
   const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
@@ -260,6 +264,10 @@ function OrderPage() {
         if (typeof d.giftflowerLetterTitle === 'string') setGiftflowerLetterTitle(d.giftflowerLetterTitle);
         if (Array.isArray(d.giftflowerLines)) {
           setGiftflowerLines(Array.from({ length: 3 }, (_, i) => String(d.giftflowerLines[i] || '')));
+        }
+        if (typeof d.lovechristmasTitle === 'string') setLovechristmasTitle(d.lovechristmasTitle);
+        if (Array.isArray(d.lovechristmasMessages)) {
+          setLovechristmasMessages(Array.from({ length: 5 }, (_, i) => String(d.lovechristmasMessages[i] || '')));
         }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
@@ -540,6 +548,12 @@ function OrderPage() {
       if (giftflowerLetterTitle.length > 50) { setError('Tiêu đề thiệp không được quá 50 ký tự'); return; }
       if (content.length > 400) { setError('Nội dung thiệp không được quá 400 ký tự'); return; }
     }
+    if (templateType === 'lovechristmas') {
+      const lines = lovechristmasMessages.map(s => s.trim()).filter(Boolean);
+      if (!lines.length) { setError('Vui lòng nhập ít nhất một câu lời chúc'); return; }
+      if (lines.some(line => line.length > 80)) { setError('Mỗi câu lời chúc tối đa 80 ký tự'); return; }
+      if (lovechristmasTitle.length > 40) { setError('Tiêu đề cây thông không được quá 40 ký tự'); return; }
+    }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
     }
@@ -688,6 +702,10 @@ function OrderPage() {
           giftflowerLetterTitle: giftflowerLetterTitle.trim(),
           giftflowerLines: giftflowerLines.map(s => s.trim()).filter(Boolean),
         }),
+        ...(templateType === 'lovechristmas' && {
+          lovechristmasTitle: lovechristmasTitle.trim(),
+          lovechristmasMessages: lovechristmasMessages.map(s => s.trim()).filter(Boolean),
+        }),
       });
 
       if (response.success) {
@@ -704,6 +722,7 @@ function OrderPage() {
             farewellStageMessages,
             loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
             giftflowerIntroTitle, giftflowerIntroHint, giftflowerTitle, giftflowerLetterTitle, giftflowerLines,
+            lovechristmasTitle, lovechristmasMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -1039,6 +1058,63 @@ function OrderPage() {
               maxLength={50}
               style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
             />
+          </div>
+        </div>
+      )}
+
+      {templateType === 'lovechristmas' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Tiêu đề trên cây thông <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={lovechristmasTitle}
+              onChange={e => setLovechristmasTitle(e.target.value)}
+              placeholder="Merry Christmas"
+              maxLength={40}
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời chúc chạy trên bảng</label>
+            <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#6b7280' }}>
+              Tối đa 5 câu, mỗi câu 80 ký tự. Các câu lần lượt được gõ ra, và cũng bay ra khi chạm vào cây.
+            </p>
+            {lovechristmasMessages.map((text, index) => (
+              <div key={index} style={{ position: 'relative', marginBottom: '0.55rem' }}>
+                <input
+                  type="text"
+                  value={text}
+                  onChange={e => setLovechristmasMessages(current => (
+                    current.map((value, messageIndex) => messageIndex === index ? e.target.value : value)
+                  ))}
+                  placeholder={index === 0 ? 'Câu 1 (bắt buộc)' : `Câu ${index + 1} (không bắt buộc)`}
+                  maxLength={80}
+                  aria-label={`Lời chúc Giáng sinh ${index + 1}`}
+                  style={{
+                    width: '100%',
+                    padding: '0.625rem 3.25rem 0.625rem 0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <span style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#9ca3af',
+                  fontSize: '0.75rem',
+                  pointerEvents: 'none',
+                }}>
+                  {text.length}/80
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1613,6 +1689,14 @@ function OrderPage() {
                   </span>
                 </p>
               )}
+              {templateType === 'lovechristmas' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh bay ra từ ngôi sao
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {LOVECHRISTMAS_MAX_IMAGES} ảnh — chạm vào cây để xem)
+                  </span>
+                </p>
+              )}
               {templateType === 'farewell' && (
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
                   Ảnh kỷ niệm
@@ -1633,6 +1717,8 @@ function OrderPage() {
                     ? SNOWHEART_MAX_IMAGES
                     : templateType === 'giftflower'
                     ? GIFTFLOWER_MAX_IMAGES
+                    : templateType === 'lovechristmas'
+                    ? LOVECHRISTMAS_MAX_IMAGES
                     : templateType === 'farewell'
                     ? FAREWELL_MAX_IMAGES
                     : QR_TEMPLATE_MAX_IMAGES
