@@ -21,7 +21,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true, "giftflower": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true, "giftflower": true, "lovechristmas": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -36,6 +36,7 @@ var templateFolderMap = map[string]string{
 	"loveburst":     "loveburst",
 	"snowheart":     "snowheart",
 	"giftflower":    "giftflower",
+	"lovechristmas": "lovechristmas",
 }
 
 func domain() string {
@@ -127,7 +128,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst, snowheart, giftflower"))
+		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst, snowheart, giftflower, lovechristmas"))
 		return
 	}
 
@@ -236,6 +237,34 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if resolvedType == "lovechristmas" {
+		title, _ := body["lovechristmasTitle"].(string)
+		if utf8.RuneCountInString(strings.TrimSpace(title)) > 40 {
+			BadRequest(w, "Tiêu đề cây thông không được quá 40 ký tự")
+			return
+		}
+		rawMessages, _ := body["lovechristmasMessages"].([]any)
+		if len(rawMessages) > 5 {
+			BadRequest(w, "Cây thông cần từ 1 đến 5 câu lời chúc")
+			return
+		}
+		nonEmptyMessages := 0
+		for _, item := range rawMessages {
+			text, _ := item.(string)
+			text = strings.TrimSpace(text)
+			if text != "" {
+				nonEmptyMessages++
+			}
+			if utf8.RuneCountInString(text) > 80 {
+				BadRequest(w, "Mỗi câu lời chúc tối đa 80 ký tự")
+				return
+			}
+		}
+		if nonEmptyMessages == 0 {
+			BadRequest(w, "Cây thông cần từ 1 đến 5 câu lời chúc")
+			return
+		}
+	}
 	imageUrls, _ := body["imageUrls"].([]any)
 	expectedImagePrefix := config.GetPublicURL("uploads/temp/" + qrNameLowerEarly + "/")
 	if !validQRImageURLs(body, expectedImagePrefix) {
@@ -248,6 +277,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if resolvedType == "giftflower" && len(imageUrls) > 8 {
 		BadRequest(w, "Bó hoa hỗ trợ tối đa 8 ảnh")
+		return
+	}
+	if resolvedType == "lovechristmas" && len(imageUrls) > 12 {
+		BadRequest(w, "Cây thông hỗ trợ tối đa 12 ảnh")
 		return
 	}
 	if resolvedType == "birthdaycake" && len(imageUrls) > 15 {
@@ -483,6 +516,24 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		templateData["lines"] = lines
+	case "lovechristmas":
+		templateData["title"] = strings.TrimSpace(strOrDefault(body, "lovechristmasTitle", ""))
+		messages := make([]string, 0, 5)
+		if raw, ok := body["lovechristmasMessages"].([]any); ok {
+			for _, item := range raw {
+				if len(messages) == 5 {
+					break
+				}
+				text, _ := item.(string)
+				if text = strings.TrimSpace(text); text != "" {
+					messages = append(messages, text)
+				}
+			}
+		}
+		templateData["messages"] = messages
+		if strings.TrimSpace(content) == "" {
+			templateData["content"] = strings.Join(messages, "\n")
+		}
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls
