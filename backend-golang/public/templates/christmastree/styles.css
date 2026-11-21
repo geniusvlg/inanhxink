@@ -29,6 +29,29 @@
   svg#snowflake {
     display: none;
   }
+
+  /* Hint lúc intro: bấm vào ngôi sao bên ngoài */
+  @keyframes hintPulse {
+    0%   { transform: translate(-50%, 0);    opacity: 0.45; }
+    50%  { transform: translate(-50%, -4px); opacity: 1; }
+    100% { transform: translate(-50%, 0);    opacity: 0.45; }
+  }
+  #introHint {
+    position: fixed;
+    left: 50%;
+    bottom: 4%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    color: #fff9d9;
+    font-family: "XmasFont", system-ui, sans-serif;
+    font-size: clamp(14px, 2vw, 18px);
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 999;
+    animation: hintPulse 1.6s ease-in-out infinite;
+  }
   main {
     position: relative;
   }
