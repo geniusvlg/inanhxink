@@ -116,7 +116,9 @@
             textContext = textCanvas.getContext('2d');
 
             textTexture = new THREE.CanvasTexture(textCanvas);
-            textTexture.minFilter = THREE.LinearFilter;
+            // Mipmaps keep the 2048px board sharp when it is drawn small on screen
+            textTexture.generateMipmaps = true;
+            textTexture.minFilter = THREE.LinearMipmapLinearFilter;
             textTexture.magFilter = THREE.LinearFilter;
             textTexture.anisotropy = 16; // Tăng chất lượng texture
 
@@ -153,7 +155,7 @@
 
             // "Merry Christmas" Text - Enhanced Glow (x2 cho canvas gấp đôi)
             textContext.shadowColor = "rgba(255, 107, 107, 0.9)"; // Pink
-            textContext.shadowBlur = 60; // x2
+            textContext.shadowBlur = 24; // tighter glow keeps the letters crisp
             textContext.font = "bold 200px 'Pacifico', cursive"; // x2
             textContext.fillStyle = "#ff6b6b"; // Pink
             textContext.textAlign = "center";
@@ -304,22 +306,6 @@
             document.getElementById('modal-close-btn').addEventListener('click', closeImageModal); // Nút X đóng modal
         }
 
-        function playPopSound() {
-            const originalElement = document.getElementById('pop-sound');
-            if (originalElement) {
-                const sourceElement = originalElement.querySelector('source');
-                if (sourceElement) {
-                    const audioSrc = sourceElement.src;
-                    const audio = new Audio(audioSrc);
-                    audio.volume = 0.5;
-                    audio.playbackRate = 0.8 + Math.random() * 0.4;
-                    setTimeout(() => {
-                        audio.play().catch(e => {});
-                    }, Math.random() * 50);
-                }
-            }
-        }
-
         function initTrails() {
             const positions = new Float32Array(maxTrailParticles * 3);
             const colors = new Float32Array(maxTrailParticles * 3);
@@ -363,10 +349,6 @@
                     oldItem.element.parentNode.removeChild(oldItem.element);
                 }
             }
-            if (!isAmbient) {
-                playPopSound();
-            }
-            // -----------------------------------
             const imgUrl = targetUrl || imageUrls[Math.floor(Math.random() * imageUrls.length)];
             const imgElement = document.createElement('img');
             imgElement.src = imgUrl;
@@ -611,9 +593,6 @@
             let message = textMessages[0];
             if (textMessages.length > 0) {
                 message = textMessages[Math.floor(Math.random() * textMessages.length)];
-            }
-            if (!isAmbient) {
-                playPopSound();
             }
             const textElement = document.createElement('div');
             const uniqueId = 'text-' + Date.now() + Math.random();
@@ -1476,14 +1455,6 @@
                         textObj.position.copy(intersectPoint.add(dragOffset));
                     }
                     textObj.velocity.set(0, 0, 0);
-                } else if (textObj.type === 'image') {
-                    textObj.velocity.y += gravity;
-                    const t = nowTime + textObj.timeOffset;
-                    textObj.velocity.x += Math.sin(t * textObj.swayFreq) * 0.002;
-                    textObj.velocity.z += Math.cos(t * textObj.swayFreq * 0.8) * 0.002;
-                    textObj.velocity.multiplyScalar(0.96);
-                    if (textObj.velocity.y < -0.04) textObj.velocity.y = -0.04;
-                    textObj.position.add(textObj.velocity);
                 } else {
                     textObj.velocity.y += gravity;
                     const t = nowTime + textObj.timeOffset;
