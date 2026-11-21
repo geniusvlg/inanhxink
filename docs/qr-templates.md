@@ -227,7 +227,7 @@ immediately and holds the photos still. Seeded by
 
 ## Love Christmas
 
-A tap on the opening screen starts the shared background music and a short camera sweep around a particle Christmas tree. The tree draws itself in, snow and fireworks play over a galaxy, and the order title plus up to five messages type onto a glowing board. The tree cycles its color on its own. Tapping it still bursts the uploaded photos (or a message, when there are no photos). Photos fall slowly, can be dragged, and a hint asks the viewer to tap one to open it larger. `prefers-reduced-motion` skips the camera sweep and the fireworks.
+A tap on the opening screen starts the shared background music and a short camera sweep around a particle Christmas tree. The tree draws itself in, snow and fireworks play over a galaxy, and the order title plus up to five messages type onto a glowing board. The tree cycles its color on its own. Tapping it still bursts the uploaded photos (or a message, when there are no photos). Photos fall at the original pace with no pop sound, can be dragged, and a hint asks the viewer to tap one to open it larger. `prefers-reduced-motion` skips the camera sweep and the fireworks.
 
 Order JSON stores `title` (max 40 characters; the scene uses “Merry Christmas” when it is blank), `messages` (1–5 strings, 80 characters), and up to 12 `imageUrls`. The static preview’s demo copy lives in `demo-data.js`. Music uses `#bg-audio` and starts on the opening tap through `window.__inxkPlayBackgroundMusic`. The tree, snowflakes, and pop sound are local assets. Three.js 0.151 and GSAP 3.11 load from jsDelivr. Seeded by `V79__seed_lovechristmas_template.sql`.
 
