@@ -17,7 +17,7 @@ import { type Template } from '../data/mockTemplates';
 import { createOrder, uploadFiles, uploadVoiceRecording, getTemplate, getMetadata } from '../services/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 
-const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart', 'lovechristmas']);
+const CONTENT_OPTIONAL_TEMPLATE_TYPES = new Set(['letterinspace', 'lovedays', 'birthday', 'birthdaycake', 'galaxy', 'farewell', 'snowheart', 'lovechristmas', 'christmastree']);
 
 const FAREWELL_DESTINATION_LABELS: Record<string, string> = {
   australia: 'Úc',
@@ -59,6 +59,7 @@ const DEFAULT_LOVEBURST_MESSAGES = ['Gửi Em 💖💕', 'Người Anh Yêu Nh�
 const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_GIFTFLOWER_LINES = ['', '', ''];
 const DEFAULT_LOVECHRISTMAS_MESSAGES = ['', '', '', '', ''];
+const DEFAULT_CHRISTMASTREE_POSTCARDS = ['', '', '', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
 const DEFAULT_MIX_MUSIC_VOLUME = 0.04;
 
@@ -142,6 +143,8 @@ function OrderPage() {
   const [giftflowerLines, setGiftflowerLines] = useState<string[]>(DEFAULT_GIFTFLOWER_LINES);
   const [lovechristmasTitle, setLovechristmasTitle] = useState('');
   const [lovechristmasMessages, setLovechristmasMessages] = useState<string[]>(DEFAULT_LOVECHRISTMAS_MESSAGES);
+  const [christmastreeTitle, setChristmastreeTitle] = useState('');
+  const [christmastreePostcards, setChristmastreePostcards] = useState<string[]>(DEFAULT_CHRISTMASTREE_POSTCARDS);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -168,6 +171,7 @@ function OrderPage() {
   const SNOWHEART_MAX_IMAGES = 15;
   const GIFTFLOWER_MAX_IMAGES = 8;
   const LOVECHRISTMAS_MAX_IMAGES = 12;
+  const CHRISTMASTREE_MAX_IMAGES = 8;
   const LOVEDAYS_MAX_IMAGES = AVATAR_SLOTS + GALLERY_SLOTS;
   const SPECIAL_GIFT_AVATAR_SLOTS = 2;
   const SPECIAL_GIFT_GALLERY_SLOTS = QR_TEMPLATE_MAX_IMAGES;
@@ -268,6 +272,10 @@ function OrderPage() {
         if (typeof d.lovechristmasTitle === 'string') setLovechristmasTitle(d.lovechristmasTitle);
         if (Array.isArray(d.lovechristmasMessages)) {
           setLovechristmasMessages(Array.from({ length: 5 }, (_, i) => String(d.lovechristmasMessages[i] || '')));
+        }
+        if (typeof d.christmastreeTitle === 'string') setChristmastreeTitle(d.christmastreeTitle);
+        if (Array.isArray(d.christmastreePostcards)) {
+          setChristmastreePostcards(Array.from({ length: 5 }, (_, i) => String(d.christmastreePostcards[i] || '')));
         }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
@@ -554,6 +562,12 @@ function OrderPage() {
       if (lines.some(line => line.length > 80)) { setError('Mỗi câu lời chúc tối đa 80 ký tự'); return; }
       if (lovechristmasTitle.length > 40) { setError('Tiêu đề cây thông không được quá 40 ký tự'); return; }
     }
+    if (templateType === 'christmastree') {
+      if (christmastreeTitle.trim().length > 60) { setError('Lời chúc trên cây thông không được quá 60 ký tự'); return; }
+      const cards = christmastreePostcards.map(s => s.trim()).filter(Boolean);
+      if (!cards.length) { setError('Vui lòng nhập ít nhất một tấm thư'); return; }
+      if (cards.some(card => card.length > 400)) { setError('Mỗi tấm thư tối đa 400 ký tự'); return; }
+    }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
     }
@@ -706,6 +720,10 @@ function OrderPage() {
           lovechristmasTitle: lovechristmasTitle.trim(),
           lovechristmasMessages: lovechristmasMessages.map(s => s.trim()).filter(Boolean),
         }),
+        ...(templateType === 'christmastree' && {
+          christmastreeTitle: christmastreeTitle.trim(),
+          christmastreePostcards: christmastreePostcards.map(s => s.trim()).filter(Boolean),
+        }),
       });
 
       if (response.success) {
@@ -722,7 +740,7 @@ function OrderPage() {
             farewellStageMessages,
             loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
             giftflowerIntroTitle, giftflowerIntroHint, giftflowerTitle, giftflowerLetterTitle, giftflowerLines,
-            lovechristmasTitle, lovechristmasMessages,
+            lovechristmasTitle, lovechristmasMessages, christmastreeTitle, christmastreePostcards,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -1116,6 +1134,62 @@ function OrderPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {templateType === 'christmastree' && (
+        <div style={{ margin: '1rem 0' }}>
+          <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Lời chúc trên cây thông</label>
+          <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#6b7280' }}>
+            Hiển thị phía trên cây thông sau khi bấm ngôi sao. Bỏ trống sẽ dùng "Merry Christmas".
+          </p>
+          <input
+            type="text"
+            value={christmastreeTitle}
+            onChange={e => setChristmastreeTitle(e.target.value)}
+            placeholder="Merry Christmas"
+            maxLength={60}
+            aria-label="Lời chúc trên cây thông"
+            style={{
+              width: '100%',
+              padding: '0.625rem 0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.5rem',
+              fontSize: '1rem',
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+              marginBottom: '1rem',
+            }}
+          />
+          <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Thư trên cây thông</label>
+          <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#6b7280' }}>
+            Tối đa 5 tấm thư, mỗi thư 400 ký tự. Người nhận chạm vào tấm thiệp trên cây để đọc.
+          </p>
+          {christmastreePostcards.map((text, index) => (
+            <div key={index} style={{ marginBottom: '0.7rem' }}>
+              <textarea
+                value={text}
+                onChange={e => setChristmastreePostcards(current => (
+                  current.map((value, cardIndex) => cardIndex === index ? e.target.value : value)
+                ))}
+                placeholder={index === 0 ? 'Thư 1 (bắt buộc)' : `Thư ${index + 1} (không bắt buộc)`}
+                maxLength={400}
+                rows={4}
+                aria-label={`Thư Giáng sinh ${index + 1}`}
+                style={{
+                  width: '100%',
+                  padding: '0.625rem 0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box',
+                  resize: 'vertical',
+                }}
+              />
+              <div style={{ textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem' }}>{text.length}/400</div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1697,6 +1771,14 @@ function OrderPage() {
                   </span>
                 </p>
               )}
+              {templateType === 'christmastree' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh trong hộp quà
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {CHRISTMASTREE_MAX_IMAGES} ảnh — mỗi hộp quà dưới cây mở ra một ảnh)
+                  </span>
+                </p>
+              )}
               {templateType === 'farewell' && (
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
                   Ảnh kỷ niệm
@@ -1719,6 +1801,8 @@ function OrderPage() {
                     ? GIFTFLOWER_MAX_IMAGES
                     : templateType === 'lovechristmas'
                     ? LOVECHRISTMAS_MAX_IMAGES
+                    : templateType === 'christmastree'
+                    ? CHRISTMASTREE_MAX_IMAGES
                     : templateType === 'farewell'
                     ? FAREWELL_MAX_IMAGES
                     : QR_TEMPLATE_MAX_IMAGES

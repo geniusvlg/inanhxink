@@ -1,0 +1,19 @@
+window.dataFromSubdomain = window.dataFromSubdomain || {
+  template: 'christmastree',
+  data: {
+    title: 'Merry Christmas',
+    giftImageVariants: [
+      '/templates/lovechristmas/images/default.jpeg',
+      '/templates/lovechristmas/images/default2.jpeg',
+      '/templates/lovechristmas/images/default3.jpeg',
+      '/templates/lovechristmas/images/default4.jpeg'
+    ],
+    defaultPostcardMessages: [
+      'Gửi [Tên người yêu] của anh/em,\nVậy là một mùa Giáng sinh nữa lại về, mang theo không khí se lạnh của những ngày cuối năm. Giữa dòng người tấp nập ngoài kia, điều tuyệt vời và ấm áp nhất với anh/em chính là có [anh/em] ở bên cạnh.\nCảm ơn [anh/em] vì đã luôn kiên nhẫn, lắng nghe và đồng hành cùng [anh/em] suốt một năm qua. Chẳng cần ông già Noel mang đến món quà xa hoa nào cả, vì sự hiện diện của [anh/em] đã là món quà Giáng sinh ý nghĩa nhất rồi. Chúc tình yêu của chúng ta một mùa Noel thật bình an, ấm áp và mãi nắm tay nhau đi qua thật nhiều mùa đông nữa nhé.\nYêu [anh/em] rất nhiều!\n[Tên của bạn]',
+      'Mỗi khi tiết trời bắt đầu se lạnh và những ánh đèn lung linh khắp phố phường sáng lên, mình lại nhớ đến những kỷ niệm đẹp mà chúng ta đã có cùng nhau. Mùa Noel năm nay lại về, mang theo không khí ấm áp, bình yên và thật nhiều niềm vui.\nNhân dịp đặc biệt này, mình muốn gửi đến bạn những lời chúc tốt đẹp nhất. Chúc bạn và gia đình một mùa Giáng sinh an lành, ấm áp bên những người thân yêu. Mong rằng mọi ước nguyện của bạn sẽ thành hiện thực, công việc luôn suôn sẻ và cuộc sống lúc nào cũng ngập tràn tiếng cười.\nCảm ơn bạn vì đã luôn đồng hành, chia sẻ và mang lại thật nhiều năng lượng tích cực cho mình trong suốt thời gian qua. Hy vọng chúng ta sẽ sớm có dịp gặp gỡ để cùng nhau tận hưởng không khí tuyệt vời này nhé!',
+      'Vậy là một mùa Giáng sinh nữa lại gõ cửa. Giữa những ngày cuối năm hối hả, khi những giai điệu Jingle Bells quen thuộc bắt đầu ngân vang và không khí se lạnh tràn về khắp mọi ngóc ngách, lòng mình lại chợt dịu lại và nghĩ về bạn.\nNăm qua chắc hẳn đã có không ít thử thách, nhưng mong rằng trong khoảnh khắc bình yên của đêm Noel này, bạn sẽ gác lại mọi bộn bề để tận hưởng trọn vẹn sự ấm áp bên những người thương yêu.\nChúc bạn có một mùa Giáng sinh thật ngọt ngào, trái tim luôn đong đầy yêu thương và nụ cười luôn nở trên môi. Cầu mong mọi điều may mắn, bình an sẽ mỉm cười với bạn không chỉ trong mùa lễ hội này mà còn suốt cả hành trình phía trước.\nMong sớm được cùng bạn nhâm nhi một tách trà nóng và kể cho nhau nghe thật nhiều chuyện vui.',
+      'Tiếng chuông nhà thờ ngân vang, ánh đèn rực rỡ giăng khắp lối báo hiệu một mùa Giáng sinh an lành nữa lại về. Giữa tiết trời se lạnh của những ngày cuối năm, lá thư nhỏ này mang theo tất cả sự trân quý và những lời chúc tốt đẹp nhất mình muốn dành riêng cho bạn.\nCảm ơn vì sự hiện diện của bạn đã làm cho năm qua trở nên ý nghĩa và đáng nhớ hơn rất nhiều. Trong đêm Noel nhiệm màu này, mong rằng mọi muộn phiền của bạn đều tan biến, nhường chỗ cho niềm vui, sự bình yên và những cái ôm thật chặt từ gia đình, bạn bè.\nChúc bạn một mùa lễ hội tràn ngập tiếng cười, sức khỏe dồi dào và vạn sự hanh thông. Mong rằng năm mới sắp tới sẽ mở ra cho bạn thật nhiều cơ hội rực rỡ và những hành trình rộn rã niềm vui.',
+      'Giáng sinh năm nay lại về rồi! Nhìn những cây thông xanh rực rỡ sắc màu và dòng người tấp nập ngoài phố, mình chợt nhận ra một năm nữa sắp khép lại. Trong khoảnh khắc giao mùa đặc biệt này, người đầu tiên mình muốn gửi lời chúc tốt đẹp nhất chính là bạn.\nMong rằng đêm Noel của bạn sẽ thật rộn ràng tiếng cười, ấm áp tình thân và tràn ngập những món quà bất ngờ. Nếu năm qua có điều gì chưa trọn vẹn, hãy để gió đông cuốn đi hết nhé, giữ lại thật nhiều niềm tin và năng lượng cho chặng đường mới sắp tới.\nChúc bạn luôn bình an, rạng rỡ và hạnh phúc không chỉ riêng mùa Giáng sinh này mà là tất cả 365 ngày trong năm. Hẹn sớm gặp lại bạn để cùng nhau đón những niềm vui mới!'
+    ]
+  }
+};
