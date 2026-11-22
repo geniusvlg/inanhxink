@@ -312,8 +312,8 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		BadRequest(w, "Cây thông hỗ trợ tối đa 12 ảnh")
 		return
 	}
-	if resolvedType == "christmastree" && len(imageUrls) > 8 {
-		BadRequest(w, "Cây thông hỗ trợ tối đa 8 ảnh")
+	if resolvedType == "christmastree" && len(imageUrls) > 12 {
+		BadRequest(w, "Cây thông hỗ trợ tối đa 12 ảnh")
 		return
 	}
 	if resolvedType == "birthdaycake" && len(imageUrls) > 15 {

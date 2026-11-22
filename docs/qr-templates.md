@@ -20,7 +20,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `snowheart` | `snowheart` | Up to five short messages, an optional letter, and up to 15 orbiting photos |
 | `giftflower` | `giftflower` | Intro tap, tulip bouquet, letter card, then up to 8 photos that float upward. Three rotating lines (60 characters), letter up to 400 characters |
 | `lovechristmas` | `lovechristmas` | Tap to open a particle Christmas tree. A title and up to five messages type on the board; tapping the tree bursts up to 12 photos from the star |
-| `christmastree` | `christmastree` | Tap the star to grow a 3D tree. Up to 5 postcard letters (400 characters) hang on it and up to 8 photos sit in gift boxes at its base |
+| `christmastree` | `christmastree` | Tap the star to grow a 3D tree. Up to 5 postcard letters (400 characters) hang on it and up to 12 photos sit in gift boxes at its base |
 
 Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
 and loads its blocking `app.js` at the end of the body. Do not defer that script
@@ -236,7 +236,7 @@ Order JSON stores `title` (max 40 characters; the scene uses “Merry Christmas�
 
 Authorized recreation of TokiToki's Christmas Tree demo, implemented locally without a runtime dependency on the reference site. A dim 3D star waits on a black screen; tapping it (capture-phase `pointerdown`/`touchstart` on the invisible `#start-hit` button) starts the shared music, lights the star, pulls the camera back and grows a procedural Three.js tree with ornaments, bows, a twinkling light string, snow, sparkles and orbiting greeting words ("MERRY CHRISTMAS", "PEACE & LOVE", ...). Gift boxes ring the base and postcards hang on the branches. Tapping either opens a two-sided Christmas postcard: its illustrated front flips to a cream, candy-stripe-backed letter or photo. Dragging spins the tree. Gifts and postcards behind the foliage are occlusion-tested, so they cannot be picked through the tree. `prefers-reduced-motion` skips the intro tween, snow, sparkles, card transition and auto-rotation.
 
-Order JSON stores `postcards` (1–5 strings, 400 characters each) and up to 8 raw-S3 `imageUrls` (gift `i` shows photo `i % imageUrls.length`; with no photos a greeting card opens instead). Form fields are `christmastreePostcards` + the shared image uploader. The static preview's demo copy lives in `demo-data.js`. Music uses `#bg-audio` and starts on the star tap through `window.__inxkPlayBackgroundMusic`. There are no local binary assets: textures are drawn on canvas. Three.js 0.164 loads from unpkg, with Playpen Sans and Mountains of Christmas from Google Fonts. Seeded by `V80__seed_christmastree_template.sql`.
+Order JSON stores `postcards` (1–5 strings, 400 characters each) and up to 12 raw-S3 `imageUrls` (gift `i` shows photo `i % imageUrls.length`; with no photos a greeting card opens instead). Form fields are `christmastreePostcards` + the shared image uploader. The static preview's demo copy lives in `demo-data.js`. Music uses `#bg-audio` and starts on the star tap through `window.__inxkPlayBackgroundMusic`. There are no local binary assets: textures are drawn on canvas. Three.js 0.164 loads from unpkg, with Playpen Sans and Mountains of Christmas from Google Fonts. Seeded by `V80__seed_christmastree_template.sql`.
 
 ## Shared Voice Player
 
