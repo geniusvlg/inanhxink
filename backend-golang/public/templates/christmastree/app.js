@@ -381,173 +381,13 @@ import { Flow as i } from "three/addons/modifiers/CurveModifier.js";
   let mouse = new THREE.Vector2();
   let modal = null;
   const _ = new THREE.Matrix4();
-  // Audio object cho nhạc nền
-  let backgroundMusic = null;
-  let musicStarted = false;
+  // Nhạc nền và lời nhắn giọng nói do voice-player.js phát (một bản nhạc + một ghi âm).
+  // Template không tự tạo Audio nữa — bản thứ hai chồng lên và làm trang giật.
+  function initBackgroundMusic() {}
 
-  // Hàm khởi tạo và quản lý audio
-  function initBackgroundMusic() {
-    try {
-      backgroundMusic = new Audio(
-        (window.dataFromSubdomain && window.dataFromSubdomain.data &&
-          (window.dataFromSubdomain.data.BACKGROUND_AUDIO_SRC ||
-            window.dataFromSubdomain.data.musicUrl ||
-            window.dataFromSubdomain.data.song)) || ""
-      );
-
-      // Cấu hình audio
-      backgroundMusic.preload = "auto";
-      backgroundMusic.loop = true;
-      backgroundMusic.volume = 0.7; // Đặt âm lượng 70%
-
-      // Quan trọng cho mobile: đảm bảo audio không bị tạm dừng khi tab không active
-      // (một số trình duyệt mobile tự động tạm dừng)
-      backgroundMusic.addEventListener("pause", () => {
-        // Nếu nhạc bị tạm dừng nhưng chúng ta muốn nó tiếp tục phát
-        if (musicStarted) {
-          // Thử phát lại (có thể bị chặn bởi trình duyệt)
-          setTimeout(() => {
-            if (backgroundMusic && musicStarted && backgroundMusic.paused) {
-              backgroundMusic.play().catch(() => {
-                // Bị chặn, không làm gì
-              });
-            }
-          }, 100);
-        }
-      });
-
-      // Xử lý lỗi
-      backgroundMusic.addEventListener("error", (e) => {
-        console.warn("Không thể tải nhạc nền:", e);
-        // Thử tải lại với đường dẫn tuyệt đối hoặc tương đối khác
-        if (backgroundMusic.error && backgroundMusic.error.code === 4) {
-          console.warn("File nhạc không tìm thấy, kiểm tra đường dẫn song.mp3");
-        }
-      });
-
-      // Xử lý cho iOS Safari và Android - cần user interaction
-      backgroundMusic.addEventListener("canplaythrough", () => {
-        // Audio đã sẵn sàng để phát
-        console.log("Nhạc nền đã sẵn sàng");
-      });
-
-      // Xử lý khi audio bị tạm dừng do tab không active (mobile)
-      document.addEventListener("visibilitychange", () => {
-        if (
-          !document.hidden &&
-          musicStarted &&
-          backgroundMusic &&
-          backgroundMusic.paused
-        ) {
-          // Tab đã active lại, thử phát lại nhạc
-          backgroundMusic.play().catch(() => {
-            // Có thể cần user interaction lại
-          });
-        }
-      });
-
-      // Thử preload audio (một số trình duyệt yêu cầu user interaction)
-      // Đối với mobile, preload có thể không hoạt động cho đến khi có user interaction
-      try {
-        backgroundMusic.load();
-      } catch (loadError) {
-        console.warn(
-          "Không thể preload audio (có thể cần user interaction):",
-          loadError
-        );
-      }
-    } catch (error) {
-      console.warn("Lỗi khởi tạo audio:", error);
-    }
-  }
-
-  // Hàm phát nhạc (chỉ phát khi có user interaction)
   function playBackgroundMusic() {
-    if (!backgroundMusic || musicStarted) return;
-
-    try {
-      // Đảm bảo phát từ đầu
-      backgroundMusic.currentTime = 0;
-
-      // Đặt volume lại để đảm bảo (một số thiết bị có thể reset)
-      backgroundMusic.volume = 0.7;
-
-      // Promise-based play để xử lý autoplay policy
-      const playPromise = backgroundMusic.play();
-
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            musicStarted = true;
-            console.log("Nhạc nền đã bắt đầu phát");
-          })
-          .catch((error) => {
-            // Một số trình duyệt (đặc biệt là mobile) chặn autoplay
-            console.warn("Không thể phát nhạc tự động:", error);
-
-            // Đối với iOS Safari và một số Android, cần unlock audio context
-            // Thử unlock bằng cách tạo một AudioContext và resume
-            try {
-              if (
-                typeof AudioContext !== "undefined" ||
-                typeof webkitAudioContext !== "undefined"
-              ) {
-                const AudioContextClass = AudioContext || webkitAudioContext;
-                const audioContext = new AudioContextClass();
-
-                // Resume audio context nếu bị suspended
-                if (audioContext.state === "suspended") {
-                  audioContext.resume().then(() => {
-                    // Thử phát lại sau khi resume
-                    if (backgroundMusic && !musicStarted) {
-                      backgroundMusic
-                        .play()
-                        .then(() => {
-                          musicStarted = true;
-                          console.log(
-                            "Nhạc nền đã bắt đầu phát sau khi resume context"
-                          );
-                        })
-                        .catch((e) =>
-                          console.warn("Vẫn không thể phát nhạc:", e)
-                        );
-                    }
-                  });
-                }
-              }
-            } catch (ctxError) {
-              console.warn("Lỗi khi xử lý AudioContext:", ctxError);
-            }
-
-            // Fallback: thử lại khi có user interaction tiếp theo
-            const retryPlay = () => {
-              if (!musicStarted && backgroundMusic) {
-                backgroundMusic
-                  .play()
-                  .then(() => {
-                    musicStarted = true;
-                    console.log("Nhạc nền đã bắt đầu phát sau khi retry");
-                    // Xóa listener sau khi thành công
-                    document.removeEventListener("click", retryPlay);
-                    document.removeEventListener("touchstart", retryPlay);
-                  })
-                  .catch((e) => {
-                    // Giữ listener để thử lại lần sau
-                  });
-              }
-            };
-
-            // Thêm listener cho click và touch (cho mobile)
-            document.addEventListener("click", retryPlay, { once: false });
-            document.addEventListener("touchstart", retryPlay, { once: false });
-          });
-      } else {
-        // Fallback cho trình duyệt cũ không hỗ trợ Promise
-        backgroundMusic.play();
-        musicStarted = true;
-      }
-    } catch (error) {
-      console.warn("Lỗi khi phát nhạc:", error);
+    if (typeof window.__inxkPlayBackgroundMusic === "function") {
+      window.__inxkPlayBackgroundMusic();
     }
   }
 
@@ -868,41 +708,12 @@ import { Flow as i } from "three/addons/modifiers/CurveModifier.js";
     return t || "Merry Christmas";
   })();
 
-  const postcardImageCache = new Map();
-
   // Counter riêng cho postcard (messages) và gift (images)
   let postcardCounter = 0; // Counter cho danh sách messages
   let giftCounter = 0; // Counter cho danh sách images
 
-  function preloadPostcardImages() {
-    postcardImageUrls.forEach((src) => {
-      if (!src || postcardImageCache.has(src)) return;
-      const img = new Image();
-      const record = { img, ready: Promise.resolve() };
-
-      // Thiết lập promise decode nếu trình duyệt hỗ trợ
-      if (img.decode) {
-        record.ready = new Promise((resolve) => {
-          img.addEventListener("load", () => {
-            img
-              .decode()
-              .then(resolve)
-              .catch(() => resolve());
-          });
-          img.addEventListener("error", () => resolve());
-        });
-      } else {
-        record.ready = new Promise((resolve) => {
-          img.addEventListener("load", () => resolve());
-          img.addEventListener("error", () => resolve());
-        });
-      }
-
-      img.src = src;
-      postcardImageCache.set(src, record);
-    });
-  }
-  preloadPostcardImages();
+  // Không tải trước toàn bộ ảnh. Mỗi file có thể vài MB; tải và decode hết
+  // lúc mở trang làm điện thoại đứng hình và modal phải chờ decode xong mới hiện.
 
   function buildModalPayload(kind, index) {
     if (kind === "postcard") {
@@ -1022,36 +833,13 @@ import { Flow as i } from "three/addons/modifiers/CurveModifier.js";
         justify-content: center;
       `;
 
-      const src = data.src;
-      const cached = src && postcardImageCache.get(src);
-
-      const insertImageElement = (imgEl) => {
-        if (!imgEl) return;
-        // Đảm bảo ảnh không nằm ở DOM khác trước khi append
-        if (imgEl.parentElement) {
-          imgEl.parentElement.removeChild(imgEl);
-        }
-        imgEl.className = "modal-image";
-        imgEl.alt = "Postcard image";
-        imgWrapper.appendChild(imgEl);
-        modalBody.appendChild(imgWrapper);
-      };
-
-      if (cached) {
-        cached.ready
-          .then(() => {
-            insertImageElement(cached.img);
-          })
-          .catch(() => {
-            const fallback = document.createElement("img");
-            fallback.src = src;
-            insertImageElement(fallback);
-          });
-      } else {
-        const img = document.createElement("img");
-        img.src = src;
-        insertImageElement(img);
-      }
+      const img = document.createElement("img");
+      img.className = "modal-image";
+      img.alt = "Ảnh trong hộp quà";
+      img.decoding = "async";
+      img.src = data.src;
+      imgWrapper.appendChild(img);
+      modalBody.appendChild(imgWrapper);
     } else if (data.type === "text") {
       const messageWrapper = document.createElement("div");
       messageWrapper.className = "message-wrapper";
