@@ -93,12 +93,18 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
   JavaScript `Audio` object or hardcode music volume.
 - Voice recordings play once at the template reveal moment (open letter, gift
   box, tap-to-start, …), at full volume. A **Nghe lại lời nhắn** button
-  replays afterwards.
+  replays afterwards. Later taps — opening a photo, rotating the scene, or
+  tapping elsewhere — do not restart the recording. On a phone one tap fires
+  several events (`pointerdown`, `touchstart`, `touchend`, `click`); only the
+  first of those starts the recording.
 - Music keeps playing at the saved `musicVolume` while the voice plays. When
   the voice finishes, music rises to at least 50% (a higher saved volume is
   preserved). Replaying the voice restores the saved mix for its duration.
 - If the browser blocks sound autoplay, playback begins after the visitor's
-  first tap, click, or key press anywhere on the page.
+  first tap, click, or key press anywhere on the page. Christmas tree is the
+  exception: music and the voice recording start together only when the
+  visitor taps the intro star (`inxk:christmastree-start`). Opening a photo
+  or tapping elsewhere does not start them.
 
 Browsers, especially mobile Safari and Chrome, may prohibit audible autoplay
 before user interaction. This fallback is required and cannot be bypassed
