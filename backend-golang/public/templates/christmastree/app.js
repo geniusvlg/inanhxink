@@ -386,7 +386,9 @@ import { Flow as i } from "three/addons/modifiers/CurveModifier.js";
   function initBackgroundMusic() {}
 
   function playBackgroundMusic() {
-    window.dispatchEvent(new Event("inxk:christmastree-start"));
+    if (typeof window.__inxkPlayBackgroundMusic === "function") {
+      window.__inxkPlayBackgroundMusic();
+    }
   }
 
   // Hàm tạo modal
@@ -899,15 +901,11 @@ import { Flow as i } from "three/addons/modifiers/CurveModifier.js";
       raycaster.setFromCamera(mouse, E);
 
       // Kiểm tra giao điểm với cả postcard, hộp quà và ngôi sao
-      const clickTargets = introMode
-        ? topStar
-          ? [topStar]
-          : []
-        : [
-            ...postcardMeshes,
-            ...giftMeshes,
-            ...(topStar ? [topStar] : []),
-          ];
+      const clickTargets = [
+        ...postcardMeshes,
+        ...giftMeshes,
+        ...(topStar ? [topStar] : []),
+      ];
       if (!clickTargets.length) return;
 
       const intersects = raycaster.intersectObjects(clickTargets, true);

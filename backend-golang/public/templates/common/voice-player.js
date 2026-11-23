@@ -128,8 +128,6 @@
     var voiceUrl = data.voiceRecordingUrl;
     var musicUrl = data.musicUrl;
     var musicVolume = parseVolume(data.musicVolume, voiceUrl && musicUrl ? 0.04 : 1);
-    // Cây thông: nhạc và lời nhắn chỉ bắt đầu khi bấm ngôi sao ngoài, không phải mọi chỗ.
-    var introGated = !!(rootData && rootData.template === 'christmastree');
     if ((!voiceUrl && !musicUrl) || document.getElementById('inxk-voice-player')) return;
 
     var needsGain = musicVolume < 1;
@@ -228,15 +226,9 @@
       musicSource.start(0);
     }
 
-    function startVoiceSource(offsetSeconds) {
+    function startVoiceSource() {
       var ctx = ensureAudioContext();
       if (!ctx || !voiceBuffer) return;
-      var offset = offsetSeconds || 0;
-      if (offset < 0) offset = 0;
-      if (offset >= voiceBuffer.duration) {
-        finishVoicePlayback();
-        return;
-      }
       if (voiceSource) {
         voiceSource.onended = null;
         try { voiceSource.stop(); } catch (e) {}
@@ -254,17 +246,7 @@
         voiceSource = null;
         finishVoicePlayback();
       };
-      try {
-        source.start(0, offset);
-      } catch (e) {
-        source.start(0);
-      }
-    }
-
-    function htmlVoiceOffset() {
-      if (!voiceAudio || voiceAudio.ended || voiceAudio.paused) return null;
-      var t = voiceAudio.currentTime || 0;
-      return t >= 0 ? t : null;
+      source.start(0);
     }
 
     function applyMusicGain() {
@@ -327,17 +309,13 @@
 
     function playMix(withVoice) {
       unlockWebAudio();
-      // A later tap only resumes music. If the recording is already playing
-      // through the <audio> element, keep its position when the mixer takes over.
-      var resumeVoiceAt = withVoice ? null : htmlVoiceOffset();
       if (withVoice) activeMusicVolume = musicVolume;
       if (mixerAvailable()) {
         ensureMixerGraph();
         applyMusicGain();
         silenceHtmlAudio();
         if (musicUrl) startMusicSource();
-        if (withVoice) startVoiceSource(0);
-        else if (resumeVoiceAt !== null && !voiceSource) startVoiceSource(resumeVoiceAt);
+        if (withVoice) startVoiceSource();
         removeMusicUnlockListeners();
         return Promise.resolve();
       }
@@ -371,7 +349,7 @@
     var unlockEvents = ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'];
     function unlockMusic() {
       userGestured = true;
-      playMix(false);
+      playMix(voiceRevealed);
     }
     function addMusicUnlockListeners() {
       unlockEvents.forEach(function (eventName) {
@@ -398,7 +376,7 @@
         if (turningOn && !musicSource) playMix(false);
       });
       setMuted(false);
-      if (!introGated) tryAutoplayMusic();
+      tryAutoplayMusic();
     }
 
     if (voiceAudio) {
@@ -407,7 +385,10 @@
       }
 
       function revealVoice() {
-        if (voiceRevealed) return;
+        if (voiceRevealed) {
+          playMix(true);
+          return;
+        }
         voiceRevealed = true;
         replayButton.hidden = false;
         playVoiceFromStart();
@@ -457,43 +438,23 @@
           }
         });
         overlayObserver.observe(lovedaysOverlayEl, { attributes: true, attributeFilter: ['class'] });
-      } else if (!introGated) {
+      } else {
         replayButton.hidden = false;
-        var onFirstReveal = function () {
-          unlockEvents.forEach(function (eventName) {
-            document.removeEventListener(eventName, onFirstReveal);
-          });
-          revealVoice();
-        };
         unlockEvents.forEach(function (eventName) {
-          document.addEventListener(eventName, onFirstReveal);
+          document.addEventListener(eventName, revealVoice, { once: true });
         });
       }
 
       replayButton.addEventListener('click', playVoiceFromStart);
     }
 
-    if (introGated) {
-      window.addEventListener('inxk:christmastree-start', function onIntro() {
-        window.removeEventListener('inxk:christmastree-start', onIntro);
+    ['pointerdown', 'touchstart', 'touchend', 'keydown'].forEach(function (eventName) {
+      document.addEventListener(eventName, function onFirstGesture() {
+        document.removeEventListener(eventName, onFirstGesture);
         userGestured = true;
-        if (voiceAudio) {
-          voiceRevealed = true;
-          replayButton.hidden = false;
-          playMix(true);
-          return;
-        }
         playMix(false);
-      });
-    } else {
-      ['pointerdown', 'touchstart', 'touchend', 'keydown'].forEach(function (eventName) {
-        document.addEventListener(eventName, function onFirstGesture() {
-          document.removeEventListener(eventName, onFirstGesture);
-          userGestured = true;
-          playMix(false);
-        }, true);
-      });
-    }
+      }, true);
+    });
 
     var observer = new MutationObserver(function () {
       if (!mixerAvailable()) applyMusicGain();
