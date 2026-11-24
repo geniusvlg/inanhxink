@@ -60,6 +60,7 @@ const DEFAULT_SNOWHEART_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_GIFTFLOWER_LINES = ['', '', ''];
 const DEFAULT_LOVECHRISTMAS_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_CHRISTMASTREE_POSTCARDS = ['', '', '', '', ''];
+const DEFAULT_XMASGIFTCARD_MESSAGES = ['', '', '', '', ''];
 const DEFAULT_MUSIC_VOLUME = 1;
 const DEFAULT_MIX_MUSIC_VOLUME = 0.04;
 
@@ -145,6 +146,8 @@ function OrderPage() {
   const [lovechristmasMessages, setLovechristmasMessages] = useState<string[]>(DEFAULT_LOVECHRISTMAS_MESSAGES);
   const [christmastreeTitle, setChristmastreeTitle] = useState('');
   const [christmastreePostcards, setChristmastreePostcards] = useState<string[]>(DEFAULT_CHRISTMASTREE_POSTCARDS);
+  const [xmasgiftcardTitle, setXmasgiftcardTitle] = useState('');
+  const [xmasgiftcardMessages, setXmasgiftcardMessages] = useState<string[]>(DEFAULT_XMASGIFTCARD_MESSAGES);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<(File | null)[]>([]);
@@ -276,6 +279,10 @@ function OrderPage() {
         if (typeof d.christmastreeTitle === 'string') setChristmastreeTitle(d.christmastreeTitle);
         if (Array.isArray(d.christmastreePostcards)) {
           setChristmastreePostcards(Array.from({ length: 5 }, (_, i) => String(d.christmastreePostcards[i] || '')));
+        }
+        if (typeof d.xmasgiftcardTitle === 'string') setXmasgiftcardTitle(d.xmasgiftcardTitle);
+        if (Array.isArray(d.xmasgiftcardMessages)) {
+          setXmasgiftcardMessages(Array.from({ length: 5 }, (_, i) => String(d.xmasgiftcardMessages[i] || '')));
         }
         if (d.imagePreviews?.length) {
           setImagePreviews(d.imagePreviews);
@@ -568,6 +575,13 @@ function OrderPage() {
       if (!cards.length) { setError('Vui lòng nhập ít nhất một tấm thư'); return; }
       if (cards.some(card => card.length > 400)) { setError('Mỗi tấm thư tối đa 400 ký tự'); return; }
     }
+    if (templateType === 'xmasgiftcard') {
+      if (xmasgiftcardTitle.trim().length > 40) { setError('Tiêu đề không được quá 40 ký tự'); return; }
+      const lines = xmasgiftcardMessages.map(s => s.trim()).filter(Boolean);
+      if (!lines.length) { setError('Vui lòng nhập ít nhất một câu trên cây thông'); return; }
+      if (lines.some(line => line.length > 120)) { setError('Mỗi câu trên cây thông tối đa 120 ký tự'); return; }
+      if (content.length > 400) { setError('Lời nhắn trong thiệp không được quá 400 ký tự'); return; }
+    }
     if (templateType === 'specialgift' && content.length > 200) {
       setError('Nội dung thư không được quá 200 ký tự'); return;
     }
@@ -724,6 +738,10 @@ function OrderPage() {
           christmastreeTitle: christmastreeTitle.trim(),
           christmastreePostcards: christmastreePostcards.map(s => s.trim()).filter(Boolean),
         }),
+        ...(templateType === 'xmasgiftcard' && {
+          xmasgiftcardTitle: xmasgiftcardTitle.trim(),
+          xmasgiftcardMessages: xmasgiftcardMessages.map(s => s.trim()).filter(Boolean),
+        }),
       });
 
       if (response.success) {
@@ -741,6 +759,7 @@ function OrderPage() {
             loveburstTitle, loveburstMessages, snowheartLetterTitle, snowheartMessages,
             giftflowerIntroTitle, giftflowerIntroHint, giftflowerTitle, giftflowerLetterTitle, giftflowerLines,
             lovechristmasTitle, lovechristmasMessages, christmastreeTitle, christmastreePostcards,
+            xmasgiftcardTitle, xmasgiftcardMessages,
             // Skip imagePreviews — base64 images can exceed iOS sessionStorage quota
           }));
         } catch { /* ignore quota errors — back-nav draft is optional */ }
@@ -1193,12 +1212,70 @@ function OrderPage() {
         </div>
       )}
 
+      {templateType === 'xmasgiftcard' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>
+              Tiêu đề trên cây thông <span style={{ fontWeight: 400, color: '#6b7280' }}>(không bắt buộc)</span>
+            </label>
+            <input
+              type="text"
+              value={xmasgiftcardTitle}
+              onChange={e => setXmasgiftcardTitle(e.target.value)}
+              placeholder="Merry Christmas"
+              maxLength={40}
+              aria-label="Tiêu đề trên cây thông"
+              style={{ width: '100%', padding: '0.625rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 500, marginBottom: '0.25rem' }}>Câu chạy dưới tiêu đề</label>
+            <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#6b7280' }}>
+              Tối đa 5 câu, mỗi câu 120 ký tự. Các câu lần lượt hiện dưới tiêu đề sau khi mở thiệp.
+            </p>
+            {xmasgiftcardMessages.map((text, index) => (
+              <div key={index} style={{ position: 'relative', marginBottom: '0.55rem' }}>
+                <input
+                  type="text"
+                  value={text}
+                  onChange={e => setXmasgiftcardMessages(current => (
+                    current.map((value, messageIndex) => messageIndex === index ? e.target.value : value)
+                  ))}
+                  placeholder={index === 0 ? 'Câu 1 (bắt buộc)' : `Câu ${index + 1} (không bắt buộc)`}
+                  maxLength={120}
+                  aria-label={`Câu trên cây thông ${index + 1}`}
+                  style={{
+                    width: '100%',
+                    padding: '0.625rem 3.75rem 0.625rem 0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <span style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#9ca3af',
+                  fontSize: '0.75rem',
+                  pointerEvents: 'none',
+                }}>
+                  {text.length}/120
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!CONTENT_OPTIONAL_TEMPLATE_TYPES.has(templateType) && (
         <ContentEditor
           value={content}
           onChange={setContent}
           label={
-            templateType === 'giftflower'
+            templateType === 'giftflower' || templateType === 'xmasgiftcard'
               ? 'Nội dung thiệp'
               : templateType === 'specialgift' || templateType === 'loveburst'
               ? 'Nội dung thư'
@@ -1207,12 +1284,14 @@ function OrderPage() {
           placeholder={
             templateType === 'giftflower'
               ? 'Lời nhắn hiện trong thiệp khi chạm vào hoa...'
+              : templateType === 'xmasgiftcard'
+              ? 'Lời nhắn hiện trong thiệp khi chạm vào bìa...'
               : templateType === 'specialgift' || templateType === 'loveburst'
               ? 'Nhập nội dung sẽ hiển thị trong popup thư...'
               : undefined
           }
           maxLength={
-            templateType === 'loveburst' || templateType === 'giftflower'
+            templateType === 'loveburst' || templateType === 'giftflower' || templateType === 'xmasgiftcard'
               ? 400
               : templateType === 'specialgift'
               ? 200
@@ -1776,6 +1855,14 @@ function OrderPage() {
                   Ảnh trong hộp quà
                   <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
                     (không bắt buộc, tối đa {CHRISTMASTREE_MAX_IMAGES} ảnh — mỗi hộp quà dưới cây mở ra một ảnh)
+                  </span>
+                </p>
+              )}
+              {templateType === 'xmasgiftcard' && (
+                <p style={{ fontWeight: 500, marginBottom: '0.5rem' }}>
+                  Ảnh rơi từ trên xuống
+                  <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '0.85rem', marginLeft: '0.4rem' }}>
+                    (không bắt buộc, tối đa {QR_TEMPLATE_MAX_IMAGES} ảnh — rơi sau khi mở thiệp)
                   </span>
                 </p>
               )}

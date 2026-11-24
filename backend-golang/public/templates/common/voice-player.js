@@ -226,15 +226,25 @@
       musicSource.start(0);
     }
 
+    function stopVoiceSource() {
+      if (!voiceSource) return;
+      voiceSource.onended = null;
+      try { voiceSource.stop(); } catch (e) {}
+      try { voiceSource.disconnect(); } catch (e) {}
+      voiceSource = null;
+    }
+
+    // True once this visit's voice has actually started. A later tap must not
+    // count as a fresh start — only the replay button does that.
+    function voiceHasBegun() {
+      if (voiceSource) return true;
+      if (!voiceAudio) return false;
+      return voiceAudio.ended || voiceAudio.currentTime > 0;
+    }
+
     function startVoiceSource() {
       var ctx = ensureAudioContext();
-      if (!ctx || !voiceBuffer) return;
-      if (voiceSource) {
-        voiceSource.onended = null;
-        try { voiceSource.stop(); } catch (e) {}
-        try { voiceSource.disconnect(); } catch (e) {}
-        voiceSource = null;
-      }
+      if (!ctx || !voiceBuffer || voiceSource) return;
       activeMusicVolume = musicVolume;
       applyMusicGain();
       var source = ctx.createBufferSource();
@@ -321,9 +331,8 @@
       }
       applyMusicGain();
       var playing = startAllMusic();
-      if (withVoice && voiceAudio) {
+      if (withVoice && voiceAudio && (voiceAudio.paused || voiceAudio.ended)) {
         voiceAudio.muted = false;
-        try { voiceAudio.currentTime = 0; } catch (e) {}
         voiceAudio.play().catch(function () {});
       }
       addMusicUnlockListeners();
@@ -349,7 +358,7 @@
     var unlockEvents = ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'];
     function unlockMusic() {
       userGestured = true;
-      playMix(voiceRevealed);
+      playMix(voiceRevealed && !voiceHasBegun());
     }
     function addMusicUnlockListeners() {
       unlockEvents.forEach(function (eventName) {
@@ -381,12 +390,14 @@
 
     if (voiceAudio) {
       function playVoiceFromStart() {
+        stopVoiceSource();
+        try { voiceAudio.currentTime = 0; } catch (e) {}
         playMix(true);
       }
 
       function revealVoice() {
         if (voiceRevealed) {
-          playMix(true);
+          if (!voiceHasBegun()) playMix(true);
           return;
         }
         voiceRevealed = true;
@@ -440,8 +451,14 @@
         overlayObserver.observe(lovedaysOverlayEl, { attributes: true, attributeFilter: ['class'] });
       } else {
         replayButton.hidden = false;
+        function onRevealGesture() {
+          unlockEvents.forEach(function (eventName) {
+            document.removeEventListener(eventName, onRevealGesture);
+          });
+          revealVoice();
+        }
         unlockEvents.forEach(function (eventName) {
-          document.addEventListener(eventName, revealVoice, { once: true });
+          document.addEventListener(eventName, onRevealGesture);
         });
       }
 

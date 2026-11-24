@@ -3068,7 +3068,8 @@ body {
   box-shadow: 0 4px 20px rgba(255, 105, 140, 0.4),
               0 0 40px rgba(255, 150, 180, 0.2);
   opacity: 0;
-  animation: flyUp var(--fly-duration) var(--fly-delay) ease-out forwards;
+  -webkit-animation: flyUp var(--fly-duration) var(--fly-delay) ease-out infinite;
+          animation: flyUp var(--fly-duration) var(--fly-delay) ease-out infinite;
   border: 3px solid rgba(255, 255, 255, 0.6);
 }
 

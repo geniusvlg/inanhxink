@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -21,7 +22,7 @@ import (
 var socialMusicRe = regexp.MustCompile(`(?i)tiktok\.com|instagram\.com`)
 
 var validTemplateTypes = map[string]bool{
-	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true, "giftflower": true, "lovechristmas": true, "christmastree": true,
+	"galaxy": true, "loveletter": true, "letterinspace": true, "lovedays": true, "birthday": true, "birthdaycake": true, "specialgift": true, "farewell": true, "loveburst": true, "snowheart": true, "giftflower": true, "lovechristmas": true, "christmastree": true, "xmasgiftcard": true,
 }
 
 var templateFolderMap = map[string]string{
@@ -38,6 +39,16 @@ var templateFolderMap = map[string]string{
 	"giftflower":    "giftflower",
 	"lovechristmas": "lovechristmas",
 	"christmastree": "christmastree",
+	"xmasgiftcard":  "xmasgiftcard",
+}
+
+func supportedTemplateTypes() string {
+	types := make([]string, 0, len(validTemplateTypes))
+	for templateType := range validTemplateTypes {
+		types = append(types, templateType)
+	}
+	sort.Strings(types)
+	return strings.Join(types, ", ")
 }
 
 func domain() string {
@@ -129,7 +140,7 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		resolvedType = templateFolderMap[templateType]
 	}
 	if resolvedType == "" {
-		BadRequest(w, fmt.Sprintf("Unknown template type. Supported: galaxy, loveletter, letterinspace, lovedays, birthday, birthdaycake, specialgift, farewell, loveburst, snowheart, giftflower, lovechristmas, christmastree"))
+		BadRequest(w, "Unknown template type. Supported: "+supportedTemplateTypes())
 		return
 	}
 
@@ -157,6 +168,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if resolvedType == "giftflower" && utf8.RuneCountInString(content) > 400 {
+		BadRequest(w, "Nội dung thiệp không được quá 400 ký tự")
+		return
+	}
+	if resolvedType == "xmasgiftcard" && utf8.RuneCountInString(content) > 400 {
 		BadRequest(w, "Nội dung thiệp không được quá 400 ký tự")
 		return
 	}
@@ -294,6 +309,34 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if resolvedType == "xmasgiftcard" {
+		title, _ := body["xmasgiftcardTitle"].(string)
+		if utf8.RuneCountInString(strings.TrimSpace(title)) > 40 {
+			BadRequest(w, "Tiêu đề không được quá 40 ký tự")
+			return
+		}
+		rawMessages, _ := body["xmasgiftcardMessages"].([]any)
+		if len(rawMessages) > 5 {
+			BadRequest(w, "Cần từ 1 đến 5 câu trên cây thông")
+			return
+		}
+		nonEmptyMessages := 0
+		for _, item := range rawMessages {
+			text, _ := item.(string)
+			text = strings.TrimSpace(text)
+			if text != "" {
+				nonEmptyMessages++
+			}
+			if utf8.RuneCountInString(text) > 120 {
+				BadRequest(w, "Mỗi câu trên cây thông tối đa 120 ký tự")
+				return
+			}
+		}
+		if nonEmptyMessages == 0 {
+			BadRequest(w, "Cần từ 1 đến 5 câu trên cây thông")
+			return
+		}
+	}
 	imageUrls, _ := body["imageUrls"].([]any)
 	expectedImagePrefix := config.GetPublicURL("uploads/temp/" + qrNameLowerEarly + "/")
 	if !validQRImageURLs(body, expectedImagePrefix) {
@@ -314,6 +357,10 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if resolvedType == "christmastree" && len(imageUrls) > 12 {
 		BadRequest(w, "Cây thông hỗ trợ tối đa 12 ảnh")
+		return
+	}
+	if resolvedType == "xmasgiftcard" && len(imageUrls) > 12 {
+		BadRequest(w, "Thiệp Giáng sinh hỗ trợ tối đa 12 ảnh")
 		return
 	}
 	if resolvedType == "birthdaycake" && len(imageUrls) > 15 {
@@ -582,6 +629,21 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		templateData["postcards"] = postcards
+	case "xmasgiftcard":
+		templateData["title"] = strings.TrimSpace(strOrDefault(body, "xmasgiftcardTitle", ""))
+		messages := make([]string, 0, 5)
+		if raw, ok := body["xmasgiftcardMessages"].([]any); ok {
+			for _, item := range raw {
+				if len(messages) == 5 {
+					break
+				}
+				text, _ := item.(string)
+				if text = strings.TrimSpace(text); text != "" {
+					messages = append(messages, text)
+				}
+			}
+		}
+		templateData["messages"] = messages
 	}
 	if len(imageUrls) > 0 && templateType != "specialgift" {
 		templateData["imageUrls"] = imageUrls

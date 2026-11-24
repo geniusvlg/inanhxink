@@ -21,6 +21,7 @@ QR templates are listed on `/qr-yeu-thuong` from the `templates` table and use
 | `giftflower` | `giftflower` | Intro tap, tulip bouquet, letter card, then up to 8 photos that float upward. Three rotating lines (60 characters), letter up to 400 characters |
 | `lovechristmas` | `lovechristmas` | Tap to open a particle Christmas tree. A title and up to five messages type on the board; tapping the tree bursts up to 12 photos from the star |
 | `christmastree` | `christmastree` | Tap the star to grow a 3D tree. Up to 5 postcard letters (400 characters) hang on it and up to 12 photos sit in gift boxes at its base |
+| `xmasgiftcard` | `xmasgiftcard` | Tap the card, then the tree. Title (40 characters, blank uses “Merry Christmas”) and up to 5 lines (120 characters) cycle under it. The letter (400 characters) is the card. Up to 12 photos fall from the top once the tree is open. Music, voice, and volume use the shared player. Seeded by `V81__seed_xmasgiftcard_template.sql` |
 
 Love Letter reads the server-injected `window.dataFromSubdomain.data` directly
 and loads its blocking `app.js` at the end of the body. Do not defer that script
@@ -215,7 +216,7 @@ stems start growing after it (from about 0.8s). The "tap a flower" hint sits
 at the bottom of the screen, below the bouquet (`bottom: 12px` on desktop and
 phones), so it never covers the tulips. Tapping a flower opens a letter card. The
 first uploaded photo sits beside the letter. Closing the card hides the
-bouquet and sends every uploaded photo floating upward once. With no photos,
+bouquet and sends every uploaded photo floating upward in a loop. With no photos,
 hearts float instead so the ending still plays.
 
 Order JSON stores `introTitle`, `introHint`, `title`, `lines` (1–3 strings,
@@ -295,7 +296,7 @@ Three independent protections are in place; keep all of them when editing templa
 Click-only start controls that share an element with the voice player use
 idempotent, capture-phase `pointerdown`/`touchstart` handlers so their visual
 action begins before iOS Safari starts audio. Galaxy, Love Letter, Letter in
-Space, Farewell, Love Burst, Special Gift, Snow Heart, Gift Flower, Love Christmas, and Christmas Tree follow this pattern.
+Space, Farewell, Love Burst, Special Gift, Snow Heart, Gift Flower, Love Christmas, Christmas Tree, and Xmas Gift Card follow this pattern.
 Special Gift remains non-interactive until its eight-second intro finishes;
 Snow Heart queues an early tap until its module has installed the canvas reveal
 listener.

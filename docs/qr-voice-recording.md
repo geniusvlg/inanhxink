@@ -98,7 +98,8 @@ When `voiceRecordingUrl` and/or `musicUrl` exists:
   the voice finishes, music rises to at least 50% (a higher saved volume is
   preserved). Replaying the voice restores the saved mix for its duration.
 - If the browser blocks sound autoplay, playback begins after the visitor's
-  first tap, click, or key press anywhere on the page.
+  first tap, click, or key press anywhere on the page. Later taps do not
+  restart the voice; only **Nghe lại lời nhắn** does.
 
 Browsers, especially mobile Safari and Chrome, may prohibit audible autoplay
 before user interaction. This fallback is required and cannot be bypassed
