@@ -181,7 +181,10 @@ shared optional `musicUrl` and voice fields. All five message inputs initialize
 empty, and each message is limited to 60 characters. Sentence one starts on
 the innermost ring, with each following sentence placed farther outward and
 revealed in that order. Uploaded photos are downscaled client-side for GPU
-efficiency and orbit outside the rotating text rings after the reveal; public
+efficiency and orbit outside the rotating text rings after the reveal. Clicking
+or tapping a photo opens the original image large; the viewer stays open until
+the backdrop, the close button, or Escape is used. A drag that orbits the scene
+does not open it, and a tap on the heart still opens the letter. Public
 responses leave their URLs on the stored S3 address. The authorized template source and its
 four PNG particle assets are kept locally; Three.js 0.157 and its
 controls/post-processing modules load from jsDelivr. Seeded by

@@ -1011,6 +1011,7 @@ PhotoUrls.forEach((url, index) => {
   card.rotation.y = Math.PI / 2 - angle;
   card.rotation.z = ((index % 5) - 2) * 0.035;
   card.userData.baseScale = 1;
+  card.userData.imageUrl = url;
   photoOrbit.add(card);
 
   loadPhotoTexture(url, (texture, aspect) => {
@@ -1060,6 +1061,65 @@ function isSnowheartPointerHit(event) {
   ).length > 0;
 }
 
+function snowheartPhotoUrl(event) {
+  if (!photoOrbit.visible) return "";
+  const rect = renderer.domElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return "";
+  snowheartPointer.set(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  photoOrbit.updateMatrixWorld(true);
+  snowheartRaycaster.setFromCamera(snowheartPointer, camera);
+  const hits = snowheartRaycaster.intersectObjects(photoOrbit.children, true);
+  for (const hit of hits) {
+    let node = hit.object;
+    while (node && node !== photoOrbit) {
+      if (node.userData && node.userData.imageUrl) return node.userData.imageUrl;
+      node = node.parent;
+    }
+  }
+  return "";
+}
+
+function openSnowheartPhoto(url) {
+  let viewer = document.querySelector(".snowheart-photo-viewer");
+  if (!viewer) {
+    if (!document.getElementById("snowheart-photo-viewer-style")) {
+      const style = document.createElement("style");
+      style.id = "snowheart-photo-viewer-style";
+      style.textContent = [
+        ".snowheart-photo-viewer{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(4,12,32,.82);padding:24px}",
+        ".snowheart-photo-viewer[hidden]{display:none}",
+        ".snowheart-photo-viewer img{max-width:min(92vw,1100px);max-height:84vh;object-fit:contain;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45)}",
+        ".snowheart-photo-close{position:absolute;top:16px;right:16px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:28px;line-height:1;cursor:pointer}"
+      ].join("");
+      document.head.appendChild(style);
+    }
+    viewer = document.createElement("div");
+    viewer.className = "snowheart-photo-viewer";
+    viewer.hidden = true;
+    viewer.innerHTML = '<button type="button" class="snowheart-photo-close" aria-label="Đóng">×</button><img alt="">';
+    document.body.appendChild(viewer);
+    const image = viewer.querySelector("img");
+    const closeViewer = () => {
+      viewer.hidden = true;
+      image.removeAttribute("src");
+    };
+    viewer.addEventListener("click", (event) => {
+      if (event.target === viewer || event.target.classList.contains("snowheart-photo-close")) {
+        closeViewer();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !viewer.hidden) closeViewer();
+    });
+  }
+  const image = viewer.querySelector("img");
+  image.src = url;
+  viewer.hidden = false;
+}
+
 function enableSnowheartLetter() {
   if (!LetterContent || snowheartLetterReady) return;
   snowheartLetterReady = true;
@@ -1077,16 +1137,29 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
   snowheartPointerStart.set(event.clientX, event.clientY);
 });
 renderer.domElement.addEventListener("pointerup", (event) => {
-  if (!snowheartLetterReady || (letterDialog && !letterDialog.hidden)) return;
+  if (letterDialog && !letterDialog.hidden) return;
+  const viewer = document.querySelector(".snowheart-photo-viewer");
+  if (viewer && !viewer.hidden) return;
   const dragDistance = snowheartPointerStart.distanceTo(
     new THREE.Vector2(event.clientX, event.clientY)
   );
-  if (dragDistance <= 12 && isSnowheartPointerHit(event)) {
+  if (dragDistance > 12) return;
+  if (snowheartLetterReady && isSnowheartPointerHit(event)) {
     openSnowheartLetter(event);
+    return;
   }
+  const photoUrl = snowheartPhotoUrl(event);
+  if (photoUrl) openSnowheartPhoto(photoUrl);
 });
 renderer.domElement.addEventListener("pointermove", (event) => {
-  if (!snowheartLetterReady) return;
+  if (snowheartPhotoUrl(event)) {
+    renderer.domElement.style.cursor = "pointer";
+    return;
+  }
+  if (!snowheartLetterReady) {
+    renderer.domElement.style.cursor = "grab";
+    return;
+  }
   renderer.domElement.style.cursor = isSnowheartPointerHit(event)
     ? "pointer"
     : "grab";
