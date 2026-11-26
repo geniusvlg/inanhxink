@@ -323,6 +323,9 @@ reveals the best available scene if an asset or readiness event fails and shows
 a `Thử tải lại` button; successful late completion removes that button. On
 all devices, the gift button is visibly labeled `Ảnh bay`; it starts the
 flying-photo effect but does not pause or resume an effect already in progress.
+Clicking or tapping a photo sprite opens the original image large. The viewer
+stays open until the backdrop, the close button, or Escape is used. A drag that
+orbits the scene does not open it.
 The old automatic mobile/desktop quick
 help modal has been removed; the question-mark help remains user-invoked.
 

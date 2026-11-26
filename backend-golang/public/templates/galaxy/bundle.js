@@ -49400,6 +49400,7 @@ M\xE3i b\xEAn nhau!"></textarea>
       this.flowers.forEach((sprite) => {
         const oldMaterial = sprite.material;
         sprite.material = newMaterial;
+        this.assignPhotoUrl(sprite, newTexture);
         if (oldMaterial && oldMaterial !== newMaterial) {
           this.activeMaterials.delete(oldMaterial);
         }
@@ -49420,10 +49421,76 @@ M\xE3i b\xEAn nhau!"></textarea>
           this.activeMaterials.delete(oldMaterial);
         }
         sprite.material = material;
+        this.assignPhotoUrl(sprite, randomTexture);
         usedMaterials.add(material);
       });
       this.activeMaterials = usedMaterials;
       this.cleanupMaterialCache();
+    }
+    assignPhotoUrl(sprite, texture) {
+      const url = texture && texture.userData && texture.userData.sourceUrl;
+      if (url) sprite.userData.imageUrl = url;
+    }
+    enablePhotoViewer(camera, domElement) {
+      if (this.photoViewerReady || !camera || !domElement) return;
+      this.photoViewerReady = true;
+      this.photoRaycaster = new Raycaster();
+      this.photoPointer = new Vector2();
+      if (!document.getElementById("galaxy-photo-viewer-style")) {
+        const style = document.createElement("style");
+        style.id = "galaxy-photo-viewer-style";
+        style.textContent = [
+          ".galaxy-photo-viewer{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);padding:24px}",
+          ".galaxy-photo-viewer[hidden]{display:none}",
+          ".galaxy-photo-viewer img{max-width:min(92vw,1100px);max-height:84vh;object-fit:contain;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.45)}",
+          ".galaxy-photo-close{position:absolute;top:16px;right:16px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:28px;line-height:1;cursor:pointer}"
+        ].join("");
+        document.head.appendChild(style);
+      }
+      const viewer = document.createElement("div");
+      viewer.className = "galaxy-photo-viewer";
+      viewer.hidden = true;
+      viewer.innerHTML = '<button type="button" class="galaxy-photo-close" aria-label="Đóng">×</button><img alt="">';
+      document.body.appendChild(viewer);
+      const img = viewer.querySelector("img");
+      const closeViewer = () => {
+        viewer.hidden = true;
+        img.removeAttribute("src");
+      };
+      viewer.addEventListener("click", (event) => {
+        if (event.target === viewer || event.target.classList.contains("galaxy-photo-close")) {
+          closeViewer();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !viewer.hidden) closeViewer();
+      });
+      let downX = 0;
+      let downY = 0;
+      let tracking = false;
+      domElement.addEventListener("pointerdown", (event) => {
+        if (event.button !== void 0 && event.button !== 0) return;
+        if (!viewer.hidden) return;
+        tracking = true;
+        downX = event.clientX;
+        downY = event.clientY;
+      });
+      domElement.addEventListener("pointerup", (event) => {
+        if (!tracking) return;
+        tracking = false;
+        if (!viewer.hidden) return;
+        if (Math.hypot(event.clientX - downX, event.clientY - downY) > 12) return;
+        const rect = domElement.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        this.photoPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.photoPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        this.photoRaycaster.setFromCamera(this.photoPointer, camera);
+        const hits = this.photoRaycaster.intersectObjects(this.flowers, false);
+        const url = hits.length && hits[0].object.userData && hits[0].object.userData.imageUrl;
+        if (!url) return;
+        img.src = url;
+        viewer.hidden = false;
+      });
     }
     // Tối ưu sin/cos với cache
     getCachedSin(value) {
@@ -50007,6 +50074,7 @@ M\xE3i b\xEAn nhau!"></textarea>
                   processedTexture.colorSpace = SRGBColorSpace;
                   processedTexture.minFilter = NearestFilter;
                   processedTexture.magFilter = NearestFilter;
+                  processedTexture.userData.sourceUrl = url;
                   if (!processedTexture.uuid) {
                     processedTexture.uuid = "preloaded_" + Date.now() + "_" + index;
                   }
@@ -53538,11 +53606,14 @@ M\xE3i b\xEAn nhau!"></textarea>
     window.centralSphere = centralSphere;
     centralSphere.setParticleSystem(particleSystem);
     const flowerRingSystem = new FlowerRingSystem(scene);
+    flowerRingSystem.enablePhotoViewer(camera, renderer.domElement);
     centralSphere.setFlowerRing(flowerRingSystem);
     const cameraController = new CameraController(camera, renderer);
     window.cameraController = cameraController;
     const heart = new Heart(scene);
     window.addEventListener("dblclick", (e) => {
+      if (e.target.closest && e.target.closest(".galaxy-photo-viewer")) return;
+      if (document.querySelector(".galaxy-photo-viewer:not([hidden])")) return;
       e.preventDefault();
       audioManager.playOnly();
       cameraController.triggerAnimation();
@@ -53550,6 +53621,8 @@ M\xE3i b\xEAn nhau!"></textarea>
     let lastTap = 0, tapTimer = null, lastTapX = 0, lastTapY = 0, isZooming = false;
     const handleDoubleTap = (event) => {
       if (isZooming) return;
+      if (event.target && event.target.closest && event.target.closest(".galaxy-photo-viewer")) return;
+      if (document.querySelector(".galaxy-photo-viewer:not([hidden])")) return;
       const now = Date.now();
       const gap = now - lastTap;
       let cx = 0, cy = 0;
