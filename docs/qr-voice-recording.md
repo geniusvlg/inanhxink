@@ -42,8 +42,8 @@ day.
   `PATCH /api/admin/qr-names/:qrName/volume`. That writes the live
   `qr_codes` row and that name's unreleased orders. It does not change the
   default for new orders.
-- Public template responses rewrite audio URLs to the CDN; the database and
-  admin APIs retain raw S3 URLs.
+- The QR page serves `musicUrl` and `voiceRecordingUrl` as the raw S3 URLs
+  stored in the database. Admin APIs do the same.
 - `V69__normalize_mixed_audio_volume.sql` sets existing `qr_codes` and `orders`
   containing both `musicUrl` and `voiceRecordingUrl` to `musicVolume: 0.03`.
   This intentionally normalizes all existing mixed-audio records, including
