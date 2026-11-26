@@ -6,7 +6,7 @@ static asset (images, audio, PDFs, etc.) stored in our object storage.
 ## TL;DR
 
 1. **Database stores raw S3 URLs** — always.
-2. **Public APIs serve CDN URLs** — always.
+2. **Public APIs serve CDN URLs** — except a QR page's own photos, music, and voice, which keep the stored S3 URL.
 3. **Admin APIs serve raw S3 URLs** — always. Admin UI previews may rewrite to CDN for display only, but must keep raw S3 URLs in state and API payloads.
 
 The rewrite happens **at response time** in public routes; it is never
@@ -45,7 +45,7 @@ implemented once in `CdnStr` — every other helper delegates to it.
 
 There is no single combined "rewrite this row's image fields" helper (no Go
 equivalent of the old `rewriteRowImageFields`) — call `CdnURLField`/`CdnArrayField`
-once per field, or loop manually like `rewriteTemplateDataCDN` does (see below).
+once per field.
 
 ## Where the rewrite is applied today
 
@@ -60,14 +60,13 @@ Public handlers (`backend-golang/internal/handlers/*.go`):
 - `metadata.go` → banner/config slide `imageUrl` fields, `in_anh_price_image_url`, and generic string-array config values (`CdnStr`, looped per entry)
 - `orders.go` → order item `ImageURLs[]` in order detail/confirmation responses (`CdnStr`, looped per entry)
 
-Shared template-data rewrite (`sitedata.go`'s `rewriteTemplateDataCDN(data map[string]any)`),
-used by both:
-- `SiteData` handler (`GET /api/site-data`, `sitedata.go`)
-- `ServeTemplate`'s `injectScripts()` (`templateserve.go`) — rewrites before injecting `window.dataFromSubdomain` into the served template HTML
-
-It rewrites the scalar fields `musicUrl`, `voiceRecordingUrl`, `avatarFrom`,
-`avatarTo`, `boyImage`, `girlImage`, and the array fields `imageUrls`,
-`popupImages` inside `template_data`.
+QR pages do not rewrite `template_data`. `GET /api/site-data` and
+`ServeTemplate`'s `injectScripts()` inject the stored S3 URLs, including
+photos (`imageUrls`, `popupImages`, `photoBlobUrls`, avatars, farewell stage
+images), `musicUrl`, `customMusicUrl`, and `voiceRecordingUrl`. No migration
+is involved: the CDN host was only substituted in the response. The storefront
+(products, banners, template thumbnails, order-confirmation images) still
+rewrites to the CDN.
 
 Admin handlers (`backend-golang/internal/handlers/admin/*.go`): **DO NOT REWRITE**.
 Admin pages upload, list, edit, and delete using the raw S3 URLs. If an admin page

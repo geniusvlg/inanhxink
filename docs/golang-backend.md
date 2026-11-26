@@ -199,7 +199,9 @@ frontend falls back to the existing backend upload endpoints. `CreateOrder`
 accepts image and voice URLs only from that QR name's raw-S3 temporary prefix.
 
 The VNG bucket must allow browser CORS `PUT` requests from the storefront and admin origins
-with the `Content-Type` and `x-amz-acl` headers:
+with the `Content-Type` and `x-amz-acl` headers. QR pages also load photos, music, and
+voice with `GET` from `*.inanhxink.com`, so keep that read rule as well. Replacing the
+whole configuration with only one of these rules breaks the other path.
 
 ```json
 [
@@ -208,6 +210,13 @@ with the `Content-Type` and `x-amz-acl` headers:
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["content-type", "x-amz-acl"],
     "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  },
+  {
+    "AllowedOrigins": ["*"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Type"],
     "MaxAgeSeconds": 3600
   }
 ]

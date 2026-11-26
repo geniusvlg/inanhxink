@@ -10,7 +10,7 @@ import (
 )
 
 // GET /api/site-data — returns template_type and template_data for a subdomain.
-// CDN URLs are rewritten inside template_data before the response.
+// Photo, music, and voice URLs are the raw S3 addresses stored on the row.
 func SiteData(w http.ResponseWriter, r *http.Request) {
 	subdomain := getSubdomain(r)
 	if subdomain == "" {
@@ -33,48 +33,10 @@ func SiteData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if templateData != nil {
-		rewriteTemplateDataCDN(templateData)
-	}
-
 	OK(w, map[string]any{
 		"template_type": templateType,
 		"template_data": templateData,
 	})
-}
-
-func rewriteTemplateDataCDN(data map[string]any) {
-	for _, key := range []string{"musicUrl", "customMusicUrl", "voiceRecordingUrl", "avatarFrom", "avatarTo", "boyImage", "girlImage"} {
-		if v, ok := data[key].(string); ok {
-			data[key] = config.CdnStr(v)
-		}
-	}
-	for _, key := range []string{"imageUrls", "popupImages", "photoBlobUrls"} {
-		if arr, ok := data[key].([]any); ok {
-			for i, item := range arr {
-				if s, ok := item.(string); ok {
-					arr[i] = config.CdnStr(s)
-				}
-			}
-		}
-	}
-	if stages, ok := data["farewellStages"].([]any); ok {
-		for _, item := range stages {
-			if stage, ok := item.(map[string]any); ok {
-				if imageURLs, ok := stage["imageUrls"].([]any); ok {
-					for i, item := range imageURLs {
-						if imageURL, ok := item.(string); ok {
-							imageURLs[i] = config.CdnStr(imageURL)
-						}
-					}
-				}
-				// Compatibility with the first single-image stage payload.
-				if imageURL, ok := stage["imageUrl"].(string); ok {
-					stage["imageUrl"] = config.CdnStr(imageURL)
-				}
-			}
-		}
-	}
 }
 
 // hostWithoutPort strips :port from r.Host (e.g. localhost:3001 → localhost).

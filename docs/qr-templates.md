@@ -108,9 +108,10 @@ collects photos from `farewellStages[].imageUrl` (or the short-lived
 per-stage `imageUrls` array, first URL only). Messages prefer
 `farewellCaptions` when that list is at least as long as the non-empty stage
 messages, so older paired stages do not lose a line that never sat on a
-photo. Image URLs remain raw S3 values in JSONB; `rewriteTemplateDataCDN`
-rewrites both top-level `imageUrls` and nested `farewellStages[].imageUrl`
-when serving public data. Payment migration already walks nested JSON.
+photo. Image URLs remain raw S3 values in JSONB and are served that way,
+including top-level `imageUrls` and nested `farewellStages[].imageUrl`.
+Music and voice on the QR page are served the same way. Payment migration
+already walks nested JSON.
 
 The destination is free text from the order form. Arrival shows the typed city
 and a stamp code from its first letters. Distance, flight time, time-zone
@@ -181,7 +182,7 @@ empty, and each message is limited to 60 characters. Sentence one starts on
 the innermost ring, with each following sentence placed farther outward and
 revealed in that order. Uploaded photos are downscaled client-side for GPU
 efficiency and orbit outside the rotating text rings after the reveal; public
-responses rewrite their URLs to the CDN. The authorized template source and its
+responses leave their URLs on the stored S3 address. The authorized template source and its
 four PNG particle assets are kept locally; Three.js 0.157 and its
 controls/post-processing modules load from jsDelivr. Seeded by
 `V68__seed_snowheart_template.sql`.
@@ -263,8 +264,8 @@ Safari's `navigator.audioSession` to `playback` so music still plays when the
 iPhone silent switch is on (YouTube-style media session, iOS 16.4+).
 
 Template implementations do not need their own voice-message code. Public
-template data is CDN-rewritten before it is injected into
-`window.dataFromSubdomain`.
+template data is injected into `window.dataFromSubdomain` with photo, music,
+and voice URLs left on the stored S3 address.
 
 ## Cloudflare Rocket Loader Must Not Touch Template Scripts
 

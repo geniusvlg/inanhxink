@@ -80,9 +80,6 @@ func injectScripts(html, subdomain, templateType string, templateData map[string
 			data[k] = v
 		}
 	}
-	// Rewrite S3 → CDN URLs in template data before injection
-	rewriteTemplateDataCDN(data)
-
 	dataPayload, _ := json.Marshal(map[string]any{"template": templateType, "data": data})
 	subdomainJSON, _ := json.Marshal(subdomain)
 	// data-cfasync="false" opts these out of Cloudflare Rocket Loader, which would
