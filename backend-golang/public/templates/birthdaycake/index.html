@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Dancing+Script:wght@500;600;700&family=Fredoka+One&family=Pacifico&family=Satisfy&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./giftbox/gift-box.css">
   <link rel="stylesheet" href="./cake/cake.css">
-  <link rel="stylesheet" href="./letter/letter-modal.css">
+  <link rel="stylesheet" href="./letter/letter-modal.css?v=20261127-1">
 </head>
 <body>
   <div class="page-top-banner" aria-hidden="true">
@@ -63,14 +63,6 @@
   <div class="photo-wall" id="photo-wall" aria-hidden="true"></div>
 
   <div id="letter-modal" class="letter-modal-overlay" aria-hidden="true">
-    <svg class="svg-filters" aria-hidden="true" focusable="false">
-      <defs>
-        <filter id="loveLetterWavyBorder" x="-15%" y="-15%" width="130%" height="130%">
-          <feTurbulence type="turbulence" baseFrequency="0.014 0.007" numOctaves="2" seed="5" result="noise"></feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
-        </filter>
-      </defs>
-    </svg>
     <div class="envlope-wrapper">
       <div id="envelope" class="close">
         <div class="wax-seal"></div>
@@ -92,9 +84,9 @@
           </div>
         </div>
         <div class="hearts">
-          <div class="heart a1"></div>
-          <div class="heart a2"></div>
-          <div class="heart a3"></div>
+          <div class="heart-rise a1"><div class="heart"></div></div>
+          <div class="heart-rise a2"><div class="heart"></div></div>
+          <div class="heart-rise a3"><div class="heart"></div></div>
         </div>
         <div class="sparkles">
           <div class="sparkle s1"></div>
@@ -134,10 +126,10 @@
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
     window.THREE = THREE;
   </script>
-  <script data-cfasync="false" src="./giftbox/gift-model.js" defer></script>
+  <script data-cfasync="false" src="./giftbox/gift-model.js?v=20261127-1" defer></script>
   <script data-cfasync="false" src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
-  <script data-cfasync="false" src="./cake/cake.js" defer></script>
-  <script data-cfasync="false" src="./letter/letter-index.js" defer></script>
+  <script data-cfasync="false" src="./cake/cake.js?v=20261127-1" defer></script>
+  <script data-cfasync="false" src="./letter/letter-index.js?v=20261127-1" defer></script>
   <script data-cfasync="false" src="./giftbox/gift-box.js" defer></script>
 </body>
 </html>

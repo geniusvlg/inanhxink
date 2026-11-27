@@ -211,6 +211,8 @@
     var start = performance.now();
     function animate(now) {
       requestAnimationFrame(animate);
+      var letterModal = document.getElementById("letter-modal");
+      if (letterModal && letterModal.classList.contains("is-visible")) return;
       var time = (now - start) / 1000;
 
       if (opening) {

@@ -34,13 +34,7 @@ func ValidateVoucher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var discountVal float64
-	switch v := row["discount_value"].(type) {
-	case float64:
-		discountVal = v
-	case string:
-		json.Unmarshal([]byte(v), &discountVal) //nolint
-	}
+	discountVal := MapFloat64(row, "discount_value")
 
 	OK(w, map[string]any{
 		"success": true,

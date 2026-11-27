@@ -166,6 +166,12 @@ galaxy disk, and shooting stars stay behind the globe after the text sequence.
 `prefers-reduced-motion` skips the particle-text sequence and goes straight to the globe.
 Seeded by `V66__seed_loveburst_template.sql`.
 
+## Birthday Cake
+
+The letter's torn edge is a static clip. Hearts move with `transform`, and the
+gift box and cake stop drawing while the letter modal is open, so the open
+animation does not repaint an SVG turbulence filter on every frame.
+
 ## Snow Heart
 
 A full-screen Three.js winter scene opens on falling snow and photo flakes.

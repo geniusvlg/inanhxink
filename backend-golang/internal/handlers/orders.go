@@ -842,19 +842,7 @@ func GetOrder(w http.ResponseWriter, r *http.Request) {
 // helpers
 
 func toFloat(v any) float64 {
-	switch x := v.(type) {
-	case float64:
-		return x
-	case int:
-		return float64(x)
-	case int64:
-		return float64(x)
-	case string:
-		var f float64
-		fmt.Sscanf(x, "%f", &f)
-		return f
-	}
-	return 0
+	return asFloat(v)
 }
 
 func strOrDefault(m map[string]any, key, def string) string {
