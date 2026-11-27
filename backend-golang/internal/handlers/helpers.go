@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"inanhxink/backend-golang/internal/sentrylog"
 )
@@ -112,6 +113,38 @@ func MapFloat64(m map[string]any, key string) float64 {
 		var f float64
 		_, _ = fmt.Sscanf(strings.TrimSpace(x), "%f", &f)
 		return f
+	default:
+		return asFloat(v)
+	}
+}
+
+// asFloat reads a PostgreSQL numeric value. RowToMap returns DECIMAL columns
+// as pgtype.Numeric, which is not a float64.
+func asFloat(v any) float64 {
+	switch x := v.(type) {
+	case float64:
+		return x
+	case float32:
+		return float64(x)
+	case int:
+		return float64(x)
+	case int32:
+		return float64(x)
+	case int64:
+		return float64(x)
+	case json.Number:
+		f, _ := x.Float64()
+		return f
+	case string:
+		var f float64
+		_, _ = fmt.Sscanf(strings.TrimSpace(x), "%f", &f)
+		return f
+	case pgtype.Numeric:
+		f, err := x.Float64Value()
+		if err != nil || !f.Valid {
+			return 0
+		}
+		return f.Float64
 	default:
 		return 0
 	}

@@ -25,6 +25,14 @@
     --color-sparkle: #ffd700;
     --wax-seal: #9e1b1b;
     --envelope-center-heart: #ec8e98;
+    /* Static torn edge. A live SVG turbulence filter was repainted on every
+       frame of the open animation and stalled phones. */
+    --paper-wave: polygon(
+        1% 2.4%, 8% 0.4%, 15% 2.6%, 22% 0.5%, 29% 2.4%, 36% 0.4%, 43% 2.5%, 50% 0.5%, 57% 2.4%, 64% 0.4%, 71% 2.6%, 78% 0.5%, 85% 2.4%, 92% 0.4%, 99% 2.2%,
+        100% 10%, 98.6% 18%, 100% 26%, 98.6% 34%, 100% 42%, 98.6% 50%, 100% 58%, 98.6% 66%, 100% 74%, 98.6% 82%, 100% 90%, 99% 98%,
+        92% 99.6%, 85% 97.6%, 78% 99.6%, 71% 97.5%, 64% 99.6%, 57% 97.6%, 50% 99.6%, 43% 97.5%, 36% 99.6%, 29% 97.6%, 22% 99.6%, 15% 97.5%, 8% 99.6%, 1% 97.8%,
+        0% 90%, 1.4% 82%, 0% 74%, 1.4% 66%, 0% 58%, 1.4% 50%, 0% 42%, 1.4% 34%, 0% 26%, 1.4% 18%, 0% 10%
+    );
 }
 
 /* Lớp phủ trong index — không style body trang */
@@ -106,11 +114,9 @@
 #loveLetter.letter--ending {
     transition:
         opacity 0.5s ease,
-        transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-        filter 0.55s ease !important;
+        transform 0.55s cubic-bezier(0.4, 0, 0.2, 1) !important;
     opacity: 0 !important;
     transform: scale(0.88) translateY(12px) !important;
-    filter: blur(10px);
     pointer-events: none;
 }
 
@@ -284,7 +290,7 @@
             rgba(250, 250, 249, 0.9) 45%,
             rgba(238, 238, 236, 0.35) 100%),
         var(--color-env);
-    filter: url(#loveLetterWavyBorder);
+    clip-path: var(--paper-wave);
     pointer-events: none;
 }
 
@@ -300,7 +306,6 @@
             rgba(200, 200, 198, 0.4) 0 8px,
             transparent 8px calc(100% - 8px),
             rgba(200, 200, 198, 0.4) calc(100% - 8px) 100%);
-    filter: url(#loveLetterWavyBorder);
     opacity: 0.85;
     pointer-events: none;
 }
@@ -319,7 +324,6 @@
     border-top: 150px solid var(--color-flap);
     transform-origin: top;
     pointer-events: none;
-    filter: url(#loveLetterWavyBorder);
 }
 
 .pocket {
@@ -329,7 +333,6 @@
     border-top: 150px solid transparent;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    filter: url(#loveLetterWavyBorder);
 }
 
 /* Đóng: slot khớp thân bì (top: 0) — không để thư/shadow lọt phía trên phong bì. Mở: mở rộng lên để kéo thư ra */
@@ -392,7 +395,7 @@
             #fdf1f3 50%,
             #fae3e6 100%);
     box-shadow: 0 2px 24px rgba(0, 0, 0, 0.1);
-    filter: url(#loveLetterWavyBorder);
+    clip-path: var(--paper-wave);
     pointer-events: none;
 }
 
@@ -494,7 +497,6 @@
 .letter-inner.letter-text-reveal .letter-title,
 .letter-inner.letter-text-reveal .letter-body {
     opacity: 0;
-    filter: blur(12px);
     animation: letterContentFadeIn 0.95s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
@@ -505,12 +507,10 @@
 @keyframes letterContentFadeIn {
     from {
         opacity: 0;
-        filter: blur(12px);
     }
 
     to {
         opacity: 1;
-        filter: blur(0);
     }
 }
 
@@ -676,29 +676,40 @@
     animation: sparkleTwinkle 1s infinite;
 }
 
-.close .heart,
+.close .heart-rise,
+.close .heart-rise .heart,
 .close .sparkle {
     opacity: 0;
     animation: none;
 }
 
-.a1 { left: 20%; transform: scale(0.6); animation: slideUp 4s linear infinite, sideSway 2s ease-in-out infinite alternate; }
-.a2 { left: 55%; animation: slideUp 5s linear infinite, sideSway 4s ease-in-out infinite alternate; }
-.a3 { left: 10%; transform: scale(0.8); animation: slideUp 7s linear infinite, sideSway 2s ease-in-out infinite alternate; }
+.heart-rise {
+    position: absolute;
+    bottom: 0;
+    pointer-events: none;
+    animation: slideUp 4s linear infinite;
+}
+
+.a1 { left: 20%; animation-duration: 4s; }
+.a2 { left: 55%; animation-duration: 5s; }
+.a3 { left: 10%; animation-duration: 7s; }
+.a1 .heart { scale: 0.6; animation: sideSway 2s ease-in-out infinite alternate; }
+.a2 .heart { animation: sideSway 4s ease-in-out infinite alternate; }
+.a3 .heart { scale: 0.8; animation: sideSway 2s ease-in-out infinite alternate; }
 
 .s1 { left: 30%; animation: sparkleUp 3s linear infinite; }
 .s2 { left: 60%; animation: sparkleUp 4s linear infinite; }
 .s3 { left: 45%; animation: sparkleUp 5s linear infinite; }
 
 @keyframes slideUp {
-    0% { top: 0; }
-    100% { top: -600px; }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(0, -600px, 0); }
 }
 
 @keyframes sideSway {
-    0% { margin-left: 0; }
-    50% { margin-left: 50px; }
-    100% { margin-left: 0; }
+    0% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(50px, 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes sparkleUp {

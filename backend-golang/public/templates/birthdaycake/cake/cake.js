@@ -1735,6 +1735,11 @@ function _doPopulateMemoryZone() {
   }
 
   function animate() {
+    const letterModal = document.getElementById("letter-modal");
+    if (letterModal && letterModal.classList.contains("is-visible")) {
+      rafId = requestAnimationFrame(animate);
+      return;
+    }
     const t = clock.getElapsedTime();
     const undersideLiftT = Math.abs(userDragPitch) / PITCH_LIMIT;
     const undersideLift = undersideLiftT * undersideLiftT * 1.15;

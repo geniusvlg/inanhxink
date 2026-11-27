@@ -397,24 +397,27 @@ $(document).ready(function () {
     letter.style.zIndex = "1000";
     letter.style.boxSizing = "border-box";
     letter.style.animation = "none";
-    letter.style.transform = "none";
+    letter.style.transition = "none";
+    const vv = window.visualViewport;
+    const vpW = vv ? vv.width : document.documentElement.clientWidth;
+    const vpH = vv ? vv.height : window.innerHeight;
+    const vpLeft = vv ? vv.offsetLeft : 0;
+    const vpTop = vv ? vv.offsetTop : 0;
+    const vw = Math.min(vpW * 0.92, 440);
+    const maxH = Math.min(vpH * 0.76, 600);
+    const leftPx = Math.round(vpLeft + (vpW - vw) / 2);
+    const topPx = Math.round(vpTop + (vpH - maxH) / 2);
+    const scale = vw > 0 ? rect.width / vw : 1;
+    letter.style.top = topPx + "px";
+    letter.style.left = leftPx + "px";
+    letter.style.width = vw + "px";
+    letter.style.height = maxH + "px";
+    letter.style.transformOrigin = "top left";
+    letter.style.transform =
+      "translate(" + (rect.left - leftPx) + "px, " + (rect.top - topPx) + "px) scale(" + scale + ")";
     void letter.offsetWidth;
     requestAnimationFrame(() => {
-      const vv = window.visualViewport;
-      const vpW = vv ? vv.width : document.documentElement.clientWidth;
-      const vpH = vv ? vv.height : window.innerHeight;
-      const vpLeft = vv ? vv.offsetLeft : 0;
-      const vpTop = vv ? vv.offsetTop : 0;
-      const vw = Math.min(vpW * 0.92, 440);
-      const maxH = Math.min(vpH * 0.76, 600);
-      const leftPx = Math.round(vpLeft + (vpW - vw) / 2);
-      const topPx = Math.round(vpTop + (vpH - maxH) / 2);
-      letter.style.transition =
-        "top 0.95s cubic-bezier(0.22, 1, 0.36, 1), left 0.95s cubic-bezier(0.22, 1, 0.36, 1), width 0.95s cubic-bezier(0.22, 1, 0.36, 1), height 0.95s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.95s ease, transform 0.95s cubic-bezier(0.22, 1, 0.36, 1)";
-      letter.style.top = topPx + "px";
-      letter.style.left = leftPx + "px";
-      letter.style.width = vw + "px";
-      letter.style.height = maxH + "px";
+      letter.style.transition = "transform 0.95s cubic-bezier(0.22, 1, 0.36, 1)";
       letter.style.transform = "none";
       letter.classList.add("letter-is-centered");
       wrapper.addClass("letter-stage-open");
@@ -425,7 +428,7 @@ $(document).ready(function () {
       }
       letterCenterTransitionHandler = function (e) {
         if (e.target !== letter) return;
-        if (e.propertyName !== "width") return;
+        if (e.propertyName !== "transform") return;
         letter.removeEventListener("transitionend", letterCenterTransitionHandler);
         letterCenterTransitionHandler = null;
         if (!envelope.hasClass("open") || !isOpen) return;
